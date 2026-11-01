@@ -1,0 +1,49 @@
+# AGENTS.md
+
+Guidance for coding agents working in this repository.
+
+## Overview
+
+`sail-team` is the club's web app at `cycsail.team`. It's a single-page React app, built by Vite into static files and
+served by Caddy on the club's cluster. It has no server of its own. The browser talks to Directus
+([cyc-seattle/platform](https://github.com/cyc-seattle/platform)) with the user's own session, and Directus decides what
+each person can see and change. The app adds no security of its own.
+
+The app shares `cycsail.team` with isthmia's portal until it replaces it. It claims only its own paths, such as `/plans`,
+and puts its built files under `/_app` (`vite.config.ts`), so the portal keeps everything else.
+
+## Tasks
+
+mise provides the tools. Run `mise trust`, then `mise run install`.
+
+- `mise run ci`: `check`, then `test`
+- `mise run check`: build, typecheck, Prettier check, ESLint
+- `mise run dev`: serve the app locally
+- `mise run format`: fix formatting and lint
+- `mise run test`: run the tests with Vitest
+- `mise run build`: build into `dist/`
+
+## Layout
+
+- `src/routes/` holds TanStack Router's file routes. A file's path is its URL: `src/routes/plans/index.tsx` is `/plans`.
+  The router plugin regenerates `src/routeTree.gen.ts` on every build and dev run. Commit it, and never edit it.
+- `src/router.ts` makes the router. Tests make their own with a memory history.
+- `test/` holds the tests, `*.test.ts` or `*.test.tsx`.
+
+## Code style
+
+TypeScript with ESLint and Prettier from `@cyc-seattle/ts-config`. ESM: relative import paths carry the `.ts` or `.tsx`
+extension. PR titles are conventional commits. Never push to `main`.
+
+Write for a club staffer: page text in plain words a volunteer would say.
+
+### Comments
+
+Comments explain **why**, not what. Keep them to a line or two. Write one where a reader would otherwise get it wrong: a
+non-obvious constraint, a surprising API behavior, or a decision that looks arbitrary but isn't.
+
+- Don't narrate the code, restate the diff, or argue for the approach you chose.
+- Cite an issue (`#107`) instead of recounting its discussion.
+- Don't cite a local plan file. A `docs/` reference is fine.
+
+The same applies to docs: record the outcome, not the path to it, and no personal identifiers.
