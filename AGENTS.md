@@ -18,7 +18,7 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
 
 - `mise run ci`: `check`, then `test`
 - `mise run check`: build, typecheck, Prettier check, ESLint
-- `mise run dev`: serve the app locally
+- `mise run dev`: serve the app locally, with made-up data from `src/mocks/` in place of Directus
 - `mise run storybook`: serve Storybook, the catalog of every component
 - `mise run format`: fix formatting and lint
 - `mise run test`: run the tests with Vitest
@@ -32,6 +32,12 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
 - `src/components/ui/` holds shadcn's components on Base UI, `src/components/` the club's own, each with a story beside
   it. `src/styles/tokens.css` holds the design tokens. Read [docs/design.md](docs/design.md) before changing any of
   them, or use the [`design`](.agents/skills/design/SKILL.md) skill.
+- `src/directus/` talks to Directus. `client.ts` makes a client that sends the browser's Directus session cookie, and
+  `app.ts` is the app's own, at `directus.<the app's hostname>`. `sign-in.ts` sends a visitor with no session to
+  Directus's sign-in, and stops instead of looping if they come straight back without one (`session.ts`).
+  `access.ts` reads `/permissions/me` to decide what to show; Directus still checks every request.
+- `src/mocks/` answers Directus's requests with made-up people and permissions, in `mise run dev` and in tests. Never
+  put real club data there.
 - `test/` holds the unit tests, `*.test.ts` or `*.test.tsx`. `mise run test` also runs every story as a test in
   Chromium, with axe (docs/design.md).
 
