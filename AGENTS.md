@@ -51,6 +51,20 @@ Claude Code reads skills only from `.claude/skills`, so link them there once:
 Playwright downloads a Chromium that runs on most Linux, macOS, and Windows machines. Where it can't, such as on NixOS,
 point `PLAYWRIGHT_BROWSERS_PATH` at a matching set of browsers in a git-ignored `mise.local.toml`.
 
+## Deploys
+
+`stacks/app` is the app's one Pulumi project: a platform `WebService` that serves the image on `/plans` and `/_app` of
+the environment's domain. The image is Caddy serving `dist/` (`Dockerfile`, `Caddyfile`), with a content security
+policy that lets the page call only itself and Directus.
+
+- Every PR deploys to dev, at `https://dev.cycsail.team/plans`, and runs `mise run integration` there. A push to `main`
+  deploys dev, previews prod, and applies prod once a maintainer approves. Prod runs the image dev built for the same
+  commit. All of it goes through the org's `deploy.yml` (`.github/workflows/pull-request.yml`).
+- `mise run preview` and `mise run deploy` act on `$PULUMI_STACK`, which defaults to `prod`. Locally, set
+  `PULUMI_STACK=dev`, and preview before every apply. Local deploys are only for breaking glass.
+- Directus already allows `https://<domain>` as an origin and a sign-in redirect, because the portal is there, so the
+  app needs nothing from platform's Directus settings.
+
 ## Code style
 
 TypeScript with ESLint and Prettier from `@cyc-seattle/ts-config`. ESM: relative import paths carry the `.ts` or `.tsx`

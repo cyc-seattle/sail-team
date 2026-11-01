@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Runs a pulumi command on stacks/app for $PULUMI_STACK. For preview, it also appends true if the stack has changes
+# and false if not to $DEPLOY_CHANGES_FILE when that's set: the org's deploy.yml reads it to skip a deploy that
+# changes nothing.
+set -euo pipefail
+
+here="$(dirname "${BASH_SOURCE[0]}")"
+project="$here/../stacks/app"
+
+# The docker-build provider records DOCKER_HOST in state, so a per-user socket path makes a deploy from another
+# machine replace the image. Unset, it builds on the first buildx builder it can reach.
+unset DOCKER_HOST
+
+# --stack is explicit because pulumi remembers the selected stack per directory, which a fresh worktree hasn't got.
+if [[ "$1" != preview ]]; then
+  exec pulumi "$1" --cwd "$project" --stack "$PULUMI_STACK" "${@:2}"
+fi
+
+out=$(mktemp)
+trap 'rm -f "$out"' EXIT
+status=0
+pulumi preview --cwd "$project" --stack "$PULUMI_STACK" --expect-no-changes "${@:2}" 2>&1 | tee "$out" || status=$?
+# --expect-no-changes fails both when there are changes and when the preview fails. Only Pulumi's
+# NoChangesExpectedError means changes; any other failure fails the task.
+if ((status == 0)); then
+  changes=false
+elif grep -q 'no changes were expected.* but changes were proposed' "$out"; then
+  changes=true
+else
+  exit "$status"
+fi
+echo "changes=$changes"
+if [[ -n "${DEPLOY_CHANGES_FILE:-}" ]]; then
+  echo "$changes" >> "$DEPLOY_CHANGES_FILE"
+fi

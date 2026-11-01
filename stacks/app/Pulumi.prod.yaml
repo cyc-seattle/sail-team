@@ -1,0 +1,6 @@
+secretsprovider: gcpkms://projects/cyc-admin-scripts/locations/us-west1/keyRings/pulumi/cryptoKeys/state-prod
+encryptedkey: CiQAbYGDqtD7R4sbuFqgV1yFvOFYRPfTz6NkGvCZ5k56+nD6WboSSQAhO9qRlh2xjKJR+VTC/x7KguIyweT6lGTyppMMfA54eso6fa6WvU/2iul3w+g+XlsSS/bpIGg/+KJCuyQvl+cM+PVkqfM0M3c=
+config:
+  gcp:project: cyc-admin-scripts
+  gcp:region: us-west1
+  sail-team:replicas: "2"
