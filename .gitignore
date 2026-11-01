@@ -13,3 +13,6 @@ CLAUDE.md
 
 *storybook.log
 storybook-static
+.features-gen/
+test-results/
+playwright-report/
