@@ -1,0 +1,38 @@
+{
+  "name": "@cyc-seattle/sail-team",
+  "description": "The club's web app at cycsail.team",
+  "version": "0.0.0",
+  "author": "CYC Community Sailing Center",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cyc-seattle/sail-team.git"
+  },
+  "packageManager": "pnpm@10.34.9",
+  "prettier": "@cyc-seattle/ts-config/prettier",
+  "dependencies": {
+    "@tanstack/react-router": "^1.170.46",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@cyc-seattle/ts-config": "^0.1.2",
+    "@tanstack/router-plugin": "^1.168.48",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.14.0",
+    "prettier": "^3.9.10",
+    "typescript": "~5.9.3",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  }
+}
