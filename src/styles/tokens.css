@@ -1,0 +1,83 @@
+/*
+ * Every design token, light and dark (docs/design.md). Neutrals carry a faint cool hue. Color is kept for meaning:
+ * the status colors share one lightness and chroma, so no status shouts louder than another.
+ */
+
+:root {
+  --background: oklch(0.985 0.003 247);
+  --foreground: oklch(0.15 0.005 265);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--foreground);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(0.21 0.006 265);
+  --primary-foreground: oklch(0.985 0.002 247);
+  --secondary: oklch(0.965 0.004 247);
+  --secondary-foreground: var(--primary);
+  --muted: oklch(0.965 0.004 247);
+  --muted-foreground: oklch(0.52 0.012 257);
+  --accent: oklch(0.965 0.004 247);
+  --accent-foreground: var(--primary);
+  --border: oklch(0.92 0.005 255);
+  --input: oklch(0.92 0.005 255);
+  --ring: oklch(0.7 0.01 257);
+
+  /* Status: one lightness and chroma, so each reads as text on a card. */
+  --success: oklch(0.52 0.14 150);
+  --warning: oklch(0.52 0.14 70);
+  --info: oklch(0.52 0.14 250);
+  --destructive: oklch(0.52 0.14 27);
+
+  /* Money colors only the amount, never its row's label. */
+  --money-positive: var(--success);
+  --money-negative: var(--destructive);
+  --money-zero: var(--muted-foreground);
+
+  /* The club's navy, for the app bar, with its white. Buttons stay neutral. */
+  --brand: oklch(0.301 0.097 279.6);
+  --brand-foreground: oklch(1 0 0);
+  /* The club's red, for decoration only, such as the stripe under the app bar: it's too light for text on white. */
+  --brand-accent: oklch(0.613 0.228 27.1);
+  /* Links, in the club's navy. */
+  --link: var(--brand);
+
+  /* Okabe and Ito's palette, which stays distinct with the common kinds of color blindness. */
+  --chart-1: oklch(0.532 0.131 244);
+  --chart-2: oklch(0.753 0.158 76.8);
+  --chart-3: oklch(0.62 0.13 165.5);
+  --chart-4: oklch(0.679 0.118 346.3);
+  --chart-5: oklch(0.735 0.117 236.2);
+  --chart-6: oklch(0.621 0.17 47.5);
+
+  --radius: 0.625rem;
+  --card-spacing: 1rem;
+  --card-spacing-sm: 0.75rem;
+  /* The smallest thing a phone user taps (WCAG 2.5.5). */
+  --tap-target: 2.75rem;
+}
+
+.dark {
+  --background: oklch(0.16 0.006 265);
+  --foreground: oklch(0.97 0.003 247);
+  --card: oklch(0.21 0.007 265);
+  --popover: oklch(0.21 0.007 265);
+  --primary: oklch(0.92 0.004 247);
+  --primary-foreground: oklch(0.21 0.006 265);
+  --secondary: oklch(0.27 0.008 265);
+  --secondary-foreground: var(--foreground);
+  --muted: oklch(0.27 0.008 265);
+  --muted-foreground: oklch(0.71 0.012 257);
+  --accent: oklch(0.27 0.008 265);
+  --accent-foreground: var(--foreground);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.55 0.012 257);
+
+  --success: oklch(0.74 0.14 150);
+  --warning: oklch(0.74 0.14 70);
+  --info: oklch(0.74 0.14 250);
+  --destructive: oklch(0.74 0.14 27);
+
+  /* The bar stays the club's navy. Links lighten it, so they read on a dark page. */
+  --link: oklch(0.8 0.08 279.6);
+}
