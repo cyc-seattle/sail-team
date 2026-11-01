@@ -4,12 +4,16 @@ pnpm = "10"
 lefthook = "2"
 
 [tasks.install]
-description = "Install dependencies and git hooks"
-run = ["pnpm install", "lefthook install"]
+description = "Install dependencies, git hooks, and the Chromium the story tests run in"
+run = ["pnpm install", "lefthook install", "pnpm exec playwright install ${CI:+--with-deps} chromium"]
 
 [tasks.dev]
 description = "Serve the app locally with Vite"
 run = "pnpm exec vite"
+
+[tasks.storybook]
+description = "Serve Storybook, the catalog of every component, locally"
+run = "pnpm exec storybook dev -p 6006"
 
 [tasks.build]
 description = "Build the app into dist/"

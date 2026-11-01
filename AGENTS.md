@@ -19,6 +19,7 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
 - `mise run ci`: `check`, then `test`
 - `mise run check`: build, typecheck, Prettier check, ESLint
 - `mise run dev`: serve the app locally
+- `mise run storybook`: serve Storybook, the catalog of every component
 - `mise run format`: fix formatting and lint
 - `mise run test`: run the tests with Vitest
 - `mise run build`: build into `dist/`
@@ -28,12 +29,22 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
 - `src/routes/` holds TanStack Router's file routes. A file's path is its URL: `src/routes/plans/index.tsx` is `/plans`.
   The router plugin regenerates `src/routeTree.gen.ts` on every build and dev run. Commit it, and never edit it.
 - `src/router.ts` makes the router. Tests make their own with a memory history.
-- `test/` holds the tests, `*.test.ts` or `*.test.tsx`.
+- `src/components/ui/` holds shadcn's components on Base UI, `src/components/` the club's own, each with a story beside
+  it. `src/styles/tokens.css` holds the design tokens. Read [docs/design.md](docs/design.md) before changing any of
+  them, or use the [`design`](.agents/skills/design/SKILL.md) skill.
+- `test/` holds the unit tests, `*.test.ts` or `*.test.tsx`. `mise run test` also runs every story as a test in
+  Chromium, with axe (docs/design.md).
+
+Claude Code reads skills only from `.claude/skills`, so link them there once:
+`mkdir -p .claude && ln -s ../.agents/skills .claude/skills`.
+
+Playwright downloads a Chromium that runs on most Linux, macOS, and Windows machines. Where it can't, such as on NixOS,
+point `PLAYWRIGHT_BROWSERS_PATH` at a matching set of browsers in a git-ignored `mise.local.toml`.
 
 ## Code style
 
 TypeScript with ESLint and Prettier from `@cyc-seattle/ts-config`. ESM: relative import paths carry the `.ts` or `.tsx`
-extension. PR titles are conventional commits. Never push to `main`.
+extension. Imports through `@/`, which is `src/`, leave it off, as shadcn writes them. PR titles are conventional commits. Never push to `main`.
 
 Write for a club staffer: page text in plain words a volunteer would say.
 
