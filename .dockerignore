@@ -1,0 +1,9 @@
+node_modules
+dist
+.storybook
+storybook-static
+test
+features
+.features-gen
+*.log
+mise.local.toml

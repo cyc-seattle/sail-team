@@ -13,3 +13,49 @@ permissions:
 jobs:
   ci:
     uses: cyc-seattle/.github/.github/workflows/ci.yml@v2.5.2
+  # Every commit builds its own image, so every PR deploys to dev, then runs the journeys there.
+  dev:
+    needs: ci
+    # A fork's PR gets no OIDC token, so it can't deploy.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    uses: cyc-seattle/.github/.github/workflows/deploy.yml@v2.5.2
+    # actions: read lets a branch's deploy wait for main's, so it can't cancel it (cyc-seattle/platform#69).
+    permissions:
+      id-token: write
+      contents: read
+      actions: read
+    with:
+      environment: dev
+      task: deploy
+      integration: true
+  # A cancelled dev deploy skips prod, so fail main's run where someone will see it.
+  dev-cancelled:
+    needs: dev
+    if: always() && github.event_name == 'push' && needs.dev.result == 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "::error::The dev deploy was cancelled, so prod was skipped. Rerun this workflow."
+          exit 1
+  # Runs merged code with prod credentials before anyone approves, which is safe only because main requires a PR.
+  prod-preview:
+    needs: dev
+    if: github.event_name == 'push'
+    uses: cyc-seattle/.github/.github/workflows/deploy.yml@v2.5.2
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      environment: prod-preview
+      task: preview
+  # Skipped when the preview shows no changes, so a no-op deploy never asks for approval.
+  prod:
+    needs: prod-preview
+    if: github.event_name == 'push' && needs.prod-preview.outputs.changes == 'true'
+    uses: cyc-seattle/.github/.github/workflows/deploy.yml@v2.5.2
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      environment: prod
+      task: deploy

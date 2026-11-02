@@ -50,7 +50,15 @@ export default defineConfig({
   resolve: { alias: { "@": new URL("./src", import.meta.url).pathname } },
   // Found up front, so Vite doesn't find them mid-run and reload the story tests.
   optimizeDeps: {
-    include: ["@base-ui/react/**", "class-variance-authority", "cn", "lucide-react", "sonner", "storybook/test"],
+    include: [
+      "@base-ui/react/**",
+      "@tanstack/react-router",
+      "class-variance-authority",
+      "cn",
+      "lucide-react",
+      "sonner",
+      "storybook/test",
+    ],
   },
   test: {
     projects: [

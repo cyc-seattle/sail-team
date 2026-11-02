@@ -44,3 +44,26 @@ export function parseRedirectAt(stored: string | null): number | null {
   const at = Number(stored);
   return Number.isFinite(at) ? at : null;
 }
+
+/**
+ * Where sign-in sends the browser back to. Directus allows only the exact addresses on its redirect list, so every
+ * page comes back to the app's one landing page, with the page itself in `next`.
+ */
+export function returnUrl(origin: string, landing: string, page: { pathname: string; search: string; hash: string }) {
+  const here = page.pathname + page.search + page.hash;
+  return here === landing ? `${origin}${landing}` : `${origin}${landing}?next=${encodeURIComponent(here)}`;
+}
+
+/**
+ * The page to move on to after sign-in, from `?next=`, if it's on this site, and `null` otherwise, so `next` can never
+ * send anyone elsewhere. The browser's own URL parser decides, so tricks like `//host`, `/\host`, or a tab inside
+ * `//` resolve the way the browser would resolve them, to another origin.
+ */
+export function nextPath(search: string, origin: string): string | null {
+  const next = new URLSearchParams(search).get("next");
+  if (!next?.startsWith("/")) {
+    return null;
+  }
+  const url = new URL(next, origin);
+  return url.origin === origin ? url.pathname + url.search + url.hash : null;
+}

@@ -2,10 +2,28 @@
 node = "22"
 pnpm = "10"
 lefthook = "2"
+pulumi = "3.272.0"
+# For the GKE auth plugin Pulumi's Kubernetes provider runs. Needs a system Python on macOS.
+gcloud = "latest"
+
+[env]
+# Actions' auth step sets this, so keep it when set. Otherwise it's the main checkout's .gcloud/, even
+# from a worktree, so every worktree shares one login.
+GOOGLE_APPLICATION_CREDENTIALS = "{{ get_env(name='GOOGLE_APPLICATION_CREDENTIALS', default=exec(command='dirname \"$(git rev-parse --path-format=absolute --git-common-dir)\"') ~ '/.gcloud/application_default_credentials.json') }}"
+GCP_PROJECT = "cyc-admin-scripts"
+CLOUDSDK_CORE_PROJECT = "{{ env.GCP_PROJECT }}"
+PULUMI_STACK = "{{ get_env(name='PULUMI_STACK', default='prod') }}"
+# Each stack's state lives in its own environment's bucket, from platform's bootstrap stack.
+PULUMI_BACKEND_URL = "gs://{{ env.GCP_PROJECT }}-pulumi-{{ env.PULUMI_STACK }}"
 
 [tasks.install]
-description = "Install dependencies, git hooks, and the Chromium the story tests run in"
-run = ["pnpm install", "lefthook install", "pnpm exec playwright install ${CI:+--with-deps} chromium"]
+description = "Install dependencies, git hooks, the Chromium the story tests run in, and the GKE auth plugin"
+run = [
+  "pnpm install",
+  "lefthook install",
+  "pnpm exec playwright install ${CI:+--with-deps} chromium",
+  "gcloud components install gke-gcloud-auth-plugin --quiet",
+]
 
 [tasks.dev]
 description = "Serve the app locally with Vite"
@@ -32,6 +50,15 @@ run = ["pnpm exec tsc -p tsconfig.json", "pnpm exec prettier --check .", "pnpm e
 [tasks.test]
 description = "Run unit tests"
 run = "pnpm exec vitest run"
+
+# The org's deploy.yml calls preview and deploy with PULUMI_STACK set. Locally, set it: it defaults to prod.
+[tasks.preview]
+description = "Show the diff `mise run deploy` would apply to $PULUMI_STACK"
+run = "./scripts/stack preview"
+
+[tasks.deploy]
+description = "Apply $PULUMI_STACK"
+run = "./scripts/stack up --yes"
 
 # Needs the dev deploy, so it isn't part of ci.
 [tasks.integration]
