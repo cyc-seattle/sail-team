@@ -1,6 +1,12 @@
 import { makeClient, type Client } from "./client.ts";
 import { directusUrlFor } from "./session.ts";
 
+/**
+ * The page sign-in returns to, which must be on Directus's redirect list (platform's backend stack). It becomes `/`
+ * when the app takes over the whole domain from the portal.
+ */
+export const landing = "/plans";
+
 let app: { client: Client; url: string } | undefined;
 
 /** The app's own Directus, beside whatever hostname serves it. Made on first use, so tests can load routes. */

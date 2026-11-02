@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { appDirectus } from "./app.ts";
+import { appDirectus, landing } from "./app.ts";
+import { returnUrl } from "./session.ts";
 import { signIn, type SignIn } from "./sign-in.ts";
 
 export const sessionQuery = {
@@ -8,7 +9,7 @@ export const sessionQuery = {
     signIn({
       client: appDirectus().client,
       directusUrl: appDirectus().url,
-      page: window.location.href,
+      page: returnUrl(window.location.origin, landing, window.location),
       storage: sessionStorage,
       navigate: (url) => window.location.assign(url),
       now: Date.now,
