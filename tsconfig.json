@@ -12,5 +12,5 @@
     "verbatimModuleSyntax": true,
     "paths": { "@/*": ["./src/*"] }
   },
-  "include": ["src", "test", ".storybook", "vite.config.ts"]
+  "include": ["src", "test", ".storybook", "vite.config.ts", "playwright.config.ts"]
 }

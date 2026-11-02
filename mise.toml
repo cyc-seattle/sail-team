@@ -33,6 +33,11 @@ run = ["pnpm exec tsc -p tsconfig.json", "pnpm exec prettier --check .", "pnpm e
 description = "Run unit tests"
 run = "pnpm exec vitest run"
 
+# Needs the dev deploy, so it isn't part of ci.
+[tasks.integration]
+description = "Run the sign-in journeys in a browser against dev"
+run = ["pnpm exec bddgen", "pnpm exec playwright test --pass-with-no-tests"]
+
 [tasks.ci]
 description = "Run all checks and tests"
 depends = ["check", "test"]

@@ -23,6 +23,7 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
 - `mise run format`: fix formatting and lint
 - `mise run test`: run the tests with Vitest
 - `mise run build`: build into `dist/`
+- `mise run integration`: run the journeys in `features/` in a browser against dev. It isn't part of `ci`.
 
 ## Layout
 
@@ -38,6 +39,9 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   `access.ts` reads `/permissions/me` to decide what to show; Directus still checks every request.
 - `src/mocks/` answers Directus's requests with made-up people and permissions, in `mise run dev` and in tests. Never
   put real club data there.
+- `features/` holds the journeys in Gherkin, with their steps in `test/features/`. Each is living documentation of how
+  the app behaves for a club member, so write it in their words. A scenario tagged `@fixme` is agreed but not built
+  yet: a features PR adds it, and the PR that builds it removes the tag.
 - `test/` holds the unit tests, `*.test.ts` or `*.test.tsx`. `mise run test` also runs every story as a test in
   Chromium, with axe (docs/design.md).
 
