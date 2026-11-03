@@ -123,3 +123,20 @@ describe("reading club plans", () => {
     expect(results.pnl).toHaveLength(2);
   });
 });
+
+describe("the club's plan as it stands now", () => {
+  it("calculates today's active versions, and knows which area each offering is in", async () => {
+    const { calculateClubNow } = await import("../src/directus/plans.ts");
+    const { output, names, areas, areaOfOffering } = await calculateClubNow({
+      organization_id: ids.org,
+      fiscal_year: 2027,
+    });
+    // Adult Programs' active version has no offerings, and still counts as part of the plan.
+    expect(areas.map((a) => names.get(a))).toEqual(["Youth Racing", "Adult Programs"]);
+    const spring = output.pnl.find((p) => p.level === "offering" && names.get(p.key) === "Beginner camp, spring")!;
+    expect(spring.revenue_cents).toBe(400_000);
+    expect(areaOfOffering.get(spring.key)).toBe(ids.youth);
+    // The draft's offering isn't in an active version, so it isn't counted.
+    expect(output.pnl.some((p) => names.get(p.key) === "Beginner camp, week 1")).toBe(false);
+  });
+});

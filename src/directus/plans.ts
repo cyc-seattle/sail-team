@@ -87,7 +87,7 @@ export const versionsQuery = (planId: string) =>
   });
 
 /** Which version is active for each area, and for the Operations Plan, in the plan's organization and year. */
-async function readActivations(plan: PlanRef) {
+async function readActivations(plan: Pick<PlanRef, "organization_id" | "fiscal_year">) {
   const rows = await readAll<{ version_id: string; sequence: number; plan_id: ActivationRow["plan"] }>(
     "plan_activations",
     { plan_id: { organization_id: { _eq: plan.organization_id }, fiscal_year: { _eq: plan.fiscal_year } } },
@@ -96,7 +96,7 @@ async function readActivations(plan: PlanRef) {
   return latestActivations(rows.map((r) => ({ version_id: r.version_id, sequence: r.sequence, plan: r.plan_id })));
 }
 
-export const activationsQuery = (plan: PlanRef) =>
+export const activationsQuery = (plan: Pick<PlanRef, "organization_id" | "fiscal_year">) =>
   queryOptions({
     queryKey: ["activations", plan.organization_id, plan.fiscal_year],
     queryFn: () => readActivations(plan),
@@ -147,7 +147,47 @@ export interface DraftResults {
  */
 export async function calculateDraft(plan: PlanRef, version: VersionSummary): Promise<DraftResults> {
   const { areas } = await readActivations(plan);
-  const ids = versionSet(plan, version, areas);
+  const operations = plan.kind === "operations" ? version.id : version.operations_version_id;
+  return calculateVersions(plan, versionSet(plan, version, areas), operations);
+}
+
+export interface ClubNowResults extends DraftResults {
+  /** Each program area with an active version. */
+  areas: string[];
+  /** The program area each offering's version is for, by the offering's key. */
+  areaOfOffering: Map<string, string>;
+}
+
+/**
+ * The club's plan as it stands now, calculated in the browser: today's active Operations Plan version and each
+ * program area's active version, as a club plan saved now would hold them.
+ */
+export async function calculateClubNow(
+  plan: Pick<PlanRef, "organization_id" | "fiscal_year">,
+): Promise<ClubNowResults> {
+  const { areas, operations } = await readActivations(plan);
+  const ids = [...new Set([operations, ...areas.map((a) => a.version_id)].filter((id): id is string => id !== null))];
+  const results = await calculateVersions(plan, ids, operations);
+  const areaOfVersion = new Map(areas.map((a) => [a.version_id, a.program_area_id]));
+  const areaOfOffering = new Map(
+    results.offerings.flatMap((o) => {
+      const area = areaOfVersion.get(o.version_id);
+      return area ? [[o.key, area] as const] : [];
+    }),
+  );
+  return { output: results.output, names: results.names, areas: areas.map((a) => a.program_area_id), areaOfOffering };
+}
+
+/**
+ * Calculates the versions `ids` with the planning engine this app bundles, from the same rows platform reads when a
+ * version is saved: the catalog, and every one of those versions' rows. `operations` is the set's Operations Plan
+ * version, whose rates the engine uses.
+ */
+async function calculateVersions(
+  plan: Pick<PlanRef, "organization_id" | "fiscal_year">,
+  ids: string[],
+  operations: string | null,
+): Promise<DraftResults & { offerings: { key: string; version_id: string }[] }> {
   const byIds = { version_id: { _in: ids } };
   const [catalog, versioned, versions, organizations, costAccounts] = await Promise.all([
     Promise.all(catalogTables.map(async (t) => [t, engineRows(t, await readAll(t))] as const)),
@@ -167,7 +207,6 @@ export async function calculateDraft(plan: PlanRef, version: VersionSummary): Pr
     ["id", "kind", "program_area_id"],
   );
   const tables = Object.fromEntries([...catalog, ...versioned]);
-  const operations = plan.kind === "operations" ? version.id : version.operations_version_id;
   const rates = (tables["plan_rates"] as { version_id: string; rib_resource_kind_id: string | null }[]).find(
     (r) => r.version_id === operations,
   );
@@ -189,8 +228,19 @@ export async function calculateDraft(plan: PlanRef, version: VersionSummary): Pr
       for (const row of rows) names.set(row["key"] as string, row["name"] as string);
     }
   }
-  return { output: computePlan(data), names };
+  const offerings = (tables["plan_offerings"] as { key: string; version_id: string }[]).map((o) => ({
+    key: o.key,
+    version_id: o.version_id,
+  }));
+  return { output: computePlan(data), names, offerings };
 }
+
+/** The club's plan as it stands now, for a club plan's organization and year. */
+export const clubNowQuery = (plan: Pick<PlanRef, "organization_id" | "fiscal_year">) =>
+  queryOptions({
+    queryKey: ["club-now", plan.organization_id, plan.fiscal_year],
+    queryFn: () => calculateClubNow(plan),
+  });
 
 export const draftQuery = (plan: PlanRef, version: VersionSummary) =>
   queryOptions({

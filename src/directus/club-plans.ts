@@ -49,6 +49,7 @@ export interface ClubMember {
   version_id: string;
   plan_name: string;
   kind: "program_area" | "operations";
+  program_area_id: string | null;
   area_name: string | null;
 }
 
@@ -74,13 +75,19 @@ export const clubPlanQuery = (setId: string) =>
         readAll<{
           id: string;
           version_id: string;
-          plan_id: { id: string; name: string; kind: ClubMember["kind"]; program_area_id: { name: string } | null };
+          plan_id: {
+            id: string;
+            name: string;
+            kind: ClubMember["kind"];
+            program_area_id: { id: string; name: string } | null;
+          };
         }>("version_set_members", bySet, [
           "id",
           "version_id",
           "plan_id.id",
           "plan_id.name",
           "plan_id.kind",
+          "plan_id.program_area_id.id",
           "plan_id.program_area_id.name",
         ]),
         readAll<SavedPnlRow & { version_set_member_id: string | null }>("plan_result_pnl", bySet, [
@@ -130,6 +137,7 @@ export const clubPlanQuery = (setId: string) =>
           version_id: m.version_id,
           plan_name: m.plan_id.name,
           kind: m.plan_id.kind,
+          program_area_id: m.plan_id.program_area_id?.id ?? null,
           area_name: m.plan_id.program_area_id?.name ?? null,
         })),
         pnl,
