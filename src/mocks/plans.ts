@@ -125,6 +125,36 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       note: null,
     },
   ],
+  // The club is closed on the Fourth, and the draft's camp has a practice that day.
+  plan_closed_dates: [
+    {
+      id: "00000000-0000-4000-8000-000000000401",
+      version_id: ids.opsSaved,
+      key: "00000000-0000-4000-8000-000000000411",
+      date: "2027-07-05",
+      name: "the Fourth of July, observed",
+    },
+  ],
+  plan_activities: [
+    {
+      id: "00000000-0000-4000-8000-000000000501",
+      version_id: ids.youthDraft,
+      key: "00000000-0000-4000-8000-000000000511",
+      offering_id: "00000000-0000-4000-8000-000000000301",
+      trip_id: null,
+      date: "2027-07-05",
+      start_time: "09:00:00",
+      end_time: "12:00:00",
+      on_water_minutes: null,
+      setup_minutes: null,
+      putaway_minutes: null,
+      kind: "practice",
+      uses_boats: true,
+      fixed_coaches: null,
+      fixed_ribs: null,
+      fixed_boats: null,
+    },
+  ],
   plan_results: [{ version_id: ids.youthSaved2, calculated_at: "2027-03-03T18:00:00Z" }],
   plan_result_pnl: [
     {
