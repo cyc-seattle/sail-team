@@ -26,6 +26,15 @@ export const ids = {
 };
 
 /** Each table's rows, as Directus would return them, with relations expanded where the app asks for them. */
+const clubPlanRow = {
+  id: ids.clubPlan,
+  organization_id: org,
+  fiscal_year: 2027,
+  name: "March",
+  message: "Before registration opens",
+  saved_at: "2027-03-10T18:00:00Z",
+};
+
 export const tables: Record<string, Record<string, unknown>[]> = {
   organizations: [{ id: org, name: "Example Sailing Club", fiscal_year_start_month: 1 }],
   organization_cost_accounts: [],
@@ -47,20 +56,12 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       retired: false,
     },
   ],
-  version_sets: [
-    {
-      id: ids.clubPlan,
-      organization_id: org,
-      fiscal_year: 2027,
-      name: "March",
-      message: "Before registration opens",
-      saved_at: "2027-03-10T18:00:00Z",
-    },
-  ],
+  version_sets: [clubPlanRow],
+  // version_set_id is expanded when a request asks for its fields.
   version_set_members: [
     {
       id: ids.youthMember,
-      version_set_id: ids.clubPlan,
+      version_set_id: clubPlanRow,
       version_id: ids.youthSaved1,
       plan_id: {
         id: ids.youthPlan,
@@ -71,7 +72,7 @@ export const tables: Record<string, Record<string, unknown>[]> = {
     },
     {
       id: ids.adultMember,
-      version_set_id: ids.clubPlan,
+      version_set_id: clubPlanRow,
       version_id: ids.adultSaved,
       plan_id: {
         id: ids.adultPlan,
@@ -82,7 +83,7 @@ export const tables: Record<string, Record<string, unknown>[]> = {
     },
     {
       id: ids.opsMember,
-      version_set_id: ids.clubPlan,
+      version_set_id: clubPlanRow,
       version_id: ids.opsSaved,
       plan_id: { id: ids.opsPlan, name: "Operations 2027", kind: "operations", program_area_id: null },
     },
@@ -262,9 +263,10 @@ export const tables: Record<string, Record<string, unknown>[]> = {
   ],
   plan_results: [
     { version_id: ids.youthSaved2, version_set_id: null, calculated_at: "2027-03-03T18:00:00Z" },
+    { version_id: ids.youthSaved1, version_set_id: null, calculated_at: "2027-01-12T18:00:00Z" },
     {
       version_id: null,
-      version_set_id: ids.clubPlan,
+      version_set_id: clubPlanRow,
       calculated_at: "2027-03-10T18:00:00Z",
       operating_net_cents: 500_000,
       fundraising_net_cents: 0,
@@ -275,7 +277,7 @@ export const tables: Record<string, Record<string, unknown>[]> = {
   plan_result_pnl: [
     {
       version_id: null,
-      version_set_id: ids.clubPlan,
+      version_set_id: clubPlanRow,
       version_set_member_id: ids.youthMember,
       level: "offering",
       subject_key: "00000000-0000-4000-8000-000000000311",
@@ -320,7 +322,7 @@ export const tables: Record<string, Record<string, unknown>[]> = {
   plan_result_lines: [
     {
       version_id: null,
-      version_set_id: ids.clubPlan,
+      version_set_id: clubPlanRow,
       version_set_member_id: ids.opsMember,
       line: "pool:office",
       line_name: "Office rent",

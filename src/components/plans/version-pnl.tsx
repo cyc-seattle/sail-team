@@ -38,7 +38,7 @@ export function VersionPnl({ source, rows, warnings }: VersionPnlProps) {
       <Alert>
         <AlertDescription>
           {source.kind === "saved"
-            ? `These are the numbers it was saved with, on ${formatDate(source.savedAt)}. They never change.`
+            ? `These are the numbers it was saved with, on ${formatDate(source.savedAt)}, as the club's plan stood then. They never change.`
             : "A draft's numbers are calculated now, by this app, and change as planners change the plan."}
         </AlertDescription>
       </Alert>
