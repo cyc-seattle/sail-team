@@ -174,8 +174,33 @@ export class Club {
   }
 
   /**
-   * Deletes everything the scenario made, newest first. Dev's `backend:savedVersionsDeletable` lets its first admin
-   * delete a saved version, with its rows, activations, and results; prod refuses it.
+   * Saves the club's plan for the year as dev's admin, the way a Plan Writer does: a new `version_sets` row. The database
+   * fills in its members, the active versions, and platform works out its results, which this waits for. Returns its id.
+   */
+  async saveClubPlan(name: string): Promise<string> {
+    const set = (
+      await this.create("version_sets", {
+        organization_id: this.organizationId,
+        fiscal_year: PLAN_YEAR,
+        name,
+      })
+    )["id"] as string;
+    await expect
+      .poll(
+        async () => (await asAdmin("GET", `/items/plan_results?filter[version_set_id][_eq]=${set}&fields=id`)).length,
+        {
+          timeout: 60_000,
+          intervals: [1_000],
+        },
+      )
+      .toBe(1);
+    return set;
+  }
+
+  /**
+   * Deletes everything the scenario made, newest first, so a club plan goes before the versions it holds. Dev's
+   * `backend:savedVersionsDeletable` lets its first admin delete a saved version or club plan, with its rows,
+   * activations, members, and results; prod refuses it.
    */
   async cleanUp(): Promise<void> {
     for (const { collection, id } of this.made.reverse()) {

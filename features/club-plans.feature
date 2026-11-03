@@ -25,7 +25,6 @@ Feature: Seeing the club's plan
 
   Rule: A club plan shows each program area's P&L as it was when the club plan was saved
 
-    @fixme
     Scenario: An area's P&L in the club plan
       Given I'm a planner who can read plans
       And a saved club plan whose Youth Racing offering took in $10,000 and spent $6,000
@@ -36,7 +35,6 @@ Feature: Seeing the club's plan
 
   Rule: A club plan says when the club has moved on since it was saved
 
-    @fixme
     Scenario: An area made another version active after the club plan
       Given I'm a planner who can read plans
       And a saved club plan, then a newer Youth Racing version made active
@@ -47,7 +45,6 @@ Feature: Seeing the club's plan
 
   Rule: A saved version shows its P&L in the club plan that holds it
 
-    @fixme
     Scenario: A saved area version, as the club plan holds it
       Given I'm a planner who can read plans
       And a saved Youth Racing version that the newest club plan holds
@@ -58,7 +55,6 @@ Feature: Seeing the club's plan
 
   Rule: Only someone who can read plans can see club plans
 
-    @fixme
     Scenario: A coach who can't read plans doesn't see club plans
       Given I'm a coach who can't read plans
       And a saved club plan for 2027

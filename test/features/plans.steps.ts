@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import { createBdd } from "playwright-bdd";
 import { PLAN_YEAR } from "./club";
-import { app, test } from "./fixtures";
+import { app, opened, test } from "./fixtures";
 
 // Steps for features/plans.feature, against dev, with a made-up club's plans (./club.ts).
 
@@ -10,9 +10,6 @@ const { Given, When, Then } = createBdd(test);
 // Ten weekdays of camp, from the Monday after the Fourth.
 const CAMP_DAYS = ["05", "06", "07", "08", "09", "12", "13", "14", "15", "16"].map((d) => `${PLAN_YEAR}-07-${d}`);
 const OFFERING = "Beginner camp, week 1";
-
-/** The version a scenario opens. */
-let opened: string | undefined;
 
 Given("the club has a 2027 plan for Youth Racing and a 2027 Operations Plan", async ({ club }) => {
   await club.plans();
@@ -33,8 +30,8 @@ Given("Youth Racing's 2027 plan has a draft and two saved versions, the older on
 
 Given("a draft of Youth Racing's plan with one offering of 10 sailors at $1,000 each", async ({ club }) => {
   await club.plans();
-  opened = await club.draft(club.areaPlan!);
-  await club.offering(opened, OFFERING, 10, 100_000);
+  opened.version = await club.draft(club.areaPlan!);
+  await club.offering(opened.version, OFFERING, 10, 100_000);
 });
 
 Given(
@@ -42,10 +39,10 @@ Given(
   async ({ club }) => {
     await club.plans();
     await club.save(club.operationsVersion!, "Operations, first pass");
-    opened = await club.draft(club.areaPlan!);
-    const offering = await club.offering(opened, OFFERING, 10, 100_000, 600_000);
-    await club.practices(opened, offering, CAMP_DAYS);
-    await club.save(opened, "Ten days of camp");
+    opened.version = await club.draft(club.areaPlan!);
+    const offering = await club.offering(opened.version, OFFERING, 10, 100_000, 600_000);
+    await club.practices(opened.version, offering, CAMP_DAYS);
+    await club.save(opened.version, "Ten days of camp");
   },
 );
 
@@ -53,9 +50,9 @@ Given("a draft with a practice on a day the club is closed", async ({ club }) =>
   await club.plans();
   await club.closed(CAMP_DAYS[0]!, "the Fourth of July, observed");
   await club.save(club.operationsVersion!, "Operations, with the club's closed days");
-  opened = await club.draft(club.areaPlan!, club.operationsVersion);
-  const offering = await club.offering(opened, OFFERING, 10, 100_000);
-  await club.practices(opened, offering, [CAMP_DAYS[0]!]);
+  opened.version = await club.draft(club.areaPlan!, club.operationsVersion);
+  const offering = await club.offering(opened.version, OFFERING, 10, 100_000);
+  await club.practices(opened.version, offering, [CAMP_DAYS[0]!]);
 });
 
 When("I open Youth Racing's 2027 plan", async ({ page, club }) => {
@@ -63,7 +60,7 @@ When("I open Youth Racing's 2027 plan", async ({ page, club }) => {
 });
 
 When(/^I open (?:the draft|that version|that saved version)$/, async ({ page, club }) => {
-  await page.goto(`${await app()}/plans/${club.areaPlan}/${opened}`);
+  await page.goto(`${await app()}/plans/${club.areaPlan}/${opened.version}`);
 });
 
 Then("I see both plans under 2027", async ({ page, club }) => {
