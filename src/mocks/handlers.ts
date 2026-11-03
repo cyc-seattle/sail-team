@@ -20,11 +20,14 @@ type Row = Record<string, unknown>;
 /** Whether a row matches a Directus filter's top-level `_eq` and `_in` conditions. Nested ones match every row. */
 function matches(row: Row, filter: Record<string, Record<string, unknown>>): boolean {
   return Object.entries(filter).every(([field, condition]) => {
+    // A related row is matched by its id, as Directus matches a foreign key.
+    const raw = row[field];
+    const value = raw !== null && typeof raw === "object" && "id" in raw ? (raw as Row)["id"] : raw;
     if ("_eq" in condition) {
-      return row[field] === condition["_eq"];
+      return value === condition["_eq"];
     }
     if ("_in" in condition) {
-      return (condition["_in"] as unknown[]).includes(row[field]);
+      return (condition["_in"] as unknown[]).includes(value);
     }
     return true;
   });

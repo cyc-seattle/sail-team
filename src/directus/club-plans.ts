@@ -157,3 +157,48 @@ export const clubPlanQuery = (setId: string) =>
       };
     },
   });
+
+export interface VersionInClubPlan {
+  set: ClubPlanSummary;
+  pnl: SavedPnlRow[];
+}
+
+/**
+ * A saved version's P&L in the newest club plan that holds it, which can differ from its own: the club plan counts the
+ * other areas' versions it holds, not the ones active when this version was saved. Null when no club plan holds it.
+ */
+export const versionInClubPlanQuery = (versionId: string) =>
+  queryOptions({
+    queryKey: ["versions", versionId, "club-plan"],
+    staleTime: 5 * 60_000,
+    queryFn: async (): Promise<VersionInClubPlan | null> => {
+      const members = await readAll<{ id: string; version_set_id: ClubPlanSummary }>(
+        "version_set_members",
+        { version_id: { _eq: versionId } },
+        ["id", ...setFields.map((f) => `version_set_id.${f}`)],
+      );
+      const newest = members.sort((a, b) =>
+        (b.version_set_id.saved_at ?? "").localeCompare(a.version_set_id.saved_at ?? ""),
+      )[0];
+      if (!newest) {
+        return null;
+      }
+      const pnl = await readAll<SavedPnlRow>(
+        "plan_result_pnl",
+        { version_set_id: { _eq: newest.version_set_id.id }, version_set_member_id: { _eq: newest.id } },
+        [
+          "level",
+          "subject_key",
+          "name",
+          "revenue_cents",
+          "expense_cents",
+          "net_cents",
+          "mtdc_cents",
+          "enrollment",
+          "days",
+          "sailor_days",
+        ],
+      );
+      return { set: newest.version_set_id, pnl };
+    },
+  });

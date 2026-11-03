@@ -49,7 +49,7 @@ describe("reading plans from Directus", () => {
   });
 
   it("has no results for a version that has none yet", async () => {
-    expect(await run(savedResultsQuery(ids.youthSaved1))).toBeNull();
+    expect(await run(savedResultsQuery(ids.adultSaved))).toBeNull();
   });
 
   it("calculates a draft with the planning engine, from the draft's rows", async () => {
@@ -138,5 +138,21 @@ describe("the club's plan as it stands now", () => {
     expect(areaOfOffering.get(spring.key)).toBe(ids.youth);
     // The draft's offering isn't in an active version, so it isn't counted.
     expect(output.pnl.some((p) => names.get(p.key) === "Beginner camp, week 1")).toBe(false);
+  });
+});
+
+describe("a saved version in a club plan", () => {
+  it("finds the club plan that holds it, with its offerings as the club plan counts them", async () => {
+    const { versionInClubPlanQuery } = await import("../src/directus/club-plans.ts");
+    const held = await run<{ set: { name: string }; pnl: { name: string }[] } | null>(
+      versionInClubPlanQuery(ids.youthSaved1),
+    );
+    expect(held?.set.name).toBe("March");
+    expect(held?.pnl.map((p) => p.name)).toEqual(["Beginner camp, week 1"]);
+  });
+
+  it("is null for a version no club plan holds", async () => {
+    const { versionInClubPlanQuery } = await import("../src/directus/club-plans.ts");
+    expect(await run(versionInClubPlanQuery(ids.youthSaved2))).toBeNull();
   });
 });
