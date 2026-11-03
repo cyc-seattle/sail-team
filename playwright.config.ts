@@ -4,7 +4,7 @@ import { defineBddConfig } from "playwright-bdd";
 // The journeys, in a browser against dev. A scenario tagged @fixme is written but not built yet.
 const testDir = defineBddConfig({
   features: "features/*.feature",
-  steps: "test/features/*.steps.ts",
+  steps: "test/features/*.ts",
   outputDir: ".features-gen",
   missingSteps: "fail-on-run",
 });
