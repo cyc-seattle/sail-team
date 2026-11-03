@@ -38,6 +38,11 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   `app.ts` is the app's own, at `directus.<the app's hostname>`. `sign-in.ts` sends a visitor with no session to
   Directus's sign-in, and stops instead of looping if they come straight back without one (`session.ts`).
   `access.ts` reads `/permissions/me` to decide what to show; Directus still checks every request.
+- `src/directus/plans.ts` reads plans, their versions, and which version is active. A saved version shows the results
+  platform worked out when it was saved (`plan_result_*`, cyc-seattle/platform#91), and the app never recalculates
+  them. A draft is calculated in the browser by the planning engine this app bundles, from the same rows platform reads
+  at save time (`src/model/plan-data.ts`): the catalog, the Operations Plan version, and each area's active version,
+  with the draft in place of its own area's.
 - `src/mocks/` answers Directus's requests with made-up people and permissions, in `mise run dev` and in tests. Never
   put real club data there.
 - `features/` holds the journeys in Gherkin, with their steps in `test/features/`. Each is living documentation of how
