@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/plans/page-header";
 import { PlanList } from "@/components/plans/plan-list";
 import { NoAccess } from "@/components/shell/no-access";
 import { canRead } from "@/directus/access";
+import { clubPlansQuery } from "@/directus/club-plans";
 import { plansQuery } from "@/directus/plans";
 import { useSession } from "@/directus/use-session";
 
@@ -25,6 +26,7 @@ function Plans() {
 }
 
 function AllPlans() {
-  const { data } = useSuspenseQuery(plansQuery);
-  return <PlanList plans={data} />;
+  const { data: plans } = useSuspenseQuery(plansQuery);
+  const { data: clubPlans } = useSuspenseQuery(clubPlansQuery);
+  return <PlanList plans={plans} clubPlans={clubPlans} />;
 }

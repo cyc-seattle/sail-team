@@ -15,7 +15,7 @@ const plan = (id: string, year: number, name: string, area: string | null): Plan
 
 const meta = {
   component: PlanList,
-  decorators: [withRouter("/plans", ["/plans/$planId"])],
+  decorators: [withRouter("/plans", ["/plans/$planId", "/plans/club/$setId"])],
   args: {
     plans: [
       plan("a", 2027, "Youth Racing 2027", "Youth Racing"),

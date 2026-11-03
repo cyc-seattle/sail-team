@@ -4,6 +4,7 @@ const org = "00000000-0000-4000-8000-0000000000a1";
 const youth = "00000000-0000-4000-8000-0000000000b1";
 const adult = "00000000-0000-4000-8000-0000000000b2";
 const tuition = "00000000-0000-4000-8000-0000000000c1";
+const office = "00000000-0000-4000-8000-0000000000c2";
 const camp = "00000000-0000-4000-8000-0000000000d1";
 
 export const ids = {
@@ -13,6 +14,10 @@ export const ids = {
   adultPlan: "00000000-0000-4000-8000-000000000103",
   adultSaved: "00000000-0000-4000-8000-000000000205",
   opsOld: "00000000-0000-4000-8000-000000000206",
+  clubPlan: "00000000-0000-4000-8000-000000000601",
+  youthMember: "00000000-0000-4000-8000-000000000611",
+  adultMember: "00000000-0000-4000-8000-000000000612",
+  opsMember: "00000000-0000-4000-8000-000000000613",
   opsPlan: "00000000-0000-4000-8000-000000000102",
   youthDraft: "00000000-0000-4000-8000-000000000201",
   youthSaved1: "00000000-0000-4000-8000-000000000202",
@@ -40,6 +45,46 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       parent_id: null,
       contra_account_id: null,
       retired: false,
+    },
+  ],
+  version_sets: [
+    {
+      id: ids.clubPlan,
+      organization_id: org,
+      fiscal_year: 2027,
+      name: "March",
+      message: "Before registration opens",
+      saved_at: "2027-03-10T18:00:00Z",
+    },
+  ],
+  version_set_members: [
+    {
+      id: ids.youthMember,
+      version_set_id: ids.clubPlan,
+      version_id: ids.youthSaved1,
+      plan_id: {
+        id: ids.youthPlan,
+        name: "Youth Racing 2027",
+        kind: "program_area",
+        program_area_id: { id: youth, name: "Youth Racing" },
+      },
+    },
+    {
+      id: ids.adultMember,
+      version_set_id: ids.clubPlan,
+      version_id: ids.adultSaved,
+      plan_id: {
+        id: ids.adultPlan,
+        name: "Adult Programs 2027",
+        kind: "program_area",
+        program_area_id: { id: adult, name: "Adult Programs" },
+      },
+    },
+    {
+      id: ids.opsMember,
+      version_set_id: ids.clubPlan,
+      version_id: ids.opsSaved,
+      plan_id: { id: ids.opsPlan, name: "Operations 2027", kind: "operations", program_area_id: null },
     },
   ],
   products: [{ id: camp, name: "Beginner camp", kind: "program", revenue_account_id: null, program_area_id: youth }],
@@ -189,10 +234,23 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       fixed_boats: null,
     },
   ],
-  plan_results: [{ version_id: ids.youthSaved2, calculated_at: "2027-03-03T18:00:00Z" }],
+  plan_results: [
+    { version_id: ids.youthSaved2, version_set_id: null, calculated_at: "2027-03-03T18:00:00Z" },
+    {
+      version_id: null,
+      version_set_id: ids.clubPlan,
+      calculated_at: "2027-03-10T18:00:00Z",
+      operating_net_cents: 500_000,
+      fundraising_net_cents: 0,
+      capital_cents: 0,
+      total_cents: 500_000,
+    },
+  ],
   plan_result_pnl: [
     {
-      version_id: ids.youthSaved2,
+      version_id: null,
+      version_set_id: ids.clubPlan,
+      version_set_member_id: ids.youthMember,
       level: "offering",
       subject_key: "00000000-0000-4000-8000-000000000311",
       name: "Beginner camp, week 1",
@@ -206,6 +264,21 @@ export const tables: Record<string, Record<string, unknown>[]> = {
     },
     {
       version_id: ids.youthSaved2,
+      version_set_id: null,
+      level: "offering",
+      subject_key: "00000000-0000-4000-8000-000000000311",
+      name: "Beginner camp, week 1",
+      revenue_cents: 1_000_000,
+      expense_cents: 600_000,
+      net_cents: 400_000,
+      mtdc_cents: 500_000,
+      enrollment: 10,
+      days: 10,
+      sailor_days: 100,
+    },
+    {
+      version_id: ids.youthSaved2,
+      version_set_id: null,
       level: "program_area",
       subject_key: youth,
       name: "Youth Racing",
@@ -216,6 +289,18 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       enrollment: 10,
       days: 10,
       sailor_days: 100,
+    },
+  ],
+  plan_result_lines: [
+    {
+      version_id: null,
+      version_set_id: ids.clubPlan,
+      version_set_member_id: ids.opsMember,
+      line: "pool:office",
+      line_name: "Office rent",
+      cost_center_name: "The club",
+      amount_cents: 200_000,
+      account_id: { id: office, type: "expense" },
     },
   ],
   plan_result_warnings: [
