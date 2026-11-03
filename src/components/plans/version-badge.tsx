@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
+import type { VersionState } from "@/model/plan-list";
 
-export type VersionState = "draft" | "saved" | "active";
+export type { VersionState };
 
 const labels: Record<VersionState, string> = { draft: "Draft", saved: "Saved", active: "Active" };
 const variants = { draft: "secondary", saved: "outline", active: "default" } as const;
