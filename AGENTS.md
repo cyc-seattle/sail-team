@@ -45,6 +45,12 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   with the draft in place of its own area's.
 - `src/mocks/` answers Directus's requests with made-up people and permissions, in `mise run dev` and in tests. Never
   put real club data there.
+- `mise run integration` runs the journeys against dev, as your ADC login (deploy-dev in Actions), with
+  `PULUMI_STACK=dev`. Each scenario's visitor is made up for it (`test/features/visitors.ts`): a Directus user on the
+  Community role and, for a planner, a person in a group that gives Plan Reader, the way the club gives policies.
+  They sign in through Authentik's emailed link, which dev's Authentik sends to Mailpit. Everything is deleted when
+  the scenario ends, and a later run deletes what an earlier one left. The steps refuse any environment but dev, and
+  never touch prod's users.
 - `features/` holds the journeys in Gherkin, with their steps in `test/features/`. Each is living documentation of how
   the app behaves for a club member, so write it in their words. A scenario tagged `@fixme` is agreed but not built
   yet: a features PR adds it, and the PR that builds it removes the tag.
