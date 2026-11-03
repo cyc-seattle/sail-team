@@ -2,6 +2,7 @@
 
 const org = "00000000-0000-4000-8000-0000000000a1";
 const youth = "00000000-0000-4000-8000-0000000000b1";
+const adult = "00000000-0000-4000-8000-0000000000b2";
 const tuition = "00000000-0000-4000-8000-0000000000c1";
 const camp = "00000000-0000-4000-8000-0000000000d1";
 
@@ -9,6 +10,9 @@ export const ids = {
   org,
   youth,
   youthPlan: "00000000-0000-4000-8000-000000000101",
+  adultPlan: "00000000-0000-4000-8000-000000000103",
+  adultSaved: "00000000-0000-4000-8000-000000000205",
+  opsOld: "00000000-0000-4000-8000-000000000206",
   opsPlan: "00000000-0000-4000-8000-000000000102",
   youthDraft: "00000000-0000-4000-8000-000000000201",
   youthSaved1: "00000000-0000-4000-8000-000000000202",
@@ -20,7 +24,10 @@ export const ids = {
 export const tables: Record<string, Record<string, unknown>[]> = {
   organizations: [{ id: org, name: "Example Sailing Club", fiscal_year_start_month: 1 }],
   organization_cost_accounts: [],
-  program_areas: [{ id: youth, name: "Youth Racing", revenue_account_id: tuition }],
+  program_areas: [
+    { id: youth, name: "Youth Racing", revenue_account_id: tuition },
+    { id: adult, name: "Adult Programs", revenue_account_id: tuition },
+  ],
   accounts: [
     {
       id: tuition,
@@ -51,6 +58,15 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       archived: false,
     },
     {
+      id: ids.adultPlan,
+      name: "Adult Programs 2027",
+      kind: "program_area",
+      fiscal_year: 2027,
+      organization_id: org,
+      program_area_id: { id: adult, name: "Adult Programs" },
+      archived: false,
+    },
+    {
       id: ids.opsPlan,
       name: "Operations 2027",
       kind: "operations",
@@ -61,6 +77,23 @@ export const tables: Record<string, Record<string, unknown>[]> = {
     },
   ],
   plan_versions: [
+    // Adult Programs' active version was saved with an older Operations Plan version than today's.
+    {
+      id: ids.adultSaved,
+      plan_id: ids.adultPlan,
+      status: "saved",
+      message: null,
+      saved_at: "2026-12-01T18:00:00Z",
+      operations_version_id: ids.opsOld,
+    },
+    {
+      id: ids.opsOld,
+      plan_id: ids.opsPlan,
+      status: "saved",
+      message: "Last year's rates",
+      saved_at: "2026-11-20T18:00:00Z",
+      operations_version_id: null,
+    },
     {
       id: ids.youthDraft,
       plan_id: ids.youthPlan,
@@ -96,7 +129,8 @@ export const tables: Record<string, Record<string, unknown>[]> = {
   ],
   plan_activations: [
     { version_id: ids.youthSaved1, sequence: 1, plan_id: { kind: "program_area", program_area_id: youth } },
-    { version_id: ids.opsSaved, sequence: 1, plan_id: { kind: "operations", program_area_id: null } },
+    { version_id: ids.adultSaved, sequence: 1, plan_id: { kind: "program_area", program_area_id: adult } },
+    { version_id: ids.opsSaved, sequence: 2, plan_id: { kind: "operations", program_area_id: null } },
   ],
   plan_offerings: [
     {

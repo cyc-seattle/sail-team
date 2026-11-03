@@ -30,15 +30,21 @@ function matches(row: Row, filter: Record<string, Record<string, unknown>>): boo
   });
 }
 
-/** A row with only the relations `fields` expands: Directus returns a related row's id unless asked for its fields. */
+/**
+ * A row as Directus returns it for `fields`: only the fields asked for, and a related row's id unless its own fields
+ * are asked for too. With no `fields`, or `*`, every field.
+ */
 function shape(row: Row, fields: string | null): Row {
   const asked = (fields ?? "*").split(",");
+  const everything = asked.includes("*");
   return Object.fromEntries(
-    Object.entries(row).map(([field, value]) => {
-      const related = value !== null && typeof value === "object" && "id" in value;
-      const expanded = asked.some((f) => f.startsWith(`${field}.`));
-      return [field, related && !expanded ? (value as Row)["id"] : value];
-    }),
+    Object.entries(row)
+      .filter(([field]) => everything || asked.some((f) => f === field || f.startsWith(`${field}.`)))
+      .map(([field, value]) => {
+        const related = value !== null && typeof value === "object" && "id" in value;
+        const expanded = asked.some((f) => f.startsWith(`${field}.`));
+        return [field, related && !expanded ? (value as Row)["id"] : value];
+      }),
   );
 }
 

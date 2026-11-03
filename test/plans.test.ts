@@ -23,6 +23,7 @@ describe("reading plans from Directus", () => {
     const plans = await run<Awaited<ReturnType<NonNullable<typeof plansQuery.queryFn>>>>(plansQuery);
     expect(plans.map((p) => [p.name, p.area_name])).toEqual([
       ["Youth Racing 2027", "Youth Racing"],
+      ["Adult Programs 2027", "Adult Programs"],
       ["Operations 2027", null],
     ]);
   });
@@ -32,7 +33,7 @@ describe("reading plans from Directus", () => {
     const versions = await run<{ id: string }[]>(versionsQuery(ids.youthPlan));
     expect(versions.map((v) => v.id)).toEqual([ids.youthDraft, ids.youthSaved2, ids.youthSaved1]);
     const active = await run<{ areas: { version_id: string }[]; operations: string }>(activationsQuery(plan as never));
-    expect(active.areas.map((a) => a.version_id)).toEqual([ids.youthSaved1]);
+    expect(active.areas.map((a) => a.version_id)).toEqual([ids.youthSaved1, ids.adultSaved]);
     expect(active.operations).toBe(ids.opsSaved);
   });
 
@@ -71,6 +72,18 @@ describe("a draft's warnings", () => {
       versions.find((v) => v.id === ids.youthDraft)!,
     );
     expect(output.warnings).toContainEqual(expect.objectContaining({ code: "closed_date" }));
+  });
+
+  it("points out another area's active version saved with a different Operations Plan version", async () => {
+    const plan = await run<Parameters<typeof calculateDraft>[0]>(planQuery(ids.youthPlan));
+    const versions = await run<Parameters<typeof calculateDraft>[1][]>(versionsQuery(ids.youthPlan));
+    const { output } = await calculateDraft(
+      plan,
+      versions.find((v) => v.id === ids.youthDraft)!,
+    );
+    const others = output.warnings.filter((w) => w.code === "other_operations_version");
+    expect(others.map((w) => w.key)).toEqual([ids.adultSaved]);
+    expect(others[0]!.message).toMatch(/^Adult Programs's plan was saved with a different Operations Plan version/);
   });
 
   it("has none for an offering in its own area's plan", async () => {
