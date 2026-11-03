@@ -152,7 +152,12 @@ export async function calculateDraft(plan: PlanRef, version: VersionSummary): Pr
   const [catalog, versioned, versions, organizations, costAccounts] = await Promise.all([
     Promise.all(catalogTables.map(async (t) => [t, engineRows(t, await readAll(t))] as const)),
     Promise.all(versionTables.map(async (t) => [t, engineRows(t, await readAll(t, byIds))] as const)),
-    readAll<{ id: string; plan_id: string }>("plan_versions", { id: { _in: ids } }, ["id", "plan_id"]),
+    // With the Operations Plan version each was saved with, so the engine can warn about one that isn't this set's.
+    readAll<{ id: string; plan_id: string; operations_version_id: string | null }>(
+      "plan_versions",
+      { id: { _in: ids } },
+      ["id", "plan_id", "operations_version_id"],
+    ),
     readAll("organizations", { id: { _eq: plan.organization_id } }),
     readAll("organization_cost_accounts", { organization_id: { _eq: plan.organization_id } }),
   ]);
