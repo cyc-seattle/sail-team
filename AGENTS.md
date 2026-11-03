@@ -43,6 +43,10 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   them. A draft is calculated in the browser by the planning engine this app bundles, from the same rows platform reads
   at save time (`src/model/plan-data.ts`): the catalog, the Operations Plan version, and each area's active version,
   with the draft in place of its own area's.
+- `src/directus/club-plans.ts` reads club plans (`version_sets`): the whole club's plan for a year, frozen, with the
+  results platform worked out when it was saved. A club plan's result rows have `version_set_id` set and no
+  `version_id`, and each area's rows name the member that holds them (`version_set_member_id`). `/plans` shows each
+  year's newest one, and `/plans/club/<set>` its P&L.
 - `src/mocks/` answers Directus's requests with made-up people and permissions, in `mise run dev` and in tests. Never
   put real club data there.
 - `mise run integration` runs the journeys against dev, as your ADC login (deploy-dev in Actions), with

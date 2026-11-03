@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as PlansIndexRouteImport } from './routes/plans/index'
 import { Route as PlansPlanIdIndexRouteImport } from './routes/plans/$planId/index'
 import { Route as PlansPlanIdVersionIdRouteImport } from './routes/plans/$planId/$versionId'
+import { Route as PlansClubSetIdRouteImport } from './routes/plans/club/$setId'
 
 const PlansIndexRoute = PlansIndexRouteImport.update({
   id: '/plans/',
@@ -28,34 +29,56 @@ const PlansPlanIdVersionIdRoute = PlansPlanIdVersionIdRouteImport.update({
   path: '/plans/$planId/$versionId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlansClubSetIdRoute = PlansClubSetIdRouteImport.update({
+  id: '/plans/club/$setId',
+  path: '/plans/club/$setId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/plans/': typeof PlansIndexRoute
   '/plans/$planId/$versionId': typeof PlansPlanIdVersionIdRoute
+  '/plans/club/$setId': typeof PlansClubSetIdRoute
   '/plans/$planId/': typeof PlansPlanIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/plans': typeof PlansIndexRoute
   '/plans/$planId/$versionId': typeof PlansPlanIdVersionIdRoute
+  '/plans/club/$setId': typeof PlansClubSetIdRoute
   '/plans/$planId': typeof PlansPlanIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/plans/': typeof PlansIndexRoute
   '/plans/$planId/$versionId': typeof PlansPlanIdVersionIdRoute
+  '/plans/club/$setId': typeof PlansClubSetIdRoute
   '/plans/$planId/': typeof PlansPlanIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/plans/' | '/plans/$planId/$versionId' | '/plans/$planId/'
+  fullPaths:
+    | '/plans/'
+    | '/plans/$planId/$versionId'
+    | '/plans/club/$setId'
+    | '/plans/$planId/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/plans' | '/plans/$planId/$versionId' | '/plans/$planId'
-  id: '__root__' | '/plans/' | '/plans/$planId/$versionId' | '/plans/$planId/'
+  to:
+    | '/plans'
+    | '/plans/$planId/$versionId'
+    | '/plans/club/$setId'
+    | '/plans/$planId'
+  id:
+    | '__root__'
+    | '/plans/'
+    | '/plans/$planId/$versionId'
+    | '/plans/club/$setId'
+    | '/plans/$planId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   PlansIndexRoute: typeof PlansIndexRoute
   PlansPlanIdVersionIdRoute: typeof PlansPlanIdVersionIdRoute
+  PlansClubSetIdRoute: typeof PlansClubSetIdRoute
   PlansPlanIdIndexRoute: typeof PlansPlanIdIndexRoute
 }
 
@@ -82,12 +105,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlansPlanIdVersionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/plans/club/$setId': {
+      id: '/plans/club/$setId'
+      path: '/plans/club/$setId'
+      fullPath: '/plans/club/$setId'
+      preLoaderRoute: typeof PlansClubSetIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   PlansIndexRoute: PlansIndexRoute,
   PlansPlanIdVersionIdRoute: PlansPlanIdVersionIdRoute,
+  PlansClubSetIdRoute: PlansClubSetIdRoute,
   PlansPlanIdIndexRoute: PlansPlanIdIndexRoute,
 }
 export const routeTree = rootRouteImport

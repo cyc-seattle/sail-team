@@ -1,9 +1,19 @@
 import { Link } from "@tanstack/react-router";
+import type { ClubTotals } from "@/directus/club-plans";
 import type { PlanSummary } from "@/directus/plans";
+import { newestClubPlans, type ClubPlanSummary } from "@/model/club-plans";
 import { planFor, plansByYear } from "@/model/plan-list";
+import { ClubPlanCard } from "./club-plan-card";
 
-/** Every plan, by year, each linking to its versions. */
-export function PlanList({ plans }: { plans: PlanSummary[] }) {
+/** Every plan, by year, each linking to its versions, with the year's newest club plan above them. */
+export function PlanList({
+  plans,
+  clubPlans = [],
+}: {
+  plans: PlanSummary[];
+  clubPlans?: (ClubPlanSummary & { totals: ClubTotals | null })[];
+}) {
+  const newest = newestClubPlans(clubPlans);
   if (plans.length === 0) {
     return <p className="text-sm text-muted-foreground">There are no plans yet.</p>;
   }
@@ -14,6 +24,7 @@ export function PlanList({ plans }: { plans: PlanSummary[] }) {
           <h2 id={`year-${year}`} className="text-base font-medium">
             {year}
           </h2>
+          <ClubPlanCard year={year} plan={newest.get(year)} />
           <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {plans.map((plan) => (
               <li key={plan.id}>

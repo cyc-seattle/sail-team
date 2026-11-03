@@ -96,3 +96,30 @@ describe("a draft's warnings", () => {
     expect(output.warnings.map((w) => w.message)).not.toContainEqual(expect.stringMatching(/another program area/));
   });
 });
+
+describe("reading club plans", () => {
+  it("lists each club plan with its totals", async () => {
+    const { clubPlansQuery } = await import("../src/directus/club-plans.ts");
+    const sets = await run<{ name: string; totals: { operating_net_cents: number } | null }[]>(clubPlansQuery);
+    expect(sets.map((s) => [s.name, s.totals?.operating_net_cents])).toEqual([["March", 500_000]]);
+  });
+
+  it("reads a club plan's members, each area's P&L, and the Operations Plan's lines by name", async () => {
+    const { clubPlanQuery } = await import("../src/directus/club-plans.ts");
+    const club = await run<{
+      members: { area_name: string | null; kind: string }[];
+      pnl: { name: string; version_set_member_id: string }[];
+      lines: { name: string; revenue: boolean; version_set_member_id: string }[];
+    }>(clubPlanQuery(ids.clubPlan));
+    expect(club.members.map((m) => m.area_name ?? m.kind)).toEqual(["Youth Racing", "Adult Programs", "operations"]);
+    expect(club.pnl.map((p) => [p.name, p.version_set_member_id])).toEqual([
+      ["Beginner camp, week 1", ids.youthMember],
+    ]);
+    expect(club.lines).toEqual([expect.objectContaining({ name: "Office rent", revenue: false })]);
+  });
+
+  it("keeps a club plan's rows out of a version's own results", async () => {
+    const results = await run<{ pnl: { version_id?: string }[] }>(savedResultsQuery(ids.youthSaved2));
+    expect(results.pnl).toHaveLength(2);
+  });
+});
