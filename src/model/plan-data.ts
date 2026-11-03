@@ -1,3 +1,5 @@
+import type { PlanData } from "@cyc-seattle/platform/planning";
+
 // What the planning engine reads to calculate a draft, gathered the way platform's saved-versions hook gathers it
 // when a version is saved (cyc-seattle/platform#91), so a draft here adds up the way it would if saved now.
 
@@ -32,7 +34,25 @@ export const versionTables = [
   "plan_pools",
   "plan_bonus_owners",
   "plan_bonus_owner_products",
+  "plan_closed_dates",
 ] as const;
+
+type Loaded =
+  | (typeof catalogTables)[number]
+  | (typeof versionTables)[number]
+  | "fiscal_year"
+  | "organization"
+  | "organization_cost_accounts"
+  | "rib_resource_kind_id"
+  | "plans"
+  | "plan_versions";
+
+/**
+ * Fails the typecheck, naming the field, when the engine reads something the loader doesn't: a draft calculated
+ * without a table, such as its closed dates, silently loses what that table holds.
+ */
+export const everyInputLoaded: Exclude<keyof PlanData, Loaded> extends never ? true : Exclude<keyof PlanData, Loaded> =
+  true;
 
 /**
  * The fields Directus returns as strings, so no precision is lost, and the engine reads as numbers. From

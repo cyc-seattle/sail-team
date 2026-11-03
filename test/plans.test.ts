@@ -63,6 +63,16 @@ describe("reading plans from Directus", () => {
 });
 
 describe("a draft's warnings", () => {
+  it("points out a practice on a day the Operations Plan says the club is closed", async () => {
+    const plan = await run<Parameters<typeof calculateDraft>[0]>(planQuery(ids.youthPlan));
+    const versions = await run<Parameters<typeof calculateDraft>[1][]>(versionsQuery(ids.youthPlan));
+    const { output } = await calculateDraft(
+      plan,
+      versions.find((v) => v.id === ids.youthDraft)!,
+    );
+    expect(output.warnings).toContainEqual(expect.objectContaining({ code: "closed_date" }));
+  });
+
   it("has none for an offering in its own area's plan", async () => {
     const plan = await run<Parameters<typeof calculateDraft>[0]>(planQuery(ids.youthPlan));
     const versions = await run<Parameters<typeof calculateDraft>[1][]>(versionsQuery(ids.youthPlan));
