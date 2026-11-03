@@ -17,7 +17,7 @@
   "prettier": "@cyc-seattle/ts-config/prettier",
   "dependencies": {
     "@base-ui/react": "^1.9.0",
-    "@cyc-seattle/platform": "^1.21.0",
+    "@cyc-seattle/platform": "^1.22.0",
     "@directus/sdk": "^27.1.0",
     "@fontsource-variable/inter": "^5.3.0",
     "@tailwindcss/vite": "^4.3.3",
