@@ -28,6 +28,7 @@ const meta = {
         version_id: "yv",
         plan_name: "Youth Racing 2027",
         kind: "program_area",
+        program_area_id: "youth",
         area_name: "Youth Racing",
       },
       {
@@ -36,9 +37,18 @@ const meta = {
         version_id: "av",
         plan_name: "Adult Programs 2027",
         kind: "program_area",
+        program_area_id: "adult",
         area_name: "Adult Programs",
       },
-      { id: "o", plan_id: "op", version_id: "ov", plan_name: "Operations 2027", kind: "operations", area_name: null },
+      {
+        id: "o",
+        plan_id: "op",
+        version_id: "ov",
+        plan_name: "Operations 2027",
+        kind: "operations",
+        program_area_id: null,
+        area_name: null,
+      },
     ],
     pnl: [
       row("y", offerings[0]!.name, offerings[0]!.pnl),
