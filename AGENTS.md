@@ -31,7 +31,8 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   The router plugin regenerates `src/routeTree.gen.ts` on every build and dev run. Commit it, and never edit it.
 - `src/router.ts` makes the router. Tests make their own with a memory history.
 - `src/components/ui/` holds shadcn's components on Base UI, `src/components/` the club's own, each with a story beside
-  it. `src/styles/tokens.css` holds the design tokens. Read [docs/design.md](docs/design.md) before changing any of
+  it. `src/components/plans/` holds the plans page's: Page Header, Summary Tiles, Money, P&L Table, Chart Card,
+  Engine Warnings, and Version Badge. `src/styles/tokens.css` holds the design tokens. Read [docs/design.md](docs/design.md) before changing any of
   them, or use the [`design`](.agents/skills/design/SKILL.md) skill.
 - `src/directus/` talks to Directus. `client.ts` makes a client that sends the browser's Directus session cookie, and
   `app.ts` is the app's own, at `directus.<the app's hostname>`. `sign-in.ts` sends a visitor with no session to

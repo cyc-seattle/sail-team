@@ -31,7 +31,8 @@ One face, Inter, self-hosted, for everything. A short scale: page titles `text-2
 titles `text-base font-medium`, body and tables `text-sm`, hints `text-xs text-muted-foreground`. Weight and color do
 the work, not more sizes.
 
-Numbers that line up in a column use `tabular-nums` and sit right-aligned.
+Numbers that line up in a column use `tabular-nums` and sit right-aligned. Show money with `Money`, which takes cents
+and writes a true minus sign, and color only a net (`colored`).
 
 ## Dark mode
 
@@ -49,6 +50,8 @@ Every token has a dark value, so a component that uses the utilities needs no `d
   switch, such as per year or per day.
 - An icon-only button has an `aria-label` and a tooltip with the same name, and each action keeps one icon everywhere.
 - Page text uses plain words a club volunteer would say.
+- Every chart sits in a `ChartCard`, above the table of the same numbers, with how it's worked out behind the info
+  button.
 
 ## Components
 

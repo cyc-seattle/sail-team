@@ -53,6 +53,7 @@ export default defineConfig({
     include: [
       "@base-ui/react/**",
       "@tanstack/react-router",
+      "recharts",
       "class-variance-authority",
       "cn",
       "lucide-react",
