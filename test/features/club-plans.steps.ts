@@ -24,6 +24,40 @@ async function savedClubPlan(club: import("./club").Club, revenue: number, costs
   return version;
 }
 
+Given("the club's plan for the year was saved today, with an operating net of $5,000", async ({ club }) => {
+  club.ownYear();
+  await savedClubPlan(club, 500_000, 0);
+});
+
+Given("the club has plans for the year, but no club plan for it", async ({ club }) => {
+  club.ownYear();
+  await club.plans();
+});
+
+Then("the year shows its club plan, saved today", async ({ page, club }) => {
+  const year = page.getByRole("region", { name: String(club.year) });
+  const today = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "America/Los_Angeles",
+  }).format(new Date());
+  await expect(year.getByRole("link", { name: new RegExp(`Club plan: March ${club.run}`) })).toContainText(
+    `Saved ${today}`,
+  );
+});
+
+Then("the club plan's operating net is $5,000", async ({ page, club }) => {
+  const year = page.getByRole("region", { name: String(club.year) });
+  await expect(year.getByRole("link", { name: /Club plan:/ })).toContainText("Operating net $5,000.00");
+});
+
+Then("the year says the club has no club plan for it yet", async ({ page, club }) => {
+  const year = page.getByRole("region", { name: String(club.year) });
+  await expect(year).toContainText(`The club has no club plan for ${club.year} yet.`);
+  await expect(year.getByRole("link", { name: /Club plan:/ })).toHaveCount(0);
+});
+
 Given("a saved club plan whose Youth Racing offering took in $10,000 and spent $6,000", async ({ club }) => {
   await savedClubPlan(club, 1_000_000, 600_000);
 });

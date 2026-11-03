@@ -12,8 +12,23 @@ type Row = Record<string, unknown>;
 export class Club {
   readonly run = newRunId();
   readonly area = `Youth Racing ${this.run}`;
-  readonly areaPlanName = `Youth Racing ${this.run} ${PLAN_YEAR}`;
-  readonly operationsPlanName = `Operations ${this.run} ${PLAN_YEAR}`;
+  /**
+   * The plan year. The plans journeys use 2027. A club plan journey that reads a whole year's page uses a far-off
+   * year of its own, so no other run's club plan for the year can show up there.
+   */
+  year = PLAN_YEAR;
+  get areaPlanName() {
+    return `Youth Racing ${this.run} ${this.year}`;
+  }
+  get operationsPlanName() {
+    return `Operations ${this.run} ${this.year}`;
+  }
+
+  /** Gives this run a year of its own, from 2100 to 2899, that no real plan uses. */
+  ownYear(): number {
+    this.year = 2100 + (parseInt(this.run.slice(-4), 16) % 800);
+    return this.year;
+  }
   /** Every row made, oldest first, so cleanup deletes the newest first. */
   private readonly made: { collection: string; id: string }[] = [];
   private organizationId?: string;
@@ -88,7 +103,7 @@ export class Club {
       kind,
       program_area_id: areaId,
       organization_id: this.organizationId,
-      fiscal_year: PLAN_YEAR,
+      fiscal_year: this.year,
       name,
     });
   }
@@ -109,8 +124,8 @@ export class Club {
     const offering = await this.versioned("plan_offerings", version, {
       product_id: this.productId,
       name,
-      starts_on: `${PLAN_YEAR}-07-05`,
-      ends_on: `${PLAN_YEAR}-07-16`,
+      starts_on: `${this.year}-07-05`,
+      ends_on: `${this.year}-07-16`,
       target_enrollment: sailors,
       price_cents: price,
     });
@@ -121,7 +136,7 @@ export class Club {
         cost_center_type: "offering",
         cost_center_key: offering["key"],
         amount_cents: costs,
-        fiscal_year: PLAN_YEAR,
+        fiscal_year: this.year,
         excluded_from_mtdc: false,
       });
     }
@@ -181,7 +196,7 @@ export class Club {
     const set = (
       await this.create("version_sets", {
         organization_id: this.organizationId,
-        fiscal_year: PLAN_YEAR,
+        fiscal_year: this.year,
         name,
       })
     )["id"] as string;

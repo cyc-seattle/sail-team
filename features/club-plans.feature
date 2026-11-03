@@ -2,26 +2,25 @@ Feature: Seeing the club's plan
   A club plan is the whole club's plan for a year, frozen: the Operations Plan's active version and each
   program area's, with the P&L they make together. A planner saves one through their AI, and it never
   changes. A later one can follow. Plans shows the newest one for each year, and whether the club has
-  moved on since. Every plan and number here is made up for the run.
+  moved on since. Every plan and number here is made up for the run. "The year" is a far-off year of the
+  run's own, so no other run's club plan for it shows up.
 
   Rule: Each year shows its club plan, with the club's totals
 
-    @fixme
     Scenario: A year's newest club plan shows what the club takes in and spends
       Given I'm a planner who can read plans
-      And the club's 2027 plan was saved on March 10, with an operating net of $5,000
+      And the club's plan for the year was saved today, with an operating net of $5,000
       And I've signed in
       When I open Plans
-      Then 2027 shows its club plan, saved March 10
+      Then the year shows its club plan, saved today
       And the club plan's operating net is $5,000
 
-    @fixme
     Scenario: A year with no club plan says so
       Given I'm a planner who can read plans
-      And the club has 2027 plans but no club plan for 2027
+      And the club has plans for the year, but no club plan for it
       And I've signed in
       When I open Plans
-      Then 2027 says the club has no club plan for the year yet
+      Then the year says the club has no club plan for it yet
 
   Rule: A club plan shows each program area's P&L as it was when the club plan was saved
 
