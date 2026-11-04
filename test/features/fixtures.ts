@@ -37,6 +37,9 @@ export const test = base.extend<{ visitor: Visitor; club: Club }>({
   ],
 });
 
+/** The version a scenario opens, set by its Given steps. One scenario runs at a time (playwright.config.ts). */
+export const opened: { version?: string } = {};
+
 /** The app's address on dev, such as `https://dev.cycsail.team`. */
 export const app = async () => `https://${(await devPlatform()).domain}`;
 

@@ -78,7 +78,9 @@ policy that lets the page call only itself and Directus.
 
 - Every PR deploys to dev, at `https://dev.cycsail.team/plans`, and runs `mise run integration` there. A push to `main`
   deploys dev, previews prod, and applies prod once a maintainer approves. Prod runs the image dev built for the same
-  commit. All of it goes through the org's `deploy.yml` (`.github/workflows/pull-request.yml`).
+  commit. All of it goes through the org's `deploy.yml` (`.github/workflows/pull-request.yml`). When the journeys fail, the run uploads
+  `test-results/` as the `test-results-dev` artifact, kept 7 days: each failed scenario's page snapshot
+  (`error-context.md`) and trace.
 - `mise run preview` and `mise run deploy` act on `$PULUMI_STACK`, which defaults to `prod`. Locally, set
   `PULUMI_STACK=dev`, and preview before every apply. Local deploys are only for breaking glass.
 - Directus already allows `https://<domain>` as an origin and a sign-in redirect, because the portal is there, so the
