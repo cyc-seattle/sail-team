@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import { expect, type Page } from "@playwright/test";
 import { test as base } from "playwright-bdd";
 import { Club } from "./club";
+import { Squad } from "./squad";
 import { devPlatform, proxyOk } from "./support";
 import { cleanUp, newVisitor, staleVisitors, type Visitor } from "./visitors";
 
 // What every journey's steps share: the scenario's made-up visitor, and its made-up club's plans on dev.
 
-export const test = base.extend<{ visitor: Visitor; club: Club }>({
+export const test = base.extend<{ visitor: Visitor; club: Club; squad: Squad }>({
   visitor: [
     // eslint-disable-next-line no-empty-pattern -- Playwright reads a fixture's dependencies from this pattern.
     async ({}, use) => {
@@ -31,6 +32,19 @@ export const test = base.extend<{ visitor: Visitor; club: Club }>({
         await use(club);
       } finally {
         await club.cleanUp();
+      }
+    },
+    { timeout: 180_000 },
+  ],
+  // After the visitor, so it's deleted before them: their person is still someone's parent until then.
+  squad: [
+    async ({ visitor }, use) => {
+      void visitor;
+      const squad = new Squad();
+      try {
+        await use(squad);
+      } finally {
+        await squad.cleanUp();
       }
     },
     { timeout: 180_000 },

@@ -3,6 +3,7 @@ import type { Permissions } from "@/directus/access";
 import type { Me } from "@/directus/sign-in";
 import { planner, plannerPermissions } from "./fixtures";
 import { tables } from "./plans";
+import { rosterTables } from "./roster";
 
 export interface MockSession {
   me: Me | null;
@@ -17,14 +18,20 @@ const forbidden = () =>
 
 type Row = Record<string, unknown>;
 
-/** Whether a row matches a Directus filter's top-level `_eq` and `_in` conditions. Nested ones match every row. */
-function matches(row: Row, filter: Record<string, Record<string, unknown>>): boolean {
+/**
+ * Whether a row matches a Directus filter's `_eq` and `_in` conditions, inside any `_and`. Other conditions match every
+ * row. `$CURRENT_USER` is `me`.
+ */
+function matches(row: Row, filter: Record<string, Record<string, unknown>>, me?: string): boolean {
   return Object.entries(filter).every(([field, condition]) => {
+    if (field === "_and") {
+      return (condition as unknown as Record<string, Record<string, unknown>>[]).every((f) => matches(row, f, me));
+    }
     // A related row is matched by its id, as Directus matches a foreign key.
     const raw = row[field];
     const value = raw !== null && typeof raw === "object" && "id" in raw ? (raw as Row)["id"] : raw;
     if ("_eq" in condition) {
-      return value === condition["_eq"];
+      return value === (condition["_eq"] === "$CURRENT_USER" ? me : condition["_eq"]);
     }
     if ("_in" in condition) {
       return (condition["_in"] as unknown[]).includes(value);
@@ -67,8 +74,18 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
     http.get(`${directusUrl}/items/:table`, ({ params, request }) => {
       const query = new URL(request.url).searchParams;
       const filter = query.get("filter");
-      const rows = (tables[params["table"] as string] ?? []).filter((r) => !filter || matches(r, JSON.parse(filter)));
+      const rows = (tables[params["table"] as string] ?? rosterTables[params["table"] as string] ?? []).filter(
+        (r) => !filter || matches(r, JSON.parse(filter), session.me?.id),
+      );
       return HttpResponse.json({ data: rows.map((r) => shape(r, query.get("fields"))) });
+    }),
+    http.patch(`${directusUrl}/items/:table/:id`, async ({ params, request }) => {
+      const row = rosterTables[params["table"] as string]?.find((r) => r["id"] === params["id"]);
+      if (!row) {
+        return forbidden();
+      }
+      Object.assign(row, await request.json());
+      return HttpResponse.json({ data: row });
     }),
   ];
 }

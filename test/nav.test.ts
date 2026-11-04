@@ -3,8 +3,11 @@ import { parentPermissions, plannerPermissions } from "../src/mocks/fixtures.ts"
 import { navFor } from "../src/model/nav.ts";
 
 describe("navFor", () => {
-  it("shows Plans to someone who can read plans", () => {
-    expect(navFor(plannerPermissions)).toEqual([{ to: "/plans", label: "Plans" }]);
+  it("shows Plans to someone who can read plans, and Rosters to someone who can read sign-ups", () => {
+    expect(navFor(plannerPermissions)).toEqual([
+      { to: "/plans", label: "Plans" },
+      { to: "/rosters", label: "Rosters" },
+    ]);
   });
 
   it("hides it from someone who can't", () => {

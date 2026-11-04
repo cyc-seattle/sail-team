@@ -4,7 +4,7 @@ import { deployedImage, loadCluster } from "./cluster.ts";
 
 // sail-team shares the environment's domain with isthmia's portal until it replaces it (sail-team#1). It claims
 // only its own paths, and the portal keeps the rest.
-const paths = ["/plans", "/_app"];
+const paths = ["/plans", "/rosters", "/_app"];
 
 const cluster = await loadCluster();
 const { platform, provider } = cluster;
