@@ -10,3 +10,15 @@ export function canRead(permissions: Permissions | undefined, collection: string
   const access = permissions?.[collection]?.read?.access;
   return access === "partial" || access === "full";
 }
+
+/**
+ * The fields of `wanted` the user can read on some row of `collection`. Directus refuses a request that names a field
+ * no rule gives, so a page asks only for these, and gets null on a row whose rule withholds one.
+ */
+export function readableFields(permissions: Permissions | undefined, collection: string, wanted: string[]): string[] {
+  const fields = permissions?.[collection]?.read?.fields;
+  if (!fields || fields.includes("*")) {
+    return wanted;
+  }
+  return wanted.filter((field) => fields.includes(field));
+}

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PlansIndexRouteImport } from './routes/plans/index'
+import { Route as RostersIndexRouteImport } from './routes/rosters/index'
 import { Route as PlansPlanIdIndexRouteImport } from './routes/plans/$planId/index'
 import { Route as PlansPlanIdVersionIdRouteImport } from './routes/plans/$planId/$versionId'
 import { Route as PlansClubSetIdIndexRouteImport } from './routes/plans/club/$setId/index'
@@ -18,6 +19,11 @@ import { Route as PlansClubSetIdNowRouteImport } from './routes/plans/club/$setI
 const PlansIndexRoute = PlansIndexRouteImport.update({
   id: '/plans/',
   path: '/plans/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RostersIndexRoute = RostersIndexRouteImport.update({
+  id: '/rosters/',
+  path: '/rosters/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlansPlanIdIndexRoute = PlansPlanIdIndexRouteImport.update({
@@ -43,6 +49,7 @@ const PlansClubSetIdNowRoute = PlansClubSetIdNowRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/plans/': typeof PlansIndexRoute
+  '/rosters/': typeof RostersIndexRoute
   '/plans/$planId/$versionId': typeof PlansPlanIdVersionIdRoute
   '/plans/$planId/': typeof PlansPlanIdIndexRoute
   '/plans/club/$setId/now': typeof PlansClubSetIdNowRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/plans': typeof PlansIndexRoute
+  '/rosters': typeof RostersIndexRoute
   '/plans/$planId/$versionId': typeof PlansPlanIdVersionIdRoute
   '/plans/$planId': typeof PlansPlanIdIndexRoute
   '/plans/club/$setId/now': typeof PlansClubSetIdNowRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/plans/': typeof PlansIndexRoute
+  '/rosters/': typeof RostersIndexRoute
   '/plans/$planId/$versionId': typeof PlansPlanIdVersionIdRoute
   '/plans/$planId/': typeof PlansPlanIdIndexRoute
   '/plans/club/$setId/now': typeof PlansClubSetIdNowRoute
@@ -67,6 +76,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/plans/'
+    | '/rosters/'
     | '/plans/$planId/$versionId'
     | '/plans/$planId/'
     | '/plans/club/$setId/now'
@@ -74,6 +84,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/plans'
+    | '/rosters'
     | '/plans/$planId/$versionId'
     | '/plans/$planId'
     | '/plans/club/$setId/now'
@@ -81,6 +92,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/plans/'
+    | '/rosters/'
     | '/plans/$planId/$versionId'
     | '/plans/$planId/'
     | '/plans/club/$setId/now'
@@ -89,6 +101,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   PlansIndexRoute: typeof PlansIndexRoute
+  RostersIndexRoute: typeof RostersIndexRoute
   PlansPlanIdVersionIdRoute: typeof PlansPlanIdVersionIdRoute
   PlansPlanIdIndexRoute: typeof PlansPlanIdIndexRoute
   PlansClubSetIdNowRoute: typeof PlansClubSetIdNowRoute
@@ -102,6 +115,13 @@ declare module '@tanstack/react-router' {
       path: '/plans'
       fullPath: '/plans/'
       preLoaderRoute: typeof PlansIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rosters/': {
+      id: '/rosters/'
+      path: '/rosters'
+      fullPath: '/rosters/'
+      preLoaderRoute: typeof RostersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/plans/$planId/': {
@@ -137,6 +157,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   PlansIndexRoute: PlansIndexRoute,
+  RostersIndexRoute: RostersIndexRoute,
   PlansPlanIdVersionIdRoute: PlansPlanIdVersionIdRoute,
   PlansPlanIdIndexRoute: PlansPlanIdIndexRoute,
   PlansClubSetIdNowRoute: PlansClubSetIdNowRoute,
