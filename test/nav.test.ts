@@ -6,7 +6,7 @@ describe("navFor", () => {
   it("shows Plans to someone who can read plans, and Rosters to someone who can read sign-ups", () => {
     expect(navFor(plannerPermissions)).toEqual([
       { to: "/plans", label: "Plans" },
-      { to: "/rosters", label: "Rosters" },
+      { to: "/roster", label: "Rosters" },
     ]);
   });
 

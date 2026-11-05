@@ -84,7 +84,7 @@ Given("a team with a sailor whose parent doesn't share", async ({ squad }) => {
 });
 
 When("I open Rosters", async ({ page }) => {
-  await page.goto(`${await app()}/rosters`);
+  await page.goto(`${await app()}/roster`);
   await expect(page.getByRole("heading", { level: 1, name: "Rosters" })).toBeVisible();
 });
 

@@ -10,8 +10,8 @@ served by Caddy on the club's cluster. It has no server of its own. The browser 
 each person can see and change. The app adds no security of its own.
 
 The app shares `cycsail.team` with isthmia's portal until it replaces it. It claims only its own paths, `/plans` and
-`/rosters`, and puts its built files under `/_app` (`vite.config.ts`), so the portal keeps everything else. The portal's
-own roster loads from `/roster/`, so the app's is `/rosters` until the portal's goes.
+`/roster`, and puts its built files under `/_app` (`vite.config.ts`), so the portal keeps everything else. `/rosters`,
+where the roster was while the portal had its own, sends old links to `/roster`.
 
 ## Tasks
 
@@ -79,7 +79,7 @@ point `PLAYWRIGHT_BROWSERS_PATH` at a matching set of browsers in a git-ignored 
 
 ## Deploys
 
-`stacks/app` is the app's one Pulumi project: a platform `WebService` that serves the image on `/plans` and `/_app` of
+`stacks/app` is the app's one Pulumi project: a platform `WebService` that serves the image on `/plans`, `/roster`, `/rosters`, and `/_app` of
 the environment's domain. The image is Caddy serving `dist/` (`Dockerfile`, `Caddyfile`), with a content security
 policy that lets the page call only itself and Directus.
 

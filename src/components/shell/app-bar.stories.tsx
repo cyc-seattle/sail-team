@@ -5,13 +5,13 @@ import { AppBar } from "./app-bar";
 
 const meta = {
   component: AppBar,
-  decorators: [withRouter("/plans", ["/rosters"])],
+  decorators: [withRouter("/plans", ["/roster"])],
   parameters: { layout: "fullscreen" },
   args: {
     name: "Robin Tiller",
     nav: [
       { to: "/plans", label: "Plans" },
-      { to: "/rosters", label: "Rosters" },
+      { to: "/roster", label: "Rosters" },
     ],
   },
 } satisfies Meta<typeof AppBar>;
