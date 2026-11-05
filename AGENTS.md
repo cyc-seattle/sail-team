@@ -93,6 +93,19 @@ policy that lets the page call only itself and Directus.
 - Directus already allows `https://<domain>` as an origin and a sign-in redirect, because the portal is there, so the
   app needs nothing from platform's Directus settings.
 
+## Pull requests that change what people see
+
+The maintainer reviews a UI change from screenshots in its PR description, not by checking out the branch. Every PR
+that changes a page or component shows them there:
+
+- The phone (390 px wide) and desktop views. Before and after, when it changes an existing page. Light and dark, when
+  it changes colors.
+- Made-up data only. This repo is public, so never a real name, email, or phone.
+- Host them on the `screenshots` branch, which is never merged: commit them to `pr-<number>/` on it, push, and embed
+  each with `https://raw.githubusercontent.com/cyc-seattle/sail-team/<commit>/pr-<number>/<name>.png`, using that
+  commit's SHA so the link never changes. Never put them on the PR's own branch, or only in `.plans/`.
+- Storybook or Playwright's `page.screenshot()` can take them.
+
 ## Code style
 
 TypeScript with ESLint and Prettier from `@cyc-seattle/ts-config`. ESM: relative import paths carry the `.ts` or `.tsx`
