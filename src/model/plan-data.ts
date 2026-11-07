@@ -90,62 +90,8 @@ export function engineRows(table: string, rows: Row[]): Row[] {
   });
 }
 
-export interface PlanRef {
-  id: string;
-  kind: "program_area" | "operations";
+/** An organization's year, which a Financial Plan is for and the engine calculates. */
+export interface YearRef {
   organization_id: string;
   fiscal_year: number;
-  program_area_id: string | null;
-}
-
-export interface VersionRef {
-  id: string;
-  plan_id: string;
-  operations_version_id: string | null;
-}
-
-/** The latest activation for each program area, for the plan's organization and year. */
-export interface AreaActivation {
-  program_area_id: string;
-  version_id: string;
-}
-
-/**
- * The versions the engine calculates `version` with: the club's plan as it stands. That's the Operations Plan version
- * (the version itself, for an Operations Plan), and each program area's active version, with the version's own in
- * place of its area's.
- */
-export function versionSet(plan: PlanRef, version: VersionRef, active: AreaActivation[]): string[] {
-  const operations = plan.kind === "operations" ? version.id : version.operations_version_id;
-  const areas = active.filter((a) => plan.kind === "operations" || a.program_area_id !== plan.program_area_id);
-  const ids = [operations, ...areas.map((a) => a.version_id)];
-  if (plan.kind === "program_area") {
-    ids.push(version.id);
-  }
-  return [...new Set(ids.filter((id): id is string => id !== null))];
-}
-
-export interface ActivationRow {
-  version_id: string;
-  sequence: number;
-  plan: { kind: "program_area" | "operations"; program_area_id: string | null };
-}
-
-/**
- * The active version for each program area, and the Operations Plan's: for each, the activation with the highest
- * sequence, since activating another plan's version replaces it.
- */
-export function latestActivations(rows: ActivationRow[]): { areas: AreaActivation[]; operations: string | null } {
-  const latest = new Map<string, ActivationRow>();
-  for (const row of rows) {
-    const slot = row.plan.kind === "operations" ? "operations" : `area:${row.plan.program_area_id}`;
-    const seen = latest.get(slot);
-    if (!seen || row.sequence > seen.sequence) {
-      latest.set(slot, row);
-    }
-  }
-  const areas = [...latest.entries()]
-    .filter(([slot]) => slot.startsWith("area:"))
-    .map(([, row]) => ({ program_area_id: row.plan.program_area_id!, version_id: row.version_id }));
-  return { areas, operations: latest.get("operations")?.version_id ?? null };
 }

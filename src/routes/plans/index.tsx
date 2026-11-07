@@ -1,11 +1,10 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { FinancialPlanList } from "@/components/plans/financial-plan-list";
 import { PageHeader } from "@/components/plans/page-header";
-import { PlanList } from "@/components/plans/plan-list";
 import { NoAccess } from "@/components/shell/no-access";
 import { canRead } from "@/directus/access";
-import { clubPlansQuery } from "@/directus/club-plans";
-import { plansQuery } from "@/directus/plans";
+import { financialPlansQuery } from "@/directus/financial-plans";
 import { useSession } from "@/directus/use-session";
 
 export const Route = createFileRoute("/plans/")({
@@ -19,14 +18,16 @@ function Plans() {
   }
   return (
     <main className="mx-auto max-w-6xl p-card">
-      <PageHeader title="Plans" />
+      <PageHeader
+        title="Plans"
+        description="Each year's Financial Plans: the Operations Plan and Program Plans, and the P&L they make together."
+      />
       <AllPlans />
     </main>
   );
 }
 
 function AllPlans() {
-  const { data: plans } = useSuspenseQuery(plansQuery);
-  const { data: clubPlans } = useSuspenseQuery(clubPlansQuery);
-  return <PlanList plans={plans} clubPlans={clubPlans} />;
+  const { data } = useSuspenseQuery(financialPlansQuery);
+  return <FinancialPlanList plans={data} />;
 }
