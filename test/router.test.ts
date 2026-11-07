@@ -12,6 +12,7 @@ describe("the router", () => {
   it.each([
     ["/plans", "/plans/"],
     ["/roster", "/roster/"],
+    ["/roster/abc", "/roster/$teamId"],
     ["/plans/abc", "/plans/$planId/"],
     ["/plans/abc/def", "/plans/$planId/$versionId"],
     ["/plans/club/abc", "/plans/club/$setId/"],

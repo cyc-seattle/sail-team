@@ -48,11 +48,14 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   results platform worked out when it was saved. A club plan's result rows have `version_set_id` set and no
   `version_id`, and each area's rows name the member that holds them (`version_set_member_id`). `/plans` shows each
   year's newest one, and `/plans/club/<set>` its P&L.
-- `src/directus/roster.ts` reads the rosters: each program's current or most recent offering, its confirmed
-  registrations, the sailors' parents, and their names, plus the email and phone Directus lets the person see. Directus's
-  rules decide who appears, so the page filters only on ids, statuses, and dates, which platform's query guard allows,
-  and joins the rest in the browser (`src/model/roster.ts`). The signed-in adult finds their own record by
-  `directus_user_id = $CURRENT_USER` and changes their own `share_contact`.
+- `src/directus/roster.ts` reads the team rosters. A team is a program area, such as Doublehanded, and its programs
+  marked as a team, such as J-Pod and K-Pod, are its divisions; a program that isn't a team has no roster. It reads
+  each division's current or most recent offering, its confirmed registrations, the sailors' parents, their names and
+  schools, the email and phone Directus lets the person see, and each division's Google Group. Directus's rules decide
+  who appears, so the page filters only on ids, statuses, and dates, which platform's query guard allows, and joins
+  the rest in the browser (`src/model/roster.ts`). `/roster` lists the teams, and `/roster/<area id>` shows one, by
+  division or, with `?by=school`, by school. Only families on a team and Crew see them (`canSeeRosters`). The
+  signed-in adult finds their own record by `directus_user_id = $CURRENT_USER` and changes their own `share_contact`.
 - `src/mocks/` answers Directus's requests with made-up people and permissions, in `mise run dev` and in tests. Never
   put real club data there.
 - `mise run integration` runs the journeys against dev, as your ADC login (deploy-dev in Actions), with
@@ -61,7 +64,7 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   They sign in through Authentik's emailed link, which dev's Authentik sends to Mailpit. A plans scenario also makes
   a made-up club (`test/features/club.ts`): an organization, its accounts, a program area and product, and an
   Operations Plan and an area's plan, with versions saved the way a Plan Writer saves them, so platform works out their
-  results. A rosters scenario makes programs and families (`test/features/squad.ts`), with the Clubspot rows
+  results. A rosters scenario makes a team, its divisions, and families (`test/features/squad.ts`), with the Clubspot rows
   clubspot-sync would read them from, and waits for platform's hook to move a parent on a team to the Team role. Dev's `backend:savedVersionsDeletable` lets its admin delete them afterwards; prod refuses it. Everything is deleted when
   the scenario ends, and a later run deletes what an earlier one left. The steps refuse any environment but dev, and
   never touch prod's users.

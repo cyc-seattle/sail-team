@@ -1,8 +1,9 @@
-Feature: Rosters
-  Rosters shows who's signed up for each program now, or most recently, and how to reach the adults who chose to
-  share their email and phone. Directus decides who each person sees: a family on a team sees everyone on the teams,
-  a family on no team sees only their own family, and Crew see everyone. Every adult decides on the page whether to
-  share their own email and phone. Every family and program here is made up for the run.
+Feature: Team rosters
+  Rosters shows each team: a part of the club's programs, such as Doublehanded, whose team programs, such as J-Pod
+  and K-Pod, are its divisions. Each team has its own page, with its sailors grouped by division or by school, and how
+  to reach the parents who chose to share their email and phone. Only families on a team and Crew see the rosters.
+  Every adult decides on the page whether to share their own email and phone. Every family and program here is made
+  up for the run.
 
   Rule: A family on a team sees the team, with the email and phone of the adults who share them
 
@@ -11,29 +12,43 @@ Feature: Rosters
       And a teammate whose parent shares their email and phone
       And a teammate whose parent doesn't share
       And I've signed in
-      When I open Rosters
-      Then the team's roster shows my child and both teammates
-      And it shows the sharing parent's email and phone
-      And it names the other parent as their child's parent, with no email or phone
+      When I open my child's team from Rosters
+      Then the roster shows my child and both teammates
+      And the sharing parent's card shows their email and phone
+      And the other parent's card says they haven't shared
 
-  Rule: A family on no team sees only their own family
+  Rule: A team's roster groups its sailors by division or by school, with totals
 
-    Scenario: A parent whose child is in a program that isn't a team sees only their own child
-      Given I'm a parent whose child is in a program that isn't a team
-      And another sailor in the program, whose parent shares their email and phone
+    Scenario: A parent sees the team by division, then by school
+      Given I'm a parent whose child is on a team, at Lakeside Middle School
+      And the team's division has a Google Group
+      And a second division of the team, with a sailor at Eastlake High School
       And I've signed in
-      When I open Rosters
-      Then the program's roster shows my child
-      But not the other sailor or their parent
+      When I open my child's team from Rosters
+      Then the team has 2 sailors in all
+      And each division shows its 1 sailor
+      And the roster links the division's Google Group
+      When I group the team by school
+      Then Lakeside Middle School and Eastlake High School each show their 1 sailor
+      And the page's address keeps the grouping, so I can share it
 
-  Rule: Crew see every roster, with everyone's email and phone
+  Rule: A family on no team sees no rosters
+
+    Scenario: A parent whose child is in a program that isn't a team can't open Rosters
+      Given I'm a parent whose child is in a program that isn't a team
+      And I've signed in
+      Then I don't see Rosters in the menu
+      When I open Rosters
+      Then the page says I don't have access to rosters
+
+  Rule: Crew see every team, with everyone's email and phone
 
     Scenario: A Crew member sees how to reach a parent who doesn't share
       Given I'm on the Crew
       And a team with a sailor whose parent doesn't share
       And I've signed in
-      When I open Rosters
-      Then the team's roster shows that parent's email and phone
+      When I open that team from Rosters
+      Then that parent's card shows their email and phone
 
   Rule: Each adult decides whether to share their own email and phone
 
