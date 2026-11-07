@@ -18,7 +18,7 @@ const read = (access: "partial" | "full", fields = ["*"]) => ({
   share: none,
 });
 
-/** A family on no team, as Community's rules give it: their own family, by name. */
+/** A household on no team, as Community's rules give it: their own household, by name. */
 export const parentPermissions: Permissions = {
   people: read("partial", ["id", "first_name", "last_name", "share_contact", "directus_user_id"]),
   contacts: read("partial", ["subject_id", "contact_id", "relationship_type"]),
@@ -29,7 +29,7 @@ export const parentPermissions: Permissions = {
 };
 
 /**
- * A family on a team, as Team's rules give it: names, sailors' schools, the email and phone of adults who share, and
+ * A household on a team, as Team's rules give it: names, sailors' schools, the email and phone of adults who share, and
  * each team's program area and Google Group.
  */
 export const teamPermissions: Permissions = {

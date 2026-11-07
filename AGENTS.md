@@ -54,7 +54,7 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   schools, the email and phone Directus lets the person see, and each division's Google Group. Directus's rules decide
   who appears, so the page filters only on ids, statuses, and dates, which platform's query guard allows, and joins
   the rest in the browser (`src/model/roster.ts`). `/roster` lists the teams, and `/roster/<area id>` shows one, by
-  division or, with `?by=school`, by school. Only families on a team and Crew see them (`canSeeRosters`). The
+  division or, with `?by=school`, by school. Only households on a team and Crew see them (`canSeeRosters`). The
   signed-in adult finds their own record by `directus_user_id = $CURRENT_USER` and changes their own `share_contact`.
 - `src/mocks/` answers Directus's requests with made-up people and permissions, in `mise run dev` and in tests. Never
   put real club data there.

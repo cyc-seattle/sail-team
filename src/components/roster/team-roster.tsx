@@ -14,7 +14,7 @@ const byLabels: Record<GroupBy, string> = { division: "By division", school: "By
 
 const sailors = (count: number) => `${count} ${count === 1 ? "sailor" : "sailors"}`;
 
-/** A team's sailors in one table for each division or each school, with how to reach each family. */
+/** A team's sailors in one table for each division or each school, with how to reach each household. */
 export function TeamRosterView({ team, by, onByChange }: TeamRosterViewProps) {
   const groups = groupTeam(team, by);
   const ids = useId();

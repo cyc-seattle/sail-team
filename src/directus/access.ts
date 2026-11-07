@@ -24,7 +24,7 @@ export function readableFields(permissions: Permissions | undefined, collection:
 }
 
 /**
- * Whether someone may open the team rosters: families on a team and Crew. Both read other people's email, which
+ * Whether someone may open the team rosters: households on a team and Crew. Both read other people's email, which
  * Community's own-family rules never give.
  */
 export function canSeeRosters(permissions: Permissions | undefined): boolean {

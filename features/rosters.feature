@@ -1,11 +1,11 @@
 Feature: Team rosters
   Rosters shows each team: a part of the club's programs, such as Doublehanded, whose team programs, such as J-Pod
   and K-Pod, are its divisions. Each team has its own page, with its sailors grouped by division or by school, and how
-  to reach the parents who chose to share their email and phone. Only families on a team and Crew see the rosters.
-  Every adult decides on the page whether to share their own email and phone. Every family and program here is made
+  to reach the parents who chose to share their email and phone. Only households on a team and Crew see the rosters.
+  Every adult decides on the page whether to share their own email and phone. Every household and program here is made
   up for the run.
 
-  Rule: A family on a team sees the team, with the email and phone of the adults who share them
+  Rule: A household on a team sees the team, with the email and phone of the adults who share them
 
     Scenario: A parent sees their child's teammates, and how to reach the parents who share
       Given I'm a parent whose child is on a team
@@ -32,7 +32,7 @@ Feature: Team rosters
       Then Lakeside Middle School and Eastlake High School each show their 1 sailor
       And the page's address keeps the grouping, so I can share it
 
-  Rule: A family on no team sees no rosters
+  Rule: A household on no team sees no rosters
 
     Scenario: A parent whose child is in a program that isn't a team can't open Rosters
       Given I'm a parent whose child is in a program that isn't a team

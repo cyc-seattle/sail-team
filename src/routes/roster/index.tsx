@@ -20,7 +20,7 @@ function Rosters() {
   }
   return (
     <main className="mx-auto grid max-w-6xl gap-card p-card">
-      <PageHeader title="Rosters" description="Each team's sailors, and how to reach their families." />
+      <PageHeader title="Rosters" description="Each team's sailors, and how to reach their parents." />
       <AllTeams permissions={session.permissions} />
     </main>
   );
