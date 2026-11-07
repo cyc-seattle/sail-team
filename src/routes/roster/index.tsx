@@ -19,10 +19,7 @@ function Rosters() {
   }
   return (
     <main className="mx-auto grid max-w-6xl gap-card p-card">
-      <PageHeader
-        title="Rosters"
-        description="Who's signed up for each program now, or most recently, and how to reach the adults who share their email and phone."
-      />
+      <PageHeader title="Rosters" />
       <AllRosters permissions={session.permissions} />
     </main>
   );
