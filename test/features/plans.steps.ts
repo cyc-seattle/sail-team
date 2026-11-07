@@ -46,7 +46,7 @@ Given(
   },
 );
 
-Given("a draft with a practice on a day the club is closed", async ({ club }) => {
+Given("a draft with a practice on a closed day", async ({ club }) => {
   await club.plans();
   await club.closed(CAMP_DAYS[0]!, "the Fourth of July, observed");
   await club.save(club.operationsVersion!, "Operations, with the club's closed days");
@@ -112,7 +112,7 @@ Then("its net per sailor-day is $40", async ({ page }) => {
   await expect(offeringRow(page).first()).toContainText("$40.00");
 });
 
-Then("the page warns that the practice falls on a day the club is closed, and names the day", async ({ page }) => {
+Then("the page warns that the practice falls on a closed day, and names the day", async ({ page }) => {
   const warnings = page.getByRole("alert").filter({ hasText: /to check/ });
   await expect(warnings).toContainText(CAMP_DAYS[0]!);
   await expect(warnings).toContainText(/closed/);
