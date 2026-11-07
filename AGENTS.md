@@ -34,22 +34,23 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   The router plugin regenerates `src/routeTree.gen.ts` on every build and dev run. Commit it, and never edit it.
 - `src/router.ts` makes the router. Tests make their own with a memory history.
 - `src/components/ui/` holds shadcn's components on Base UI, `src/components/` the club's own, each with a story beside
-  it. `src/components/plans/` holds the plans page's: Page Header, Summary Tiles, Money, P&L Table, Chart Card,
-  Engine Warnings, and Version Badge. `src/components/home/` holds the home page's Link List. `src/styles/tokens.css` holds the design tokens. Read [docs/design.md](docs/design.md) before changing any of
+  it. `src/components/plans/` holds the plans pages': Page Header, Summary Tiles, Money, P&L Table, Lines Table,
+  Chart Card, Engine Warnings, Version Badge, and the Financial Plan Card, List, and View, and Compare View. `src/components/home/` holds the home page's Link List. `src/styles/tokens.css` holds the design tokens. Read [docs/design.md](docs/design.md) before changing any of
   them, or use the [`design`](.agents/skills/design/SKILL.md) skill.
 - `src/directus/` talks to Directus. `client.ts` makes a client that sends the browser's Directus session cookie, and
   `app.ts` is the app's own, at `directus.<the app's hostname>`. `sign-in.ts` sends a visitor with no session to
   Directus's sign-in, and stops instead of looping if they come straight back without one (`session.ts`).
   `access.ts` reads `/permissions/me` to decide what to show; Directus still checks every request.
-- `src/directus/plans.ts` reads plans, their versions, and which version is active. A saved version shows the results
-  platform worked out when it was saved (`plan_result_*`, cyc-seattle/platform#91), and the app never recalculates
-  them. A draft is calculated in the browser by the planning engine this app bundles, from the same rows platform reads
-  at save time (`src/model/plan-data.ts`): the catalog, the Operations Plan version, and each area's active version,
-  with the draft in place of its own area's.
-- `src/directus/club-plans.ts` reads club plans (`version_sets`): the whole club's plan for a year, frozen, with the
-  results platform worked out when it was saved. A club plan's result rows have `version_set_id` set and no
-  `version_id`, and each area's rows name the member that holds them (`version_set_member_id`). `/plans` shows each
-  year's newest one, and `/plans/club/<set>` its P&L.
+- `src/directus/financial-plans.ts` reads Financial Plans (`version_sets`): the organization's plan for a year, holding
+  a copy of the Operations Plan and of each Program Plan (`version_set_members`). A saved one shows the results
+  platform worked out when it was saved (`plan_result_*`), and the app never recalculates them. Each result row names
+  the member it's charged in (`version_set_member_id`), so one plan's full P&L, with its wages and its share of the
+  shared costs, is one filter. A draft is calculated in the browser by the planning engine this app bundles
+  (`src/directus/plans.ts`), from the same rows platform reads at save time (`src/model/plan-data.ts`): the catalog,
+  and every plan the draft holds. Its lines and P&L rows are charged to members the way platform's hook does
+  (`ownerOf` in `src/model/financial-plans.ts`). `/plans` lists each year's Financial Plans, `/plans/financial/<set>`
+  shows one, `/plans/financial/<set>/<plan>` one plan in it, and `/plans/compare/<a>/<b>` two side by side. A club
+  plan's old address, `/plans/club/<set>`, sends people to its Financial Plan.
 - `src/directus/roster.ts` reads the rosters: each program's current or most recent offering, its confirmed
   registrations, the sailors' parents, and their names, plus the email and phone Directus lets the person see. Directus's
   rules decide who appears, so the page filters only on ids, statuses, and dates, which platform's query guard allows,
@@ -61,9 +62,9 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   `PULUMI_STACK=dev`. Each scenario's visitor is made up for it (`test/features/visitors.ts`): a Directus user on the
   Community role and, for a planner, a person in a group that gives Plan Reader, the way the club gives policies.
   They sign in through Authentik's emailed link, which dev's Authentik sends to Mailpit. A plans scenario also makes
-  a made-up club (`test/features/club.ts`): an organization, its accounts, a program area and product, and an
-  Operations Plan and an area's plan, with versions saved the way a Plan Writer saves them, so platform works out their
-  results. A rosters scenario makes programs and families (`test/features/squad.ts`), with the Clubspot rows
+  a made-up organization (`test/features/club.ts`): its accounts, a program area and product, an Operations Plan and
+  an area's plan, and Financial Plans holding copies of them, saved the way a Plan Writer saves them, so platform works
+  out their results. A rosters scenario makes programs and families (`test/features/squad.ts`), with the Clubspot rows
   clubspot-sync would read them from, and waits for platform's hook to move a parent on a team to the Team role. Dev's `backend:savedVersionsDeletable` lets its admin delete them afterwards; prod refuses it. Everything is deleted when
   the scenario ends, and a later run deletes what an earlier one left. The steps refuse any environment but dev, and
   never touch prod's users.
