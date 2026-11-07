@@ -90,6 +90,8 @@ policy that lets the page call only itself and Directus.
   (`error-context.md`) and trace.
 - `mise run preview` and `mise run deploy` act on `$PULUMI_STACK`, which defaults to `prod`. Locally, set
   `PULUMI_STACK=dev`, and preview before every apply. Local deploys are only for breaking glass.
+- Prod's stack also holds the domain's A record (`apexRecord` in `stacks/app/cluster.ts`), adopted from isthmia's
+  portal. Dev's domain is under platform's records.
 - Directus already allows `https://<domain>` as an origin and a sign-in redirect, because the portal is there, so the
   app needs nothing from platform's Directus settings.
 

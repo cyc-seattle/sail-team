@@ -1,6 +1,6 @@
 import * as pulumi from "@pulumi/pulumi";
 import { WebService } from "@cyc-seattle/platform";
-import { deployedImage, loadCluster } from "./cluster.ts";
+import { apexRecord, deployedImage, isDev, loadCluster } from "./cluster.ts";
 
 // sail-team shares the environment's domain with isthmia's portal until it replaces it (sail-team#1). It claims
 // only its own paths, and the portal keeps the rest. A PathPrefix matches whole path segments, so "/roster" doesn't
@@ -30,5 +30,9 @@ const app = new WebService("sail-team", {
     { name: "config", mountPath: "/config", emptyDir: {} },
   ],
 });
+
+if (!isDev) {
+  await apexRecord(cluster);
+}
 
 export const url = app.url;
