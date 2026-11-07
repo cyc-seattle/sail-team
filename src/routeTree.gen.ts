@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as PlansIndexRouteImport } from './routes/plans/index'
 import { Route as RosterIndexRouteImport } from './routes/roster/index'
 import { Route as RostersIndexRouteImport } from './routes/rosters/index'
@@ -17,6 +18,11 @@ import { Route as PlansPlanIdVersionIdRouteImport } from './routes/plans/$planId
 import { Route as PlansClubSetIdIndexRouteImport } from './routes/plans/club/$setId/index'
 import { Route as PlansClubSetIdNowRouteImport } from './routes/plans/club/$setId/now'
 
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlansIndexRoute = PlansIndexRouteImport.update({
   id: '/plans/',
   path: '/plans/',
@@ -54,6 +60,7 @@ const PlansClubSetIdNowRoute = PlansClubSetIdNowRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
   '/plans/': typeof PlansIndexRoute
   '/roster/': typeof RosterIndexRoute
   '/rosters/': typeof RostersIndexRoute
@@ -63,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/plans/club/$setId/': typeof PlansClubSetIdIndexRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
   '/plans': typeof PlansIndexRoute
   '/roster': typeof RosterIndexRoute
   '/rosters': typeof RostersIndexRoute
@@ -73,6 +81,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
   '/plans/': typeof PlansIndexRoute
   '/roster/': typeof RosterIndexRoute
   '/rosters/': typeof RostersIndexRoute
@@ -84,6 +93,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | '/plans/'
     | '/roster/'
     | '/rosters/'
@@ -93,6 +103,7 @@ export interface FileRouteTypes {
     | '/plans/club/$setId/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/plans'
     | '/roster'
     | '/rosters'
@@ -102,6 +113,7 @@ export interface FileRouteTypes {
     | '/plans/club/$setId'
   id:
     | '__root__'
+    | '/'
     | '/plans/'
     | '/roster/'
     | '/rosters/'
@@ -112,6 +124,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   PlansIndexRoute: typeof PlansIndexRoute
   RosterIndexRoute: typeof RosterIndexRoute
   RostersIndexRoute: typeof RostersIndexRoute
@@ -123,6 +136,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/plans/': {
       id: '/plans/'
       path: '/plans'
@@ -176,6 +196,7 @@ declare module '@tanstack/react-router' {
 }
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   PlansIndexRoute: PlansIndexRoute,
   RosterIndexRoute: RosterIndexRoute,
   RostersIndexRoute: RostersIndexRoute,
