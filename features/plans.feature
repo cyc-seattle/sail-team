@@ -2,9 +2,10 @@ Feature: Seeing the Financial Plans
   A Financial Plan is the organization's plan for one year. It holds one Operations Plan and a Program Plan for any
   of the organization's program areas, and the P&L they make together. Planners work on it as a whole, through their
   AI: it starts as a draft, and when it's ready a planner saves it. A saved Financial Plan and its plans never
-  change. To change the plan after that, a planner starts the next version, which begins as a copy of the last saved
-  one. The versions are numbered for each year, such as 2027 v1 and 2027 v2, and each has a note that says what it
-  was for, such as "Reviewed with the board".
+  change. To change the plan after that, a planner starts a new Financial Plan from an earlier one, its parent, and
+  the new one begins as a copy of it. A year can have several drafts at once, so planners can weigh options side by
+  side, such as two drafts started from the same Financial Plan, one with two coaches and one with three. Each
+  Financial Plan has a name, and a note that says what it was for, such as "Reviewed with the board".
 
   Plans is where planners, and anyone else who can read plans, see the Financial Plans and what each plan in them
   takes in and spends. A Program Plan's P&L includes its coaches' wages, its RIBs, and its share of the shared
@@ -12,29 +13,42 @@ Feature: Seeing the Financial Plans
   doesn't change them. Every plan and number here is made up for the run.
 
   @fixme
-  Rule: Plans lists each year's Financial Plans, newest version first, with their notes
+  Rule: Plans lists each year's Financial Plans, newest first, with their names and notes
 
-    Scenario: Two saved versions of a year's plan
+    Scenario: Two saved Financial Plans for a year
       Given I'm a planner who can read plans
-      And 2027 v1 was saved with the note "Reviewed with the board", and 2027 v2 with the note "Adopted"
+      And a saved Financial Plan for 2027 named "Budget", noted "Reviewed with the board"
+      And a later one started from it named "Adopted budget", noted "Adopted by the board"
       And I've signed in
       When I open Plans
-      Then under 2027 I see 2027 v2, then 2027 v1
-      And each shows its note and the day it was saved
+      Then under 2027 I see "Adopted budget", then "Budget"
+      And each shows its note, the day it was saved, and the one it was started from
 
     Scenario: Each Financial Plan shows its operating net
       Given I'm a planner who can read plans
-      And a saved Financial Plan, 2027 v1, with an operating net of $5,000
+      And a saved Financial Plan for 2027 with an operating net of $5,000
       And I've signed in
       When I open Plans
-      Then 2027 v1 shows an operating net of $5,000
+      Then the Financial Plan shows an operating net of $5,000
 
-    Scenario: A draft is listed above the saved versions
+    Scenario: A year's drafts are listed with its saved Financial Plans
       Given I'm a planner who can read plans
-      And a saved Financial Plan, 2027 v1, and a draft of 2027 v2
+      And a saved Financial Plan for 2027 named "Budget"
+      And two drafts started from it, named "Two coaches" and "Three coaches"
       And I've signed in
       When I open Plans
-      Then under 2027 I see 2027 v2, marked as a draft, then 2027 v1
+      Then under 2027 I see "Two coaches" and "Three coaches", each marked as a draft, and "Budget"
+
+  @fixme
+  Rule: Two Financial Plans started from the same one can be compared side by side
+
+    Scenario: Comparing two options
+      Given I'm a planner who can read plans
+      And two drafts started from the same Financial Plan: "Two coaches", with an operating net of $4,000, and "Three coaches", with an operating net of $2,000
+      And I've signed in
+      When I compare "Two coaches" with "Three coaches"
+      Then I see each one's operating net side by side, $4,000 and $2,000
+      And I see that "Two coaches" nets $2,000 more
 
   @fixme
   Rule: A Financial Plan shows the organization's totals, and each of its plans
@@ -46,6 +60,7 @@ Feature: Seeing the Financial Plans
       When I open that Financial Plan
       Then I see the organization's operating net, fundraising, capital, and total
       And I see its Operations Plan and both Program Plans, each with its net
+      And I see the Financial Plan it was started from
 
   @fixme
   Rule: A Program Plan shows its full P&L, with its wages and its share of the shared costs
@@ -69,14 +84,14 @@ Feature: Seeing the Financial Plans
   @fixme
   Rule: A saved Financial Plan shows the P&L it was saved with, and never recalculates it
 
-    Scenario: A later version doesn't change an earlier one's numbers
+    Scenario: A Financial Plan started from it doesn't change its numbers
       Given I'm a planner who can read plans
-      And a saved Financial Plan, 2027 v1, whose Youth Racing offering paid $1,000 of office costs
-      And 2027 v2, which has $2,000 of office costs
+      And a saved Financial Plan named "Budget" whose Youth Racing offering paid $1,000 of office costs
+      And a Financial Plan started from "Budget" with $2,000 of office costs
       And I've signed in
-      When I open Youth Racing's plan in 2027 v1
+      When I open Youth Racing's plan in "Budget"
       Then its offering shows $1,000 of office costs
-      And the page says when 2027 v1 was saved, and who saved it
+      And the page says when "Budget" was saved, and who saved it
 
   @fixme
   Rule: A draft's P&L is calculated as I look at it
