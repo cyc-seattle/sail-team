@@ -12,7 +12,7 @@ each person can see and change. The app adds no security of its own.
 The app is taking `cycsail.team` over from isthmia's portal (#1). It claims the whole domain, and puts its built files
 under `/_app` (`vite.config.ts`). Until the portal's route is gone, the Gateway still gives the portal every path but
 `/plans`, `/roster`, `/rosters`, and `/_app`, including the home page. The home page (`/`) lists the sections the person
-can open (`src/model/nav.ts`), then the club's other tools. `/rosters`, where the roster was while the portal had its
+can open (`src/model/nav.ts`), then other sites the team uses. `/rosters`, where the roster was while the portal had its
 own, sends old links to `/roster`, and `/welcome`, where Authentik's "Go home" lands, sends them to `/`.
 
 ## Tasks

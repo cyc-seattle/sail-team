@@ -5,10 +5,10 @@ import type { HomeLink } from "@/model/nav";
 const card =
   "flex min-h-tap items-center gap-2 rounded-lg bg-card p-card font-medium ring-1 ring-border hover:ring-ring";
 
-/** The home page's list of links, each a card. */
+/** The home page's list of links, one per row. */
 export function LinkList({ links }: { links: HomeLink[] }) {
   return (
-    <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+    <ul className="grid max-w-md gap-2">
       {links.map((link) => (
         <li key={link.label}>
           {"to" in link ? (

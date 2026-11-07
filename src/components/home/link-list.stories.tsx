@@ -21,5 +21,5 @@ export const Default: Story = {
   },
 };
 
-/** Someone who can't open any of this app's sections still sees the club's other tools. */
+/** Someone who can't open any of this app's sections still sees the other sites. */
 export const OnlyOtherSites: Story = { args: { links: externalLinks } };

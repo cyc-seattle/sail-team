@@ -7,7 +7,7 @@ const sections: (NavItem & { collection: string })[] = [
   { to: "/roster", label: "Rosters", collection: "registrations" },
 ];
 
-/** The club's tools outside this app, which everyone sees on the home page. */
+/** Sites outside this app, which everyone sees on the home page. */
 export const externalLinks: HomeLink[] = [
   { href: "https://theclubspot.com", label: "Clubspot" },
   { href: "https://calendar.google.com", label: "Google Calendar" },
@@ -21,7 +21,7 @@ export function navFor(permissions: Permissions): NavItem[] {
   return sections.filter((s) => canRead(permissions, s.collection)).map(({ to, label }) => ({ to, label }));
 }
 
-/** The home page's links for this person: their sections, then the club's other tools. */
+/** The home page's links for this person: their sections, then other sites the team uses. */
 export function homeLinksFor(permissions: Permissions): HomeLink[] {
   return [...navFor(permissions), ...externalLinks];
 }

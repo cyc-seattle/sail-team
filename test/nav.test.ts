@@ -16,11 +16,11 @@ describe("navFor", () => {
 });
 
 describe("homeLinksFor", () => {
-  it("lists the sections someone can open, then the club's other tools", () => {
+  it("lists the sections someone can open, then other sites", () => {
     expect(homeLinksFor(plannerPermissions)).toEqual([...navFor(plannerPermissions), ...externalLinks]);
   });
 
-  it("still lists the club's other tools for someone who can open no section", () => {
+  it("still lists other sites for someone who can open no section", () => {
     expect(homeLinksFor(parentPermissions)).toEqual(externalLinks);
   });
 });
