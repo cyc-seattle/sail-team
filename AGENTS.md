@@ -4,8 +4,8 @@ Guidance for coding agents working in this repository.
 
 ## Overview
 
-`sail-team` is the club's web app at `cycsail.team`. It's a single-page React app, built by Vite into static files and
-served by Caddy on the club's cluster. It has no server of its own. The browser talks to Directus
+`sail-team` is Sail Team, the web app at `cycsail.team`. It's a single-page React app, built by Vite into static files
+and served by Caddy on the club's cluster. It has no server of its own. The browser talks to Directus
 ([cyc-seattle/platform](https://github.com/cyc-seattle/platform)) with the user's own session, and Directus decides what
 each person can see and change. The app adds no security of its own.
 
@@ -102,13 +102,14 @@ policy that lets the page call only itself and Directus.
 The maintainer reviews a UI change from screenshots in its PR description, not by checking out the branch. Every PR
 that changes a page or component shows them there:
 
-- The phone (390 px wide) and desktop views. Before and after, when it changes an existing page. Light and dark, when
-  it changes colors.
+- A typical laptop (1440 × 900) and a typical phone (390 × 844). Review every UI change at both sizes, and show both.
+  Before and after, when it changes an existing page. Light and dark, when it changes colors.
 - Made-up data only. This repo is public, so never a real name, email, or phone.
 - Host them on the `screenshots` branch, which is never merged: commit them to `pr-<number>/` on it, push, and embed
   each with `https://raw.githubusercontent.com/cyc-seattle/sail-team/<commit>/pr-<number>/<name>.png`, using that
   commit's SHA so the link never changes. Never put them on the PR's own branch, or only in `.plans/`.
-- Storybook or Playwright's `page.screenshot()` can take them.
+- Storybook or Playwright's `page.screenshot()` can take them. Storybook's Laptop and Phone viewports use these sizes,
+  the story tests run at both, and the journeys run at the laptop's (`playwright.config.ts`).
 
 ## Code style
 

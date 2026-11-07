@@ -22,7 +22,7 @@ export function AppBar({ name, nav }: { name: string; nav: NavItem[] }) {
     <header className="border-b-4 border-brand-accent bg-brand text-brand-foreground">
       <div className="mx-auto flex min-h-tap max-w-6xl items-center gap-4 px-card">
         <Link to="/" className="inline-flex min-h-tap items-center font-semibold underline-offset-4 hover:underline">
-          CYC Sail Team
+          Sail Team
         </Link>
         <nav aria-label="Sections" className="flex flex-1 gap-1">
           {nav.map((item) => (

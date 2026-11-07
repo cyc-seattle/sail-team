@@ -64,5 +64,5 @@ Ask before adding a new variant or a new component that overlaps one that exists
 ## Stories are tests
 
 Each component has a `*.stories.tsx` beside it. `mise run test` renders every story in Chromium twice, light at a
-desk's width and dark at a phone's, and runs axe on each. An accessibility violation fails CI. A story with a `play`
+laptop's size and dark at a phone's, and runs axe on each. An accessibility violation fails CI. A story with a `play`
 function also checks what it does: an overlay story opens the overlay, so axe checks it open.
