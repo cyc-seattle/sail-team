@@ -19,7 +19,7 @@ function Plans() {
   }
   return (
     <main className="mx-auto max-w-6xl p-card">
-      <PageHeader title="Plans" description="Each plan, by year. Open one to see its versions and their P&L." />
+      <PageHeader title="Plans" />
       <AllPlans />
     </main>
   );

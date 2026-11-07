@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parentPermissions, plannerPermissions } from "../src/mocks/fixtures.ts";
-import { navFor } from "../src/model/nav.ts";
+import { externalLinks, homeLinksFor, navFor } from "../src/model/nav.ts";
 
 describe("navFor", () => {
   it("shows Plans to someone who can read plans, and Rosters to a family on a team", () => {
@@ -12,5 +12,15 @@ describe("navFor", () => {
 
   it("hides Rosters from a family on no team", () => {
     expect(navFor(parentPermissions)).toEqual([]);
+  });
+});
+
+describe("homeLinksFor", () => {
+  it("lists the sections someone can open, then other sites", () => {
+    expect(homeLinksFor(plannerPermissions)).toEqual([...navFor(plannerPermissions), ...externalLinks]);
+  });
+
+  it("still lists other sites for someone who can open no section", () => {
+    expect(homeLinksFor(parentPermissions)).toEqual(externalLinks);
   });
 });

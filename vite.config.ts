@@ -43,7 +43,7 @@ function stories(theme: "light" | "dark", viewport: { width: number; height: num
 }
 
 export default defineConfig({
-  // The app shares cycsail.team with isthmia's portal, which keeps every path sail-team doesn't claim.
+  // Under one path of its own, so the built files never collide with a page's path.
   build: { assetsDir: "_app" },
   // Before react(), so the route tree exists when React's transform runs.
   plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), react(), tailwindcss(), mockServiceWorker()],

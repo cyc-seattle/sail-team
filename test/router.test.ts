@@ -10,6 +10,7 @@ const resolve = (path: string) => {
 
 describe("the router", () => {
   it.each([
+    ["/", "/"],
     ["/plans", "/plans/"],
     ["/roster", "/roster/"],
     ["/roster/abc", "/roster/$teamId"],

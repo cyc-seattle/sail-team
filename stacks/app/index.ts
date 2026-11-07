@@ -1,11 +1,11 @@
 import * as pulumi from "@pulumi/pulumi";
 import { WebService } from "@cyc-seattle/platform";
-import { deployedImage, loadCluster } from "./cluster.ts";
+import { apexRecord, deployedImage, isDev, loadCluster } from "./cluster.ts";
 
-// sail-team shares the environment's domain with isthmia's portal until it replaces it (sail-team#1). It claims
-// only its own paths, and the portal keeps the rest. A PathPrefix matches whole path segments, so "/roster" doesn't
-// catch "/rosters", which keeps its own entry to redirect old links.
-const paths = ["/plans", "/roster", "/rosters", "/_app"];
+// sail-team takes the environment's whole domain from isthmia's portal (sail-team#1). Until the portal's route is
+// gone, the Gateway gives "/" to the older of the two routes, the portal's, while the longer prefixes here win
+// outright. A PathPrefix matches whole path segments, so "/roster" doesn't catch "/rosters", which redirects old links.
+const paths = ["/", "/plans", "/roster", "/rosters", "/_app"];
 
 const cluster = await loadCluster();
 const { platform, provider } = cluster;
@@ -30,5 +30,9 @@ const app = new WebService("sail-team", {
     { name: "config", mountPath: "/config", emptyDir: {} },
   ],
 });
+
+if (!isDev) {
+  await apexRecord(cluster);
+}
 
 export const url = app.url;
