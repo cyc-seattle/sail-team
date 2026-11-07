@@ -66,7 +66,7 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   They sign in through Authentik's emailed link, which dev's Authentik sends to Mailpit. A plans scenario also makes
   a made-up club (`test/features/club.ts`): an organization, its accounts, a program area and product, and an
   Operations Plan and an area's plan, with versions saved the way a Plan Writer saves them, so platform works out their
-  results. A rosters scenario makes a team, its divisions, and families (`test/features/squad.ts`), with the Clubspot rows
+  results. A rosters scenario makes a team, its divisions, and households (`test/features/squad.ts`), with the Clubspot rows
   clubspot-sync would read them from, and waits for platform's hook to move a parent on a team to the Team role. Dev's `backend:savedVersionsDeletable` lets its admin delete them afterwards; prod refuses it. Everything is deleted when
   the scenario ends, and a later run deletes what an earlier one left. The steps refuse any environment but dev, and
   never touch prod's users.

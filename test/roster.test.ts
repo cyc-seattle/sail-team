@@ -204,7 +204,7 @@ describe("reading rosters from Directus", () => {
     expect(jPod.sailors.find((s) => s.id === rosterIds.teammate)?.parents.map((p) => p.name)).toEqual(["Lee Halyard"]);
   });
 
-  it("asks only for what a family on no team can read, and finds no team", async () => {
+  it("asks only for what a household on no team can read, and finds no team", async () => {
     expect(await run(teamsQuery(parentPermissions))).toEqual([]);
   });
 

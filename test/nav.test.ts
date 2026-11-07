@@ -3,14 +3,14 @@ import { parentPermissions, plannerPermissions } from "../src/mocks/fixtures.ts"
 import { externalLinks, homeLinksFor, navFor } from "../src/model/nav.ts";
 
 describe("navFor", () => {
-  it("shows Plans to someone who can read plans, and Rosters to a family on a team", () => {
+  it("shows Plans to someone who can read plans, and Rosters to a household on a team", () => {
     expect(navFor(plannerPermissions)).toEqual([
       { to: "/plans", label: "Plans" },
       { to: "/roster", label: "Rosters" },
     ]);
   });
 
-  it("hides Rosters from a family on no team", () => {
+  it("hides Rosters from a household on no team", () => {
     expect(navFor(parentPermissions)).toEqual([]);
   });
 });

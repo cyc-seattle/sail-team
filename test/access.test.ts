@@ -15,11 +15,11 @@ describe("canRead", () => {
 });
 
 describe("canSeeRosters", () => {
-  it("is true for a family on a team, who read other adults' email", () => {
+  it("is true for a household on a team, who read other adults' email", () => {
     expect(canSeeRosters(teamPermissions)).toBe(true);
   });
 
-  it("is false for a family on no team, or before permissions load", () => {
+  it("is false for a household on no team, or before permissions load", () => {
     expect(canSeeRosters(parentPermissions)).toBe(false);
     expect(canSeeRosters(undefined)).toBe(false);
   });
