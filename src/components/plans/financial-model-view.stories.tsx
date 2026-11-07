@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect } from "storybook/test";
-import { ClubPlanView } from "./club-plan-view";
+import { FinancialModelView } from "./financial-model-view";
 import { offerings, warnings } from "./fixtures";
 
 const row = (member: string, name: string, pnl: (typeof offerings)[number]["pnl"]) => ({
@@ -11,7 +11,7 @@ const row = (member: string, name: string, pnl: (typeof offerings)[number]["pnl"
 });
 
 const meta = {
-  component: ClubPlanView,
+  component: FinancialModelView,
   args: {
     savedAt: "2027-03-10T18:00:00Z",
     totals: {
@@ -73,7 +73,7 @@ const meta = {
     ],
     warnings: warnings.slice(0, 1),
   },
-} satisfies Meta<typeof ClubPlanView>;
+} satisfies Meta<typeof FinancialModelView>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 

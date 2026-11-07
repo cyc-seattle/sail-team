@@ -44,10 +44,10 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   them. A draft is calculated in the browser by the planning engine this app bundles, from the same rows platform reads
   at save time (`src/model/plan-data.ts`): the catalog, the Operations Plan version, and each area's active version,
   with the draft in place of its own area's.
-- `src/directus/club-plans.ts` reads club plans (`version_sets`): the whole club's plan for a year, frozen, with the
-  results platform worked out when it was saved. A club plan's result rows have `version_set_id` set and no
+- `src/directus/financial-models.ts` reads financial models (`version_sets`): the whole plan for a year, frozen, with the
+  results platform worked out when it was saved. A financial model's result rows have `version_set_id` set and no
   `version_id`, and each area's rows name the member that holds them (`version_set_member_id`). `/plans` shows each
-  year's newest one, and `/plans/club/<set>` its P&L.
+  year's newest one, and `/plans/model/<set>` its P&L.
 - `src/directus/roster.ts` reads the rosters: each program's current or most recent offering, its confirmed
   registrations, the sailors' parents, and their names, plus the email and phone Directus lets the person see. Directus's
   rules decide who appears, so the page filters only on ids, statuses, and dates, which platform's query guard allows,

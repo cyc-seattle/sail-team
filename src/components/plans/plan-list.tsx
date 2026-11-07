@@ -1,19 +1,19 @@
 import { Link } from "@tanstack/react-router";
-import type { ClubTotals } from "@/directus/club-plans";
+import type { ModelTotals } from "@/directus/financial-models";
 import type { PlanSummary } from "@/directus/plans";
-import { newestClubPlans, type ClubPlanSummary } from "@/model/club-plans";
+import { newestFinancialModels, type FinancialModelSummary } from "@/model/financial-models";
 import { planFor, plansByYear } from "@/model/plan-list";
-import { ClubPlanCard } from "./club-plan-card";
+import { FinancialModelCard } from "./financial-model-card";
 
-/** Every plan, by year, each linking to its versions, with the year's newest club plan above them. */
+/** Every plan, by year, each linking to its versions, with the year's newest financial model above them. */
 export function PlanList({
   plans,
-  clubPlans = [],
+  financialModels = [],
 }: {
   plans: PlanSummary[];
-  clubPlans?: (ClubPlanSummary & { totals: ClubTotals | null })[];
+  financialModels?: (FinancialModelSummary & { totals: ModelTotals | null })[];
 }) {
-  const newest = newestClubPlans(clubPlans);
+  const newest = newestFinancialModels(financialModels);
   if (plans.length === 0) {
     return <p className="text-sm text-muted-foreground">There are no plans yet.</p>;
   }
@@ -24,7 +24,7 @@ export function PlanList({
           <h2 id={`year-${year}`} className="text-base font-medium">
             {year}
           </h2>
-          <ClubPlanCard year={year} plan={newest.get(year)} />
+          <FinancialModelCard year={year} plan={newest.get(year)} />
           <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {plans.map((plan) => (
               <li key={plan.id}>

@@ -97,20 +97,20 @@ describe("a draft's warnings", () => {
   });
 });
 
-describe("reading club plans", () => {
-  it("lists each club plan with its totals", async () => {
-    const { clubPlansQuery } = await import("../src/directus/club-plans.ts");
-    const sets = await run<{ name: string; totals: { operating_net_cents: number } | null }[]>(clubPlansQuery);
+describe("reading financial models", () => {
+  it("lists each financial model with its totals", async () => {
+    const { financialModelsQuery } = await import("../src/directus/financial-models.ts");
+    const sets = await run<{ name: string; totals: { operating_net_cents: number } | null }[]>(financialModelsQuery);
     expect(sets.map((s) => [s.name, s.totals?.operating_net_cents])).toEqual([["March", 500_000]]);
   });
 
-  it("reads a club plan's members, each area's P&L, and the Operations Plan's lines by name", async () => {
-    const { clubPlanQuery } = await import("../src/directus/club-plans.ts");
+  it("reads a financial model's members, each area's P&L, and the Operations Plan's lines by name", async () => {
+    const { financialModelQuery } = await import("../src/directus/financial-models.ts");
     const club = await run<{
       members: { area_name: string | null; kind: string }[];
       pnl: { name: string; version_set_member_id: string }[];
       lines: { name: string; revenue: boolean; version_set_member_id: string }[];
-    }>(clubPlanQuery(ids.clubPlan));
+    }>(financialModelQuery(ids.financialModel));
     expect(club.members.map((m) => m.area_name ?? m.kind)).toEqual(["Youth Racing", "Adult Programs", "operations"]);
     expect(club.pnl.map((p) => [p.name, p.version_set_member_id])).toEqual([
       ["Beginner camp, week 1", ids.youthMember],
@@ -118,16 +118,16 @@ describe("reading club plans", () => {
     expect(club.lines).toEqual([expect.objectContaining({ name: "Office rent", revenue: false })]);
   });
 
-  it("keeps a club plan's rows out of a version's own results", async () => {
+  it("keeps a financial model's rows out of a version's own results", async () => {
     const results = await run<{ pnl: { version_id?: string }[] }>(savedResultsQuery(ids.youthSaved2));
     expect(results.pnl).toHaveLength(2);
   });
 });
 
-describe("the club's plan as it stands now", () => {
+describe("the financial model as it stands now", () => {
   it("calculates today's active versions, and knows which area each offering is in", async () => {
-    const { calculateClubNow } = await import("../src/directus/plans.ts");
-    const { output, names, areas, areaOfOffering } = await calculateClubNow({
+    const { calculateModelNow } = await import("../src/directus/plans.ts");
+    const { output, names, areas, areaOfOffering } = await calculateModelNow({
       organization_id: ids.org,
       fiscal_year: 2027,
     });
@@ -141,18 +141,18 @@ describe("the club's plan as it stands now", () => {
   });
 });
 
-describe("a saved version in a club plan", () => {
-  it("finds the club plan that holds it, with its offerings as the club plan counts them", async () => {
-    const { versionInClubPlanQuery } = await import("../src/directus/club-plans.ts");
+describe("a saved version in a financial model", () => {
+  it("finds the financial model that holds it, with its offerings as the financial model counts them", async () => {
+    const { versionInFinancialModelQuery } = await import("../src/directus/financial-models.ts");
     const held = await run<{ set: { name: string }; pnl: { name: string }[] } | null>(
-      versionInClubPlanQuery(ids.youthSaved1),
+      versionInFinancialModelQuery(ids.youthSaved1),
     );
     expect(held?.set.name).toBe("March");
     expect(held?.pnl.map((p) => p.name)).toEqual(["Beginner camp, week 1"]);
   });
 
-  it("is null for a version no club plan holds", async () => {
-    const { versionInClubPlanQuery } = await import("../src/directus/club-plans.ts");
-    expect(await run(versionInClubPlanQuery(ids.youthSaved2))).toBeNull();
+  it("is null for a version no financial model holds", async () => {
+    const { versionInFinancialModelQuery } = await import("../src/directus/financial-models.ts");
+    expect(await run(versionInFinancialModelQuery(ids.youthSaved2))).toBeNull();
   });
 });

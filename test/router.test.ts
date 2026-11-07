@@ -14,8 +14,8 @@ describe("the router", () => {
     ["/roster", "/roster/"],
     ["/plans/abc", "/plans/$planId/"],
     ["/plans/abc/def", "/plans/$planId/$versionId"],
-    ["/plans/club/abc", "/plans/club/$setId/"],
-    ["/plans/club/abc/now", "/plans/club/$setId/now"],
+    ["/plans/model/abc", "/plans/model/$setId/"],
+    ["/plans/model/abc/now", "/plans/model/$setId/now"],
   ])("serves %s with its page", (path, route) => {
     expect(resolve(path)).toEqual(["__root__", route]);
   });

@@ -1,8 +1,8 @@
 import type { EngineWarning } from "@cyc-seattle/platform/planning";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { ClubMember, ClubTotals } from "@/directus/club-plans";
-import { signedCents, type ClubLine } from "@/model/club-plans";
+import type { ModelMember, ModelTotals } from "@/directus/financial-models";
+import { signedCents, type ModelLine } from "@/model/financial-models";
 import { formatDate } from "@/model/dates";
 import { savedPnl, type SavedPnlRow } from "@/model/saved-results";
 import { EngineWarnings } from "./engine-warnings";
@@ -10,17 +10,17 @@ import { Money } from "./money";
 import { PnlTable } from "./pnl-table";
 import { SummaryTiles } from "./summary-tiles";
 
-export interface ClubPlanViewProps {
+export interface FinancialModelViewProps {
   savedAt: string | null;
-  totals: ClubTotals | null;
-  members: ClubMember[];
+  totals: ModelTotals | null;
+  members: ModelMember[];
   pnl: (SavedPnlRow & { version_set_member_id: string | null })[];
-  lines: (ClubLine & { version_set_member_id: string | null })[];
+  lines: (ModelLine & { version_set_member_id: string | null })[];
   warnings: EngineWarning[];
 }
 
-/** A club plan: the club's totals, what to check, then each program area's P&L and the Operations Plan's lines. */
-export function ClubPlanView({ savedAt, totals, members, pnl, lines, warnings }: ClubPlanViewProps) {
+/** A financial model: the club's totals, what to check, then each program area's P&L and the Operations Plan's lines. */
+export function FinancialModelView({ savedAt, totals, members, pnl, lines, warnings }: FinancialModelViewProps) {
   const areas = members
     .filter((m) => m.kind === "program_area")
     .sort((a, b) => (a.area_name ?? a.plan_name).localeCompare(b.area_name ?? b.plan_name));
@@ -30,7 +30,7 @@ export function ClubPlanView({ savedAt, totals, members, pnl, lines, warnings }:
     <div className="grid gap-card">
       <Alert>
         <AlertDescription>
-          These are the numbers the club plan was saved with, on {formatDate(savedAt)}. They never change.
+          These are the numbers the financial model was saved with, on {formatDate(savedAt)}. They never change.
         </AlertDescription>
       </Alert>
       {totals && (

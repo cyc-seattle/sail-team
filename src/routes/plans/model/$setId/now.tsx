@@ -9,42 +9,42 @@ import { NoAccess } from "@/components/shell/no-access";
 import { NoticePage } from "@/components/shell/notice-page";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { canRead } from "@/directus/access";
-import { clubPlanQuery } from "@/directus/club-plans";
-import { clubNowQuery } from "@/directus/plans";
+import { financialModelQuery } from "@/directus/financial-models";
+import { modelNowQuery } from "@/directus/plans";
 import { useSession } from "@/directus/use-session";
 
-export const Route = createFileRoute("/plans/club/$setId/now")({
-  component: ClubNowPage,
+export const Route = createFileRoute("/plans/model/$setId/now")({
+  component: ModelNowPage,
 });
 
-function ClubNowPage() {
+function ModelNowPage() {
   const session = useSession();
   if (session.kind !== "signed-in" || !canRead(session.permissions, "plans")) {
     return <NoAccess what="plans" />;
   }
-  return <ClubNow />;
+  return <ModelNow />;
 }
 
-function ClubNow() {
+function ModelNow() {
   const { setId } = Route.useParams();
-  const { data: club } = useSuspenseQuery(clubPlanQuery(setId));
-  if (!club) {
-    return <NoticePage title="There's no such club plan" />;
+  const { data: model } = useSuspenseQuery(financialModelQuery(setId));
+  if (!model) {
+    return <NoticePage title="There's no such financial model" />;
   }
   return (
     <main className="mx-auto max-w-6xl p-card">
       <PageHeader
-        title={`The club's ${club.set.fiscal_year} plan as it stands now`}
+        title={`The ${model.set.fiscal_year} financial model as it stands now`}
         description="Today's active Operations Plan version and each program area's active version."
-        back={{ to: `/plans/club/${setId}`, label: `Club plan: ${club.set.name}` }}
+        back={{ to: `/plans/model/${setId}`, label: `Financial model: ${model.set.name}` }}
       />
-      <Calculated organizationId={club.set.organization_id} year={club.set.fiscal_year} />
+      <Calculated organizationId={model.set.organization_id} year={model.set.fiscal_year} />
     </main>
   );
 }
 
 function Calculated({ organizationId, year }: { organizationId: string; year: number }) {
-  const { data } = useSuspenseQuery(clubNowQuery({ organization_id: organizationId, fiscal_year: year }));
+  const { data } = useSuspenseQuery(modelNowQuery({ organization_id: organizationId, fiscal_year: year }));
   const { output, names, areaOfOffering } = data;
   const areas = data.areas
     .map((id) => ({ id, name: names.get(id) ?? "A program area" }))
@@ -54,8 +54,8 @@ function Calculated({ organizationId, year }: { organizationId: string; year: nu
     <div className="grid gap-card">
       <Alert>
         <AlertDescription>
-          These numbers are calculated now, by this app, and change as planners change the active plans. No club plan
-          holds them until a planner saves one.
+          These numbers are calculated now, by this app, and change as planners change the active plans. No financial
+          model holds them until a planner saves one.
         </AlertDescription>
       </Alert>
       <SummaryTiles

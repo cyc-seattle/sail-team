@@ -2,11 +2,11 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect } from "storybook/test";
 import { withRouter } from "../../../.storybook/with-router";
 import { offerings } from "./fixtures";
-import { VersionInClubPlanSection } from "./version-in-club-plan";
+import { VersionInFinancialModelSection } from "./version-in-financial-model";
 
 const meta = {
-  component: VersionInClubPlanSection,
-  decorators: [withRouter("/plans/youth/v1", ["/plans/club/$setId"])],
+  component: VersionInFinancialModelSection,
+  decorators: [withRouter("/plans/youth/v1", ["/plans/model/$setId"])],
   args: {
     held: {
       set: {
@@ -20,13 +20,13 @@ const meta = {
       pnl: offerings.slice(0, 2).map(({ name, pnl }) => ({ ...pnl, subject_key: pnl.key, name })),
     },
   },
-} satisfies Meta<typeof VersionInClubPlanSection>;
+} satisfies Meta<typeof VersionInFinancialModelSection>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const HeldByAClubPlan: Story = {
+export const HeldByAFinancialModel: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("link", { name: "March" })).toHaveAttribute("href", "/plans/club/march");
+    await expect(canvas.getByRole("link", { name: "March" })).toHaveAttribute("href", "/plans/model/march");
     await expect(canvas.getByText(/can differ from the version's own/)).toBeVisible();
   },
 };

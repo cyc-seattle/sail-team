@@ -151,7 +151,7 @@ export async function calculateDraft(plan: PlanRef, version: VersionSummary): Pr
   return calculateVersions(plan, versionSet(plan, version, areas), operations);
 }
 
-export interface ClubNowResults extends DraftResults {
+export interface ModelNowResults extends DraftResults {
   /** Each program area with an active version. */
   areas: string[];
   /** The program area each offering's version is for, by the offering's key. */
@@ -159,12 +159,12 @@ export interface ClubNowResults extends DraftResults {
 }
 
 /**
- * The club's plan as it stands now, calculated in the browser: today's active Operations Plan version and each
- * program area's active version, as a club plan saved now would hold them.
+ * The financial model as it stands now, calculated in the browser: today's active Operations Plan version and each
+ * program area's active version, as a financial model saved now would hold them.
  */
-export async function calculateClubNow(
+export async function calculateModelNow(
   plan: Pick<PlanRef, "organization_id" | "fiscal_year">,
-): Promise<ClubNowResults> {
+): Promise<ModelNowResults> {
   const { areas, operations } = await readActivations(plan);
   const ids = [...new Set([operations, ...areas.map((a) => a.version_id)].filter((id): id is string => id !== null))];
   const results = await calculateVersions(plan, ids, operations);
@@ -235,11 +235,11 @@ async function calculateVersions(
   return { output: computePlan(data), names, offerings };
 }
 
-/** The club's plan as it stands now, for a club plan's organization and year. */
-export const clubNowQuery = (plan: Pick<PlanRef, "organization_id" | "fiscal_year">) =>
+/** The financial model as it stands now, for a financial model's organization and year. */
+export const modelNowQuery = (plan: Pick<PlanRef, "organization_id" | "fiscal_year">) =>
   queryOptions({
-    queryKey: ["club-now", plan.organization_id, plan.fiscal_year],
-    queryFn: () => calculateClubNow(plan),
+    queryKey: ["model-now", plan.organization_id, plan.fiscal_year],
+    queryFn: () => calculateModelNow(plan),
   });
 
 export const draftQuery = (plan: PlanRef, version: VersionSummary) =>

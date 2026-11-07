@@ -1,5 +1,5 @@
-/** A club plan as the list shows it: a frozen set of the club's active versions for a year. */
-export interface ClubPlanSummary {
+/** A financial model as the list shows it: a frozen set of the club's active versions for a year. */
+export interface FinancialModelSummary {
   id: string;
   organization_id: string;
   fiscal_year: number;
@@ -9,10 +9,10 @@ export interface ClubPlanSummary {
 }
 
 /**
- * The newest club plan for each organization and year: the club's plan as it was last frozen. Club plans are never
+ * The newest financial model for each organization and year: the financial model as it was last frozen. Financial models are never
  * changed, so a later one follows an earlier one.
  */
-export function newestClubPlans<T extends ClubPlanSummary>(sets: T[]): Map<number, T> {
+export function newestFinancialModels<T extends FinancialModelSummary>(sets: T[]): Map<number, T> {
   const newest = new Map<number, T>();
   for (const set of sets) {
     const seen = newest.get(set.fiscal_year);
@@ -23,8 +23,8 @@ export function newestClubPlans<T extends ClubPlanSummary>(sets: T[]): Map<numbe
   return newest;
 }
 
-/** One cost or revenue line of a club plan, with its plain name and whether its account is revenue. */
-export interface ClubLine {
+/** One cost or revenue line of a financial model, with its plain name and whether its account is revenue. */
+export interface ModelLine {
   name: string;
   cost_center_name: string;
   amount_cents: number;
@@ -32,9 +32,9 @@ export interface ClubLine {
 }
 
 /** A line's amount as it adds to the net: revenue as it is, a cost taken away. */
-export const signedCents = (line: ClubLine) => (line.revenue ? line.amount_cents : -line.amount_cents);
+export const signedCents = (line: ModelLine) => (line.revenue ? line.amount_cents : -line.amount_cents);
 
-/** A plan in a club plan, as the comparison with today's active versions needs it. */
+/** A plan in a financial model, as the comparison with today's active versions needs it. */
 export interface MemberRef {
   version_id: string;
   kind: "program_area" | "operations";
@@ -45,9 +45,9 @@ export interface MemberRef {
 }
 
 /**
- * Each part of the club's plan whose active version isn't the one the club plan holds, so the club has moved on since:
+ * Each part of the financial model whose active version isn't the one the financial model holds, so the club has moved on since:
  * an area that made another version active, the Operations Plan likewise, or an area that has made one active since
- * and wasn't in the club plan.
+ * and wasn't in the financial model.
  */
 export function movedOn(
   members: MemberRef[],

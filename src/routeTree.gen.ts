@@ -14,8 +14,8 @@ import { Route as RosterIndexRouteImport } from './routes/roster/index'
 import { Route as RostersIndexRouteImport } from './routes/rosters/index'
 import { Route as PlansPlanIdIndexRouteImport } from './routes/plans/$planId/index'
 import { Route as PlansPlanIdVersionIdRouteImport } from './routes/plans/$planId/$versionId'
-import { Route as PlansClubSetIdIndexRouteImport } from './routes/plans/club/$setId/index'
-import { Route as PlansClubSetIdNowRouteImport } from './routes/plans/club/$setId/now'
+import { Route as PlansModelSetIdIndexRouteImport } from './routes/plans/model/$setId/index'
+import { Route as PlansModelSetIdNowRouteImport } from './routes/plans/model/$setId/now'
 
 const PlansIndexRoute = PlansIndexRouteImport.update({
   id: '/plans/',
@@ -42,14 +42,14 @@ const PlansPlanIdVersionIdRoute = PlansPlanIdVersionIdRouteImport.update({
   path: '/plans/$planId/$versionId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PlansClubSetIdIndexRoute = PlansClubSetIdIndexRouteImport.update({
-  id: '/plans/club/$setId/',
-  path: '/plans/club/$setId/',
+const PlansModelSetIdIndexRoute = PlansModelSetIdIndexRouteImport.update({
+  id: '/plans/model/$setId/',
+  path: '/plans/model/$setId/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PlansClubSetIdNowRoute = PlansClubSetIdNowRouteImport.update({
-  id: '/plans/club/$setId/now',
-  path: '/plans/club/$setId/now',
+const PlansModelSetIdNowRoute = PlansModelSetIdNowRouteImport.update({
+  id: '/plans/model/$setId/now',
+  path: '/plans/model/$setId/now',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -59,8 +59,8 @@ export interface FileRoutesByFullPath {
   '/rosters/': typeof RostersIndexRoute
   '/plans/$planId/$versionId': typeof PlansPlanIdVersionIdRoute
   '/plans/$planId/': typeof PlansPlanIdIndexRoute
-  '/plans/club/$setId/now': typeof PlansClubSetIdNowRoute
-  '/plans/club/$setId/': typeof PlansClubSetIdIndexRoute
+  '/plans/model/$setId/now': typeof PlansModelSetIdNowRoute
+  '/plans/model/$setId/': typeof PlansModelSetIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/plans': typeof PlansIndexRoute
@@ -68,8 +68,8 @@ export interface FileRoutesByTo {
   '/rosters': typeof RostersIndexRoute
   '/plans/$planId/$versionId': typeof PlansPlanIdVersionIdRoute
   '/plans/$planId': typeof PlansPlanIdIndexRoute
-  '/plans/club/$setId/now': typeof PlansClubSetIdNowRoute
-  '/plans/club/$setId': typeof PlansClubSetIdIndexRoute
+  '/plans/model/$setId/now': typeof PlansModelSetIdNowRoute
+  '/plans/model/$setId': typeof PlansModelSetIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -78,8 +78,8 @@ export interface FileRoutesById {
   '/rosters/': typeof RostersIndexRoute
   '/plans/$planId/$versionId': typeof PlansPlanIdVersionIdRoute
   '/plans/$planId/': typeof PlansPlanIdIndexRoute
-  '/plans/club/$setId/now': typeof PlansClubSetIdNowRoute
-  '/plans/club/$setId/': typeof PlansClubSetIdIndexRoute
+  '/plans/model/$setId/now': typeof PlansModelSetIdNowRoute
+  '/plans/model/$setId/': typeof PlansModelSetIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -89,8 +89,8 @@ export interface FileRouteTypes {
     | '/rosters/'
     | '/plans/$planId/$versionId'
     | '/plans/$planId/'
-    | '/plans/club/$setId/now'
-    | '/plans/club/$setId/'
+    | '/plans/model/$setId/now'
+    | '/plans/model/$setId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/plans'
@@ -98,8 +98,8 @@ export interface FileRouteTypes {
     | '/rosters'
     | '/plans/$planId/$versionId'
     | '/plans/$planId'
-    | '/plans/club/$setId/now'
-    | '/plans/club/$setId'
+    | '/plans/model/$setId/now'
+    | '/plans/model/$setId'
   id:
     | '__root__'
     | '/plans/'
@@ -107,8 +107,8 @@ export interface FileRouteTypes {
     | '/rosters/'
     | '/plans/$planId/$versionId'
     | '/plans/$planId/'
-    | '/plans/club/$setId/now'
-    | '/plans/club/$setId/'
+    | '/plans/model/$setId/now'
+    | '/plans/model/$setId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -117,8 +117,8 @@ export interface RootRouteChildren {
   RostersIndexRoute: typeof RostersIndexRoute
   PlansPlanIdVersionIdRoute: typeof PlansPlanIdVersionIdRoute
   PlansPlanIdIndexRoute: typeof PlansPlanIdIndexRoute
-  PlansClubSetIdNowRoute: typeof PlansClubSetIdNowRoute
-  PlansClubSetIdIndexRoute: typeof PlansClubSetIdIndexRoute
+  PlansModelSetIdNowRoute: typeof PlansModelSetIdNowRoute
+  PlansModelSetIdIndexRoute: typeof PlansModelSetIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -158,18 +158,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlansPlanIdVersionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/plans/club/$setId/': {
-      id: '/plans/club/$setId/'
-      path: '/plans/club/$setId'
-      fullPath: '/plans/club/$setId/'
-      preLoaderRoute: typeof PlansClubSetIdIndexRouteImport
+    '/plans/model/$setId/': {
+      id: '/plans/model/$setId/'
+      path: '/plans/model/$setId'
+      fullPath: '/plans/model/$setId/'
+      preLoaderRoute: typeof PlansModelSetIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/plans/club/$setId/now': {
-      id: '/plans/club/$setId/now'
-      path: '/plans/club/$setId/now'
-      fullPath: '/plans/club/$setId/now'
-      preLoaderRoute: typeof PlansClubSetIdNowRouteImport
+    '/plans/model/$setId/now': {
+      id: '/plans/model/$setId/now'
+      path: '/plans/model/$setId/now'
+      fullPath: '/plans/model/$setId/now'
+      preLoaderRoute: typeof PlansModelSetIdNowRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -181,8 +181,8 @@ const rootRouteChildren: RootRouteChildren = {
   RostersIndexRoute: RostersIndexRoute,
   PlansPlanIdVersionIdRoute: PlansPlanIdVersionIdRoute,
   PlansPlanIdIndexRoute: PlansPlanIdIndexRoute,
-  PlansClubSetIdNowRoute: PlansClubSetIdNowRoute,
-  PlansClubSetIdIndexRoute: PlansClubSetIdIndexRoute,
+  PlansModelSetIdNowRoute: PlansModelSetIdNowRoute,
+  PlansModelSetIdIndexRoute: PlansModelSetIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

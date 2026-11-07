@@ -1,9 +1,9 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/plans/page-header";
-import { VersionInClubPlanSection } from "@/components/plans/version-in-club-plan";
+import { VersionInFinancialModelSection } from "@/components/plans/version-in-financial-model";
 import { VersionPnl } from "@/components/plans/version-pnl";
-import { versionInClubPlanQuery } from "@/directus/club-plans";
+import { versionInFinancialModelQuery } from "@/directus/financial-models";
 import { NoticePage } from "@/components/shell/notice-page";
 import { NoAccess } from "@/components/shell/no-access";
 import { canRead } from "@/directus/access";
@@ -68,14 +68,14 @@ function Saved({ version }: { version: VersionSummary }) {
         rows={data.pnl.map(savedPnl)}
         warnings={data.warnings}
       />
-      <InClubPlan versionId={version.id} />
+      <InFinancialModel versionId={version.id} />
     </div>
   );
 }
 
-function InClubPlan({ versionId }: { versionId: string }) {
-  const { data } = useSuspenseQuery(versionInClubPlanQuery(versionId));
-  return data ? <VersionInClubPlanSection held={data} /> : null;
+function InFinancialModel({ versionId }: { versionId: string }) {
+  const { data } = useSuspenseQuery(versionInFinancialModelQuery(versionId));
+  return data ? <VersionInFinancialModelSection held={data} /> : null;
 }
 
 function Draft({ plan, version }: { plan: PlanSummary; version: VersionSummary }) {

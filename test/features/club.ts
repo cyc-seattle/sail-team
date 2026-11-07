@@ -13,8 +13,8 @@ export class Club {
   readonly run = newRunId();
   readonly area = `Youth Racing ${this.run}`;
   /**
-   * The plan year. The plans journeys use 2027. A club plan journey that reads a whole year's page uses a far-off
-   * year of its own, so no other run's club plan for the year can show up there.
+   * The plan year. The plans journeys use 2027. A financial model journey that reads a whole year's page uses a far-off
+   * year of its own, so no other run's financial model for the year can show up there.
    */
   year = PLAN_YEAR;
   get areaPlanName() {
@@ -189,10 +189,10 @@ export class Club {
   }
 
   /**
-   * Saves the club's plan for the year as dev's admin, the way a Plan Writer does: a new `version_sets` row. The database
+   * Saves the financial model for the year as dev's admin, the way a Plan Writer does: a new `version_sets` row. The database
    * fills in its members, the active versions, and platform works out its results, which this waits for. Returns its id.
    */
-  async saveClubPlan(name: string): Promise<string> {
+  async saveFinancialModel(name: string): Promise<string> {
     const set = (
       await this.create("version_sets", {
         organization_id: this.organizationId,
@@ -213,8 +213,8 @@ export class Club {
   }
 
   /**
-   * Deletes everything the scenario made, newest first, so a club plan goes before the versions it holds. Dev's
-   * `backend:savedVersionsDeletable` lets its first admin delete a saved version or club plan, with its rows,
+   * Deletes everything the scenario made, newest first, so a financial model goes before the versions it holds. Dev's
+   * `backend:savedVersionsDeletable` lets its first admin delete a saved version or financial model, with its rows,
    * activations, members, and results; prod refuses it.
    */
   async cleanUp(): Promise<void> {

@@ -1,7 +1,7 @@
 import type { EngineWarning } from "@cyc-seattle/platform/planning";
 import { customEndpoint } from "@directus/sdk";
 import { queryOptions } from "@tanstack/react-query";
-import type { ClubLine, ClubPlanSummary } from "@/model/club-plans";
+import type { ModelLine, FinancialModelSummary } from "@/model/financial-models";
 import type { SavedPnlRow } from "@/model/saved-results";
 import { appDirectus } from "./app.ts";
 
@@ -13,8 +13,8 @@ function readAll<T>(table: string, filter: object, fields: string[]): Promise<T[
 
 const setFields = ["id", "organization_id", "fiscal_year", "name", "message", "saved_at"];
 
-/** The club's totals when a club plan was saved. */
-export interface ClubTotals {
+/** The club's totals when a financial model was saved. */
+export interface ModelTotals {
   calculated_at: string;
   operating_net_cents: number;
   fundraising_net_cents: number;
@@ -24,13 +24,13 @@ export interface ClubTotals {
 
 const totalFields = ["calculated_at", "operating_net_cents", "fundraising_net_cents", "capital_cents", "total_cents"];
 
-/** Every club plan, with its totals, for the plan list. */
-export const clubPlansQuery = queryOptions({
-  queryKey: ["club-plans"],
+/** Every financial model, with its totals, for the plan list. */
+export const financialModelsQuery = queryOptions({
+  queryKey: ["financial-models"],
   queryFn: async () => {
-    const sets = await readAll<ClubPlanSummary>("version_sets", {}, setFields);
+    const sets = await readAll<FinancialModelSummary>("version_sets", {}, setFields);
     const totals = sets.length
-      ? await readAll<ClubTotals & { version_set_id: string }>(
+      ? await readAll<ModelTotals & { version_set_id: string }>(
           "plan_results",
           { version_set_id: { _in: sets.map((s) => s.id) } },
           [...totalFields, "version_set_id"],
@@ -38,12 +38,12 @@ export const clubPlansQuery = queryOptions({
       : [];
     return sets.map((set) => ({ ...set, totals: totals.find((t) => t.version_set_id === set.id) ?? null }));
   },
-  // A club plan never changes once saved.
+  // A financial model never changes once saved.
   staleTime: 5 * 60_000,
 });
 
-/** One plan in a club plan, with the version of it the club plan holds. */
-export interface ClubMember {
+/** One plan in a financial model, with the version of it the financial model holds. */
+export interface ModelMember {
   id: string;
   plan_id: string;
   version_id: string;
@@ -53,32 +53,32 @@ export interface ClubMember {
   area_name: string | null;
 }
 
-export interface ClubPlan {
-  set: ClubPlanSummary;
-  totals: ClubTotals | null;
-  members: ClubMember[];
+export interface FinancialModel {
+  set: FinancialModelSummary;
+  totals: ModelTotals | null;
+  members: ModelMember[];
   pnl: (SavedPnlRow & { version_set_member_id: string | null })[];
-  lines: (ClubLine & { version_set_member_id: string | null })[];
+  lines: (ModelLine & { version_set_member_id: string | null })[];
   warnings: EngineWarning[];
 }
 
-/** A club plan and its results, as they were worked out when it was saved. Never recalculated. */
-export const clubPlanQuery = (setId: string) =>
+/** A financial model and its results, as they were worked out when it was saved. Never recalculated. */
+export const financialModelQuery = (setId: string) =>
   queryOptions({
-    queryKey: ["club-plans", setId],
+    queryKey: ["financial-models", setId],
     staleTime: Infinity,
-    queryFn: async (): Promise<ClubPlan | null> => {
+    queryFn: async (): Promise<FinancialModel | null> => {
       const bySet = { version_set_id: { _eq: setId } };
       const [sets, totals, members, pnl, lines, warnings] = await Promise.all([
-        readAll<ClubPlanSummary>("version_sets", { id: { _eq: setId } }, setFields),
-        readAll<ClubTotals>("plan_results", bySet, totalFields),
+        readAll<FinancialModelSummary>("version_sets", { id: { _eq: setId } }, setFields),
+        readAll<ModelTotals>("plan_results", bySet, totalFields),
         readAll<{
           id: string;
           version_id: string;
           plan_id: {
             id: string;
             name: string;
-            kind: ClubMember["kind"];
+            kind: ModelMember["kind"];
             program_area_id: { id: string; name: string } | null;
           };
         }>("version_set_members", bySet, [
@@ -158,21 +158,21 @@ export const clubPlanQuery = (setId: string) =>
     },
   });
 
-export interface VersionInClubPlan {
-  set: ClubPlanSummary;
+export interface VersionInFinancialModel {
+  set: FinancialModelSummary;
   pnl: SavedPnlRow[];
 }
 
 /**
- * A saved version's P&L in the newest club plan that holds it, which can differ from its own: the club plan counts the
- * other areas' versions it holds, not the ones active when this version was saved. Null when no club plan holds it.
+ * A saved version's P&L in the newest financial model that holds it, which can differ from its own: the financial model counts the
+ * other areas' versions it holds, not the ones active when this version was saved. Null when no financial model holds it.
  */
-export const versionInClubPlanQuery = (versionId: string) =>
+export const versionInFinancialModelQuery = (versionId: string) =>
   queryOptions({
-    queryKey: ["versions", versionId, "club-plan"],
+    queryKey: ["versions", versionId, "financial-model"],
     staleTime: 5 * 60_000,
-    queryFn: async (): Promise<VersionInClubPlan | null> => {
-      const members = await readAll<{ id: string; version_set_id: ClubPlanSummary }>(
+    queryFn: async (): Promise<VersionInFinancialModel | null> => {
+      const members = await readAll<{ id: string; version_set_id: FinancialModelSummary }>(
         "version_set_members",
         { version_id: { _eq: versionId } },
         ["id", ...setFields.map((f) => `version_set_id.${f}`)],

@@ -1,22 +1,22 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect } from "storybook/test";
 import { withRouter } from "../../../.storybook/with-router";
-import { ClubMovedOn } from "./club-moved-on";
+import { ModelMovedOn } from "./model-moved-on";
 
 const meta = {
-  component: ClubMovedOn,
-  decorators: [withRouter("/plans/club/march", ["/plans/club/$setId/now"])],
+  component: ModelMovedOn,
+  decorators: [withRouter("/plans/model/march", ["/plans/model/$setId/now"])],
   args: { setId: "march", moved: ["Youth Racing"] },
-} satisfies Meta<typeof ClubMovedOn>;
+} satisfies Meta<typeof ModelMovedOn>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const OneArea: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getByText(/Youth Racing has moved on/)).toBeVisible();
-    await expect(canvas.getByRole("link", { name: "See the club's plan as it stands now" })).toHaveAttribute(
+    await expect(canvas.getByRole("link", { name: "See the financial model as it stands now" })).toHaveAttribute(
       "href",
-      "/plans/club/march/now",
+      "/plans/model/march/now",
     );
   },
 };
@@ -28,5 +28,5 @@ export const Several: Story = {
   },
 };
 
-// Shows nothing while the club plan is still the club's plan.
+// Shows nothing while every plan still has the version the financial model holds.
 export const NotMovedOn: Story = { args: { moved: [] } };

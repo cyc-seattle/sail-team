@@ -14,7 +14,7 @@ export const ids = {
   adultPlan: "00000000-0000-4000-8000-000000000103",
   adultSaved: "00000000-0000-4000-8000-000000000205",
   opsOld: "00000000-0000-4000-8000-000000000206",
-  clubPlan: "00000000-0000-4000-8000-000000000601",
+  financialModel: "00000000-0000-4000-8000-000000000601",
   youthMember: "00000000-0000-4000-8000-000000000611",
   adultMember: "00000000-0000-4000-8000-000000000612",
   opsMember: "00000000-0000-4000-8000-000000000613",
@@ -26,8 +26,8 @@ export const ids = {
 };
 
 /** Each table's rows, as Directus would return them, with relations expanded where the app asks for them. */
-const clubPlanRow = {
-  id: ids.clubPlan,
+const financialModelRow = {
+  id: ids.financialModel,
   organization_id: org,
   fiscal_year: 2027,
   name: "March",
@@ -56,12 +56,12 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       retired: false,
     },
   ],
-  version_sets: [clubPlanRow],
+  version_sets: [financialModelRow],
   // version_set_id is expanded when a request asks for its fields.
   version_set_members: [
     {
       id: ids.youthMember,
-      version_set_id: clubPlanRow,
+      version_set_id: financialModelRow,
       version_id: ids.youthSaved1,
       plan_id: {
         id: ids.youthPlan,
@@ -72,7 +72,7 @@ export const tables: Record<string, Record<string, unknown>[]> = {
     },
     {
       id: ids.adultMember,
-      version_set_id: clubPlanRow,
+      version_set_id: financialModelRow,
       version_id: ids.adultSaved,
       plan_id: {
         id: ids.adultPlan,
@@ -83,7 +83,7 @@ export const tables: Record<string, Record<string, unknown>[]> = {
     },
     {
       id: ids.opsMember,
-      version_set_id: clubPlanRow,
+      version_set_id: financialModelRow,
       version_id: ids.opsSaved,
       plan_id: { id: ids.opsPlan, name: "Operations 2027", kind: "operations", program_area_id: null },
     },
@@ -179,7 +179,7 @@ export const tables: Record<string, Record<string, unknown>[]> = {
     { version_id: ids.opsSaved, sequence: 2, plan_id: { kind: "operations", program_area_id: null } },
   ],
   plan_offerings: [
-    // In Youth Racing's active version, which the club plan holds and the club's plan now counts.
+    // In Youth Racing's active version, which the financial model holds and the financial model now counts.
     {
       id: "00000000-0000-4000-8000-000000000302",
       version_id: ids.youthSaved1,
@@ -266,7 +266,7 @@ export const tables: Record<string, Record<string, unknown>[]> = {
     { version_id: ids.youthSaved1, version_set_id: null, calculated_at: "2027-01-12T18:00:00Z" },
     {
       version_id: null,
-      version_set_id: clubPlanRow,
+      version_set_id: financialModelRow,
       calculated_at: "2027-03-10T18:00:00Z",
       operating_net_cents: 500_000,
       fundraising_net_cents: 0,
@@ -277,7 +277,7 @@ export const tables: Record<string, Record<string, unknown>[]> = {
   plan_result_pnl: [
     {
       version_id: null,
-      version_set_id: clubPlanRow,
+      version_set_id: financialModelRow,
       version_set_member_id: ids.youthMember,
       level: "offering",
       subject_key: "00000000-0000-4000-8000-000000000311",
@@ -322,7 +322,7 @@ export const tables: Record<string, Record<string, unknown>[]> = {
   plan_result_lines: [
     {
       version_id: null,
-      version_set_id: clubPlanRow,
+      version_set_id: financialModelRow,
       version_set_member_id: ids.opsMember,
       line: "pool:office",
       line_name: "Office rent",

@@ -111,7 +111,7 @@ export interface AreaActivation {
 }
 
 /**
- * The versions the engine calculates `version` with: the club's plan as it stands. That's the Operations Plan version
+ * The versions the engine calculates `version` with: the financial model as it stands. That's the Operations Plan version
  * (the version itself, for an Operations Plan), and each program area's active version, with the version's own in
  * place of its area's.
  */

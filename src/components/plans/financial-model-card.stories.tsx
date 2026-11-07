@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withRouter } from "../../../.storybook/with-router";
-import { ClubPlanCard } from "./club-plan-card";
+import { FinancialModelCard } from "./financial-model-card";
 
 const meta = {
-  component: ClubPlanCard,
-  decorators: [withRouter("/plans", ["/plans/club/$setId"])],
+  component: FinancialModelCard,
+  decorators: [withRouter("/plans", ["/plans/model/$setId"])],
   args: {
     year: 2027,
     plan: {
@@ -23,7 +23,7 @@ const meta = {
       },
     },
   },
-} satisfies Meta<typeof ClubPlanCard>;
+} satisfies Meta<typeof FinancialModelCard>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 

@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { listOf, movedOn, newestClubPlans, signedCents, type ClubPlanSummary } from "../src/model/club-plans.ts";
+import {
+  listOf,
+  movedOn,
+  newestFinancialModels,
+  signedCents,
+  type FinancialModelSummary,
+} from "../src/model/financial-models.ts";
 
-const set = (id: string, year: number, saved_at: string): ClubPlanSummary => ({
+const set = (id: string, year: number, saved_at: string): FinancialModelSummary => ({
   id,
   organization_id: "org",
   fiscal_year: year,
@@ -10,9 +16,9 @@ const set = (id: string, year: number, saved_at: string): ClubPlanSummary => ({
   saved_at,
 });
 
-describe("newestClubPlans", () => {
-  it("keeps each year's latest club plan", () => {
-    const newest = newestClubPlans([
+describe("newestFinancialModels", () => {
+  it("keeps each year's latest financial model", () => {
+    const newest = newestFinancialModels([
       set("march", 2027, "2027-03-10T18:00:00Z"),
       set("january", 2027, "2027-01-15T18:00:00Z"),
       set("last-year", 2026, "2026-02-01T18:00:00Z"),
@@ -40,7 +46,7 @@ describe("movedOn", () => {
     ["adult", "Adult Programs"],
   ]);
 
-  it("is empty while every active version is the one the club plan holds", () => {
+  it("is empty while every active version is the one the financial model holds", () => {
     expect(
       movedOn(members, { operations: "ops-1", areas: [{ program_area_id: "youth", version_id: "youth-1" }] }, names),
     ).toEqual([]);
@@ -52,7 +58,7 @@ describe("movedOn", () => {
     ).toEqual(["Youth Racing"]);
   });
 
-  it("names the Operations Plan, and an area that wasn't in the club plan", () => {
+  it("names the Operations Plan, and an area that wasn't in the financial model", () => {
     expect(
       movedOn(
         members,

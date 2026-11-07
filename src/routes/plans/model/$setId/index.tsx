@@ -1,33 +1,33 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { ClubMovedOn } from "@/components/plans/club-moved-on";
-import { ClubPlanView } from "@/components/plans/club-plan-view";
+import { ModelMovedOn } from "@/components/plans/model-moved-on";
+import { FinancialModelView } from "@/components/plans/financial-model-view";
 import { PageHeader } from "@/components/plans/page-header";
 import { NoAccess } from "@/components/shell/no-access";
 import { NoticePage } from "@/components/shell/notice-page";
 import { canRead } from "@/directus/access";
-import { clubPlanQuery, type ClubPlan } from "@/directus/club-plans";
+import { financialModelQuery, type FinancialModel } from "@/directus/financial-models";
 import { activationsQuery } from "@/directus/plans";
-import { movedOn } from "@/model/club-plans";
+import { movedOn } from "@/model/financial-models";
 import { useSession } from "@/directus/use-session";
 
-export const Route = createFileRoute("/plans/club/$setId/")({
-  component: ClubPlanPage,
+export const Route = createFileRoute("/plans/model/$setId/")({
+  component: FinancialModelPage,
 });
 
-function ClubPlanPage() {
+function FinancialModelPage() {
   const session = useSession();
   if (session.kind !== "signed-in" || !canRead(session.permissions, "plans")) {
     return <NoAccess what="plans" />;
   }
-  return <ClubPlan />;
+  return <FinancialModel />;
 }
 
-function ClubPlan() {
+function FinancialModel() {
   const { setId } = Route.useParams();
-  const { data } = useSuspenseQuery(clubPlanQuery(setId));
+  const { data } = useSuspenseQuery(financialModelQuery(setId));
   if (!data) {
-    return <NoticePage title="There's no such club plan" />;
+    return <NoticePage title="There's no such financial model" />;
   }
   return <Found plan={data} />;
 }
@@ -35,7 +35,7 @@ function ClubPlan() {
 function Found({
   plan: data,
 }: {
-  plan: NonNullable<Awaited<ReturnType<NonNullable<ReturnType<typeof clubPlanQuery>["queryFn"]>>>>;
+  plan: NonNullable<Awaited<ReturnType<NonNullable<ReturnType<typeof financialModelQuery>["queryFn"]>>>>;
 }) {
   const { setId } = Route.useParams();
   const { data: active } = useSuspenseQuery(activationsQuery(data.set));
@@ -52,14 +52,14 @@ function Found({
   return (
     <main className="mx-auto max-w-6xl p-card">
       <PageHeader
-        title={`Club plan: ${data.set.name}`}
+        title={`Financial model: ${data.set.name}`}
         description={`${data.set.fiscal_year}${data.set.message ? `. ${data.set.message}` : ""}`}
         back={{ to: "/plans", label: "All plans" }}
       />
       <div className="mb-card">
-        <ClubMovedOn setId={setId} moved={moved} />
+        <ModelMovedOn setId={setId} moved={moved} />
       </div>
-      <ClubPlanView
+      <FinancialModelView
         savedAt={data.totals?.calculated_at ?? data.set.saved_at}
         totals={data.totals}
         members={data.members}
