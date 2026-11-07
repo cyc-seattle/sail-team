@@ -22,9 +22,24 @@ export const Saved: Story = {
 };
 
 export const Draft: Story = {
-  args: { source: { kind: "draft" }, warnings: [] },
+  args: { source: { kind: "draft", operations: "own" }, warnings: [] },
   play: async ({ canvas }) => {
     await expect(canvas.getByText(/calculated now/)).toBeVisible();
+    await expect(canvas.queryByText(/Operations Plan/)).toBeNull();
+  },
+};
+
+export const DraftWithActiveOperations: Story = {
+  args: { source: { kind: "draft", operations: "active" }, warnings: [] },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText(/uses the year's active one/)).toBeVisible();
+  },
+};
+
+export const DraftWithNoOperations: Story = {
+  args: { source: { kind: "draft", operations: "none" }, warnings: [] },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText(/leaves out pay rates and shared costs/)).toBeVisible();
   },
 };
 

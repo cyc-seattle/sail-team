@@ -125,6 +125,27 @@ export function versionSet(plan: PlanRef, version: VersionRef, active: AreaActiv
   return [...new Set(ids.filter((id): id is string => id !== null))];
 }
 
+/** Where a draft's Operations Plan version came from: its own, the year's active one, or none. */
+export type OperationsSource = "own" | "active" | "none";
+
+/**
+ * The Operations Plan version a draft is calculated with: its own, or, for an area's draft that names none yet, the
+ * year's active one. Without one, the draft would be calculated with no pay rates or shared costs at all.
+ */
+export function draftOperations(
+  plan: PlanRef,
+  version: VersionRef,
+  activeOperations: string | null,
+): { id: string | null; source: OperationsSource } {
+  if (plan.kind === "operations") {
+    return { id: version.id, source: "own" };
+  }
+  if (version.operations_version_id) {
+    return { id: version.operations_version_id, source: "own" };
+  }
+  return activeOperations ? { id: activeOperations, source: "active" } : { id: null, source: "none" };
+}
+
 export interface ActivationRow {
   version_id: string;
   sequence: number;

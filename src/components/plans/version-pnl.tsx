@@ -1,6 +1,7 @@
 import type { EngineWarning, Pnl } from "@cyc-seattle/platform/planning";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatDate } from "@/model/dates";
+import type { OperationsSource } from "@/model/plan-data";
 import { sumPnl } from "@/model/pnl-view";
 import { ChartCard } from "./chart-card";
 import { EngineWarnings } from "./engine-warnings";
@@ -9,7 +10,13 @@ import { PnlTable, type PnlRow } from "./pnl-table";
 import { RevenueExpenseChart } from "./revenue-expense-chart";
 import { SummaryTiles } from "./summary-tiles";
 
-export type VersionPnlSource = { kind: "saved"; savedAt: string } | { kind: "draft" };
+export type VersionPnlSource = { kind: "saved"; savedAt: string } | { kind: "draft"; operations: OperationsSource };
+
+const borrowed: Record<OperationsSource, string> = {
+  own: "",
+  active: " It doesn't name an Operations Plan version yet, so it uses the year's active one.",
+  none: " It doesn't name an Operations Plan version yet, and none is active, so it leaves out pay rates and shared costs.",
+};
 
 export interface VersionPnlProps {
   source: VersionPnlSource;
@@ -39,7 +46,7 @@ export function VersionPnl({ source, rows, warnings }: VersionPnlProps) {
         <AlertDescription>
           {source.kind === "saved"
             ? `These are the numbers it was saved with, on ${formatDate(source.savedAt)}, as the club's plan stood then. They never change.`
-            : "A draft's numbers are calculated now, by this app, and change as planners change the plan."}
+            : `A draft's numbers are calculated now, by this app, and change as planners change the plan.${borrowed[source.operations]}`}
         </AlertDescription>
       </Alert>
       <SummaryTiles

@@ -63,6 +63,18 @@ describe("reading plans from Directus", () => {
   });
 });
 
+describe("a draft that names no Operations Plan version", () => {
+  it("is calculated with the year's active one, as if it named it", async () => {
+    const plan = await run<Parameters<typeof calculateDraft>[0]>(planQuery(ids.youthPlan));
+    const versions = await run<Parameters<typeof calculateDraft>[1][]>(versionsQuery(ids.youthPlan));
+    const draft = versions.find((v) => v.id === ids.youthDraft)!;
+    const named = await calculateDraft(plan, draft);
+    const unnamed = await calculateDraft(plan, { ...draft, operations_version_id: null });
+    expect(unnamed.operations).toBe("active");
+    expect(unnamed.output.pnl).toEqual(named.output.pnl);
+  });
+});
+
 describe("a draft's warnings", () => {
   it("points out a practice on a day the Operations Plan says the club is closed", async () => {
     const plan = await run<Parameters<typeof calculateDraft>[0]>(planQuery(ids.youthPlan));

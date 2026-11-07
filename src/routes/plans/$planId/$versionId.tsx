@@ -81,5 +81,7 @@ function InClubPlan({ versionId }: { versionId: string }) {
 function Draft({ plan, version }: { plan: PlanSummary; version: VersionSummary }) {
   const { data } = useSuspenseQuery(draftQuery(plan, version));
   const rows = data.output.pnl.map((pnl) => ({ name: data.names.get(pnl.key) ?? "Unnamed", pnl }));
-  return <VersionPnl source={{ kind: "draft" }} rows={rows} warnings={data.output.warnings} />;
+  return (
+    <VersionPnl source={{ kind: "draft", operations: data.operations }} rows={rows} warnings={data.output.warnings} />
+  );
 }

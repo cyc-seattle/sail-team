@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { engineRows, latestActivations, versionSet, type PlanRef } from "../src/model/plan-data.ts";
+import { draftOperations, engineRows, latestActivations, versionSet, type PlanRef } from "../src/model/plan-data.ts";
 
 const area = (id: string, areaId: string): PlanRef => ({
   id,
@@ -32,6 +32,31 @@ describe("versionSet", () => {
   it("leaves out an Operations Plan an area's draft doesn't name yet", () => {
     const draft = { id: "youth-draft", plan_id: "youth-plan", operations_version_id: null };
     expect(versionSet(area("youth-plan", "youth"), draft, [])).toEqual(["youth-draft"]);
+  });
+});
+
+describe("draftOperations", () => {
+  const youth = area("youth-plan", "youth");
+
+  it("uses the Operations Plan version an area's draft names", () => {
+    const draft = { id: "youth-draft", plan_id: "youth-plan", operations_version_id: "ops-saved" };
+    expect(draftOperations(youth, draft, "ops-active")).toEqual({ id: "ops-saved", source: "own" });
+  });
+
+  it("uses the year's active Operations Plan version for an area's draft that names none", () => {
+    const draft = { id: "youth-draft", plan_id: "youth-plan", operations_version_id: null };
+    expect(draftOperations(youth, draft, "ops-active")).toEqual({ id: "ops-active", source: "active" });
+  });
+
+  it("has none for an area's draft that names none, when none is active", () => {
+    const draft = { id: "youth-draft", plan_id: "youth-plan", operations_version_id: null };
+    expect(draftOperations(youth, draft, null)).toEqual({ id: null, source: "none" });
+  });
+
+  it("uses an Operations Plan's draft itself", () => {
+    const ops: PlanRef = { ...youth, id: "ops-plan", kind: "operations", program_area_id: null };
+    const draft = { id: "ops-draft", plan_id: "ops-plan", operations_version_id: null };
+    expect(draftOperations(ops, draft, "ops-active")).toEqual({ id: "ops-draft", source: "own" });
   });
 });
 

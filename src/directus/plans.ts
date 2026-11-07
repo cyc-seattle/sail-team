@@ -3,11 +3,13 @@ import { customEndpoint, readItem, readItems } from "@directus/sdk";
 import { queryOptions } from "@tanstack/react-query";
 import {
   catalogTables,
+  draftOperations,
   engineRows,
   latestActivations,
   versionSet,
   versionTables,
   type ActivationRow,
+  type OperationsSource,
   type PlanRef,
 } from "@/model/plan-data";
 import type { SavedPnlRow } from "@/model/saved-results";
@@ -145,10 +147,14 @@ export interface DraftResults {
  * A draft's P&L, calculated now in the browser by the planning engine this app bundles, from the same rows platform
  * reads when a version is saved: the catalog, and every version in the draft's set.
  */
-export async function calculateDraft(plan: PlanRef, version: VersionSummary): Promise<DraftResults> {
-  const { areas } = await readActivations(plan);
-  const operations = plan.kind === "operations" ? version.id : version.operations_version_id;
-  return calculateVersions(plan, versionSet(plan, version, areas), operations);
+export async function calculateDraft(
+  plan: PlanRef,
+  version: VersionSummary,
+): Promise<DraftResults & { operations: OperationsSource }> {
+  const { areas, operations: active } = await readActivations(plan);
+  const operations = draftOperations(plan, version, active);
+  const set = versionSet(plan, { ...version, operations_version_id: operations.id }, areas);
+  return { ...(await calculateVersions(plan, set, operations.id)), operations: operations.source };
 }
 
 export interface ClubNowResults extends DraftResults {
