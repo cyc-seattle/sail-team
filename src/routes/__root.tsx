@@ -1,12 +1,12 @@
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { Suspense } from "react";
-import { AppBar } from "@/components/shell/app-bar";
+import { AppShell } from "@/components/shell/app-shell";
 import { NoticePage } from "@/components/shell/notice-page";
 import { SignInBlocked } from "@/components/shell/sign-in-blocked";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/directus/use-session";
 import { displayName } from "@/model/display-name";
-import { navFor } from "@/model/nav";
+import { pagesFor } from "@/model/nav";
 
 export const Route = createRootRoute({
   component: Root,
@@ -35,10 +35,9 @@ function Signed() {
       return <SignInBlocked signInUrl={session.signInUrl} />;
     case "signed-in":
       return (
-        <>
-          <AppBar name={displayName(session.me)} nav={navFor(session.permissions)} />
+        <AppShell name={displayName(session.me)} pages={pagesFor(session.permissions)}>
           <Outlet />
-        </>
+        </AppShell>
       );
   }
 }

@@ -33,13 +33,22 @@
   --money-negative: var(--destructive);
   --money-zero: var(--muted-foreground);
 
-  /* The club's navy, for the app bar, with its white. Buttons stay neutral. */
+  /* The club's navy, for the sidebar and the tab bar, with its white. Buttons stay neutral. */
   --brand: oklch(0.301 0.097 279.6);
   --brand-foreground: oklch(1 0 0);
-  /* The club's red, for decoration only, such as the stripe under the app bar: it's too light for text on white. */
+  /* The club's red, for decoration only, such as the stripe under the sidebar's name: it's too light for text on white. */
   --brand-accent: oklch(0.613 0.228 27.1);
   /* Links, in the club's navy. */
   --link: var(--brand);
+  /* The sidebar and the phone's tab bar are the club's navy too, with a lighter navy behind the page you're on. */
+  --sidebar: var(--brand);
+  --sidebar-foreground: var(--brand-foreground);
+  --sidebar-primary: var(--brand-foreground);
+  --sidebar-primary-foreground: var(--brand);
+  --sidebar-accent: oklch(0.4 0.097 279.6);
+  --sidebar-accent-foreground: var(--brand-foreground);
+  --sidebar-border: oklch(0.4 0.097 279.6);
+  --sidebar-ring: var(--brand-accent);
 
   /* Okabe and Ito's palette, which stays distinct with the common kinds of color blindness. */
   --chart-1: oklch(0.532 0.131 244);
