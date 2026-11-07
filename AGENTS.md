@@ -9,9 +9,11 @@ served by Caddy on the club's cluster. It has no server of its own. The browser 
 ([cyc-seattle/platform](https://github.com/cyc-seattle/platform)) with the user's own session, and Directus decides what
 each person can see and change. The app adds no security of its own.
 
-The app shares `cycsail.team` with isthmia's portal until it replaces it. It claims only its own paths, `/plans` and
-`/roster`, and puts its built files under `/_app` (`vite.config.ts`), so the portal keeps everything else. `/rosters`,
-where the roster was while the portal had its own, sends old links to `/roster`.
+The app is taking `cycsail.team` over from isthmia's portal (#1). It claims the whole domain, and puts its built files
+under `/_app` (`vite.config.ts`). Until the portal's route is gone, the Gateway still gives the portal every path but
+`/plans`, `/roster`, `/rosters`, and `/_app`, including the home page. The home page (`/`) lists the sections the person
+can open (`src/model/nav.ts`), then the club's other tools. `/rosters`, where the roster was while the portal had its
+own, sends old links to `/roster`, and `/welcome`, where Authentik's "Go home" lands, sends them to `/`.
 
 ## Tasks
 
@@ -33,7 +35,7 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
 - `src/router.ts` makes the router. Tests make their own with a memory history.
 - `src/components/ui/` holds shadcn's components on Base UI, `src/components/` the club's own, each with a story beside
   it. `src/components/plans/` holds the plans page's: Page Header, Summary Tiles, Money, P&L Table, Chart Card,
-  Engine Warnings, and Version Badge. `src/styles/tokens.css` holds the design tokens. Read [docs/design.md](docs/design.md) before changing any of
+  Engine Warnings, and Version Badge. `src/components/home/` holds the home page's Link List. `src/styles/tokens.css` holds the design tokens. Read [docs/design.md](docs/design.md) before changing any of
   them, or use the [`design`](.agents/skills/design/SKILL.md) skill.
 - `src/directus/` talks to Directus. `client.ts` makes a client that sends the browser's Directus session cookie, and
   `app.ts` is the app's own, at `directus.<the app's hostname>`. `sign-in.ts` sends a visitor with no session to
@@ -79,8 +81,8 @@ point `PLAYWRIGHT_BROWSERS_PATH` at a matching set of browsers in a git-ignored 
 
 ## Deploys
 
-`stacks/app` is the app's one Pulumi project: a platform `WebService` that serves the image on `/plans`, `/roster`, `/rosters`, and `/_app` of
-the environment's domain. The image is Caddy serving `dist/` (`Dockerfile`, `Caddyfile`), with a content security
+`stacks/app` is the app's one Pulumi project: a platform `WebService` that serves the image on the environment's
+domain. The image is Caddy serving `dist/` (`Dockerfile`, `Caddyfile`), with a content security
 policy that lets the page call only itself and Directus.
 
 - Every PR deploys to dev, at `https://dev.cycsail.team/plans`, and runs `mise run integration` there. A push to `main`

@@ -5,7 +5,7 @@ import { AppBar } from "./app-bar";
 
 const meta = {
   component: AppBar,
-  decorators: [withRouter("/plans", ["/roster"])],
+  decorators: [withRouter("/plans", ["/", "/roster"])],
   parameters: { layout: "fullscreen" },
   args: {
     name: "Robin Tiller",
