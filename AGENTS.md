@@ -9,11 +9,10 @@ served by Caddy on the club's cluster. It has no server of its own. The browser 
 ([cyc-seattle/platform](https://github.com/cyc-seattle/platform)) with the user's own session, and Directus decides what
 each person can see and change. The app adds no security of its own.
 
-The app is taking `cycsail.team` over from isthmia's portal (#1). It claims the whole domain, and puts its built files
-under `/_app` (`vite.config.ts`). Until the portal's route is gone, the Gateway still gives the portal every path but
-`/plans`, `/roster`, `/rosters`, and `/_app`, including the home page. The home page (`/`) lists the sections the person
+The app serves all of `cycsail.team`, which isthmia's portal had until #1, and puts its built files under `/_app`
+(`vite.config.ts`). The home page (`/`) lists the sections the person
 can open (`src/model/nav.ts`), then other sites the team uses. `/rosters`, where the roster was while the portal had its
-own, sends old links to `/roster`, and `/welcome`, where Authentik's "Go home" lands, sends them to `/`.
+own, sends old links to `/roster`, and `/welcome`, where the portal's sign-in pages sent people, sends them to `/`.
 
 ## Tasks
 
@@ -94,7 +93,7 @@ policy that lets the page call only itself and Directus.
   `PULUMI_STACK=dev`, and preview before every apply. Local deploys are only for breaking glass.
 - Prod's stack also holds the domain's A record (`apexRecord` in `stacks/app/cluster.ts`), adopted from isthmia's
   portal. Dev's domain is under platform's records.
-- Directus already allows `https://<domain>` as an origin and a sign-in redirect, because the portal is there, so the
+- Directus already allows `https://<domain>` as an origin and a sign-in redirect, because the portal was there, so the
   app needs nothing from platform's Directus settings.
 
 ## Pull requests that change what people see
