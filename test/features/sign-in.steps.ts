@@ -46,7 +46,7 @@ Then("I'm back on Plans", async ({ page }) => {
 });
 
 Then("the page shows my name", async ({ page, visitor }) => {
-  await expect(page.getByRole("banner").getByRole("button", { name: visitor.name })).toBeVisible();
+  await expect(page.getByRole("button", { name: visitor.name })).toBeVisible();
 });
 
 Then("the page says I don't have access to plans", async ({ page }) => {
@@ -54,6 +54,6 @@ Then("the page says I don't have access to plans", async ({ page }) => {
 });
 
 Then("it shows no plans", async ({ page }) => {
-  await expect(page.getByRole("navigation", { name: "Sections" }).getByRole("link", { name: "Plans" })).toHaveCount(0);
+  await expect(page.getByRole("navigation").getByRole("link", { name: "Plans" })).toHaveCount(0);
   await expect(page.locator('a[href^="/plans/"]')).toHaveCount(0);
 });

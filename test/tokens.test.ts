@@ -54,6 +54,8 @@ const textPairs = [
   ["muted-foreground", "card"],
   ["primary-foreground", "primary"],
   ["brand-foreground", "brand"],
+  ["sidebar-foreground", "sidebar"],
+  ["sidebar-accent-foreground", "sidebar-accent"],
   ["link", "background"],
   ["link", "card"],
   ["success", "card"],
