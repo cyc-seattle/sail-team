@@ -45,11 +45,7 @@ export function FinancialPlanView({ set, savedBy, members, results, others }: Fi
           {set.parent && (
             <span className="text-muted-foreground">
               Started from{" "}
-              <Link
-                to="/plans/financial/$setId"
-                params={{ setId: set.parent.id }}
-                className="text-link hover:underline"
-              >
+              <Link to="/plans/financial/$setId" params={{ setId: set.parent.id }} className="text-link underline">
                 {set.parent.name}
               </Link>
             </span>
