@@ -317,3 +317,71 @@ Then("no plan, version, or amount appears", async ({ page }) => {
   await expect(page.locator('a[href^="/plans/"]')).toHaveCount(0);
   await expect(page.getByText(/\$\d/)).toHaveCount(0);
 });
+
+// Naming, noting, and starting a draft.
+Given("a draft Financial Plan named {string}", async ({ club }, name: string) => {
+  named.clear();
+  const { operations, youth } = await plansWithCopies(club);
+  named.set(name, await club.financialPlan(name, [operations, youth]));
+});
+
+When(/^I open "([^"]+)"$/, async ({ page }, name: string) => {
+  await page.goto(`${await app()}/plans/financial/${named.get(name)}`);
+  await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+});
+
+When("I rename it {string} and note it {string}", async ({ page }, name: string, note: string) => {
+  await page.getByRole("button", { name: "Edit" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Name").fill(name);
+  await dialog.getByLabel("Note").fill(note);
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toBeHidden();
+});
+
+Then("the page is titled {string} and shows the note {string}", async ({ page }, name: string, note: string) => {
+  await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+  await expect(page.getByText(note)).toBeVisible();
+});
+
+When("I open {string} and edit it", async ({ page }, name: string) => {
+  await page.goto(`${await app()}/plans/financial/${named.get(name)}`);
+  await page.getByRole("button", { name: "Edit" }).click();
+});
+
+Then("I can change its note, but not its name", async ({ page }) => {
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByLabel("Name")).toBeDisabled();
+  await dialog.getByLabel("Note").fill("Reviewed with the board");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText("Reviewed with the board")).toBeVisible();
+});
+
+When("I open {string} and start a draft from it named {string}", async ({ page }, parent: string, name: string) => {
+  await page.goto(`${await app()}/plans/financial/${named.get(parent)}`);
+  await page.getByRole("button", { name: "Start a draft from this" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Name").fill(name);
+  await dialog.getByRole("button", { name: "Start the draft" }).click();
+  await expect(dialog).toBeHidden({ timeout: 30_000 });
+});
+
+Then("I'm on the draft {string}, started from {string}", async ({ page }, name: string, parent: string) => {
+  await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+  await expect(page).not.toHaveURL(new RegExp(named.get(parent)!));
+  await expect(page.getByText(new RegExp(`started from ${parent}`, "i"))).toBeVisible();
+});
+
+Then("it holds the same plans as {string}", async ({ page, club }, parent: string) => {
+  await expect(page.getByRole("link", { name: parent, exact: true }).first()).toBeVisible();
+  for (const name of ["Operations", club.area]) {
+    await expect(page.getByRole("link", { name: new RegExp(name) }).first()).toBeVisible();
+  }
+});
+
+Then("I see no way to edit it or start a draft from it", async ({ page }) => {
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Edit" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Start a draft from this" })).toHaveCount(0);
+});

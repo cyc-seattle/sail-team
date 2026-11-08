@@ -9,8 +9,9 @@ Feature: Seeing the Financial Plans
 
   Plans is where planners, and anyone else who can read plans, see the Financial Plans and what each plan in them
   takes in and spends. A Program Plan's P&L includes its coaches' wages, its RIBs, and its share of the shared
-  costs, such as the office, worked out with the other plans in the same Financial Plan. Plans only shows plans; it
-  doesn't change them. Every plan and number here is made up for the run.
+  costs, such as the office, worked out with the other plans in the same Financial Plan. A planner who can change
+  plans can rename a draft, change any Financial Plan's note, and start a new draft from one here. Everything else
+  about a plan is changed through their AI. Every plan and number here is made up for the run.
 
   Rule: Plans lists each year's Financial Plans, newest first, with their names and notes
 
@@ -117,6 +118,38 @@ Feature: Seeing the Financial Plans
       And I've signed in
       When I open the draft
       Then the page warns that the practice falls on a closed day, and names the day
+
+  Rule: A planner who can change plans can name a Financial Plan, note it, and start a draft from it
+
+    Scenario: Renaming a draft and noting it
+      Given I'm a planner who can change plans
+      And a draft Financial Plan named "Two coaches"
+      And I've signed in
+      When I open "Two coaches"
+      And I rename it "Two coaches, more boats" and note it "For the board"
+      Then the page is titled "Two coaches, more boats" and shows the note "For the board"
+
+    Scenario: A saved Financial Plan keeps its name
+      Given I'm a planner who can change plans
+      And a saved Financial Plan for 2027 named "Budget"
+      And I've signed in
+      When I open "Budget" and edit it
+      Then I can change its note, but not its name
+
+    Scenario: Starting a draft from a saved Financial Plan
+      Given I'm a planner who can change plans
+      And a saved Financial Plan for 2027 named "Budget"
+      And I've signed in
+      When I open "Budget" and start a draft from it named "Budget, three coaches"
+      Then I'm on the draft "Budget, three coaches", started from "Budget"
+      And it holds the same plans as "Budget"
+
+    Scenario: A planner who can only read plans can't change them
+      Given I'm a planner who can read plans
+      And a saved Financial Plan for 2027 named "Budget"
+      And I've signed in
+      When I open "Budget"
+      Then I see no way to edit it or start a draft from it
 
   Rule: Only someone who can read plans can see them
 
