@@ -5,10 +5,27 @@ import {
   membersInOrder,
   ownerOf,
   plansByYear,
+  topLine,
   type FinancialPlanSummary,
   type Member,
+  type PlanLine,
   type Results,
 } from "../src/model/financial-plans.ts";
+
+const line = (
+  name: string,
+  amount_cents: number,
+  revenue: boolean,
+  fn: PlanLine["function"],
+  capital = false,
+): Omit<PlanLine, "member"> => ({
+  name,
+  cost_center_name: "Organization",
+  amount_cents,
+  revenue,
+  capital,
+  function: fn,
+});
 
 const summary = (id: string, fields: Partial<FinancialPlanSummary>): FinancialPlanSummary => ({
   id,
@@ -104,8 +121,8 @@ describe("memberNet", () => {
       },
     ],
     lines: [
-      { name: "Insurance", cost_center_name: "Organization", amount_cents: 5, revenue: false, member: "o" },
-      { name: "Merchandise", cost_center_name: "Merchandise", amount_cents: 8, revenue: true, member: "o" },
+      { ...line("Insurance", 5, false, "management"), member: "o" },
+      { ...line("Merchandise", 8, true, "program"), member: "o" },
     ],
     warnings: [],
   };
@@ -113,6 +130,27 @@ describe("memberNet", () => {
   it("is a Program Plan's area net, or the Operations Plan's lines added up", () => {
     expect(memberNet(results, member("y", "program_area", "youth"))).toBe(6);
     expect(memberNet(results, member("o", "operations", null))).toBe(3);
+  });
+});
+
+describe("topLine", () => {
+  it("takes direct program costs from revenue for the gross, and every operating cost for the net", () => {
+    const lines = [
+      line("Tuition", 1_000, true, "program"),
+      line("Coach wages", 300, false, "program"),
+      line("Office share", 200, false, "management"),
+    ];
+    expect(topLine(lines)).toEqual({ revenue_cents: 1_000, expense_cents: 500, gross_cents: 700, net_cents: 500 });
+  });
+
+  it("leaves out fundraising and capital", () => {
+    const lines = [
+      line("Tuition", 1_000, true, "program"),
+      line("Spring gala", 400, true, "fundraising"),
+      line("Gala catering", 100, false, "fundraising"),
+      line("Coach boat", 900, false, null, true),
+    ];
+    expect(topLine(lines)).toEqual({ revenue_cents: 1_000, expense_cents: 0, gross_cents: 1_000, net_cents: 1_000 });
   });
 });
 

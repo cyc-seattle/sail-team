@@ -1,11 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import type { FinancialPlanSummary, Totals } from "@/model/financial-plans";
+import type { ListedPlan } from "@/model/financial-plans";
 import { formatDate } from "@/model/dates";
 import { Money } from "./money";
 import { VersionBadge } from "./version-badge";
 
-/** One Financial Plan in the list: its name, note, when it was saved and what it started from, and its operating net. */
-export function FinancialPlanCard({ plan }: { plan: FinancialPlanSummary & { totals: Totals | null } }) {
+/** One Financial Plan in the list: its name, note, when it was saved and what it started from, and its top-line numbers. */
+export function FinancialPlanCard({ plan }: { plan: ListedPlan }) {
   return (
     <Link
       to="/plans/financial/$setId"
@@ -27,15 +27,24 @@ export function FinancialPlanCard({ plan }: { plan: FinancialPlanSummary & { tot
             .join(". ")}
         </span>
       </span>
-      {plan.totals && (
-        <span className="grid gap-1 text-sm sm:text-right">
-          <span>
-            Operating net <Money cents={plan.totals.operating_net_cents} colored />
-          </span>
-          <span className="text-xs text-muted-foreground">
-            Total <Money cents={plan.totals.total_cents} />
-          </span>
-        </span>
+      {plan.topLine && (
+        <dl className="grid grid-cols-2 gap-x-card gap-y-1 text-sm sm:grid-cols-4 sm:text-right">
+          {(
+            [
+              ["Revenue", plan.topLine.revenue_cents],
+              ["Expenses", plan.topLine.expense_cents],
+              ["Gross", plan.topLine.gross_cents],
+              ["Net", plan.topLine.net_cents],
+            ] as const
+          ).map(([label, cents]) => (
+            <div key={label} className="grid">
+              <dt className="text-xs text-muted-foreground">{label}</dt>
+              <dd>
+                <Money cents={cents} colored={label === "Net" || label === "Gross"} />
+              </dd>
+            </div>
+          ))}
+        </dl>
       )}
     </Link>
   );

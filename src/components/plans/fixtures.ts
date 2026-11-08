@@ -55,15 +55,15 @@ export const budget = {
     message: "Reviewed with the board",
     saved_at: "2027-03-10T18:00:00Z",
   }),
-  totals: totals(500_000),
+  topLine: { revenue_cents: 1_400_000, expense_cents: 900_000, gross_cents: 1_000_000, net_cents: 500_000 },
 };
 export const twoCoaches = {
   ...plan("two", { name: "Two coaches", status: "draft", parent: { id: "budget", name: "Budget" } }),
-  totals: null,
+  topLine: null,
 };
 export const threeCoaches = {
   ...plan("three", { name: "Three coaches", status: "draft", parent: { id: "budget", name: "Budget" } }),
-  totals: null,
+  topLine: null,
 };
 
 const member = (id: string, kind: Member["kind"], area: string | null): Member => ({
@@ -87,6 +87,8 @@ export const lines: PlanLine[] = [
     cost_center_name: "Beginner camp, week 1",
     amount_cents: 1_000_000,
     revenue: true,
+    capital: false,
+    function: "program",
     member: "youth",
   },
   {
@@ -94,6 +96,8 @@ export const lines: PlanLine[] = [
     cost_center_name: "Beginner camp, week 1",
     amount_cents: 300_000,
     revenue: false,
+    capital: false,
+    function: "program",
     member: "youth",
   },
   {
@@ -101,9 +105,19 @@ export const lines: PlanLine[] = [
     cost_center_name: "Beginner camp, week 1",
     amount_cents: 300_000,
     revenue: false,
+    capital: false,
+    function: "management",
     member: "youth",
   },
-  { name: "Insurance", cost_center_name: "Organization", amount_cents: 200_000, revenue: false, member: "ops" },
+  {
+    name: "Insurance",
+    cost_center_name: "Organization",
+    amount_cents: 200_000,
+    revenue: false,
+    capital: false,
+    function: "management",
+    member: "ops",
+  },
 ];
 
 const areaRow = (key: string, name: string, net: number, memberId: string) => ({

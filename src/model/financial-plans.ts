@@ -16,6 +16,9 @@ export interface FinancialPlanSummary {
   parent: { id: string; name: string } | null;
 }
 
+/** A Financial Plan in the list, with a saved one's top-line numbers. A draft's are worked out only when it's opened. */
+export type ListedPlan = FinancialPlanSummary & { topLine: TopLine | null };
+
 /** The organization's totals in a Financial Plan. */
 export interface Totals {
   operating_net_cents: number;
@@ -73,6 +76,10 @@ export interface PlanLine {
   cost_center_name: string;
   amount_cents: number;
   revenue: boolean;
+  /** On an asset account: spent on something lasting, such as a coach boat. */
+  capital: boolean;
+  /** What the money is for: running programs, managing the club, or fundraising. */
+  function: "program" | "management" | "fundraising" | null;
   member: string | null;
 }
 
@@ -82,6 +89,33 @@ export const signedCents = (line: Pick<PlanLine, "amount_cents" | "revenue">) =>
 
 /** One P&L row, with the member it's charged in. */
 export type MemberPnl = SavedPnlRow & { member: string | null };
+
+/** Operating revenue, expenses, gross and net. */
+export interface TopLine {
+  revenue_cents: number;
+  expense_cents: number;
+  /** Revenue less the direct program costs, before overhead. */
+  gross_cents: number;
+  net_cents: number;
+}
+
+/**
+ * The top-line numbers from some lines, leaving out fundraising and capital as platform's engine does for the
+ * organization's operating totals.
+ */
+export function topLine(lines: Pick<PlanLine, "amount_cents" | "revenue" | "capital" | "function">[]): TopLine {
+  const operating = lines.filter((l) => !l.capital && l.function !== "fundraising");
+  const sum = (ls: typeof lines) => ls.reduce((total, l) => total + l.amount_cents, 0);
+  const revenue = sum(operating.filter((l) => l.revenue));
+  const expenses = operating.filter((l) => !l.revenue);
+  const expense = sum(expenses);
+  return {
+    revenue_cents: revenue,
+    expense_cents: expense,
+    gross_cents: revenue - sum(expenses.filter((l) => l.function === "program")),
+    net_cents: revenue - expense,
+  };
+}
 
 /** A Financial Plan's P&L: as it was saved, or, for a draft, calculated now. */
 export interface Results {

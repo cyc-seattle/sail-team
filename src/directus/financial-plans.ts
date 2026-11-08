@@ -1,6 +1,14 @@
 import { createItem, customEndpoint, updateItem } from "@directus/sdk";
 import { queryOptions } from "@tanstack/react-query";
-import type { FinancialPlanSummary, Member, Results, Totals } from "@/model/financial-plans";
+import {
+  topLine,
+  type FinancialPlanSummary,
+  type ListedPlan,
+  type Member,
+  type PlanLine,
+  type Results,
+  type Totals,
+} from "@/model/financial-plans";
 import type { SavedPnlRow } from "@/model/saved-results";
 import { appDirectus } from "./app.ts";
 import { calculateFinancialPlan, readAll } from "./plans.ts";
@@ -24,19 +32,36 @@ const summary = ({ parent_id, ...set }: SetRow): FinancialPlanSummary => ({ ...s
 
 const totalFields = ["operating_net_cents", "fundraising_net_cents", "capital_cents", "total_cents"];
 
-/** Every Financial Plan, with a saved one's totals, for the list. */
+/** Every Financial Plan, with a saved one's top-line numbers, for the list. */
 export const financialPlansQuery = queryOptions({
   queryKey: ["financial-plans"],
-  queryFn: async (): Promise<(FinancialPlanSummary & { totals: Totals | null })[]> => {
+  queryFn: async (): Promise<ListedPlan[]> => {
     const sets = (await readAll<SetRow>("version_sets", undefined, setFields)).map(summary);
     const saved = sets.filter((s) => s.status === "saved").map((s) => s.id);
-    const totals = saved.length
-      ? await readAll<Totals & { version_set_id: string }>("plan_results", { version_set_id: { _in: saved } }, [
-          ...totalFields,
+    const lines = saved.length
+      ? await readAll<{
+          version_set_id: string;
+          amount_cents: number;
+          function: PlanLine["function"];
+          account_id: { type: string };
+        }>("plan_result_lines", { version_set_id: { _in: saved } }, [
           "version_set_id",
+          "amount_cents",
+          "function",
+          "account_id.type",
         ])
       : [];
-    return sets.map((set) => ({ ...set, totals: totals.find((t) => t.version_set_id === set.id) ?? null }));
+    return sets.map((set) => {
+      const own = lines
+        .filter((l) => l.version_set_id === set.id)
+        .map((l) => ({
+          amount_cents: l.amount_cents,
+          function: l.function,
+          revenue: l.account_id.type === "revenue",
+          capital: l.account_id.type === "asset",
+        }));
+      return { ...set, topLine: own.length ? topLine(own) : null };
+    });
   },
 });
 
@@ -90,6 +115,7 @@ async function readSavedResults(setId: string): Promise<Results | null> {
       cost_center_name: string;
       amount_cents: number;
       version_set_member_id: string | null;
+      function: PlanLine["function"];
       account_id: { type: string };
     }>("plan_result_lines", bySet, [
       "line",
@@ -97,6 +123,7 @@ async function readSavedResults(setId: string): Promise<Results | null> {
       "cost_center_name",
       "amount_cents",
       "version_set_member_id",
+      "function",
       "account_id.type",
     ]),
     readAll<{ code: string; message: string; subject_key: string | null }>("plan_result_warnings", bySet, [
@@ -118,6 +145,8 @@ async function readSavedResults(setId: string): Promise<Results | null> {
       cost_center_name: l.cost_center_name,
       amount_cents: l.amount_cents,
       revenue: l.account_id.type === "revenue",
+      capital: l.account_id.type === "asset",
+      function: l.function,
       member: l.version_set_member_id,
     })),
     warnings: warnings.map((w) => ({ code: w.code, message: w.message, ...(w.subject_key && { key: w.subject_key }) })),
