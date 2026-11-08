@@ -3,7 +3,6 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { costRecovery, type SummaryRow } from "@/model/financial-plans";
 import { Money } from "./money";
 
-const count = (n: number | null) => (n === null ? "" : n.toLocaleString("en-US"));
 const percent = (n: number | null) => (n === null ? "" : `${Math.round(n * 100)}%`);
 
 /** The name column stays put while the numbers scroll sideways on a phone. */
@@ -13,19 +12,17 @@ function Cells({ row }: { row: SummaryRow }) {
   const t = row.topLine;
   return (
     <>
-      <TableCell className="text-right tabular-nums">{count(row.enrollment)}</TableCell>
-      <TableCell className="text-right tabular-nums">{count(row.sailor_days)}</TableCell>
       <TableCell className="text-right">
-        <Money cents={t.revenue_cents} />
+        <Money cents={t.revenue_cents} whole />
       </TableCell>
       <TableCell className="text-right">
-        <Money cents={t.expense_cents} />
+        <Money cents={t.expense_cents} whole />
       </TableCell>
       <TableCell className="text-right">
-        <Money cents={t.gross_cents} colored />
+        <Money cents={t.gross_cents} colored whole />
       </TableCell>
       <TableCell className="text-right">
-        <Money cents={t.net_cents} colored />
+        <Money cents={t.net_cents} colored whole />
       </TableCell>
       <TableCell className="text-right tabular-nums">{percent(costRecovery(t))}</TableCell>
     </>
@@ -33,8 +30,8 @@ function Cells({ row }: { row: SummaryRow }) {
 }
 
 /**
- * A Financial Plan's year at a glance: each program area's and Operations' sailors and top-line numbers, leaving out
- * fundraising and capital, with the total in the footer.
+ * A Financial Plan's year at a glance: each program area's and Non-program's top-line numbers, leaving out fundraising
+ * and capital, with the total in the footer.
  */
 export function SummaryTable({ setId, rows, total }: { setId: string; rows: SummaryRow[]; total: SummaryRow }) {
   return (
@@ -42,10 +39,8 @@ export function SummaryTable({ setId, rows, total }: { setId: string; rows: Summ
       <TableHeader>
         <TableRow>
           <TableHead className={pinned}>
-            <span className="sr-only">Program or Operations</span>
+            <span className="sr-only">Program area</span>
           </TableHead>
-          <TableHead className="text-right">Sailors</TableHead>
-          <TableHead className="text-right">Sailor-days</TableHead>
           <TableHead className="text-right">Revenue</TableHead>
           <TableHead className="text-right">Expenses</TableHead>
           <TableHead className="text-right">Gross</TableHead>

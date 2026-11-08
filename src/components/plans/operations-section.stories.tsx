@@ -22,7 +22,7 @@ type Story = StoryObj<typeof meta>;
 export const SalesFundraisingAndCapital: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("row", { name: /^Boat storage/ })).toBeVisible();
-    await expect(canvas.getByRole("row", { name: /^Fundraising \$9,000\.00 \$2,100\.00 \$6,900\.00/ })).toBeVisible();
-    await expect(canvas.getByRole("row", { name: /^Capital/ })).toHaveTextContent("$6,500.00");
+    await expect(canvas.getByRole("row", { name: /^Fundraising \$9,000 \$2,100 \$6,900/ })).toBeVisible();
+    await expect(canvas.getByRole("row", { name: /^Capital/ })).toHaveTextContent("$6,500");
   },
 };

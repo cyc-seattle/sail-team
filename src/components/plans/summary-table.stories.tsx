@@ -22,7 +22,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Year: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("link", { name: "Operations" })).toBeVisible();
+    await expect(canvas.getByRole("link", { name: "Non-program" })).toBeVisible();
     await expect(canvas.getByRole("columnheader", { name: "Gross" })).toBeVisible();
     await expect(canvas.getByRole("row", { name: /^Total/ })).toBeVisible();
   },

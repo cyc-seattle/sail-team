@@ -1,10 +1,14 @@
 const dollars = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+const wholeDollars = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
 export type MoneyTone = "positive" | "negative" | "zero";
 
-/** Cents as dollars: `123456` → `$1,234.56`, `-5000` → `−$50.00`, with a true minus sign so columns line up. */
-export function formatCents(cents: number): string {
-  const text = dollars.format(Math.abs(cents) / 100);
+/**
+ * Cents as dollars: `123456` → `$1,234.56`, `-5000` → `−$50.00`, with a true minus sign so columns line up. `whole`
+ * rounds to the dollar: `$1,235`.
+ */
+export function formatCents(cents: number, whole = false): string {
+  const text = (whole ? wholeDollars : dollars).format(Math.abs(cents) / 100);
   return cents < 0 ? `−${text}` : text;
 }
 

@@ -61,9 +61,9 @@ export interface Member {
   area_name: string | null;
 }
 
-/** What a member is called on the page: its program area's name, or "Operations Plan". */
+/** What a member is called on the page: its program area's name, or "Non-program" for the Operations Plan. */
 export function memberName(member: Member): string {
-  return member.kind === "operations" ? "Operations Plan" : (member.area_name ?? member.plan_name);
+  return member.kind === "operations" ? "Non-program" : (member.area_name ?? member.plan_name);
 }
 
 /** The Operations Plan first, then each Program Plan by name. */
@@ -179,39 +179,30 @@ export function listOf(names: string[]): string {
   return `${names.slice(0, -1).join(", ")}, and ${names.at(-1)}`;
 }
 
-/** One row of a Financial Plan's summary: a program area, Operations, or the total. */
+/** One row of a Financial Plan's summary: a program area, Non-program, or the total. */
 export interface SummaryRow {
   name: string;
   /** The member it's for. Null for the total. */
   member: Member | null;
-  /** Its offerings' sailors and sailor-days. Null for Operations, which runs no programs. */
-  enrollment: number | null;
-  sailor_days: number | null;
   topLine: TopLine;
 }
 
-/** A row for each program area by name, then Operations, then the total, which adds them up. */
+/** A row for each program area by name, then Non-program, then the total, which adds them up. */
 export function summaryRows(members: Member[], results: Results): { rows: SummaryRow[]; total: SummaryRow } {
   const rows = membersInOrder(members)
     .sort((a, b) => Number(a.kind === "operations") - Number(b.kind === "operations"))
     .map((member): SummaryRow => {
-      const area = results.pnl.find((p) => p.member === member.id && p.level === "program_area");
       return {
-        name: member.kind === "operations" ? "Operations" : memberName(member),
+        name: memberName(member),
         member,
-        enrollment: area?.enrollment ?? null,
-        sailor_days: area?.sailor_days ?? null,
         topLine: topLine(results.lines.filter((l) => l.member === member.id)),
       };
     });
-  const sum = (pick: (r: SummaryRow) => number | null) => rows.reduce((total, r) => total + (pick(r) ?? 0), 0);
   return {
     rows,
     total: {
       name: "Total",
       member: null,
-      enrollment: sum((r) => r.enrollment),
-      sailor_days: sum((r) => r.sailor_days),
       topLine: topLine(results.lines),
     },
   };

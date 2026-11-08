@@ -66,15 +66,20 @@ Then("each shows its note, the day it was saved, and the one it was started from
   await expect(card(page, club, "Budget")).toContainText("Reviewed with the board");
 });
 
-Given("a saved Financial Plan for 2027 with an operating net of $5,000", async ({ club }) => {
+Given("a saved Financial Plan for 2027 whose camp takes in $10,000 and spends $5,000 running it", async ({ club }) => {
   named.clear();
   club.ownYear();
   await savedBudget(club, "Budget");
 });
 
-Then("the Financial Plan shows an operating net of $5,000", async ({ page, club }) => {
-  await expect(card(page, club, "Budget")).toContainText("Operating net $5,000.00");
-});
+Then(
+  "the Financial Plan shows revenue of $10,000, expenses of $5,000, gross of $5,000, and net of $5,000",
+  async ({ page, club }) => {
+    await expect(card(page, club, "Budget")).toContainText(
+      /Revenue\s*\$10,000.*Expenses\s*\$5,000.*Gross\s*\$5,000.*Net\s*\$5,000/,
+    );
+  },
+);
 
 Given("a saved Financial Plan for 2027 named {string}", async ({ club }, name: string) => {
   named.clear();
@@ -150,20 +155,27 @@ When("I open that Financial Plan", async ({ page }) => {
   await page.goto(`${await app()}/plans/financial/${opened.set}`);
 });
 
-Then("I see the organization's operating net, fundraising, capital, and total", async ({ page }) => {
-  for (const tile of ["Operating net", "Fundraising net", "Capital", "Total"]) {
-    await expect(page.getByText(tile, { exact: true })).toBeVisible();
+const summary = (page: Page) => page.getByRole("table", { name: "Summary" });
+
+Then("the summary has a row for Youth Racing, Adult Sailing, Non-program, and the total", async ({ page, club }) => {
+  for (const name of [club.area, `Adult Sailing ${club.run}`, "Non-program", "Total"]) {
+    await expect(summary(page).getByRole("row", { name: new RegExp(`^${name}`) })).toBeVisible();
   }
 });
 
-Then("I see its Operations Plan and both Program Plans, each with its net", async ({ page, club }) => {
-  for (const name of ["Operations Plan", club.area, `Adult Sailing ${club.run}`]) {
-    await expect(page.getByRole("link", { name: new RegExp(name) })).toContainText("Net");
-  }
+Then("Youth Racing's row shows revenue of $10,000 and net of $5,000", async ({ page, club }) => {
+  const row = summary(page).getByRole("row", { name: new RegExp(`^${club.area}`) });
+  await expect(row.getByRole("cell").nth(1)).toHaveText("$10,000");
+  await expect(row.getByRole("cell").nth(4)).toHaveText("$5,000");
+});
+
+Then("under Programs I see Youth Racing's camp, with its sailors", async ({ page }) => {
+  const camp = page.getByRole("table", { name: "Programs" }).getByRole("row", { name: new RegExp(`^${OFFERING}`) });
+  await expect(camp.getByRole("cell").nth(1)).toHaveText("10");
 });
 
 Then("I see the Financial Plan it was started from", async ({ page }) => {
-  await expect(page.getByText(/started from Budget/)).toBeVisible();
+  await expect(page.getByText(/started from Budget/i)).toBeVisible();
 });
 
 // A Program Plan's full P&L.
@@ -375,7 +387,7 @@ Then("I'm on the draft {string}, started from {string}", async ({ page }, name: 
 
 Then("it holds the same plans as {string}", async ({ page, club }, parent: string) => {
   await expect(page.getByRole("link", { name: parent, exact: true }).first()).toBeVisible();
-  for (const name of ["Operations", club.area]) {
+  for (const name of ["Non-program", club.area]) {
     await expect(page.getByRole("link", { name: new RegExp(name) }).first()).toBeVisible();
   }
 });
@@ -384,4 +396,28 @@ Then("I see no way to edit it or start a draft from it", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.getByRole("button", { name: "Edit" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Start a draft from this" })).toHaveCount(0);
+});
+
+When("I save it", async ({ page }) => {
+  await page.getByRole("button", { name: "Save" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toBeHidden({ timeout: 30_000 });
+});
+
+Then("it's marked saved, with the day it was saved", async ({ page }) => {
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Saved \w+ \d+, \d{4}/)).toBeVisible();
+});
+
+When("I mark it active", async ({ page }) => {
+  await page.getByRole("button", { name: "Mark active" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", { name: "Mark active" }).click();
+  await expect(dialog).toBeHidden({ timeout: 30_000 });
+});
+
+Then("it's marked active", async ({ page }) => {
+  await expect(page.getByText("Active", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Mark active" })).toHaveCount(0);
 });

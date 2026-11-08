@@ -58,7 +58,7 @@ describe("reading Financial Plans from Directus", () => {
     expect(office.reduce((sum, l) => sum + l.amount_cents, 0)).toBe(200_000);
     expect(office.every((l) => l.cost_center_name === "Beginner camp, week 1")).toBe(true);
     expect(results!.totals.operating_net_cents).toBe(700_000);
-    expect(memberName(operations)).toBe("Operations Plan");
+    expect(memberName(operations)).toBe("Non-program");
   });
 
   it("warns about a practice on a day the Operations Plan says the club is closed", async () => {

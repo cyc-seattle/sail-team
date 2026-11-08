@@ -5,6 +5,7 @@ import {
   membersInOrder,
   ownerOf,
   plansByYear,
+  summaryRows,
   topLine,
   type FinancialPlanSummary,
   type Member,
@@ -151,6 +152,31 @@ describe("topLine", () => {
       line("Coach boat", 900, false, null, true),
     ];
     expect(topLine(lines)).toEqual({ revenue_cents: 1_000, expense_cents: 0, gross_cents: 1_000, net_cents: 1_000 });
+  });
+});
+
+describe("summaryRows", () => {
+  it("has a row for each program area, then Non-program, and a total of every operating line", () => {
+    const members = [member("o", "operations", null), member("y", "program_area", "youth")];
+    members[1]!.area_name = "Youth Racing";
+    const results = {
+      live: false,
+      totals: { operating_net_cents: 0, fundraising_net_cents: 0, capital_cents: 0, total_cents: 0 },
+      pnl: [],
+      warnings: [],
+      lines: [
+        { ...line("Tuition", 1_000, true, "program"), member: "y" },
+        { ...line("Coach wages", 400, false, "program"), member: "y" },
+        { ...line("Office", 300, false, "management"), member: "o" },
+        { ...line("Gala", 900, true, "fundraising"), member: "o" },
+      ],
+    };
+    const { rows, total } = summaryRows(members, results);
+    expect(rows.map((r) => [r.name, r.topLine.net_cents])).toEqual([
+      ["Youth Racing", 600],
+      ["Non-program", -300],
+    ]);
+    expect(total.topLine).toEqual({ revenue_cents: 1_000, expense_cents: 700, gross_cents: 600, net_cents: 300 });
   });
 });
 

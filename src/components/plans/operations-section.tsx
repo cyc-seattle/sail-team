@@ -10,20 +10,20 @@ function Row({ name, revenue, expense, net }: { name: string; revenue: number; e
     <TableRow>
       <TableCell className={pinned}>{name}</TableCell>
       <TableCell className="text-right">
-        <Money cents={revenue} />
+        <Money cents={revenue} whole />
       </TableCell>
       <TableCell className="text-right">
-        <Money cents={expense} />
+        <Money cents={expense} whole />
       </TableCell>
       <TableCell className="text-right">
-        <Money cents={net} colored />
+        <Money cents={net} colored whole />
       </TableCell>
     </TableRow>
   );
 }
 
 /**
- * What Operations sells outside the programs, the shared costs no program pays, and the two things the summary leaves
+ * Non-program: what the club sells outside the programs, the shared costs no program pays, and the two things the summary leaves
  * out: fundraising and capital.
  */
 export function OperationsSection({
@@ -40,21 +40,21 @@ export function OperationsSection({
   const unshared = own ? own.expense_cents - products.reduce((t, p) => t + p.expense_cents, 0) : 0;
   const { fundraising, capital_cents } = outsideTopLine(results.lines);
   return (
-    <section aria-labelledby="operations" className="grid gap-2">
-      <h2 id="operations" className="text-base font-medium">
+    <section aria-labelledby="non-program" className="grid gap-2">
+      <h2 id="non-program" className="text-base font-medium">
         {operations ? (
           <Link
             to="/plans/financial/$setId/$planId"
             params={{ setId, planId: operations.plan_id }}
             className="text-link underline"
           >
-            Operations
+            Non-program
           </Link>
         ) : (
-          "Operations"
+          "Non-program"
         )}
       </h2>
-      <Table aria-label="Operations">
+      <Table aria-label="Non-program">
         <TableHeader>
           <TableRow>
             <TableHead className={pinned}>

@@ -24,7 +24,11 @@ export const offerings = [
 ];
 
 export const warnings: EngineWarning[] = [
-  { code: "closed_day", message: "A practice on Monday, July 5 falls on a day the club is closed.", key: "practice-7" },
+  {
+    code: "closed_day",
+    message: "Beginner camp, week 1 has an activity on 2027-07-05, a closed day: the Fourth of July, observed",
+    key: "practice-7",
+  },
   { code: "no_area", message: "Laser Masters belongs to no program area, so its costs aren't shared with any." },
 ];
 

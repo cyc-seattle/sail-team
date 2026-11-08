@@ -6,7 +6,6 @@ import { NoticePage } from "@/components/shell/notice-page";
 import { canRead, canWrite } from "@/directus/access";
 import {
   financialPlanQuery,
-  financialPlansQuery,
   startFinancialPlan,
   updateFinancialPlan,
   type FinancialPlan,
@@ -35,7 +34,6 @@ function Loaded() {
 }
 
 function Found({ plan }: { plan: FinancialPlan }) {
-  const { data: all } = useSuspenseQuery(financialPlansQuery);
   const session = useSession();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -45,7 +43,6 @@ function Found({ plan }: { plan: FinancialPlan }) {
   return (
     <FinancialPlanPage
       {...plan}
-      others={all.filter((s) => s.fiscal_year === set.fiscal_year && s.id !== set.id)}
       canUpdate={canWrite(permissions, "version_sets", "update")}
       canCreate={canWrite(permissions, "version_sets", "create")}
       onEdit={async ({ name, message }) => {
