@@ -84,7 +84,6 @@ export const members = [
 
 const accounts: Record<string, string> = {
   Tuition: "4000",
-  "Card fees": "4100",
   Sales: "4500",
   "Coach wages": "5000",
   "Payroll tax": "5100",
@@ -92,6 +91,7 @@ const accounts: Record<string, string> = {
   "Boats and equipment": "6000",
   Travel: "6200",
   Scholarships: "6400",
+  "Card fees": "6500",
   Insurance: "7000",
   Office: "7100",
 };
@@ -121,7 +121,7 @@ const youthLines: PlanLine[] = ["Beginner camp, week 1", "Beginner camp, week 2"
   (offering, i) =>
     [
       line("Revenue", "Tuition", [1_000_000, 800_000, 150_000][i]!, true),
-      line("Card fees", "Card fees", [30_000, 24_000, 4_500][i]!, true),
+      line("Card fees", "Card fees", [30_000, 24_000, 4_500][i]!),
       line("Coach wages", "Coach wages", [240_000, 240_000, 96_000][i]!),
       line("Payroll tax", "Payroll tax", [24_000, 24_000, 9_600][i]!),
       line("RIBs", "Boats and equipment", [60_000, 60_000, 24_000][i]!),

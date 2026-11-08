@@ -211,7 +211,7 @@ const lineRow = (page: Page, name: RegExp) =>
   page.getByRole("region", { name: "Revenue and costs" }).getByRole("row", { name });
 
 Then("the offering shows $10,000 in, $3,000 of coaches' wages, and $1,000 of shared costs", async ({ page }) => {
-  await expect(lineRow(page, /Revenue \$/).first()).toContainText("$10,000");
+  await expect(lineRow(page, /^Total revenue/)).toContainText("$10,000");
   await expect(lineRow(page, /Coach wages/).first()).toContainText("$3,000");
   await expect(lineRow(page, /Office share/).first()).toContainText("$1,000");
 });

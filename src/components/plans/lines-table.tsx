@@ -20,6 +20,9 @@ function Amount({ cents, measures, colored = false }: { cents: number; measures:
   );
 }
 
+// "Revenue" is the engine's name for an offering's sales, which the category already says.
+const sameAs = (item: string, category: string) => item === category || item === "Revenue";
+
 function Categories({ categories, measures }: { categories: Category[]; measures: Measures }) {
   return categories.map((category) => {
     const name = (
@@ -35,7 +38,9 @@ function Categories({ categories, measures }: { categories: Category[]; measures
         <TableRow key={`${category.number} ${category.name}`}>
           <TableCell className="font-medium whitespace-normal">
             {name}
-            {only.name !== category.name && <div className="pl-4 font-normal text-muted-foreground">{only.name}</div>}
+            {!sameAs(only.name, category.name) && (
+              <div className="pl-4 font-normal text-muted-foreground">{only.name}</div>
+            )}
           </TableCell>
           <Amount cents={only.cents} measures={measures} />
         </TableRow>
