@@ -52,6 +52,8 @@ Then("the menu doesn't offer Plans", async ({ page }) => {
   await expect(page.getByRole("navigation", { name: "Menu" }).getByRole("link", { name: "Rosters" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Menu" }).getByRole("link", { name: "Plans" })).toHaveCount(0);
   await page.keyboard.press("Escape");
+  // The next step reopens More only if it's shut, so wait out its closing.
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
 Then("my account menu shows my name", async ({ page, visitor }) => {
