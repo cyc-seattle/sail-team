@@ -65,7 +65,10 @@ jobs:
   # Skipped when the preview shows no changes, so a no-op deploy never asks for approval.
   prod:
     needs: prod-preview
-    if: needs.prod-preview.outputs.changes == 'true'
+    # !cancelled(): main's run skips ci and dev, and a skipped job further up would otherwise skip this one too.
+    if: >-
+      !cancelled() && needs.prod-preview.result == 'success' &&
+      needs.prod-preview.outputs.changes == 'true'
     uses: cyc-seattle/.github/.github/workflows/deploy.yml@v3.2.0
     permissions:
       id-token: write
