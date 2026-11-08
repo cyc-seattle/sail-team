@@ -61,7 +61,7 @@ async function shows(page: Page, run: string, sailors: string[]) {
   }
 }
 
-async function pick(page: Page, filter: "Division" | "School", option: string) {
+async function pick(page: Page, filter: "Team and division" | "School", option: string) {
   await page.getByRole("combobox", { name: filter }).click();
   await page.getByRole("option", { name: option, exact: true }).click();
 }
@@ -141,6 +141,11 @@ Then("the roster says the other guardian hasn't shared", async ({ page }) => {
   await expect(row(page, sailor.name).getByText(guardian.email)).toHaveCount(0);
 });
 
+Then("the roster is on my child's team", async ({ page, squad }) => {
+  await expect(page.getByRole("combobox", { name: "Team and division" })).toHaveText(squad.teamName);
+  expect(new URL(page.url()).searchParams.get("team")).toBe(squad.areaId);
+});
+
 Then(
   "the roster shows my child and the sailor at Eastlake High School, with their schools",
   async ({ page, squad }) => {
@@ -160,15 +165,15 @@ Then("the roster links the division's Google Group", async ({ page }) => {
 });
 
 When("I pick the second division", async ({ page, squad }) => {
-  await pick(page, "Division", `K-Pod ${squad.run}`);
+  await pick(page, "Team and division", `K-Pod ${squad.run}`);
 });
 
 Then("the roster shows only the sailor at Eastlake High School", async ({ page, squad }) => {
   await shows(page, squad.run, [scene.eastlake!.name]);
 });
 
-When("I pick all divisions, and Lakeside Middle School", async ({ page }) => {
-  await pick(page, "Division", "All divisions");
+When("I pick the whole team, and Lakeside Middle School", async ({ page, squad }) => {
+  await pick(page, "Team and division", squad.teamName);
   await pick(page, "School", "Lakeside Middle School");
 });
 
@@ -177,7 +182,8 @@ Then("the roster shows only my child", async ({ page, squad }) => {
 });
 
 Then("the page's address keeps the filters, so I can share it", async ({ page, squad }) => {
-  await expect(page).toHaveURL(/\?school=Lakeside(\+|%20)Middle(\+|%20)School$/);
+  await expect(page).toHaveURL(/[?&]school=Lakeside(\+|%20)Middle(\+|%20)School(&|$)/);
+  expect(new URL(page.url()).searchParams.get("team")).toBe(squad.areaId);
   await page.reload();
   await expect(page.getByRole("combobox", { name: "School" })).toHaveText(/Lakeside Middle School/);
   await shows(page, squad.run, [scene.child!.name]);

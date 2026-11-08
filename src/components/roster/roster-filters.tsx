@@ -2,15 +2,7 @@ import { SearchIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { NO_SCHOOL, withFilters, type RosterFilters, type TeamRoster } from "@/model/roster";
 
 export interface RosterFilterBarProps {
@@ -20,33 +12,59 @@ export interface RosterFilterBarProps {
   onChange: (filters: RosterFilters) => void;
 }
 
-// One select covers both team and division, so each choice is coded with which it is.
+// One select picks a team, or one of its divisions, so each choice is coded with which it is.
 const ALL = "all";
 const teamValue = (id: string) => `team:${id}`;
 const divisionValue = (id: string) => `division:${id}`;
 
-/** The search by name and the division and school filters above the roster. */
+/** The team and division picker, the search by name, and the school filter above the roster. */
 export function RosterFilterBar({ teams, schools, filters, onChange }: RosterFilterBarProps) {
   // The box keeps its own text, so a slow address update never undoes a keystroke.
   const [q, setQ] = useState(filters.q ?? "");
-  const several = teams.length > 1;
-  const divisionItems = [
-    { value: ALL, label: "All divisions" },
-    ...teams.flatMap((team) => [
-      ...(several ? [{ value: teamValue(team.id), label: `All of ${team.name}` }] : []),
-      ...team.divisions.map((d) => ({ value: divisionValue(d.id), label: d.name })),
-    ]),
-  ];
+  const placeItems = teams.flatMap((team) => [
+    { value: teamValue(team.id), label: team.name },
+    ...team.divisions.map((d) => ({ value: divisionValue(d.id), label: `${team.name} · ${d.name}` })),
+  ]);
   const schoolItems = [
     { value: ALL, label: "All schools" },
     ...schools.map((school) => ({ value: school, label: school })),
     { value: NO_SCHOOL, label: "School not on file" },
   ];
-  const division = filters.division ? divisionValue(filters.division) : filters.team ? teamValue(filters.team) : ALL;
-  const filtered = Boolean(filters.team || filters.division || filters.school || filters.q);
+  const place = filters.division ? divisionValue(filters.division) : teamValue(filters.team ?? "");
+  const filtered = Boolean(filters.division || filters.school || filters.q);
 
   return (
     <div className="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center">
+      <Select
+        items={placeItems}
+        value={place}
+        onValueChange={(value) => {
+          const [kind, id] = String(value).split(":");
+          const team = kind === "team" ? id : teams.find((t) => t.divisions.some((d) => d.id === id))?.id;
+          onChange(withFilters(filters, { team, division: kind === "division" && id }));
+        }}
+      >
+        <SelectTrigger
+          aria-label="Team and division"
+          className="w-full data-[size=default]:h-tap md:w-64 md:data-[size=default]:h-8"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {teams.map((team) => (
+            <SelectGroup key={team.id}>
+              <SelectItem value={teamValue(team.id)} className="font-medium">
+                {team.name}
+              </SelectItem>
+              {team.divisions.map((d) => (
+                <SelectItem key={d.id} value={divisionValue(d.id)} className="pl-6">
+                  {d.name}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          ))}
+        </SelectContent>
+      </Select>
       <InputGroup className="h-tap md:h-8 md:max-w-xs">
         <InputGroupAddon>
           <SearchIcon />
@@ -62,36 +80,6 @@ export function RosterFilterBar({ teams, schools, filters, onChange }: RosterFil
           }}
         />
       </InputGroup>
-      <Select
-        items={divisionItems}
-        value={division}
-        onValueChange={(value) => {
-          const picked = String(value ?? ALL);
-          const [kind, id] = picked.split(":");
-          onChange(withFilters(filters, { team: kind === "team" && id, division: kind === "division" && id }));
-        }}
-      >
-        <SelectTrigger
-          aria-label="Division"
-          className="w-full data-[size=default]:h-tap md:w-48 md:data-[size=default]:h-8"
-        >
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL}>All divisions</SelectItem>
-          {teams.map((team) => (
-            <SelectGroup key={team.id}>
-              {several && <SelectLabel>{team.name}</SelectLabel>}
-              {several && <SelectItem value={teamValue(team.id)}>All of {team.name}</SelectItem>}
-              {team.divisions.map((d) => (
-                <SelectItem key={d.id} value={divisionValue(d.id)}>
-                  {d.name}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          ))}
-        </SelectContent>
-      </Select>
       <Select
         items={schoolItems}
         value={filters.school ?? ALL}
@@ -120,7 +108,7 @@ export function RosterFilterBar({ teams, schools, filters, onChange }: RosterFil
           className="h-tap self-end md:h-8 md:self-auto"
           onClick={() => {
             setQ("");
-            onChange({});
+            onChange(withFilters({}, { team: filters.team }));
           }}
         >
           Clear filters

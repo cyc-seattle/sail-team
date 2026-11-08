@@ -22,8 +22,8 @@ export interface RosterProps {
 }
 
 /**
- * Every sailor on the teams the person can see, with how to reach their guardians: a table on a laptop and a card for
- * each sailor on a phone, both narrowed by the same search and filters.
+ * One team's sailors, or one division's, with how to reach their guardians: a table on a laptop and a card for each
+ * sailor on a phone. A search looks across every team, and says which team each match is on.
  */
 export function Roster({ teams, filters, onFiltersChange }: RosterProps) {
   const entries = useMemo(() => rosterEntries(teams), [teams]);
@@ -33,11 +33,13 @@ export function Roster({ teams, filters, onFiltersChange }: RosterProps) {
     return <p className="text-sm text-muted-foreground">There's no one on a team for you to see right now.</p>;
   }
   const shown = filterRoster(entries, filters);
-  const groups = divisionsIn(teams, filters).filter((d) => d.group);
-  const withTeam = teams.length > 1 && !filters.team && !filters.division;
+  const searching = Boolean(filters.q);
+  const groups = searching ? [] : divisionsIn(teams, filters).filter((d) => d.group);
+  const withTeam = searching && teams.length > 1;
   return (
     <div className="grid gap-card">
       <RosterFilterBar teams={teams} schools={schools} filters={filters} onChange={onFiltersChange} />
+      {withTeam && <p className="text-sm text-muted-foreground">Showing matches on every team.</p>}
       {groups.length > 0 && (
         <p className="flex flex-wrap items-center gap-x-3 text-sm text-muted-foreground">
           Google Groups:
@@ -57,7 +59,7 @@ export function Roster({ teams, filters, onFiltersChange }: RosterProps) {
       ) : phone ? (
         <ul className="grid gap-2" aria-label="Roster">
           {shown.map((entry) => (
-            <li key={entry.id}>
+            <li key={`${entry.teamId}:${entry.id}`}>
               <SailorCard entry={entry} withTeam={withTeam} />
             </li>
           ))}
@@ -71,12 +73,11 @@ export function Roster({ teams, filters, onFiltersChange }: RosterProps) {
   );
 }
 
-const teamsOf = (entry: RosterEntry) => [...new Set(entry.placements.map((p) => p.team))].join(", ");
-const divisionsOf = (entry: RosterEntry) => entry.placements.map((p) => p.division).join(", ");
+const divisionsOf = (entry: RosterEntry) => entry.divisions.map((d) => d.name).join(", ");
 
 function RosterTable({ entries, withTeam }: { entries: RosterEntry[]; withTeam: boolean }) {
   return (
-    <Table>
+    <Table aria-label="Roster">
       <TableHeader>
         <TableRow>
           <TableHead>Sailor</TableHead>
@@ -88,12 +89,12 @@ function RosterTable({ entries, withTeam }: { entries: RosterEntry[]; withTeam: 
       </TableHeader>
       <TableBody>
         {entries.map((entry) => (
-          <TableRow key={entry.id}>
+          <TableRow key={`${entry.teamId}:${entry.id}`}>
             <TableCell className="align-top whitespace-normal">
               <span className="font-medium">{entry.name}</span>
               <Reach person={entry} quiet />
             </TableCell>
-            {withTeam && <TableCell className="align-top whitespace-normal">{teamsOf(entry)}</TableCell>}
+            {withTeam && <TableCell className="align-top whitespace-normal">{entry.team}</TableCell>}
             <TableCell className="align-top whitespace-normal">{divisionsOf(entry)}</TableCell>
             <TableCell className="align-top whitespace-normal">
               {entry.school ?? <span className="text-muted-foreground">Not on file</span>}
@@ -109,7 +110,7 @@ function RosterTable({ entries, withTeam }: { entries: RosterEntry[]; withTeam: 
 }
 
 function SailorCard({ entry, withTeam }: { entry: RosterEntry; withTeam: boolean }) {
-  const about = [withTeam ? teamsOf(entry) : null, divisionsOf(entry), entry.school ?? "School not on file"];
+  const about = [withTeam ? entry.team : null, divisionsOf(entry), entry.school ?? "School not on file"];
   return (
     <article className="grid gap-2 rounded-lg bg-card p-card text-sm ring-1 ring-border" aria-label={entry.name}>
       <div className="grid gap-0.5">

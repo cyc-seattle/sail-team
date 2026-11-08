@@ -9,6 +9,7 @@ import { formatDays } from "../src/model/dates.ts";
 import {
   buildTeams,
   currentOfferings,
+  defaultTeam,
   divisionsIn,
   filterRoster,
   groupUrl,
@@ -135,30 +136,47 @@ describe("buildTeams", () => {
     expect(team).toMatchObject({ id: "j", name: "J-Pod" });
   });
 
-  const entries = rosterEntries(teams);
-  const names = (filters: Parameters<typeof filterRoster>[1]) => filterRoster(entries, filters).map((e) => e.name);
+  // Kai is on Singlehanded's Opti too.
+  const singlehanded: TeamRoster = {
+    id: "sh",
+    name: "Singlehanded",
+    divisions: [{ ...teams[0]!.divisions[1]!, id: "opti", name: "Opti" }],
+  };
+  const entries = rosterEntries([...teams, singlehanded]);
+  const names = (filters: Parameters<typeof filterRoster>[1]) =>
+    filterRoster(entries, filters).map((e) => `${e.name} (${e.team})`);
 
-  it("lists each sailor once, by name, with every division they're on", () => {
-    expect(entries.map((e) => [e.name, e.placements.map((p) => `${p.team} ${p.division}`)])).toEqual([
-      ["Ada Bowline", ["Doublehanded J-Pod"]],
-      ["Kai Halyard", ["Doublehanded J-Pod", "Doublehanded K-Pod"]],
+  it("lists each sailor once on each team they're on, by name, with the team's divisions they're on", () => {
+    expect(entries.map((e) => [e.name, e.team, e.divisions.map((d) => d.name)])).toEqual([
+      ["Ada Bowline", "Doublehanded", ["J-Pod"]],
+      ["Kai Halyard", "Doublehanded", ["J-Pod", "K-Pod"]],
+      ["Kai Halyard", "Singlehanded", ["Opti"]],
     ]);
   });
 
-  it("narrows the roster to a team, a division, or a school", () => {
-    expect(names({ team: "dh" })).toEqual(["Ada Bowline", "Kai Halyard"]);
-    expect(names({ team: "other" })).toEqual([]);
-    expect(names({ division: "k" })).toEqual(["Kai Halyard"]);
-    expect(names({ school: "Lakeside" })).toEqual(["Ada Bowline"]);
-    expect(names({ school: NO_SCHOOL })).toEqual(["Kai Halyard"]);
-    expect(names({ division: "j", school: "Lakeside" })).toEqual(["Ada Bowline"]);
+  it("narrows the roster to a team, one of its divisions, or a school", () => {
+    expect(names({ team: "dh" })).toEqual(["Ada Bowline (Doublehanded)", "Kai Halyard (Doublehanded)"]);
+    expect(names({ team: "sh" })).toEqual(["Kai Halyard (Singlehanded)"]);
+    expect(names({ team: "dh", division: "k" })).toEqual(["Kai Halyard (Doublehanded)"]);
+    expect(names({ team: "dh", school: "Lakeside" })).toEqual(["Ada Bowline (Doublehanded)"]);
+    expect(names({ team: "dh", school: NO_SCHOOL })).toEqual(["Kai Halyard (Doublehanded)"]);
   });
 
-  it("finds a sailor by their own name or a guardian's, whatever the case, accents, or spaces", () => {
-    expect(names({ q: "kai" })).toEqual(["Kai Halyard"]);
-    expect(names({ q: "SAM  bowline" })).toEqual(["Ada Bowline"]);
-    expect(names({ q: "Bówline" })).toEqual(["Ada Bowline"]);
+  it("finds a sailor on every team by their own name or a guardian's, whatever the case, accents, or spaces", () => {
+    expect(names({ team: "dh", division: "j", q: "kai" })).toEqual([
+      "Kai Halyard (Doublehanded)",
+      "Kai Halyard (Singlehanded)",
+    ]);
+    expect(names({ team: "sh", q: "SAM  bowline" })).toEqual(["Ada Bowline (Doublehanded)"]);
+    expect(names({ q: "Bówline" })).toEqual(["Ada Bowline (Doublehanded)"]);
     expect(names({ q: "nobody" })).toEqual([]);
+  });
+
+  it("opens on the viewer's own team, or the first one they can see", () => {
+    expect(defaultTeam([singlehanded, ...teams], "child")).toBe("dh");
+    expect(defaultTeam([singlehanded, ...teams], "stranger")).toBe("sh");
+    expect(defaultTeam([singlehanded, ...teams], null)).toBe("sh");
+    expect(defaultTeam([], "child")).toBeUndefined();
   });
 
   it("changes a filter, leaving out any that's unset or empty", () => {

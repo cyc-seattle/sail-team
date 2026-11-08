@@ -1,10 +1,10 @@
 Feature: Team rosters
-  Rosters lists every sailor on the teams a person can see in one list: a team is a part of the club's programs, such
-  as Doublehanded, whose team programs, such as J-Pod and K-Pod, are its divisions. Each sailor shows with their
-  division, school, and guardians, and how to reach the guardians who chose to share their email and phone. The list
-  narrows to a division or a school, and finds anyone by a sailor's or a guardian's name. Only households on a team and
-  Crew see the rosters. Every adult decides on the page whether to share their own email and phone. Every household
-  and program here is made up for the run.
+  Rosters shows one team at a time: a part of the club's programs, such as Doublehanded, whose team programs, such as
+  J-Pod and K-Pod, are its divisions. It opens on the person's own team, and lists each sailor with their division,
+  school, and guardians, and how to reach the guardians who chose to share their email and phone. It narrows to one of
+  the team's divisions or a school, and a search finds anyone on any team by a sailor's or a guardian's name. Only
+  households on a team and Crew see the rosters. Every adult decides on the page whether to share their own email and
+  phone. Every household and program here is made up for the run.
 
   Rule: A household on a team sees the team, with the email and phone of the adults who share them
 
@@ -18,7 +18,7 @@ Feature: Team rosters
       And the roster shows the sharing guardian's email and phone
       And the roster says the other guardian hasn't shared
 
-  Rule: The roster narrows to a division or a school, and finds people by name
+  Rule: The roster shows one team at a time, narrows to a division or a school, and finds people on any team by name
 
     Scenario: A guardian narrows the roster to a division, then to a school
       Given I'm a guardian whose child is on a team, at Lakeside Middle School
@@ -26,11 +26,12 @@ Feature: Team rosters
       And a second division of the team, with a sailor at Eastlake High School
       And I've signed in
       When I open Rosters
-      Then the roster shows my child and the sailor at Eastlake High School, with their schools
+      Then the roster is on my child's team
+      And the roster shows my child and the sailor at Eastlake High School, with their schools
       And the roster links the division's Google Group
       When I pick the second division
       Then the roster shows only the sailor at Eastlake High School
-      When I pick all divisions, and Lakeside Middle School
+      When I pick the whole team, and Lakeside Middle School
       Then the roster shows only my child
       And the page's address keeps the filters, so I can share it
 
