@@ -222,7 +222,7 @@ export const tables: Record<string, Record<string, unknown>[]> = {
   ],
   plan_pools: [officeTwo.pool, officeThree.pool],
   plan_budget_lines: [officeTwo.line, officeThree.line, supplies(ids.youthTwo, 1), supplies(ids.youthThree, 2)],
-  // The club is closed on the Fourth, and Two coaches' camp has a practice that day.
+  // The Fourth is a closed day, and Two coaches' camp has a practice that day.
   plan_closed_dates: [
     { id: id(401), version_id: ids.opsTwo, key: id(411), date: "2027-07-05", name: "the Fourth of July, observed" },
   ],

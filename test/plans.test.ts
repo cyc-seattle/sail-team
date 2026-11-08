@@ -61,7 +61,7 @@ describe("reading Financial Plans from Directus", () => {
     expect(memberName(operations)).toBe("Non-program");
   });
 
-  it("warns about a practice on a day the Operations Plan says the club is closed", async () => {
+  it("warns about a practice on a day the Operations Plan lists as closed", async () => {
     const { results } = await plan(ids.twoCoaches);
     expect(results?.warnings.map((w) => w.code)).toContain("closed_date");
   });
