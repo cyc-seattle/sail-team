@@ -1,36 +1,28 @@
 import { useId } from "react";
 import { Switch } from "@/components/ui/switch";
-
-export type SaveState = "idle" | "saving" | "saved" | "failed";
+import { said, type SaveState } from "./save-state.ts";
 
 export interface ShareContactProps {
   shares: boolean;
-  /** Whether the person is a parent of someone on a roster, which changes how the choice is put. */
-  parent: boolean;
   state?: SaveState;
+  /** A sailor who signs in sees the choice, but only an adult makes it. */
+  disabled?: boolean;
   onChange: (shares: boolean) => void;
 }
 
-const said: Record<SaveState, string> = {
-  idle: "",
-  saving: "Saving…",
-  saved: "Saved.",
-  failed: "That didn't save. Try again, or ask the club office to change it.",
-};
-
-/** The signed-in adult's own choice to share their email and phone with the teams. It saves as soon as it changes. */
-export function ShareContact({ shares, parent, state = "idle", onChange }: ShareContactProps) {
+/** The household's one choice to share its parents' email and phone with its teams. It saves as soon as it changes. */
+export function ShareContact({ shares, state = "idle", disabled = false, onChange }: ShareContactProps) {
   const label = useId();
   const hint = useId();
   return (
     <section className="flex items-start justify-between gap-4 rounded-lg bg-card p-card ring-1 ring-border">
       <div className="grid gap-1">
         <p id={label} className="font-medium">
-          Share my email and phone with {parent ? "my child's team" : "my team"}
+          Share our email and phone numbers with our teams
         </p>
         <p id={hint} className="text-sm text-muted-foreground">
-          Families on a team see the email and phone of the adults who share them. Children's own are never shown. Club
-          crew can always reach you.
+          Families on the same teams see the parents' email and phone on the roster. Sailors' own are never shown. This
+          choice is for your whole household.
         </p>
         <p role="status" className={state === "failed" ? "text-sm text-destructive" : "text-sm text-muted-foreground"}>
           {said[state]}
@@ -38,7 +30,7 @@ export function ShareContact({ shares, parent, state = "idle", onChange }: Share
       </div>
       <Switch
         checked={shares}
-        disabled={state === "saving"}
+        disabled={disabled || state === "saving"}
         onCheckedChange={(checked) => onChange(checked)}
         aria-labelledby={label}
         aria-describedby={hint}

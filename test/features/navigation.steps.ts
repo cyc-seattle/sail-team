@@ -13,7 +13,12 @@ const sizes = { laptop: { width: 1440, height: 900 }, phone: { width: 390, heigh
 const screen: { size: keyof typeof sizes } = { size: "laptop" };
 
 /** Each page's heading, which shows it opened. */
-const headings: Record<string, string> = { Home: "Sail Team", Plans: "Plans", Rosters: "Rosters" };
+const headings: Record<string, string> = {
+  Home: "Sail Team",
+  Plans: "Plans",
+  Rosters: "Rosters",
+  Household: "Household",
+};
 
 /** The menu that holds a page's link: on a phone, its tab, or More's sidebar if it has none. */
 async function menu(page: Page, label: string) {
