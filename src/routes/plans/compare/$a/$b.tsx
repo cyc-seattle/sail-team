@@ -32,7 +32,6 @@ function Loaded() {
     <main className="mx-auto max-w-6xl p-card">
       <PageHeader
         title={`${first.set.name} and ${second.set.name}`}
-        description={`Two Financial Plans for ${first.set.fiscal_year}, side by side`}
         back={{ to: `/plans/financial/${a}`, label: first.set.name }}
       />
       <CompareView a={first} b={second} />

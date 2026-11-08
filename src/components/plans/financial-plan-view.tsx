@@ -39,6 +39,23 @@ export function SourceNote({ set, savedBy }: { set: FinancialPlanSummary; savedB
 export function FinancialPlanView({ set, savedBy, members, results, others }: FinancialPlanViewProps) {
   return (
     <div className="grid gap-card">
+      {(set.message || set.parent) && (
+        <p className="flex flex-wrap gap-x-2 text-sm">
+          {set.message && <span>{set.message}</span>}
+          {set.parent && (
+            <span className="text-muted-foreground">
+              Started from{" "}
+              <Link
+                to="/plans/financial/$setId"
+                params={{ setId: set.parent.id }}
+                className="text-link hover:underline"
+              >
+                {set.parent.name}
+              </Link>
+            </span>
+          )}
+        </p>
+      )}
       <SourceNote set={set} savedBy={savedBy} />
       {results ? (
         <>

@@ -11,6 +11,16 @@ export function canRead(permissions: Permissions | undefined, collection: string
   return access === "partial" || access === "full";
 }
 
+/** Whether the user can create or update some of `collection`. As with `canRead`, Directus still checks every write. */
+export function canWrite(
+  permissions: Permissions | undefined,
+  collection: string,
+  action: "create" | "update",
+): boolean {
+  const access = permissions?.[collection]?.[action]?.access;
+  return access === "partial" || access === "full";
+}
+
 /**
  * The fields of `wanted` the user can read on some row of `collection`. Directus refuses a request that names a field
  * no rule gives, so a page asks only for these, and gets null on a row whose rule withholds one.

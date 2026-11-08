@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withRouter } from "../../../.storybook/with-router";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "./page-header";
-import { VersionBadge } from "./version-badge";
 
 const meta = {
   component: PageHeader,
@@ -17,11 +16,6 @@ export const TitleOnly: Story = {};
 export const Full: Story = {
   args: {
     back: { to: "/plans", label: "All plans" },
-    description: (
-      <span className="inline-flex items-center gap-2">
-        <VersionBadge state="active" /> Saved on March 3 by a planner
-      </span>
-    ),
     actions: <Button variant="outline">Compare with the draft</Button>,
   },
 };

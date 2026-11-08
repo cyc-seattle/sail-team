@@ -1,4 +1,4 @@
-import { customEndpoint } from "@directus/sdk";
+import { createItem, customEndpoint, updateItem } from "@directus/sdk";
 import { queryOptions } from "@tanstack/react-query";
 import type { FinancialPlanSummary, Member, Results, Totals } from "@/model/financial-plans";
 import type { SavedPnlRow } from "@/model/saved-results";
@@ -172,3 +172,40 @@ export const financialPlanQuery = (setId: string) =>
       return { set, savedBy, members, results };
     },
   });
+
+/** Renames a draft Financial Plan, or changes any one's note. Platform refuses a saved one's new name. */
+export async function updateFinancialPlan(
+  id: string,
+  changes: { name?: string; message?: string | null },
+): Promise<void> {
+  await appDirectus().client.request(updateItem("version_sets", id, changes));
+}
+
+/**
+ * Starts a draft Financial Plan from `parent`, in its year, and returns its id once platform's hook has copied the
+ * parent's plans into it. The hook copies them after it answers, so this waits for them.
+ */
+export async function startFinancialPlan(
+  parent: FinancialPlan,
+  { name, message }: { name: string; message: string | null },
+): Promise<string> {
+  const id = crypto.randomUUID();
+  await appDirectus().client.request(
+    createItem("version_sets", {
+      id,
+      organization_id: parent.set.organization_id,
+      fiscal_year: parent.set.fiscal_year,
+      name,
+      message,
+      parent_id: parent.set.id,
+    }),
+  );
+  for (let tries = 0; tries < 30; tries++) {
+    const copies = await readAll("version_set_members", { version_set_id: { _eq: id } }, ["id"]);
+    if (copies.length >= parent.members.length) {
+      return id;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  return id;
+}
