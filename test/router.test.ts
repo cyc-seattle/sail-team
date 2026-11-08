@@ -18,6 +18,7 @@ describe("the router", () => {
     ["/plans/financial/abc", "/plans/financial/$setId/"],
     ["/plans/financial/abc/def", "/plans/financial/$setId/$planId"],
     ["/plans/compare/abc/def", "/plans/compare/$a/$b"],
+    ["/roster/abc", "/roster/$teamId"],
     ["/plans/abc", "/plans/$planId/"],
     ["/plans/club/abc", "/plans/club/$setId/"],
   ])("serves %s with its page", (path, route) => {

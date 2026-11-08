@@ -1,11 +1,11 @@
 import { expect } from "@playwright/test";
 import { createBdd } from "playwright-bdd";
-import { app, signIn, test } from "./fixtures";
+import { app, signIn, signInWithPassword, test } from "./fixtures";
 import { devPlatform } from "./support";
 import { giveThroughGroup, makeDirectusUser } from "./visitors";
 
-// Steps for features/sign-in.feature, against dev. Each scenario signs in as a made-up visitor through Authentik's
-// emailed link, which dev's Authentik sends to Mailpit.
+// Steps for features/sign-in.feature, against dev. Each scenario that signs in does so as a made-up visitor through
+// Authentik's emailed link, which dev's Authentik sends to Mailpit. Other journeys' "I've signed in" skips Authentik.
 
 const { Given, When, Then } = createBdd(test);
 
@@ -35,8 +35,8 @@ When("I sign in", async ({ page, visitor }) => {
 });
 
 When("I've signed in", async ({ page, visitor }) => {
+  await signInWithPassword(page, visitor);
   await page.goto(`${await app()}/plans`);
-  await signIn(page, visitor);
 });
 
 Then("I'm back on Plans", async ({ page }) => {
@@ -46,7 +46,7 @@ Then("I'm back on Plans", async ({ page }) => {
 });
 
 Then("the page shows my name", async ({ page, visitor }) => {
-  await expect(page.getByRole("banner").getByRole("button", { name: visitor.name })).toBeVisible();
+  await expect(page.getByRole("button", { name: visitor.name })).toBeVisible();
 });
 
 Then("the page says I don't have access to plans", async ({ page }) => {
@@ -54,6 +54,6 @@ Then("the page says I don't have access to plans", async ({ page }) => {
 });
 
 Then("it shows no plans", async ({ page }) => {
-  await expect(page.getByRole("navigation", { name: "Sections" }).getByRole("link", { name: "Plans" })).toHaveCount(0);
+  await expect(page.getByRole("navigation").getByRole("link", { name: "Plans" })).toHaveCount(0);
   await expect(page.locator('a[href^="/plans/"]')).toHaveCount(0);
 });

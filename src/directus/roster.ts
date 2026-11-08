@@ -1,7 +1,7 @@
 import { customEndpoint, updateItem } from "@directus/sdk";
 import { queryOptions } from "@tanstack/react-query";
 import {
-  buildRosters,
+  buildTeams,
   currentOfferings,
   monthsBefore,
   seattleToday,
@@ -43,7 +43,31 @@ async function readByIds<T>(table: string, field: string, ids: string[], fields:
   return rows;
 }
 
-export const rostersQuery = (permissions: Permissions) =>
+/** A program as Directus returns it, with its area through its product, and its group. */
+interface ProgramRead {
+  id: string;
+  name: string;
+  team?: boolean | null;
+  product_id?: { program_area_id: { id: string; name: string } | null } | null;
+  google_group_id?: { email: string; name: string | null } | null;
+}
+
+/** The program fields to ask for: a related one only when the person can read through to it. */
+function programFields(permissions: Permissions): string[] {
+  const own = readableFields(permissions, "programs", ["id", "name", "team", "product_id", "google_group_id"]);
+  const area =
+    own.includes("product_id") &&
+    readableFields(permissions, "products", ["program_area_id"]).length > 0 &&
+    readableFields(permissions, "program_areas", ["id", "name"]).length === 2;
+  const group = own.includes("google_group_id") && readableFields(permissions, "google_groups", ["email"]).length > 0;
+  return [
+    ...own.filter((f) => f !== "product_id" && f !== "google_group_id"),
+    ...(area ? ["product_id.program_area_id.id", "product_id.program_area_id.name"] : []),
+    ...(group ? ["google_group_id.email", "google_group_id.name"] : []),
+  ];
+}
+
+export const teamsQuery = (permissions: Permissions) =>
   queryOptions({
     queryKey: ["rosters"],
     queryFn: async () => {
@@ -54,16 +78,26 @@ export const rostersQuery = (permissions: Permissions) =>
         }),
         today,
       );
-      const programs = await readByIds<ProgramRow>(
-        "programs",
-        "id",
-        [...new Set(offerings.map((o) => o.program_id))],
-        readableFields(permissions, "programs", ["id", "name", "team"]),
-      );
+      const programs: ProgramRow[] = (
+        await readByIds<ProgramRead>(
+          "programs",
+          "id",
+          [...new Set(offerings.map((o) => o.program_id))],
+          programFields(permissions),
+        )
+      ).map((p) => ({
+        id: p.id,
+        name: p.name,
+        team: p.team ?? null,
+        area: p.product_id?.program_area_id ?? null,
+        group: p.google_group_id?.email ? p.google_group_id : null,
+      }));
+      const teams = new Set(programs.filter((p) => p.team === true).map((p) => p.id));
+      const teamOfferings = offerings.filter((o) => teams.has(o.program_id));
       const registrations = await readByIds<RegistrationRow>(
         "registrations",
         "offering_id",
-        offerings.map((o) => o.id),
+        teamOfferings.map((o) => o.id),
         ["person_id", "offering_id", "status"],
         { status: { _eq: "confirmed" } },
       );
@@ -79,9 +113,9 @@ export const rostersQuery = (permissions: Permissions) =>
         "people",
         "id",
         [...new Set([...sailors, ...contacts.map((c) => c.contact_id)])],
-        readableFields(permissions, "people", ["id", "first_name", "last_name", "email", "phone"]),
+        readableFields(permissions, "people", ["id", "first_name", "last_name", "email", "phone", "school"]),
       );
-      return buildRosters({ programs, offerings, registrations, contacts, people });
+      return buildTeams({ programs, offerings: teamOfferings, registrations, contacts, people });
     },
   });
 

@@ -4,16 +4,15 @@ Guidance for coding agents working in this repository.
 
 ## Overview
 
-`sail-team` is the club's web app at `cycsail.team`. It's a single-page React app, built by Vite into static files and
-served by Caddy on the club's cluster. It has no server of its own. The browser talks to Directus
+`sail-team` is Sail Team, the web app at `cycsail.team`. It's a single-page React app, built by Vite into static files
+and served by Caddy on the club's cluster. It has no server of its own. The browser talks to Directus
 ([cyc-seattle/platform](https://github.com/cyc-seattle/platform)) with the user's own session, and Directus decides what
 each person can see and change. The app adds no security of its own.
 
-The app is taking `cycsail.team` over from isthmia's portal (#1). It claims the whole domain, and puts its built files
-under `/_app` (`vite.config.ts`). Until the portal's route is gone, the Gateway still gives the portal every path but
-`/plans`, `/roster`, `/rosters`, and `/_app`, including the home page. The home page (`/`) lists the sections the person
+The app serves all of `cycsail.team`, which isthmia's portal had until #1, and puts its built files under `/_app`
+(`vite.config.ts`). The home page (`/`) lists the sections the person
 can open (`src/model/nav.ts`), then other sites the team uses. `/rosters`, where the roster was while the portal had its
-own, sends old links to `/roster`, and `/welcome`, where Authentik's "Go home" lands, sends them to `/`.
+own, sends old links to `/roster`, and `/welcome`, where the portal's sign-in pages sent people, sends them to `/`.
 
 ## Tasks
 
@@ -35,7 +34,10 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
 - `src/router.ts` makes the router. Tests make their own with a memory history.
 - `src/components/ui/` holds shadcn's components on Base UI, `src/components/` the club's own, each with a story beside
   it. `src/components/plans/` holds the plans pages': Page Header, Summary Tiles, Money, P&L Table, Lines Table,
-  Chart Card, Engine Warnings, Version Badge, and the Financial Plan Card, List, and View, and Compare View. `src/components/home/` holds the home page's Link List. `src/styles/tokens.css` holds the design tokens. Read [docs/design.md](docs/design.md) before changing any of
+  Chart Card, Engine Warnings, Version Badge, and the Financial Plan Card, List, and View, and Compare View.
+  `src/components/home/` holds the home page's Link List. `src/components/shell/` holds the App Shell around every
+  signed-in page: the sidebar on a laptop, and the tab bar on a phone, whose More opens the sidebar.
+  `src/styles/tokens.css` holds the design tokens. Read [docs/design.md](docs/design.md) before changing any of
   them, or use the [`design`](.agents/skills/design/SKILL.md) skill.
 - `src/directus/` talks to Directus. `client.ts` makes a client that sends the browser's Directus session cookie, and
   `app.ts` is the app's own, at `directus.<the app's hostname>`. `sign-in.ts` sends a visitor with no session to
@@ -51,20 +53,25 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   (`ownerOf` in `src/model/financial-plans.ts`). `/plans` lists each year's Financial Plans, `/plans/financial/<set>`
   shows one, `/plans/financial/<set>/<plan>` one plan in it, and `/plans/compare/<a>/<b>` two side by side. A club
   plan's old address, `/plans/club/<set>`, sends people to its Financial Plan.
-- `src/directus/roster.ts` reads the rosters: each program's current or most recent offering, its confirmed
-  registrations, the sailors' parents, and their names, plus the email and phone Directus lets the person see. Directus's
-  rules decide who appears, so the page filters only on ids, statuses, and dates, which platform's query guard allows,
-  and joins the rest in the browser (`src/model/roster.ts`). The signed-in adult finds their own record by
-  `directus_user_id = $CURRENT_USER` and changes their own `share_contact`.
+- `src/directus/roster.ts` reads the team rosters. A team is a program area, such as Doublehanded, and its programs
+  marked as a team, such as J-Pod and K-Pod, are its divisions; a program that isn't a team has no roster. It reads
+  each division's current or most recent offering, its confirmed registrations, the sailors' parents, their names and
+  schools, the email and phone Directus lets the person see, and each division's Google Group. Directus's rules decide
+  who appears, so the page filters only on ids, statuses, and dates, which platform's query guard allows, and joins
+  the rest in the browser (`src/model/roster.ts`). `/roster` lists the teams, and `/roster/<area id>` shows one, by
+  division or, with `?by=school`, by school. Only households on a team and Crew see them (`canSeeRosters`). The
+  signed-in adult finds their own record by `directus_user_id = $CURRENT_USER` and changes their own `share_contact`.
 - `src/mocks/` answers Directus's requests with made-up people and permissions, in `mise run dev` and in tests. Never
   put real club data there.
 - `mise run integration` runs the journeys against dev, as your ADC login (deploy-dev in Actions), with
   `PULUMI_STACK=dev`. Each scenario's visitor is made up for it (`test/features/visitors.ts`): a Directus user on the
   Community role and, for a planner, a person in a group that gives Plan Reader, the way the club gives policies.
-  They sign in through Authentik's emailed link, which dev's Authentik sends to Mailpit. A plans scenario also makes
-  a made-up organization (`test/features/club.ts`): its accounts, a program area and product, an Operations Plan and
-  an area's plan, and Financial Plans holding copies of them, saved the way a Plan Writer saves them, so platform works
-  out their results. A rosters scenario makes programs and families (`test/features/squad.ts`), with the Clubspot rows
+  The sign-in journeys sign in through Authentik's emailed link, which dev's Authentik sends to Mailpit, one at a
+  time. Every other journey gives its visitor a password and signs in to Directus directly, three scenarios at a
+  time. A plans scenario also makes a made-up organization (`test/features/club.ts`): its accounts, a program area and
+  product, an Operations Plan and an area's plan, and Financial Plans holding copies of them, saved the way a Plan
+  Writer saves them, so platform works out their results. A rosters scenario makes a team, its divisions, and
+  households (`test/features/squad.ts`), with the Clubspot rows
   clubspot-sync would read them from, and waits for platform's hook to move a parent on a team to the Team role. Dev's `backend:savedVersionsDeletable` lets its admin delete them afterwards; prod refuses it. Everything is deleted when
   the scenario ends, and a later run deletes what an earlier one left. The steps refuse any environment but dev, and
   never touch prod's users.
@@ -86,16 +93,22 @@ point `PLAYWRIGHT_BROWSERS_PATH` at a matching set of browsers in a git-ignored 
 domain. The image is Caddy serving `dist/` (`Dockerfile`, `Caddyfile`), with a content security
 policy that lets the page call only itself and Directus.
 
-- Every PR deploys to dev, at `https://dev.cycsail.team/plans`, and runs `mise run integration` there. A push to `main`
-  deploys dev, previews prod, and applies prod once a maintainer approves. Prod runs the image dev built for the same
-  commit. All of it goes through the org's `deploy.yml` (`.github/workflows/pull-request.yml`). When the journeys fail, the run uploads
+- PRs merge through the merge queue, which squashes them. A PR's push runs only CI. The queue deploys the PRs queued together to
+  dev, at `https://dev.cycsail.team/plans`, as one batch, and runs `mise run integration` there. The batch merges only
+  if they pass (the `dev-passed` check). A push to `main` skips dev, which the queue already ran on that commit, previews
+  prod, and applies prod once a maintainer approves. Prod runs the image dev built for the same commit. All of it goes
+  through the org's `deploy.yml` (`.github/workflows/pull-request.yml`). When the journeys fail, the run uploads
   `test-results/` as the `test-results-dev` artifact, kept 7 days: each failed scenario's page snapshot
   (`error-context.md`) and trace.
+- `gh workflow run pull-request.yml --ref <branch>` deploys a branch to dev and runs the journeys before it's queued.
+  It shares dev with the queue, so use it only when a PR needs early feedback. A commit that reached `main` without the
+  queue, such as an admin's merge commit, has no image yet: `gh workflow run pull-request.yml --ref main` deploys it to
+  dev, then prod.
 - `mise run preview` and `mise run deploy` act on `$PULUMI_STACK`, which defaults to `prod`. Locally, set
   `PULUMI_STACK=dev`, and preview before every apply. Local deploys are only for breaking glass.
 - Prod's stack also holds the domain's A record (`apexRecord` in `stacks/app/cluster.ts`), adopted from isthmia's
   portal. Dev's domain is under platform's records.
-- Directus already allows `https://<domain>` as an origin and a sign-in redirect, because the portal is there, so the
+- Directus already allows `https://<domain>` as an origin and a sign-in redirect, because the portal was there, so the
   app needs nothing from platform's Directus settings.
 
 ## Pull requests that change what people see
@@ -103,13 +116,14 @@ policy that lets the page call only itself and Directus.
 The maintainer reviews a UI change from screenshots in its PR description, not by checking out the branch. Every PR
 that changes a page or component shows them there:
 
-- The phone (390 px wide) and desktop views. Before and after, when it changes an existing page. Light and dark, when
-  it changes colors.
+- A typical laptop (1440 × 900) and a typical phone (390 × 844). Review every UI change at both sizes, and show both.
+  Before and after, when it changes an existing page. Light and dark, when it changes colors.
 - Made-up data only. This repo is public, so never a real name, email, or phone.
 - Host them on the `screenshots` branch, which is never merged: commit them to `pr-<number>/` on it, push, and embed
   each with `https://raw.githubusercontent.com/cyc-seattle/sail-team/<commit>/pr-<number>/<name>.png`, using that
   commit's SHA so the link never changes. Never put them on the PR's own branch, or only in `.plans/`.
-- Storybook or Playwright's `page.screenshot()` can take them.
+- Storybook or Playwright's `page.screenshot()` can take them. Storybook's Laptop and Phone viewports use these sizes,
+  the story tests run at both, and the journeys run at the laptop's (`playwright.config.ts`).
 
 ## Code style
 

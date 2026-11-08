@@ -14,9 +14,9 @@ Never write a hex value or a raw Tailwind color like `text-red-600` in a compone
 - **Status**: `success`, `warning`, `info`, and `destructive` share one lightness and chroma, so none shouts louder than
   another.
 - **Money**: `money-positive`, `money-negative`, and `money-zero` color only an amount, never its row's label.
-- **Brand**: the club's navy (`brand`) for the app bar, with white text, and its red (`brand-accent`) only as
-  decoration, such as the stripe under the bar: the red is too light for text on white. Links use `text-link`, navy in
-  light and a lighter navy in dark.
+- **Brand**: the club's navy (`brand`) for the sidebar and the phone's tab bar, with white text, and its red
+  (`brand-accent`) only as decoration, such as the stripe under the sidebar's name: the red is too light for text on
+  white. Links use `text-link`, navy in light and a lighter navy in dark.
 - **Charts**: `chart-1` to `chart-6` stay distinct with the common kinds of color blindness. Every chart sits beside the
   table it summarizes.
 - **Space**: `p-card` (16px) inside a card, `p-card-sm` (12px) inside a small nested one. `min-h-tap` (44px) for
@@ -42,6 +42,8 @@ Every token has a dark value, so a component that uses the utilities needs no `d
 
 ## Layout rules
 
+- Every page someone can open is in the sidebar, always open beside the page on a laptop. On a phone, the first four
+  are tabs along the bottom, and More opens the same sidebar as a sheet. The account menu sits at the sidebar's foot.
 - Actions go on the right, where a thumb reaches them on a phone.
 - An inline "Add {thing}" row goes at the top of a list, never below it.
 - One way to save: explicit Save and Discard, with a warning before leaving unsaved changes.
@@ -64,5 +66,5 @@ Ask before adding a new variant or a new component that overlaps one that exists
 ## Stories are tests
 
 Each component has a `*.stories.tsx` beside it. `mise run test` renders every story in Chromium twice, light at a
-desk's width and dark at a phone's, and runs axe on each. An accessibility violation fails CI. A story with a `play`
+laptop's size and dark at a phone's, and runs axe on each. An accessibility violation fails CI. A story with a `play`
 function also checks what it does: an overlay story opens the overlay, so axe checks it open.

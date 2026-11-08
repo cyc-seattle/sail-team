@@ -28,5 +28,5 @@ beside the components you'll use (`src/components/**/*.stories.tsx`), and copy h
 
 - Give the component a story beside it, using made-up sailing data. Show its states (empty, error, disabled). If it
   opens something, add a `play` function that opens it.
-- Run `mise run ci`. Every story renders light at a desk's width and dark at a phone's, with axe. Fix a violation in
+- Run `mise run ci`. Every story renders light at a laptop's size and dark at a phone's, with axe. Fix a violation in
   the component or its tokens. Never turn the check off.
