@@ -13,7 +13,7 @@ function Home() {
   const links = session.kind === "signed-in" ? homeLinksFor(session.permissions) : externalLinks;
   return (
     <main className="mx-auto max-w-6xl p-card">
-      <PageHeader title="CYC Sail Team" />
+      <PageHeader title="Sail Team" />
       <LinkList links={links} />
     </main>
   );

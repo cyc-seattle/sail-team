@@ -27,7 +27,7 @@ const preview: Preview = {
     viewport: {
       options: {
         phone: { name: "Phone", styles: { width: "390px", height: "844px" }, type: "mobile" },
-        desk: { name: "Desk", styles: { width: "1280px", height: "800px" }, type: "desktop" },
+        laptop: { name: "Laptop", styles: { width: "1440px", height: "900px" }, type: "desktop" },
       },
     },
   },

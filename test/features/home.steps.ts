@@ -13,12 +13,12 @@ When("I open the home page", async ({ page }) => {
 });
 
 Then("the home page links to Plans", async ({ page }) => {
-  await expect(page.getByRole("heading", { level: 1, name: "CYC Sail Team" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Sail Team" })).toBeVisible();
   await expect(homeLinks(page).getByRole("link", { name: "Plans" })).toBeVisible();
 });
 
 Then("the home page doesn't link to Plans", async ({ page }) => {
-  await expect(page.getByRole("heading", { level: 1, name: "CYC Sail Team" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Sail Team" })).toBeVisible();
   await expect(homeLinks(page).getByRole("link", { name: "Plans" })).toHaveCount(0);
 });
 
