@@ -33,6 +33,11 @@ run = "pnpm exec vite"
 description = "Serve Storybook, the catalog of every component, locally"
 run = "pnpm exec storybook dev -p 6006"
 
+# Published to GitHub Pages by storybook.yml. Its paths are relative, so it works under /sail-team/.
+[tasks.build-storybook]
+description = "Build Storybook into storybook-static/"
+run = "pnpm exec storybook build"
+
 [tasks.build]
 description = "Build the app into dist/"
 run = "pnpm exec vite build"

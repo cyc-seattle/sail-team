@@ -21,7 +21,9 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
 - `mise run ci`: `check`, then `test`
 - `mise run check`: build, typecheck, Prettier check, ESLint
 - `mise run dev`: serve the app locally, with made-up data from `src/mocks/` in place of Directus
-- `mise run storybook`: serve Storybook, the catalog of every component
+- `mise run storybook`: serve Storybook, the catalog of every component. Each push to `main` publishes it to
+  [cyc-seattle.github.io/sail-team](https://cyc-seattle.github.io/sail-team/) (`.github/workflows/storybook.yml`).
+- `mise run build-storybook`: build Storybook into `storybook-static/`
 - `mise run format`: fix formatting and lint
 - `mise run test`: run the tests with Vitest
 - `mise run build`: build into `dist/`
