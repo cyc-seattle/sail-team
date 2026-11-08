@@ -89,9 +89,9 @@ point `PLAYWRIGHT_BROWSERS_PATH` at a matching set of browsers in a git-ignored 
 domain. The image is Caddy serving `dist/` (`Dockerfile`, `Caddyfile`), with a content security
 policy that lets the page call only itself and Directus.
 
-- PRs merge through the merge queue, which squashes them. A PR's push runs only CI. The queue deploys each PR to dev,
-  at `https://dev.cycsail.team/plans`, one at a time, and runs `mise run integration` there. The PR merges only if
-  they pass (the `dev-passed` check). A push to `main` skips dev, which the queue already ran on that commit, previews
+- PRs merge through the merge queue, which squashes them. A PR's push runs only CI. The queue deploys the PRs queued together to
+  dev, at `https://dev.cycsail.team/plans`, as one batch, and runs `mise run integration` there. The batch merges only
+  if they pass (the `dev-passed` check). A push to `main` skips dev, which the queue already ran on that commit, previews
   prod, and applies prod once a maintainer approves. Prod runs the image dev built for the same commit. All of it goes
   through the org's `deploy.yml` (`.github/workflows/pull-request.yml`). When the journeys fail, the run uploads
   `test-results/` as the `test-results-dev` artifact, kept 7 days: each failed scenario's page snapshot
