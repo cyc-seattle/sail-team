@@ -11,7 +11,7 @@ Feature: The home page
 
   Scenario: Someone who can't read plans sees only the other sites
     Given I'm a parent who can't read plans
+    And I've signed in
     When I open the home page
-    And I sign in
     Then the home page doesn't link to Plans
     And it links to Clubspot and Google Calendar

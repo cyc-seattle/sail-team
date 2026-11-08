@@ -17,7 +17,7 @@ interface Person {
   phone?: string;
 }
 
-/** What the scenario's Givens made, for its Thens. One scenario runs at a time (playwright.config.ts). */
+/** What the scenario's Givens made, for its Thens. A worker runs one scenario at a time. */
 const scene: {
   program?: Program;
   child?: Person;
