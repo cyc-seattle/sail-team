@@ -2,9 +2,8 @@ import * as pulumi from "@pulumi/pulumi";
 import { WebService } from "@cyc-seattle/platform";
 import { apexRecord, deployedImage, isDev, loadCluster } from "./cluster.ts";
 
-// sail-team takes the environment's whole domain from isthmia's portal (sail-team#1). Until the portal's route is
-// gone, the Gateway gives "/" to the older of the two routes, the portal's, while the longer prefixes here win
-// outright. A PathPrefix matches whole path segments, so "/roster" doesn't catch "/rosters", which redirects old links.
+// sail-team serves the environment's whole domain (sail-team#1). "/" alone would do now that isthmia's portal is
+// gone. The longer prefixes stay so the route the Gateway serves doesn't change.
 const paths = ["/", "/plans", "/roster", "/rosters", "/_app"];
 
 const cluster = await loadCluster();
