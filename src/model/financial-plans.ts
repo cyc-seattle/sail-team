@@ -67,9 +67,16 @@ export function membersInOrder(members: Member[]): Member[] {
   );
 }
 
-/** One cost or revenue line, with its plain name, whether its account is revenue, and the member it's charged in. */
+/**
+ * One cost or revenue line, with its plain name, its account, whether that account is revenue, and the member it's
+ * charged in.
+ */
 export interface PlanLine {
+  /** The engine's key for it: a share of a pool's line is `pool:<pool key>:<the line's key>`. */
+  key: string;
   name: string;
+  account_number: string | null;
+  account_name: string;
   cost_center_name: string;
   amount_cents: number;
   revenue: boolean;

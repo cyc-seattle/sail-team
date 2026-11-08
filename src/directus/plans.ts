@@ -61,7 +61,7 @@ export async function calculateFinancialPlan(year: YearRef, members: Member[]): 
   for (const table of ["plan_offerings", "plan_pools"]) {
     for (const row of tables[table]!) names.set(row["key"] as string, row["name"] as string);
   }
-  const revenue = new Set(tables["accounts"]!.filter((a) => a["type"] === "revenue").map((a) => a["id"]));
+  const accounts = new Map(tables["accounts"]!.map((a) => [a["id"] as string, a]));
   const owners = {
     offeringVersion: new Map(tables["plan_offerings"]!.map((o) => [o["key"] as string, o["version_id"] as string])),
     productArea: new Map(tables["products"]!.map((p) => [p["id"] as string, (p["program_area_id"] as string) ?? null])),
@@ -99,10 +99,13 @@ export async function calculateFinancialPlan(year: YearRef, members: Member[]): 
       member: member(p.level, p.key),
     })),
     lines: output.lines.map((l) => ({
+      key: l.line_key,
       name: l.line_name,
+      account_number: (accounts.get(l.account_id)?.["number"] as string | null | undefined) ?? null,
+      account_name: (accounts.get(l.account_id)?.["name"] as string | undefined) ?? "Other",
       cost_center_name: nameOf(l.cost_center_key),
       amount_cents: l.amount_cents,
-      revenue: revenue.has(l.account_id),
+      revenue: accounts.get(l.account_id)?.["type"] === "revenue",
       member: member(l.cost_center_type, l.cost_center_key),
     })),
     warnings: output.warnings,

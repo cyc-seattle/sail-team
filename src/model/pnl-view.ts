@@ -9,6 +9,23 @@ export const viewLabels: Record<PnlView, string> = {
   "sailor-day": "Per sailor-day",
 };
 
+/** Where the chosen view is saved, in localStorage. */
+export const viewKey = "plans.view";
+
+/** A saved view, or for the year when there's none or it isn't one. */
+export function readView(value: string | null): PnlView {
+  return value !== null && value in viewLabels ? (value as PnlView) : "year";
+}
+
+/** What an amount is divided by: a P&L's days and sailor-days. */
+export type Measures = Pick<Pnl, "days" | "sailor_days">;
+
+/** An amount in a view: as it is for the year, or divided by the days or sailor-days. Null with none to divide by. */
+export function amountInView(cents: number, view: PnlView, measures: Measures): number | null {
+  const by = view === "year" ? 1 : view === "day" ? measures.days : measures.sailor_days;
+  return by > 0 ? Math.round(cents / by) : null;
+}
+
 /** A P&L's totals in a view, by the engine's own division. Null when it has no days or sailor-days to divide by. */
 export function inView(pnl: Pnl, view: PnlView): Totals | null {
   switch (view) {

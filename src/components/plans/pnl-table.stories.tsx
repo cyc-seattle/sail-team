@@ -1,9 +1,15 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect } from "storybook/test";
+import { forTheYear, withUnitSwitch } from "../../../.storybook/with-unit-switch";
 import { offering, offerings } from "./fixtures";
 import { PnlTable } from "./pnl-table";
 
-const meta = { component: PnlTable, args: { rows: offerings, label: "Offering" } } satisfies Meta<typeof PnlTable>;
+const meta = {
+  component: PnlTable,
+  args: { rows: offerings, label: "Offering" },
+  decorators: [withUnitSwitch],
+  beforeEach: forTheYear,
+} satisfies Meta<typeof PnlTable>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
@@ -15,6 +21,18 @@ export const PerSailorDay: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Per sailor-day" }));
     const row = canvas.getByRole("row", { name: /Beginner camp, week 1/ });
     await expect(row).toHaveTextContent("$40.00");
+  },
+};
+
+export const ByProgram: Story = {
+  args: {
+    groups: [
+      { name: "Beginner camp", rows: offerings.slice(0, 2) },
+      { name: "Race team", rows: offerings.slice(2) },
+    ],
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("row", { name: /Beginner camp total/ })).toHaveTextContent("$18,000.00");
   },
 };
 

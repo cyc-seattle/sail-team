@@ -9,6 +9,7 @@ import {
   type Member,
   type Results,
 } from "../src/model/financial-plans.ts";
+import { line } from "../src/components/plans/fixtures.ts";
 
 const summary = (id: string, fields: Partial<FinancialPlanSummary>): FinancialPlanSummary => ({
   id,
@@ -104,8 +105,8 @@ describe("memberNet", () => {
       },
     ],
     lines: [
-      { name: "Insurance", cost_center_name: "Organization", amount_cents: 5, revenue: false, member: "o" },
-      { name: "Merchandise", cost_center_name: "Merchandise", amount_cents: 8, revenue: true, member: "o" },
+      { ...line("Insurance", "Insurance", 5, false), cost_center_name: "Organization", member: "o" },
+      { ...line("Merchandise", "Sales", 8, true), cost_center_name: "Merchandise", member: "o" },
     ],
     warnings: [],
   };
