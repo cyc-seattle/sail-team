@@ -19,5 +19,10 @@ export default defineConfig({
   workers: 1,
   expect: { timeout: 30_000 },
   reporter: "list",
-  use: { baseURL: process.env["SAIL_TEAM_URL"] ?? "https://dev.cycsail.team", trace: "retain-on-failure" },
+  use: {
+    baseURL: process.env["SAIL_TEAM_URL"] ?? "https://dev.cycsail.team",
+    // A typical laptop (AGENTS.md). A phone scenario sets its own.
+    viewport: { width: 1440, height: 900 },
+    trace: "retain-on-failure",
+  },
 });

@@ -4,16 +4,15 @@ Guidance for coding agents working in this repository.
 
 ## Overview
 
-`sail-team` is the club's web app at `cycsail.team`. It's a single-page React app, built by Vite into static files and
-served by Caddy on the club's cluster. It has no server of its own. The browser talks to Directus
+`sail-team` is Sail Team, the web app at `cycsail.team`. It's a single-page React app, built by Vite into static files
+and served by Caddy on the club's cluster. It has no server of its own. The browser talks to Directus
 ([cyc-seattle/platform](https://github.com/cyc-seattle/platform)) with the user's own session, and Directus decides what
 each person can see and change. The app adds no security of its own.
 
-The app is taking `cycsail.team` over from isthmia's portal (#1). It claims the whole domain, and puts its built files
-under `/_app` (`vite.config.ts`). Until the portal's route is gone, the Gateway still gives the portal every path but
-`/plans`, `/roster`, `/rosters`, and `/_app`, including the home page. The home page (`/`) lists the sections the person
+The app serves all of `cycsail.team`, which isthmia's portal had until #1, and puts its built files under `/_app`
+(`vite.config.ts`). The home page (`/`) lists the sections the person
 can open (`src/model/nav.ts`), then other sites the team uses. `/rosters`, where the roster was while the portal had its
-own, sends old links to `/roster`, and `/welcome`, where Authentik's "Go home" lands, sends them to `/`.
+own, sends old links to `/roster`, and `/welcome`, where the portal's sign-in pages sent people, sends them to `/`.
 
 ## Tasks
 
@@ -34,8 +33,10 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   The router plugin regenerates `src/routeTree.gen.ts` on every build and dev run. Commit it, and never edit it.
 - `src/router.ts` makes the router. Tests make their own with a memory history.
 - `src/components/ui/` holds shadcn's components on Base UI, `src/components/` the club's own, each with a story beside
-  it. `src/components/plans/` holds the plans page's: Page Header, Summary Tiles, Money, P&L Table, Chart Card,
-  Engine Warnings, and Version Badge. `src/components/home/` holds the home page's Link List. `src/styles/tokens.css` holds the design tokens. Read [docs/design.md](docs/design.md) before changing any of
+  it. `src/components/plans/` holds the plans page's: Page Header, Summary Tiles, Money, P&L Table, Chart Card, Engine
+  Warnings, and Version Badge. `src/components/home/` holds the home page's Link List. `src/components/shell/` holds the
+  App Shell around every signed-in page: the sidebar on a laptop, and the tab bar on a phone, whose More opens the
+  sidebar. `src/styles/tokens.css` holds the design tokens. Read [docs/design.md](docs/design.md) before changing any of
   them, or use the [`design`](.agents/skills/design/SKILL.md) skill.
 - `src/directus/` talks to Directus. `client.ts` makes a client that sends the browser's Directus session cookie, and
   `app.ts` is the app's own, at `directus.<the app's hostname>`. `sign-in.ts` sends a visitor with no session to
@@ -103,7 +104,7 @@ policy that lets the page call only itself and Directus.
   `PULUMI_STACK=dev`, and preview before every apply. Local deploys are only for breaking glass.
 - Prod's stack also holds the domain's A record (`apexRecord` in `stacks/app/cluster.ts`), adopted from isthmia's
   portal. Dev's domain is under platform's records.
-- Directus already allows `https://<domain>` as an origin and a sign-in redirect, because the portal is there, so the
+- Directus already allows `https://<domain>` as an origin and a sign-in redirect, because the portal was there, so the
   app needs nothing from platform's Directus settings.
 
 ## Pull requests that change what people see
@@ -111,13 +112,14 @@ policy that lets the page call only itself and Directus.
 The maintainer reviews a UI change from screenshots in its PR description, not by checking out the branch. Every PR
 that changes a page or component shows them there:
 
-- The phone (390 px wide) and desktop views. Before and after, when it changes an existing page. Light and dark, when
-  it changes colors.
+- A typical laptop (1440 × 900) and a typical phone (390 × 844). Review every UI change at both sizes, and show both.
+  Before and after, when it changes an existing page. Light and dark, when it changes colors.
 - Made-up data only. This repo is public, so never a real name, email, or phone.
 - Host them on the `screenshots` branch, which is never merged: commit them to `pr-<number>/` on it, push, and embed
   each with `https://raw.githubusercontent.com/cyc-seattle/sail-team/<commit>/pr-<number>/<name>.png`, using that
   commit's SHA so the link never changes. Never put them on the PR's own branch, or only in `.plans/`.
-- Storybook or Playwright's `page.screenshot()` can take them.
+- Storybook or Playwright's `page.screenshot()` can take them. Storybook's Laptop and Phone viewports use these sizes,
+  the story tests run at both, and the journeys run at the laptop's (`playwright.config.ts`).
 
 ## Code style
 

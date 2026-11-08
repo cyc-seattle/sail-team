@@ -34,7 +34,7 @@
 		file_server
 	}
 
-	# Authentik's "Go home" lands here, from when isthmia's portal had the host.
+	# Where Authentik sent people while isthmia's portal had the host, so old links still land.
 	redir /welcome / 302
 
 	# Every other path is a page the router draws, so it gets index.html, which is never cached.

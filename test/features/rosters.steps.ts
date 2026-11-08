@@ -173,11 +173,10 @@ Then("the page's address keeps the grouping, so I can share it", async ({ page, 
   expect(page.url()).toContain(squad.areaId!);
 });
 
-Then("I don't see Rosters in the menu", async ({ page, visitor }) => {
-  await expect(page.getByRole("banner").getByRole("button", { name: visitor.name })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Sections" }).getByRole("link", { name: "Rosters" })).toHaveCount(
-    0,
-  );
+Then("I don't see Rosters in the menu", async ({ page }) => {
+  // The sidebar on a laptop and the tab bar on a phone both start with Home.
+  await expect(page.getByRole("navigation").getByRole("link", { name: "Home" }).first()).toBeVisible();
+  await expect(page.getByRole("navigation").getByRole("link", { name: "Rosters" })).toHaveCount(0);
 });
 
 Then("the page says I don't have access to rosters", async ({ page }) => {

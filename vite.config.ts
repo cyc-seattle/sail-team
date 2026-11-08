@@ -64,8 +64,8 @@ export default defineConfig({
   test: {
     projects: [
       { extends: true, test: { name: "unit", include: ["test/**/*.test.{ts,tsx}"] } },
-      // Every story is a test: it renders in Chromium and must pass axe, light at a desk's width and dark at a phone's.
-      stories("light", { width: 1280, height: 800 }),
+      // Every story is a test: it renders in Chromium and must pass axe, light at a laptop's size and dark at a phone's.
+      stories("light", { width: 1440, height: 900 }),
       stories("dark", { width: 390, height: 844 }),
     ],
   },
