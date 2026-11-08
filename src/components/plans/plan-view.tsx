@@ -77,9 +77,7 @@ export function PlanView({ note, warnings, lines, shared, offerings, assumptions
       </Section>
       {shared && shared.length > 0 && (
         <Section id="shared-costs" title="Shared costs">
-          <p className="text-sm text-muted-foreground">
-            Divided among every program&apos;s offerings, which show their share in the same category.
-          </p>
+          <p className="text-sm text-muted-foreground">Divided among every program&apos;s offerings.</p>
           <LinesTable
             label="Shared costs"
             sections={[{ title: "Shared costs", categories: categories(shared) }]}

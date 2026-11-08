@@ -14,7 +14,7 @@ function Amount({ cents, measures, colored = false }: { cents: number; measures:
       {amount === null ? (
         <span className="text-muted-foreground">No days to divide by</span>
       ) : (
-        <Money cents={amount} colored={colored} />
+        <Money cents={amount} colored={colored} whole={view === "year"} />
       )}
     </TableCell>
   );

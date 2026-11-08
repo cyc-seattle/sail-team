@@ -6,7 +6,8 @@ import { formatCents } from "@/model/money";
 import { cn } from "@/lib/utils";
 
 const none = <span className="text-muted-foreground">—</span>;
-const money = (cents: number | null) => (cents === null ? none : formatCents(cents));
+// Prices, salaries and nightly rates are whole dollars; hourly and per-mile rates keep their cents.
+const money = (cents: number | null, whole = false) => (cents === null ? none : formatCents(cents, whole));
 const share = (value: number | null | undefined) => (value === null || value === undefined ? none : formatShare(value));
 const count = (value: number | null) => (value === null ? none : value.toLocaleString("en-US"));
 
@@ -72,7 +73,7 @@ export function OfferingAssumptionsTable({ offerings }: { offerings: OfferingAss
                 <TableRow key={o.key}>
                   <TableCell className={cn(sticky, programs.length > 1 && "pl-6")}>{o.name}</TableCell>
                   <TableCell className="text-muted-foreground">{formatDays(o.starts_on, o.ends_on)}</TableCell>
-                  <Num>{money(o.price_cents)}</Num>
+                  <Num>{money(o.price_cents, true)}</Num>
                   <Num>
                     {count(o.enrollment)}
                     {o.capacity !== null && <span className="text-muted-foreground"> of {o.capacity}</span>}
@@ -108,7 +109,7 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
           </TableRow>
           <TableRow>
             <TableCell>Lodging, per night</TableCell>
-            <Num>{money(a.rates.lodging_per_night_cents)}</Num>
+            <Num>{money(a.rates.lodging_per_night_cents, true)}</Num>
           </TableRow>
           <TableRow>
             <TableCell>Mileage, per mile</TableCell>
@@ -131,7 +132,7 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
           {a.positions.map((p) => (
             <TableRow key={p.key}>
               <TableCell>{p.name}</TableCell>
-              <Num>{money(p.annual_salary_cents)}</Num>
+              <Num>{money(p.annual_salary_cents, true)}</Num>
               <Num>{count(p.paid_hours_per_year)}</Num>
               <Num>
                 {p.paid_hours_per_year ? money(Math.round(p.annual_salary_cents / p.paid_hours_per_year)) : none}
@@ -162,7 +163,7 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
               <TableCell>{r.name}</TableCell>
               <Num>{count(r.quantity)}</Num>
               <Num>{money(r.cost_per_hour_cents)}</Num>
-              <Num>{money(r.cost_per_day_cents)}</Num>
+              <Num>{money(r.cost_per_day_cents, true)}</Num>
               <Num>{money(r.fuel_per_hour_cents)}</Num>
               <Num>{money(r.maintenance_per_hour_cents)}</Num>
             </TableRow>

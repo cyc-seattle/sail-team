@@ -27,8 +27,8 @@ type Story = StoryObj<typeof meta>;
 export const ByCategory: Story = {
   play: async ({ canvas }) => {
     // Coach wages, added up across the three offerings.
-    await expect(canvas.getByRole("row", { name: /^Coach wages\s*5000 \$5,760\.00$/ })).toBeVisible();
-    await expect(canvas.getByRole("row", { name: /Boats and equipment total/ })).toHaveTextContent("$1,760.00");
+    await expect(canvas.getByRole("row", { name: /^Coach wages\s*5000 \$5,760$/ })).toBeVisible();
+    await expect(canvas.getByRole("row", { name: /Boats and equipment total/ })).toHaveTextContent("$1,760");
     await expect(canvas.getByRole("row", { name: /^Net/ })).toBeVisible();
   },
 };

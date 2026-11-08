@@ -207,20 +207,21 @@ When("I open Youth Racing's plan in {string}", async ({ page, club }, name: stri
   await page.goto(`${await app()}/plans/financial/${named.get(name)}/${club.areaPlan}`);
 });
 
-const lineRow = (page: Page, name: RegExp) => page.getByRole("row", { name });
+const lineRow = (page: Page, name: RegExp) =>
+  page.getByRole("region", { name: "Revenue and costs" }).getByRole("row", { name });
 
 Then("the offering shows $10,000 in, $3,000 of coaches' wages, and $1,000 of shared costs", async ({ page }) => {
-  await expect(lineRow(page, /^Revenue /).first()).toContainText("$10,000.00");
-  await expect(lineRow(page, /Coach wages/).first()).toContainText("$3,000.00");
-  await expect(lineRow(page, /Office share/).first()).toContainText("$1,000.00");
+  await expect(lineRow(page, /Revenue \$/).first()).toContainText("$10,000");
+  await expect(lineRow(page, /Coach wages/).first()).toContainText("$3,000");
+  await expect(lineRow(page, /Office share/).first()).toContainText("$1,000");
 });
 
 Then("the offering pays $3,000 of coaches' wages", async ({ page }) => {
-  await expect(lineRow(page, /Coach wages/).first()).toContainText("$3,000.00");
+  await expect(lineRow(page, /Coach wages/).first()).toContainText("$3,000");
 });
 
 Then("it pays the $1,000 of office costs", async ({ page }) => {
-  await expect(lineRow(page, /Office share/).first()).toContainText("$1,000.00");
+  await expect(lineRow(page, /Office share/).first()).toContainText("$1,000");
 });
 
 // A saved Financial Plan keeps its P&L.
@@ -244,7 +245,7 @@ Given("a Financial Plan started from {string} with $2,000 of office costs", asyn
 });
 
 Then("its offering shows $1,000 of office costs", async ({ page }) => {
-  await expect(lineRow(page, /Office share/).first()).toContainText("$1,000.00");
+  await expect(lineRow(page, /Office share/).first()).toContainText("$1,000");
 });
 
 Then("the page says when {string} was saved", async ({ page }, name: string) => {
@@ -262,10 +263,17 @@ Given(
   },
 );
 
-const offeringRow = (page: Page) => page.getByRole("row", { name: new RegExp(OFFERING) });
+const offeringRow = (page: Page) =>
+  page.getByRole("region", { name: "Offerings" }).getByRole("row", { name: new RegExp(OFFERING) });
+
+Then("its assumptions show the offering's 10 sailors at $1,000 each", async ({ page }) => {
+  const row = page.getByRole("region", { name: "Assumptions" }).getByRole("row", { name: new RegExp(OFFERING) });
+  await expect(row).toContainText("$1,000");
+  await expect(row).toContainText("10");
+});
 
 Then("its offering takes in $10,000", async ({ page }) => {
-  await expect(offeringRow(page).first()).toContainText("$10,000.00");
+  await expect(offeringRow(page).first()).toContainText("$10,000");
 });
 
 Then("the page says the draft's numbers are calculated now, and will change as the plan does", async ({ page }) => {
@@ -285,7 +293,7 @@ Given(
 );
 
 Then("the offering's net is $4,000", async ({ page }) => {
-  await expect(offeringRow(page).first()).toContainText("$4,000.00");
+  await expect(offeringRow(page).first()).toContainText("$4,000");
 });
 
 Then("its net per day is $400", async ({ page }) => {
@@ -295,6 +303,12 @@ Then("its net per day is $400", async ({ page }) => {
 
 Then("its net per sailor-day is $40", async ({ page }) => {
   await page.getByRole("button", { name: "Per sailor-day" }).first().click();
+  await expect(offeringRow(page).first()).toContainText("$40.00");
+});
+
+Then("it's still per sailor-day when I come back to the page", async ({ page }) => {
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Per sailor-day" })).toHaveAttribute("aria-pressed", "true");
   await expect(offeringRow(page).first()).toContainText("$40.00");
 });
 

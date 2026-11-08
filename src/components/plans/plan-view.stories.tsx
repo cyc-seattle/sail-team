@@ -33,7 +33,7 @@ const meta = {
     (Story, { args }) => (
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title={args.assumptions?.operations ? "Operations" : "Youth Racing"}
+          title={args.assumptions?.operations ? "Non-program" : "Youth Racing"}
           back={{ to: "/plans/financial/budget", label: "Budget" }}
           actions={<UnitSwitch />}
         />
@@ -67,7 +67,7 @@ export const OperationsPlan: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("table", { name: "Salaried staff" })).toBeVisible();
     // Insurance, added back up from Youth Racing's and Adult Programs' shares.
-    await expect(canvas.getByRole("row", { name: /G&A: Insurance/ })).toHaveTextContent("$2,450.00");
+    await expect(canvas.getByRole("row", { name: /G&A: Insurance/ })).toHaveTextContent("$2,450");
   },
 };
 

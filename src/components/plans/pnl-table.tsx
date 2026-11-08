@@ -22,13 +22,13 @@ function Amounts({ pnl, view }: { pnl: Pnl; view: PnlView }) {
   return (
     <>
       <TableCell className="text-right">
-        <Money cents={totals.revenue_cents} />
+        <Money cents={totals.revenue_cents} whole={view === "year"} />
       </TableCell>
       <TableCell className="text-right">
-        <Money cents={totals.expense_cents} />
+        <Money cents={totals.expense_cents} whole={view === "year"} />
       </TableCell>
       <TableCell className="text-right">
-        <Money cents={totals.net_cents} colored />
+        <Money cents={totals.net_cents} colored whole={view === "year"} />
       </TableCell>
     </>
   );

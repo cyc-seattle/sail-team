@@ -14,7 +14,7 @@ export const viewKey = "plans.view";
 
 /** A saved view, or for the year when there's none or it isn't one. */
 export function readView(value: string | null): PnlView {
-  return value !== null && value in viewLabels ? (value as PnlView) : "year";
+  return value !== null && Object.hasOwn(viewLabels, value) ? (value as PnlView) : "year";
 }
 
 /** What an amount is divided by: a P&L's days and sailor-days. */

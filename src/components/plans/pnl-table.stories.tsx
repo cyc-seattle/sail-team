@@ -32,7 +32,7 @@ export const ByProgram: Story = {
     ],
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("row", { name: /Beginner camp total/ })).toHaveTextContent("$18,000.00");
+    await expect(canvas.getByRole("row", { name: /Beginner camp total/ })).toHaveTextContent("$18,000");
   },
 };
 

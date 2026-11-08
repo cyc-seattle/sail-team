@@ -1,8 +1,10 @@
 import { setupServer } from "msw/node";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { assumptionsQuery } from "../src/directus/assumptions.ts";
 import { financialPlanQuery, financialPlansQuery, type FinancialPlan } from "../src/directus/financial-plans.ts";
 import { handlers } from "../src/mocks/handlers.ts";
 import { ids } from "../src/mocks/plans.ts";
+import type { Assumptions } from "../src/model/assumptions.ts";
 import { memberName, memberNet } from "../src/model/financial-plans.ts";
 
 vi.stubGlobal("window", { location: { hostname: "example.org" } });
@@ -33,6 +35,10 @@ describe("reading Financial Plans from Directus", () => {
     const youth = members.find((m) => m.id === ids.youthMember)!;
     expect(memberName(youth)).toBe("Youth Racing");
     expect(memberNet(results!, youth)).toBe(400_000);
+    expect(results?.lines.find((l) => l.member === youth.id)).toMatchObject({
+      account_number: "4000",
+      account_name: "Tuition",
+    });
     expect(results?.lines.filter((l) => l.member === youth.id).map((l) => l.name)).toEqual([
       "Tuition",
       "Coach wages",
@@ -63,5 +69,26 @@ describe("reading Financial Plans from Directus", () => {
 
   it("finds no Financial Plan that isn't there", async () => {
     expect(await run(financialPlanQuery("00000000-0000-4000-8000-000000000000"))).toBeNull();
+  });
+});
+
+describe("reading a plan's assumptions from Directus", () => {
+  it("reads each offering, with its program and its coaches' pay level from the Operations Plan", async () => {
+    const { members } = await plan(ids.budget);
+    const youth = members.find((m) => m.id === ids.youthMember)!;
+    const { offerings, operations } = await run<Assumptions>(assumptionsQuery(youth, ids.opsSaved));
+    expect(offerings).toMatchObject([
+      { name: "Beginner camp, week 1", program: "Beginner camp", coach_level: "Lead coach", enrollment: 10 },
+    ]);
+    expect(operations).toBeNull();
+  });
+
+  it("reads the Operations Plan's rates, decimals as numbers", async () => {
+    const { members } = await plan(ids.budget);
+    const ops = members.find((m) => m.kind === "operations")!;
+    const { operations } = await run<Assumptions>(assumptionsQuery(ops, ids.opsSaved));
+    expect(operations?.rates?.payroll_tax_rate).toBe(0.1);
+    expect(operations?.positions.map((p) => [p.name, p.ga_share])).toEqual([["Executive Director", 0.6]]);
+    expect(operations?.charges.map((c) => [c.name, c.rate])).toEqual([["Card fees", 0.03]]);
   });
 });

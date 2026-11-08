@@ -38,7 +38,9 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
 - `src/router.ts` makes the router. Tests make their own with a memory history.
 - `src/components/ui/` holds shadcn's components on Base UI, `src/components/` the club's own, each with a story beside
   it. `src/components/plans/` holds the plans pages': Page Header, Summary Tiles, Money, P&L Table, Lines Table,
-  Chart Card, Engine Warnings, Version Badge, and the Financial Plan Card, List, and View, and Compare View.
+  Assumptions, Unit Switch, Engine Warnings, Version Badge, the Financial Plan Card, List, and View, Plan View, and
+  Compare View. The Unit Switch's choice of for the year, per day, or per sailor-day is saved in localStorage
+  (`src/hooks/use-pnl-view.ts`), so every P&L on every page shows the same.
   `src/components/home/` holds the home page's Link List. `src/components/shell/` holds the App Shell around every
   signed-in page: the sidebar on a laptop, and the tab bar on a phone, whose More opens the sidebar.
   `src/styles/tokens.css` holds the design tokens. Read [docs/design.md](docs/design.md) before changing any of
@@ -54,7 +56,9 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   shared costs, is one filter. A draft is calculated in the browser by the planning engine this app bundles
   (`src/directus/plans.ts`), from the same rows platform reads at save time (`src/model/plan-data.ts`): the catalog,
   and every plan the draft holds. Its lines and P&L rows are charged to members the way platform's hook does
-  (`ownerOf` in `src/model/financial-plans.ts`). `/plans` lists each year's Financial Plans, `/plans/financial/<set>`
+  (`ownerOf` in `src/model/financial-plans.ts`). A plan's page shows its assumptions, read from its copy's own rows (`src/directus/assumptions.ts`), and its lines
+  by category, which is their account (`src/model/plan-lines.ts`). The Operations Plan's page also adds each shared
+  cost back up from every offering's share. `/plans` lists each year's Financial Plans, `/plans/financial/<set>`
   shows one, `/plans/financial/<set>/<plan>` one plan in it, and `/plans/compare/<a>/<b>` two side by side. A club
   plan's old address, `/plans/club/<set>`, sends people to its Financial Plan.
 - `src/directus/roster.ts` reads the team rosters. A team is a program area, such as Doublehanded, and its programs
