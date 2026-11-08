@@ -11,12 +11,17 @@ const testDir = defineBddConfig({
 
 export default defineConfig({
   testDir,
-  // A scenario makes its plans, waits for saved versions' results, and signs in by emailed link.
-  timeout: 300_000,
+  // A scenario makes its plans and waits for saved versions' results. One that signs in by emailed link may also wait
+  // its turn behind another's. A hang fails the run instead of holding dev, which the merge queue shares.
+  timeout: 240_000,
+  globalTimeout: 15 * 60_000,
   // Dev is shared and small, and its Authentik is sometimes slow. One retry in Actions keeps that from failing a PR.
   retries: process.env["CI"] ? 1 : 0,
-  // One sign-in at a time: Directus gives up on Authentik's token after 3.5s, which dev's Authentik misses under load.
-  workers: 1,
+  // Each scenario makes its own visitor and data, so they run side by side. Three keeps dev's small Directus from
+  // shedding load while platform's queue shares it. Sign-ins through Authentik still take turns (test/features/fixtures.ts).
+  fullyParallel: true,
+  workers: 3,
+  globalSetup: "./test/features/global-setup.ts",
   expect: { timeout: 30_000 },
   reporter: "list",
   use: {

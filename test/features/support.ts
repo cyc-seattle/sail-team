@@ -1,9 +1,14 @@
 import { randomBytes } from "node:crypto";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { GoogleAuth } from "google-auth-library";
 
 // What the journeys reach on dev, as whatever identity ADC holds (deploy-dev in Actions): the cluster, through its
 // API, for the Secrets and Mailpit, and dev's Directus as its built-in admin. Ported from isthmia's
 // test/features/support.ts. Never point any of it at prod.
+
+/** Where workers take turns at Authentik's sign-in. ./global-setup.ts clears one a killed run left. */
+export const authentikLock = join(tmpdir(), "sail-team-journeys-authentik.lock");
 
 /** Names a run's data, so runs never read or break each other's. Lowercase, for emails. */
 export function newRunId(): string {

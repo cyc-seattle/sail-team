@@ -61,8 +61,9 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
 - `mise run integration` runs the journeys against dev, as your ADC login (deploy-dev in Actions), with
   `PULUMI_STACK=dev`. Each scenario's visitor is made up for it (`test/features/visitors.ts`): a Directus user on the
   Community role and, for a planner, a person in a group that gives Plan Reader, the way the club gives policies.
-  They sign in through Authentik's emailed link, which dev's Authentik sends to Mailpit. A plans scenario also makes
-  a made-up club (`test/features/club.ts`): an organization, its accounts, a program area and product, and an
+  The sign-in journeys sign in through Authentik's emailed link, which dev's Authentik sends to Mailpit, one at a
+  time. Every other journey gives its visitor a password and signs in to Directus directly, three scenarios at a
+  time. A plans scenario also makes a made-up club (`test/features/club.ts`): an organization, its accounts, a program area and product, and an
   Operations Plan and an area's plan, with versions saved the way a Plan Writer saves them, so platform works out their
   results. A rosters scenario makes programs and families (`test/features/squad.ts`), with the Clubspot rows
   clubspot-sync would read them from, and waits for platform's hook to move a parent on a team to the Team role. Dev's `backend:savedVersionsDeletable` lets its admin delete them afterwards; prod refuses it. Everything is deleted when

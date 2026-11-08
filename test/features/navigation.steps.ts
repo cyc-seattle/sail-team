@@ -9,7 +9,7 @@ const { Given, Then } = createBdd(test);
 
 const sizes = { laptop: { width: 1440, height: 900 }, phone: { width: 390, height: 844 } };
 
-/** The scenario's screen, set by its Given. One scenario runs at a time (playwright.config.ts). */
+/** The scenario's screen, set by its Given. A worker runs one scenario at a time. */
 const screen: { size: keyof typeof sizes } = { size: "laptop" };
 
 /** Each page's heading, which shows it opened. */
