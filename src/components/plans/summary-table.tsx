@@ -69,7 +69,8 @@ export function SummaryTable({ setId, rows, total }: { setId: string; rows: Summ
           </TableRow>
         ))}
       </TableBody>
-      <TableFooter>
+      {/* An opaque footer, so the pinned name cell matches the row when the numbers scroll under it. */}
+      <TableFooter className="bg-transparent">
         <TableRow>
           <TableCell className={pinned}>Total</TableCell>
           <Cells row={total} />

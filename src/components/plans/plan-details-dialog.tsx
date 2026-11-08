@@ -91,12 +91,7 @@ export function PlanDetailsDialog({
           </div>
           <div className="grid gap-2">
             <Label htmlFor="plan-note">Note</Label>
-            <Textarea
-              id="plan-note"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Reviewed with the board"
-            />
+            <Textarea id="plan-note" value={message} onChange={(e) => setMessage(e.target.value)} />
           </div>
           {state === "failed" && (
             <p role="alert" className="text-sm text-destructive">
