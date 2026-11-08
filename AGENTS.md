@@ -2,6 +2,8 @@
 
 Guidance for coding agents working in this repository.
 
+Follow `cyc:conventions` (the rules shared by every cyc-seattle repo).
+
 ## Overview
 
 `sail-team` is Sail Team, the web app at `cycsail.team`. It's a single-page React app, built by Vite into static files
@@ -102,10 +104,16 @@ policy that lets the page call only itself and Directus.
   through the org's `deploy.yml` (`.github/workflows/pull-request.yml`). When the journeys fail, the run uploads
   `test-results/` as the `test-results-dev` artifact, kept 7 days: each failed scenario's page snapshot
   (`error-context.md`) and trace.
+- The queue is batched, and dev is one shared environment, so the queue deploys and runs the journeys one batch at a
+  time.
+- Never force-push. To bring a branch up to date, merge `origin/main` into it. A queued branch can't be pushed until
+  it's dequeued, so take the PR out of the queue first.
 - `gh workflow run pull-request.yml --ref <branch>` deploys a branch to dev and runs the journeys before it's queued.
-  It shares dev with the queue, so use it only when a PR needs early feedback. A commit that reached `main` without the
-  queue, such as an admin's merge commit, has no image yet: `gh workflow run pull-request.yml --ref main` deploys it to
-  dev, then prod.
+  Run it only when no other dev run is going (`gh run list --workflow pull-request.yml`). A commit that reached `main`
+  without the queue, such as an admin's merge commit, has no image yet: `gh workflow run pull-request.yml --ref main`
+  deploys it to dev, then prod.
+- When a queue run fails, reproduce the failure locally against dev before you push a fix:
+  `PULUMI_STACK=dev mise run integration`.
 - `mise run preview` and `mise run deploy` act on `$PULUMI_STACK`, which defaults to `prod`. Locally, set
   `PULUMI_STACK=dev`, and preview before every apply. Local deploys are only for breaking glass.
 - Prod's stack also holds the domain's A record (`apexRecord` in `stacks/app/cluster.ts`), adopted from isthmia's
@@ -118,9 +126,8 @@ policy that lets the page call only itself and Directus.
 The maintainer reviews a UI change from screenshots in its PR description, not by checking out the branch. Every PR
 that changes a page or component shows them there:
 
-- A typical laptop (1440 × 900) and a typical phone (390 × 844). Review every UI change at both sizes, and show both.
-  Before and after, when it changes an existing page. Light and dark, when it changes colors.
-- Made-up data only. This repo is public, so never a real name, email, or phone.
+- Both review sizes from `cyc:conventions`, laptop and phone. Before and after, when it changes an existing page.
+  Light and dark, when it changes colors.
 - Host them on the `screenshots` branch, which is never merged: commit them to `pr-<number>/` on it, push, and embed
   each with `https://raw.githubusercontent.com/cyc-seattle/sail-team/<commit>/pr-<number>/<name>.png`, using that
   commit's SHA so the link never changes. Never put them on the PR's own branch, or only in `.plans/`.
@@ -132,15 +139,13 @@ that changes a page or component shows them there:
 TypeScript with ESLint and Prettier from `@cyc-seattle/ts-config`. ESM: relative import paths carry the `.ts` or `.tsx`
 extension. Imports through `@/`, which is `src/`, leave it off, as shadcn writes them. PR titles are conventional commits. Never push to `main`.
 
-Write for a club staffer: page text in plain words a volunteer would say.
-
 ### Comments
 
 Comments explain **why**, not what. Keep them to a line or two. Write one where a reader would otherwise get it wrong: a
 non-obvious constraint, a surprising API behavior, or a decision that looks arbitrary but isn't.
 
 - Don't narrate the code, restate the diff, or argue for the approach you chose.
-- Cite an issue (`#107`) instead of recounting its discussion.
+- Cite an issue instead of recounting its discussion.
 - Don't cite a local plan file. A `docs/` reference is fine.
 
-The same applies to docs: record the outcome, not the path to it, and no personal identifiers.
+The same applies to docs: record the outcome, not the path to it.
