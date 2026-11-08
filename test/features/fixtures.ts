@@ -50,8 +50,8 @@ export const test = base.extend<{ visitor: Visitor; club: Club; squad: Squad }>(
   ],
 });
 
-/** The version a scenario opens, set by its Given steps. A worker runs one scenario at a time. */
-export const opened: { version?: string } = {};
+/** The Financial Plan a scenario opens, set by its Given steps. A worker runs one scenario at a time. */
+export const opened: { set?: string } = {};
 
 /** The app's address on dev, such as `https://dev.cycsail.team`. */
 export const app = async () => `https://${(await devPlatform()).domain}`;

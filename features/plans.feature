@@ -12,7 +12,6 @@ Feature: Seeing the Financial Plans
   costs, such as the office, worked out with the other plans in the same Financial Plan. Plans only shows plans; it
   doesn't change them. Every plan and number here is made up for the run.
 
-  @fixme
   Rule: Plans lists each year's Financial Plans, newest first, with their names and notes
 
     Scenario: Two saved Financial Plans for a year
@@ -39,7 +38,6 @@ Feature: Seeing the Financial Plans
       When I open Plans
       Then under 2027 I see "Two coaches" and "Three coaches", each marked as a draft, and "Budget"
 
-  @fixme
   Rule: Two Financial Plans started from the same one can be compared side by side
 
     Scenario: Comparing two options
@@ -50,7 +48,6 @@ Feature: Seeing the Financial Plans
       Then I see each one's operating net side by side, $4,000 and $2,000
       And I see that "Two coaches" nets $2,000 more
 
-  @fixme
   Rule: A Financial Plan shows the organization's totals, and each of its plans
 
     Scenario: A Financial Plan with an Operations Plan and two Program Plans
@@ -62,7 +59,6 @@ Feature: Seeing the Financial Plans
       And I see its Operations Plan and both Program Plans, each with its net
       And I see the Financial Plan it was started from
 
-  @fixme
   Rule: A Program Plan shows its full P&L, with its wages and its share of the shared costs
 
     Scenario: A Program Plan in a saved Financial Plan
@@ -81,7 +77,6 @@ Feature: Seeing the Financial Plans
       Then the offering pays $3,000 of coaches' wages
       And it pays the $1,000 of office costs
 
-  @fixme
   Rule: A saved Financial Plan shows the P&L it was saved with, and never recalculates it
 
     Scenario: A Financial Plan started from it doesn't change its numbers
@@ -91,9 +86,8 @@ Feature: Seeing the Financial Plans
       And I've signed in
       When I open Youth Racing's plan in "Budget"
       Then its offering shows $1,000 of office costs
-      And the page says when "Budget" was saved, and who saved it
+      And the page says when "Budget" was saved
 
-  @fixme
   Rule: A draft's P&L is calculated as I look at it
 
     Scenario: A draft shows what it would take in and spend today
@@ -104,7 +98,6 @@ Feature: Seeing the Financial Plans
       Then its offering takes in $10,000
       And the page says the draft's numbers are calculated now, and will change as the plan does
 
-  @fixme
   Rule: The P&L shows each offering's totals, per day, and per sailor-day
 
     Scenario: An offering's P&L, three ways

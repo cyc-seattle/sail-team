@@ -1,20 +1,22 @@
 import type { EngineWarning, Pnl } from "@cyc-seattle/platform/planning";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { formatDate } from "@/model/dates";
+import type { ReactNode } from "react";
+import type { PlanLine } from "@/model/financial-plans";
 import { sumPnl } from "@/model/pnl-view";
 import { ChartCard } from "./chart-card";
 import { EngineWarnings } from "./engine-warnings";
+import { LinesTable } from "./lines-table";
 import { Money } from "./money";
 import { PnlTable, type PnlRow } from "./pnl-table";
 import { RevenueExpenseChart } from "./revenue-expense-chart";
 import { SummaryTiles } from "./summary-tiles";
 
-export type VersionPnlSource = { kind: "saved"; savedAt: string } | { kind: "draft" };
-
 export interface VersionPnlProps {
-  source: VersionPnlSource;
+  /** Where the numbers come from: as saved, or calculated now. */
+  note: ReactNode;
   rows: PnlRow[];
   warnings: EngineWarning[];
+  /** Each line, such as coach wages or a share of the office. */
+  lines?: Pick<PlanLine, "name" | "cost_center_name" | "amount_cents" | "revenue">[];
 }
 
 const levels: { level: Pnl["level"]; title: string; label: string }[] = [
@@ -23,8 +25,8 @@ const levels: { level: Pnl["level"]; title: string; label: string }[] = [
   { level: "offering", title: "By offering", label: "Offering" },
 ];
 
-/** A version's P&L: its totals, what to check, then each offering, product, and area. */
-export function VersionPnl({ source, rows, warnings }: VersionPnlProps) {
+/** A plan's P&L: its totals, what to check, each offering, product, and area, and then each line. */
+export function VersionPnl({ note, rows, warnings, lines = [] }: VersionPnlProps) {
   const at = (level: Pnl["level"]) => rows.filter((r) => r.pnl.level === level);
   // The broadest level there is: an area's totals include the costs shared among its offerings.
   const top = levels.map((l) => at(l.level)).find((r) => r.length > 0) ?? [];
@@ -35,13 +37,7 @@ export function VersionPnl({ source, rows, warnings }: VersionPnlProps) {
   const offerings = at("offering");
   return (
     <div className="grid gap-card">
-      <Alert>
-        <AlertDescription>
-          {source.kind === "saved"
-            ? `These are the numbers it was saved with, on ${formatDate(source.savedAt)}, as the club's plan stood then. They never change.`
-            : "A draft's numbers are calculated now, by this app, and change as planners change the plan."}
-        </AlertDescription>
-      </Alert>
+      {note}
       <SummaryTiles
         tiles={[
           { label: "Revenue", value: <Money cents={total.revenue_cents} /> },
@@ -69,6 +65,14 @@ export function VersionPnl({ source, rows, warnings }: VersionPnlProps) {
             <PnlTable rows={at(l.level)} label={l.label} />
           </section>
         ))}
+      {lines.length > 0 && (
+        <section aria-labelledby="pnl-lines" className="grid gap-2">
+          <h2 id="pnl-lines" className="text-base font-medium">
+            Every line
+          </h2>
+          <LinesTable lines={lines} />
+        </section>
+      )}
     </div>
   );
 }
