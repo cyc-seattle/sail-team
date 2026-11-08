@@ -210,7 +210,7 @@ When("I open Youth Racing's plan in {string}", async ({ page, club }, name: stri
 const lineRow = (page: Page, name: RegExp) => page.getByRole("row", { name });
 
 Then("the offering shows $10,000 in, $3,000 of coaches' wages, and $1,000 of shared costs", async ({ page }) => {
-  await expect(lineRow(page, /Revenue/).first()).toContainText("$10,000.00");
+  await expect(lineRow(page, /^Revenue /).first()).toContainText("$10,000.00");
   await expect(lineRow(page, /Coach wages/).first()).toContainText("$3,000.00");
   await expect(lineRow(page, /Office share/).first()).toContainText("$1,000.00");
 });
@@ -247,8 +247,9 @@ Then("its offering shows $1,000 of office costs", async ({ page }) => {
   await expect(lineRow(page, /Office share/).first()).toContainText("$1,000.00");
 });
 
-Then("the page says when {string} was saved, and who saved it", async ({ page }, name: string) => {
-  await expect(page.getByText(new RegExp(`${name} was saved with, on \\w+ \\d+, \\d{4}, by `))).toBeVisible();
+Then("the page says when {string} was saved", async ({ page }, name: string) => {
+  // Who saved it shows only to someone who can see other users, which a Plan Reader can't.
+  await expect(page.getByText(new RegExp(`${name} was saved with, on \\w+ \\d+, \\d{4}`))).toBeVisible();
 });
 
 // A draft's P&L.

@@ -86,7 +86,7 @@ Feature: Seeing the Financial Plans
       And I've signed in
       When I open Youth Racing's plan in "Budget"
       Then its offering shows $1,000 of office costs
-      And the page says when "Budget" was saved, and who saved it
+      And the page says when "Budget" was saved
 
   Rule: A draft's P&L is calculated as I look at it
 
