@@ -24,7 +24,8 @@ export class Squad {
   readonly run = newRunId();
   /** Every row made, oldest first, so cleanup deletes the newest first. */
   private readonly made: { collection: string; id: string }[] = [];
-  private productId?: string;
+  /** The made-up program area every program here is in: the team, on the rosters. */
+  areaId?: string;
   private serial = 0;
 
   private key(prefix: string) {
@@ -37,29 +38,30 @@ export class Squad {
     return row;
   }
 
-  private async product(): Promise<string> {
-    if (!this.productId) {
+  /** A new product of kind program, as each program has its own, all in the run's one program area. */
+  private async product(name: string): Promise<string> {
+    if (!this.areaId) {
       const account = await this.create("accounts", {
         number: `J${this.run}-rosters`,
         name: `Rosters ${this.run}`,
         type: "revenue",
         retired: false,
       });
-      const area = await this.create("program_areas", {
-        name: `Racing ${this.run}`,
-        revenue_account_id: account["id"],
-      });
-      this.productId = (
-        await this.create("products", { name: `Racing ${this.run}`, kind: "program", program_area_id: area["id"] })
-      )["id"] as string;
+      this.areaId = (await this.create("program_areas", { name: this.teamName, revenue_account_id: account["id"] }))[
+        "id"
+      ] as string;
     }
-    return this.productId;
+    return (await this.create("products", { name, kind: "program", program_area_id: this.areaId }))["id"] as string;
   }
 
   /** A program running now, with one class in a Clubspot camp, and its offering. */
   async program(name: string, { team }: { team: boolean }): Promise<Program> {
     const programName = `${name} ${this.run}`;
-    const program = await this.create("programs", { name: programName, team, product_id: await this.product() });
+    const program = await this.create("programs", {
+      name: programName,
+      team,
+      product_id: await this.product(programName),
+    });
     const [startsOn, endsOn] = [daysFromNow(-7), daysFromNow(7)];
     const camp = await this.create("clubspot_camps", {
       id: this.key("camp"),
@@ -101,10 +103,23 @@ export class Squad {
     return { id: row["id"] as string, name: `${first} ${last}`, email, phone };
   }
 
+  /** The made-up program area's name, which is the team's on the rosters. */
+  get teamName(): string {
+    return `Racing ${this.run}`;
+  }
+
+  /** A Google Group for `program`, archived so platform's gsuite-sync leaves it alone. */
+  async googleGroup(program: Program): Promise<string> {
+    const email = `sail-team.squad.${this.run}.${++this.serial}@example.com`;
+    const group = await this.create("google_groups", { email, name: program.name, archived: true });
+    await asAdmin("PATCH", `/items/programs/${program.id}`, { google_group_id: group["id"] });
+    return email;
+  }
+
   /** A child, with no email or phone of their own. */
-  async child(first: string): Promise<{ id: string; name: string }> {
+  async child(first: string, fields: Row = {}): Promise<{ id: string; name: string }> {
     const last = `Halyard ${this.run}`;
-    const row = await this.create("people", { first_name: first, last_name: `Halyard ${this.run}`, email: null });
+    const row = await this.create("people", { first_name: first, last_name: last, email: null, ...fields });
     return { id: row["id"] as string, name: `${first} ${last}` };
   }
 

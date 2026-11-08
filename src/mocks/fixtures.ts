@@ -18,13 +18,35 @@ const read = (access: "partial" | "full", fields = ["*"]) => ({
   share: none,
 });
 
-/** A family on a team, as Team's rules give it: names, and the email and phone of adults who share. */
-export const teamPermissions: Permissions = {
-  people: read("partial", ["id", "first_name", "last_name", "email", "phone", "share_contact", "directus_user_id"]),
+/** A household on no team, as Community's rules give it: their own household, by name. */
+export const parentPermissions: Permissions = {
+  people: read("partial", ["id", "first_name", "last_name", "share_contact", "directus_user_id"]),
   contacts: read("partial", ["subject_id", "contact_id", "relationship_type"]),
   registrations: read("partial", ["id", "person_id", "offering_id", "status"]),
   offerings: read("partial", ["id", "program_id", "starts_on", "ends_on"]),
-  programs: read("partial", ["id", "name", "team"]),
+  programs: read("partial", ["id", "name"]),
+  program_areas: read("partial", ["id", "name"]),
+};
+
+/**
+ * A household on a team, as Team's rules give it: names, sailors' schools, the email and phone of adults who share, and
+ * each team's program area and Google Group.
+ */
+export const teamPermissions: Permissions = {
+  ...parentPermissions,
+  people: read("partial", [
+    "id",
+    "first_name",
+    "last_name",
+    "email",
+    "phone",
+    "school",
+    "share_contact",
+    "directus_user_id",
+  ]),
+  programs: read("partial", ["id", "name", "team", "product_id", "google_group_id"]),
+  products: read("partial", ["id", "program_area_id"]),
+  google_groups: read("partial", ["id", "name", "email"]),
 };
 
 /** A planner who is also a parent on a team, so `mise run dev` shows both Plans and Rosters. */
@@ -32,8 +54,4 @@ export const plannerPermissions: Permissions = {
   ...teamPermissions,
   plans: read("full"),
   plan_versions: read("full"),
-};
-
-export const parentPermissions: Permissions = {
-  people: read("partial"),
 };

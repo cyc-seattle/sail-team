@@ -1,12 +1,13 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/plans/page-header";
-import { RosterList } from "@/components/roster/roster-list";
 import { ShareContact, type SaveState } from "@/components/roster/share-contact";
+import { TeamList } from "@/components/roster/team-list";
 import { NoAccess } from "@/components/shell/no-access";
-import { canRead, type Permissions } from "@/directus/access";
-import { myRecordQuery, rostersQuery, setShareContact, type MyRecord } from "@/directus/roster";
+import { canSeeRosters, type Permissions } from "@/directus/access";
+import { myRecordQuery, setShareContact, teamsQuery, type MyRecord } from "@/directus/roster";
 import { useSession } from "@/directus/use-session";
+import { onTeam } from "@/model/roster";
 
 export const Route = createFileRoute("/roster/")({
   component: Rosters,
@@ -14,25 +15,27 @@ export const Route = createFileRoute("/roster/")({
 
 function Rosters() {
   const session = useSession();
-  if (session.kind !== "signed-in" || !canRead(session.permissions, "registrations")) {
+  if (session.kind !== "signed-in" || !canSeeRosters(session.permissions)) {
     return <NoAccess what="rosters" />;
   }
   return (
     <main className="mx-auto grid max-w-6xl gap-card p-card">
       <PageHeader title="Rosters" />
-      <AllRosters permissions={session.permissions} />
+      <AllTeams permissions={session.permissions} />
     </main>
   );
 }
 
-function AllRosters({ permissions }: { permissions: Permissions }) {
-  const { data: rosters } = useSuspenseQuery(rostersQuery(permissions));
+function AllTeams({ permissions }: { permissions: Permissions }) {
+  const { data: teams } = useSuspenseQuery(teamsQuery(permissions));
   const { data: me } = useSuspenseQuery(myRecordQuery);
-  const parent = me !== null && rosters.some((r) => r.sailors.some((s) => s.parents.some((p) => p.id === me.id)));
+  const parent =
+    me !== null &&
+    teams.some((t) => t.divisions.some((d) => d.sailors.some((s) => s.parents.some((p) => p.id === me.id))));
   return (
     <>
-      {me && <MyChoice me={me} parent={parent} />}
-      <RosterList rosters={rosters} />
+      {me && teams.some((t) => onTeam(t, me.id)) && <MyChoice me={me} parent={parent} />}
+      <TeamList teams={teams} />
     </>
   );
 }

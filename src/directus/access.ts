@@ -22,3 +22,11 @@ export function readableFields(permissions: Permissions | undefined, collection:
   }
   return wanted.filter((field) => fields.includes(field));
 }
+
+/**
+ * Whether someone may open the team rosters: households on a team and Crew. Both read other people's email, which
+ * Community's rules, for their own household only, never give.
+ */
+export function canSeeRosters(permissions: Permissions | undefined): boolean {
+  return canRead(permissions, "people") && readableFields(permissions, "people", ["email"]).length > 0;
+}
