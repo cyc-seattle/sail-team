@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { makeRouter } from "../src/router.ts";
 import { Route as planRoute } from "../src/routes/plans/$planId/index.tsx";
 import { Route as clubPlanRoute } from "../src/routes/plans/club/$setId/index.tsx";
+import { Route as teamRoute } from "../src/routes/roster/$teamId.tsx";
 import { Route as rostersRoute } from "../src/routes/rosters/index.tsx";
 
 const resolve = (path: string) => {
@@ -34,6 +35,16 @@ describe("the router", () => {
       thrown = error;
     }
     expect(isRedirect(thrown) && thrown.options.to).toBe("/roster");
+  });
+
+  it("sends a team's old page to the roster, narrowed to the team", () => {
+    let thrown: unknown;
+    try {
+      (teamRoute.options.beforeLoad as (ctx: { params: { teamId: string } }) => void)({ params: { teamId: "abc" } });
+    } catch (error) {
+      thrown = error;
+    }
+    expect(isRedirect(thrown) && thrown.options).toMatchObject({ to: "/roster", search: { team: "abc" } });
   });
 
   it("sends a club plan's old address to its Financial Plan", () => {

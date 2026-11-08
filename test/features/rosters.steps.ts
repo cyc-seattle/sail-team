@@ -23,6 +23,8 @@ const scene: {
   child?: Person;
   others: { sailor: Person; parent: Required<Person>; shares: boolean }[];
   group?: string | undefined;
+  /** The sailor in the team's second division. */
+  eastlake?: Person | undefined;
 } = {
   others: [],
 };
@@ -30,6 +32,7 @@ const scene: {
 async function parentOf(squad: Squad, visitor: Visitor, team: boolean, shares: boolean | null, school?: string) {
   scene.others = [];
   scene.group = undefined;
+  scene.eastlake = undefined;
   await makeDirectusUser(visitor);
   const me = await squad.visitorPerson(visitor, shares);
   scene.program = await squad.program(team ? "J-Pod" : "Learn to sail", { team });
@@ -47,15 +50,20 @@ async function another(squad: Squad, first: string, shares: boolean) {
   scene.others.push({ sailor, parent, shares });
 }
 
-const section = (page: Page, name: string) =>
-  page.locator("section", { has: page.getByRole("heading", { level: 2, name: new RegExp(`^${name}`) }) });
+/** A sailor's row in the roster's table, which the journeys see at a laptop's size. */
+const row = (page: Page, sailor: string) => page.getByRole("row").filter({ hasText: sailor });
 
-/** Opens a name's contact card, and returns it. */
-async function card(page: Page, name: string) {
-  await page.getByRole("button", { name, exact: true }).first().click();
-  const popup = page.locator('[data-slot="popover-content"]');
-  await expect(popup.getByText(name, { exact: true }).first()).toBeVisible();
-  return popup;
+/** The sailors' rows the roster shows, by name. */
+async function shows(page: Page, sailors: string[]) {
+  await expect(page.getByRole("row").filter({ hasNot: page.getByRole("columnheader") })).toHaveCount(sailors.length);
+  for (const sailor of sailors) {
+    await expect(row(page, sailor)).toBeVisible();
+  }
+}
+
+async function pick(page: Page, filter: "Division" | "School", option: string) {
+  await page.getByRole("combobox", { name: filter }).click();
+  await page.getByRole("option", { name: option, exact: true }).click();
 }
 
 Given("I'm a parent whose child is on a team", async ({ squad, visitor }) => {
@@ -88,8 +96,8 @@ Given("the team's division has a Google Group", async ({ squad }) => {
 
 Given("a second division of the team, with a sailor at Eastlake High School", async ({ squad }) => {
   const kPod = await squad.program("K-Pod", { team: true });
-  const sailor = await squad.child("Mia", { school: "Eastlake High School" });
-  await squad.signUp(sailor.id, kPod);
+  scene.eastlake = await squad.child("Mia", { school: "Eastlake High School" });
+  await squad.signUp(scene.eastlake.id, kPod);
 });
 
 Given("I'm on the Crew", async ({ visitor }) => {
@@ -105,45 +113,38 @@ Given("a team with a sailor whose parent doesn't share", async ({ squad }) => {
 
 When("I open Rosters", async ({ page }) => {
   await page.goto(`${await app()}/roster`);
+  await expect(page.getByRole("heading", { level: 1, name: "Rosters" })).toBeVisible();
 });
 
-When(/^I open (?:my child's|that) team from Rosters$/, async ({ page, squad }) => {
-  await page.goto(`${await app()}/roster`);
-  await expect(page.getByRole("heading", { level: 1, name: "Rosters" })).toBeVisible();
-  await page.getByRole("link", { name: new RegExp(`^${squad.teamName}`) }).click();
-  await expect(page.getByRole("heading", { level: 1, name: squad.teamName })).toBeVisible();
+When(/^I search for (?:the sharing|that) parent's name$/, async ({ page }) => {
+  const { parent } = scene.others.find((o) => o.shares) ?? scene.others[0]!;
+  await page.getByRole("searchbox", { name: "Find a sailor or parent" }).fill(parent.name);
 });
 
 Then("the roster shows my child and both teammates", async ({ page }) => {
-  for (const name of [scene.child!.name, ...scene.others.map((o) => o.sailor.name)]) {
-    await expect(page.getByRole("button", { name, exact: true })).toBeVisible();
-  }
+  await shows(page, [scene.child!.name, ...scene.others.map((o) => o.sailor.name)]);
 });
 
-Then("the sharing parent's card shows their email and phone", async ({ page }) => {
-  const { parent } = scene.others.find((o) => o.shares)!;
-  const popup = await card(page, parent.name);
-  await expect(popup.getByRole("link", { name: parent.email })).toHaveAttribute("href", `mailto:${parent.email}`);
-  await expect(popup.getByRole("link", { name: parent.phone })).toBeVisible();
-  await page.keyboard.press("Escape");
+Then("the roster shows the sharing parent's email and phone", async ({ page }) => {
+  const { sailor, parent } = scene.others.find((o) => o.shares)!;
+  await expect(row(page, sailor.name).getByRole("link", { name: parent.email })).toHaveAttribute(
+    "href",
+    `mailto:${parent.email}`,
+  );
+  await expect(row(page, sailor.name).getByRole("link", { name: parent.phone })).toBeVisible();
 });
 
-Then("the other parent's card says they haven't shared", async ({ page }) => {
-  const { parent } = scene.others.find((o) => !o.shares)!;
-  const popup = await card(page, parent.name);
-  await expect(popup.getByText("Hasn't shared their email and phone.")).toBeVisible();
-  await expect(popup.getByText(parent.email)).toHaveCount(0);
-  await page.keyboard.press("Escape");
+Then("the roster says the other parent hasn't shared", async ({ page }) => {
+  const { sailor, parent } = scene.others.find((o) => !o.shares)!;
+  await expect(row(page, sailor.name).getByText(parent.name)).toBeVisible();
+  await expect(row(page, sailor.name).getByText("Hasn't shared their email and phone.")).toBeVisible();
+  await expect(row(page, sailor.name).getByText(parent.email)).toHaveCount(0);
 });
 
-Then("the team has 2 sailors in all", async ({ page }) => {
-  await expect(page.getByText("2 sailors in all")).toBeVisible();
-});
-
-Then("each division shows its 1 sailor", async ({ page, squad }) => {
-  for (const division of ["J-Pod", "K-Pod"]) {
-    await expect(section(page, `${division} ${squad.run}`).getByText("1 sailor", { exact: true })).toBeVisible();
-  }
+Then("the roster shows my child and the sailor at Eastlake High School, with their schools", async ({ page }) => {
+  await shows(page, [scene.child!.name, scene.eastlake!.name]);
+  await expect(row(page, scene.child!.name).getByRole("cell", { name: "Lakeside Middle School" })).toBeVisible();
+  await expect(row(page, scene.eastlake!.name).getByRole("cell", { name: "Eastlake High School" })).toBeVisible();
 });
 
 Then("the roster links the division's Google Group", async ({ page }) => {
@@ -155,22 +156,35 @@ Then("the roster links the division's Google Group", async ({ page }) => {
   );
 });
 
-When("I group the team by school", async ({ page }) => {
-  await page.getByRole("button", { name: "By school" }).click();
+When("I pick the second division", async ({ page, squad }) => {
+  await pick(page, "Division", `K-Pod ${squad.run}`);
 });
 
-Then("Lakeside Middle School and Eastlake High School each show their 1 sailor", async ({ page }) => {
-  for (const school of ["Lakeside Middle School", "Eastlake High School"]) {
-    await expect(section(page, school).getByText("1 sailor", { exact: true })).toBeVisible();
-  }
+Then("the roster shows only the sailor at Eastlake High School", async ({ page }) => {
+  await shows(page, [scene.eastlake!.name]);
 });
 
-Then("the page's address keeps the grouping, so I can share it", async ({ page, squad }) => {
-  await expect(page).toHaveURL(/\?by=school$/);
+When("I pick all divisions, and Lakeside Middle School", async ({ page }) => {
+  await pick(page, "Division", "All divisions");
+  await pick(page, "School", "Lakeside Middle School");
+});
+
+Then("the roster shows only my child", async ({ page }) => {
+  await shows(page, [scene.child!.name]);
+});
+
+Then("the page's address keeps the filters, so I can share it", async ({ page }) => {
+  await expect(page).toHaveURL(/\?school=Lakeside(\+|%20)Middle(\+|%20)School$/);
   await page.reload();
-  await expect(page.getByRole("button", { name: "By school" })).toHaveAttribute("aria-pressed", "true");
-  await expect(section(page, "Eastlake High School")).toBeVisible();
-  expect(page.url()).toContain(squad.areaId!);
+  await expect(page.getByRole("combobox", { name: "School" })).toHaveText(/Lakeside Middle School/);
+  await shows(page, [scene.child!.name]);
+});
+
+Then("the roster shows only that parent's child, with the parent's email and phone", async ({ page }) => {
+  const { sailor, parent } = scene.others.find((o) => o.shares)!;
+  await shows(page, [sailor.name]);
+  await expect(row(page, sailor.name).getByRole("link", { name: parent.email })).toBeVisible();
+  await expect(row(page, sailor.name).getByRole("link", { name: parent.phone })).toBeVisible();
 });
 
 Then("I don't see Rosters in the menu", async ({ page }) => {
@@ -183,11 +197,11 @@ Then("the page says I don't have access to rosters", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "You don't have access to rosters" })).toBeVisible();
 });
 
-Then("that parent's card shows their email and phone", async ({ page }) => {
-  const [{ parent }] = scene.others as [(typeof scene.others)[number]];
-  const popup = await card(page, parent.name);
-  await expect(popup.getByRole("link", { name: parent.email })).toBeVisible();
-  await expect(popup.getByRole("link", { name: parent.phone })).toBeVisible();
+Then("the roster shows that parent's email and phone", async ({ page }) => {
+  const [{ sailor, parent }] = scene.others as [(typeof scene.others)[number]];
+  await shows(page, [sailor.name]);
+  await expect(row(page, sailor.name).getByRole("link", { name: parent.email })).toBeVisible();
+  await expect(row(page, sailor.name).getByRole("link", { name: parent.phone })).toBeVisible();
 });
 
 const choice = (page: Page) => page.getByRole("switch", { name: "Share my email and phone with my child's team" });

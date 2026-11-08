@@ -2,14 +2,16 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/plans/page-header";
 import { ShareContact, type SaveState } from "@/components/roster/share-contact";
-import { TeamList } from "@/components/roster/team-list";
+import { Roster } from "@/components/roster/roster";
 import { NoAccess } from "@/components/shell/no-access";
 import { canSeeRosters, type Permissions } from "@/directus/access";
 import { myRecordQuery, setShareContact, teamsQuery, type MyRecord } from "@/directus/roster";
 import { useSession } from "@/directus/use-session";
-import { onTeam } from "@/model/roster";
+import { onTeam, withFilters, type RosterFilters } from "@/model/roster";
 
 export const Route = createFileRoute("/roster/")({
+  validateSearch: (search: Record<string, unknown>): RosterFilters =>
+    withFilters({}, { team: search["team"], division: search["division"], school: search["school"], q: search["q"] }),
   component: Rosters,
 });
 
@@ -29,13 +31,15 @@ function Rosters() {
 function AllTeams({ permissions }: { permissions: Permissions }) {
   const { data: teams } = useSuspenseQuery(teamsQuery(permissions));
   const { data: me } = useSuspenseQuery(myRecordQuery);
+  const filters = Route.useSearch();
+  const navigate = Route.useNavigate();
   const parent =
     me !== null &&
     teams.some((t) => t.divisions.some((d) => d.sailors.some((s) => s.parents.some((p) => p.id === me.id))));
   return (
     <>
       {me && teams.some((t) => onTeam(t, me.id)) && <MyChoice me={me} parent={parent} />}
-      <TeamList teams={teams} />
+      <Roster teams={teams} filters={filters} onFiltersChange={(next) => navigate({ search: next, replace: true })} />
     </>
   );
 }

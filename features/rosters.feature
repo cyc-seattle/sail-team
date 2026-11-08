@@ -1,9 +1,10 @@
 Feature: Team rosters
-  Rosters shows each team: a part of the club's programs, such as Doublehanded, whose team programs, such as J-Pod
-  and K-Pod, are its divisions. Each team has its own page, with its sailors grouped by division or by school, and how
-  to reach the parents who chose to share their email and phone. Only households on a team and Crew see the rosters.
-  Every adult decides on the page whether to share their own email and phone. Every household and program here is made
-  up for the run.
+  Rosters lists every sailor on the teams a person can see in one list: a team is a part of the club's programs, such
+  as Doublehanded, whose team programs, such as J-Pod and K-Pod, are its divisions. Each sailor shows with their
+  division, school, and parents, and how to reach the parents who chose to share their email and phone. The list
+  narrows to a division or a school, and finds anyone by a sailor's or a parent's name. Only households on a team and
+  Crew see the rosters. Every adult decides on the page whether to share their own email and phone. Every household
+  and program here is made up for the run.
 
   Rule: A household on a team sees the team, with the email and phone of the adults who share them
 
@@ -12,25 +13,35 @@ Feature: Team rosters
       And a teammate whose parent shares their email and phone
       And a teammate whose parent doesn't share
       And I've signed in
-      When I open my child's team from Rosters
+      When I open Rosters
       Then the roster shows my child and both teammates
-      And the sharing parent's card shows their email and phone
-      And the other parent's card says they haven't shared
+      And the roster shows the sharing parent's email and phone
+      And the roster says the other parent hasn't shared
 
-  Rule: A team's roster groups its sailors by division or by school, with totals
+  Rule: The roster narrows to a division or a school, and finds people by name
 
-    Scenario: A parent sees the team by division, then by school
+    Scenario: A parent narrows the roster to a division, then to a school
       Given I'm a parent whose child is on a team, at Lakeside Middle School
       And the team's division has a Google Group
       And a second division of the team, with a sailor at Eastlake High School
       And I've signed in
-      When I open my child's team from Rosters
-      Then the team has 2 sailors in all
-      And each division shows its 1 sailor
+      When I open Rosters
+      Then the roster shows my child and the sailor at Eastlake High School, with their schools
       And the roster links the division's Google Group
-      When I group the team by school
-      Then Lakeside Middle School and Eastlake High School each show their 1 sailor
-      And the page's address keeps the grouping, so I can share it
+      When I pick the second division
+      Then the roster shows only the sailor at Eastlake High School
+      When I pick all divisions, and Lakeside Middle School
+      Then the roster shows only my child
+      And the page's address keeps the filters, so I can share it
+
+    Scenario: A parent finds a teammate by their parent's name
+      Given I'm a parent whose child is on a team
+      And a teammate whose parent shares their email and phone
+      And a teammate whose parent doesn't share
+      And I've signed in
+      When I open Rosters
+      And I search for the sharing parent's name
+      Then the roster shows only that parent's child, with the parent's email and phone
 
   Rule: A household on no team sees no rosters
 
@@ -47,8 +58,9 @@ Feature: Team rosters
       Given I'm on the Crew
       And a team with a sailor whose parent doesn't share
       And I've signed in
-      When I open that team from Rosters
-      Then that parent's card shows their email and phone
+      When I open Rosters
+      And I search for that parent's name
+      Then the roster shows that parent's email and phone
 
   Rule: Each adult decides whether to share their own email and phone
 

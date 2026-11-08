@@ -9,13 +9,16 @@ import { formatDays } from "../src/model/dates.ts";
 import {
   buildTeams,
   currentOfferings,
-  groupTeam,
+  divisionsIn,
+  filterRoster,
   groupUrl,
   monthsBefore,
   NO_SCHOOL,
   onTeam,
+  rosterEntries,
+  schoolsOn,
+  withFilters,
   seattleToday,
-  teamSize,
   type OfferingRow,
   type TeamRoster,
 } from "../src/model/roster.ts";
@@ -112,10 +115,6 @@ describe("buildTeams", () => {
     ]);
   });
 
-  it("counts a sailor on two divisions once", () => {
-    expect(teamSize(teams[0]!)).toBe(2);
-  });
-
   it("knows who is on a team, sailors and parents both", () => {
     expect(["child", "parent", "other", "stranger"].map((id) => onTeam(teams[0]!, id))).toEqual([
       true,
@@ -136,19 +135,42 @@ describe("buildTeams", () => {
     expect(team).toMatchObject({ id: "j", name: "J-Pod" });
   });
 
-  it("groups a team by school, with no school on file last, and each sailor once with every division they're on", () => {
-    const groups = groupTeam(teams[0]!, "school");
-    expect(groups.map((g) => [g.name, g.sailors.map((s) => [s.name, s.divisions])])).toEqual([
-      ["Lakeside", [["Ada Bowline", ["J-Pod"]]]],
-      [NO_SCHOOL, [["Kai Halyard", ["J-Pod", "K-Pod"]]]],
+  const entries = rosterEntries(teams);
+  const names = (filters: Parameters<typeof filterRoster>[1]) => filterRoster(entries, filters).map((e) => e.name);
+
+  it("lists each sailor once, by name, with every division they're on", () => {
+    expect(entries.map((e) => [e.name, e.placements.map((p) => `${p.team} ${p.division}`)])).toEqual([
+      ["Ada Bowline", ["Doublehanded J-Pod"]],
+      ["Kai Halyard", ["Doublehanded J-Pod", "Doublehanded K-Pod"]],
     ]);
   });
 
-  it("groups a team by division", () => {
-    expect(groupTeam(teams[0]!, "division").map((g) => [g.name, g.sailors.length])).toEqual([
-      ["J-Pod", 2],
-      ["K-Pod", 1],
-    ]);
+  it("narrows the roster to a team, a division, or a school", () => {
+    expect(names({ team: "dh" })).toEqual(["Ada Bowline", "Kai Halyard"]);
+    expect(names({ team: "other" })).toEqual([]);
+    expect(names({ division: "k" })).toEqual(["Kai Halyard"]);
+    expect(names({ school: "Lakeside" })).toEqual(["Ada Bowline"]);
+    expect(names({ school: NO_SCHOOL })).toEqual(["Kai Halyard"]);
+    expect(names({ division: "j", school: "Lakeside" })).toEqual(["Ada Bowline"]);
+  });
+
+  it("finds a sailor by their own name or a parent's, whatever the case, accents, or spaces", () => {
+    expect(names({ q: "kai" })).toEqual(["Kai Halyard"]);
+    expect(names({ q: "SAM  bowline" })).toEqual(["Ada Bowline"]);
+    expect(names({ q: "Bówline" })).toEqual(["Ada Bowline"]);
+    expect(names({ q: "nobody" })).toEqual([]);
+  });
+
+  it("changes a filter, leaving out any that's unset or empty", () => {
+    expect(withFilters({ team: "dh", q: "kai" }, { team: false, division: "k", q: " " })).toEqual({ division: "k" });
+    expect(withFilters({}, { school: 3, q: undefined })).toEqual({});
+  });
+
+  it("lists the schools on the roster, and the divisions a filter picks", () => {
+    expect(schoolsOn(entries)).toEqual(["Lakeside"]);
+    expect(divisionsIn(teams, {}).map((d) => d.name)).toEqual(["J-Pod", "K-Pod"]);
+    expect(divisionsIn(teams, { division: "k" }).map((d) => d.name)).toEqual(["K-Pod"]);
+    expect(divisionsIn(teams, { team: "other" })).toEqual([]);
   });
 
   it("links a group's page on Google Groups", () => {
