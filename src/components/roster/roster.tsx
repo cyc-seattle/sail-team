@@ -22,7 +22,7 @@ export interface RosterProps {
 }
 
 /**
- * Every sailor on the teams the person can see, with how to reach their parents: a table on a laptop and a card for
+ * Every sailor on the teams the person can see, with how to reach their guardians: a table on a laptop and a card for
  * each sailor on a phone, both narrowed by the same search and filters.
  */
 export function Roster({ teams, filters, onFiltersChange }: RosterProps) {
@@ -83,7 +83,7 @@ function RosterTable({ entries, withTeam }: { entries: RosterEntry[]; withTeam: 
           {withTeam && <TableHead>Team</TableHead>}
           <TableHead>Division</TableHead>
           <TableHead>School</TableHead>
-          <TableHead>Parents</TableHead>
+          <TableHead>Guardians</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -99,7 +99,7 @@ function RosterTable({ entries, withTeam }: { entries: RosterEntry[]; withTeam: 
               {entry.school ?? <span className="text-muted-foreground">Not on file</span>}
             </TableCell>
             <TableCell className="align-top whitespace-normal">
-              <Parents parents={entry.parents} />
+              <Guardians guardians={entry.guardians} />
             </TableCell>
           </TableRow>
         ))}
@@ -117,21 +117,21 @@ function SailorCard({ entry, withTeam }: { entry: RosterEntry; withTeam: boolean
         <p className="text-muted-foreground">{about.filter(Boolean).join(" · ")}</p>
         <Reach person={entry} quiet tap />
       </div>
-      <Parents parents={entry.parents} tap />
+      <Guardians guardians={entry.guardians} tap />
     </article>
   );
 }
 
-function Parents({ parents, tap = false }: { parents: RosterPerson[]; tap?: boolean }) {
-  if (parents.length === 0) {
-    return <p className="text-muted-foreground">No parents on file.</p>;
+function Guardians({ guardians, tap = false }: { guardians: RosterPerson[]; tap?: boolean }) {
+  if (guardians.length === 0) {
+    return <p className="text-muted-foreground">No guardians on file.</p>;
   }
   return (
     <ul className="grid gap-2">
-      {parents.map((parent) => (
-        <li key={parent.id} className="grid">
-          <span>{parent.name}</span>
-          <Reach person={parent} tap={tap} />
+      {guardians.map((guardian) => (
+        <li key={guardian.id} className="grid">
+          <span>{guardian.name}</span>
+          <Reach person={guardian} tap={tap} />
         </li>
       ))}
     </ul>

@@ -33,18 +33,18 @@ function AllTeams({ permissions }: { permissions: Permissions }) {
   const { data: me } = useSuspenseQuery(myRecordQuery);
   const filters = Route.useSearch();
   const navigate = Route.useNavigate();
-  const parent =
+  const guardian =
     me !== null &&
-    teams.some((t) => t.divisions.some((d) => d.sailors.some((s) => s.parents.some((p) => p.id === me.id))));
+    teams.some((t) => t.divisions.some((d) => d.sailors.some((s) => s.guardians.some((p) => p.id === me.id))));
   return (
     <>
-      {me && teams.some((t) => onTeam(t, me.id)) && <MyChoice me={me} parent={parent} />}
+      {me && teams.some((t) => onTeam(t, me.id)) && <MyChoice me={me} guardian={guardian} />}
       <Roster teams={teams} filters={filters} onFiltersChange={(next) => navigate({ search: next, replace: true })} />
     </>
   );
 }
 
-function MyChoice({ me, parent }: { me: MyRecord; parent: boolean }) {
+function MyChoice({ me, guardian }: { me: MyRecord; guardian: boolean }) {
   const queryClient = useQueryClient();
   const save = useMutation({
     mutationFn: (shares: boolean) => setShareContact(me.id, shares),
@@ -57,7 +57,7 @@ function MyChoice({ me, parent }: { me: MyRecord; parent: boolean }) {
   return (
     <ShareContact
       shares={save.isPending ? save.variables : me.share_contact === true}
-      parent={parent}
+      guardian={guardian}
       state={state}
       onChange={(shares) => save.mutate(shares)}
     />

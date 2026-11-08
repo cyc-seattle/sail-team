@@ -53,8 +53,8 @@ export function RosterFilterBar({ teams, schools, filters, onChange }: RosterFil
         </InputGroupAddon>
         <InputGroupInput
           type="search"
-          placeholder="Find a sailor or parent"
-          aria-label="Find a sailor or parent"
+          placeholder="Find a sailor or guardian"
+          aria-label="Find a sailor or guardian"
           value={q}
           onChange={(event) => {
             setQ(event.target.value);

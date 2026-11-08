@@ -4,7 +4,7 @@ import { ShareContact } from "./share-contact";
 
 const meta = {
   component: ShareContact,
-  args: { shares: false, parent: true, onChange: fn() },
+  args: { shares: false, guardian: true, onChange: fn() },
 } satisfies Meta<typeof ShareContact>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -20,7 +20,7 @@ export const NotSharing: Story = {
 
 export const Sharing: Story = { args: { shares: true, state: "saved" } };
 
-export const AdultSailor: Story = { args: { parent: false } };
+export const AdultSailor: Story = { args: { guardian: false } };
 
 export const Saving: Story = { args: { shares: true, state: "saving" } };
 

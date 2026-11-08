@@ -41,7 +41,7 @@ export interface PersonRow {
   /** Null when the person didn't share it, or the viewer can't see it. */
   email?: string | null;
   phone?: string | null;
-  /** Null when not on file, or the viewer can't see it, as for a parent. */
+  /** Null when not on file, or the viewer can't see it, as for a guardian. */
   school?: string | null;
 }
 
@@ -54,7 +54,7 @@ export interface RosterPerson {
 
 export interface RosterSailor extends RosterPerson {
   school: string | null;
-  parents: RosterPerson[];
+  guardians: RosterPerson[];
 }
 
 /** One team program, such as J-Pod, in its current or most recent offering. */
@@ -137,10 +137,10 @@ export function buildTeams(rows: {
 }): TeamRoster[] {
   const programs = new Map(rows.programs.map((p) => [p.id, p]));
   const people = new Map(rows.people.map((p) => [p.id, p]));
-  const parentsOf = new Map<string, string[]>();
+  const guardiansOf = new Map<string, string[]>();
   for (const link of rows.contacts) {
     if (link.relationship_type === "guardian") {
-      parentsOf.set(link.subject_id, [...new Set([...(parentsOf.get(link.subject_id) ?? []), link.contact_id])]);
+      guardiansOf.set(link.subject_id, [...new Set([...(guardiansOf.get(link.subject_id) ?? []), link.contact_id])]);
     }
   }
   const teams = new Map<string, TeamRoster>();
@@ -170,7 +170,7 @@ export function buildTeams(rows: {
         .map((id) => ({
           ...rosterPerson(id, people),
           school: people.get(id)?.school || null,
-          parents: (parentsOf.get(id) ?? []).map((parent) => rosterPerson(parent, people)).sort(byName),
+          guardians: (guardiansOf.get(id) ?? []).map((guardian) => rosterPerson(guardian, people)).sort(byName),
         }))
         .sort(byName),
     });
@@ -178,10 +178,10 @@ export function buildTeams(rows: {
   return [...teams.values()].map((team) => ({ ...team, divisions: team.divisions.sort(byName) })).sort(byName);
 }
 
-/** Whether `personId` is a sailor or a sailor's parent on `team`. */
+/** Whether `personId` is a sailor or a sailor's guardian on `team`. */
 export function onTeam(team: TeamRoster, personId: string): boolean {
   return team.divisions.some((d) =>
-    d.sailors.some((s) => s.id === personId || s.parents.some((p) => p.id === personId)),
+    d.sailors.some((s) => s.id === personId || s.guardians.some((p) => p.id === personId)),
   );
 }
 
@@ -222,7 +222,7 @@ export interface RosterFilters {
   division?: string;
   /** A school's name, or `NO_SCHOOL` for sailors with none on file. */
   school?: string;
-  /** Part of a sailor's or a parent's name. */
+  /** Part of a sailor's or a guardian's name. */
   q?: string;
 }
 
@@ -242,7 +242,7 @@ export function withFilters(
 /** Lower case, with accents dropped, so "zoe" finds Zoë. */
 const fold = (text: string) => text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/\s+/g, " ").trim();
 
-/** The sailors that match every filter. A search finds a sailor by their own name or a parent's. */
+/** The sailors that match every filter. A search finds a sailor by their own name or a guardian's. */
 export function filterRoster(entries: RosterEntry[], filters: RosterFilters): RosterEntry[] {
   const q = fold(filters.q ?? "");
   return entries.filter(
@@ -250,7 +250,7 @@ export function filterRoster(entries: RosterEntry[], filters: RosterFilters): Ro
       (!filters.team || entry.placements.some((p) => p.teamId === filters.team)) &&
       (!filters.division || entry.placements.some((p) => p.divisionId === filters.division)) &&
       (!filters.school || (entry.school ?? NO_SCHOOL) === filters.school) &&
-      (!q || [entry, ...entry.parents].some((person) => fold(person.name).includes(q))),
+      (!q || [entry, ...entry.guardians].some((person) => fold(person.name).includes(q))),
   );
 }
 

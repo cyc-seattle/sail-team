@@ -21,7 +21,7 @@ interface Person {
 const scene: {
   program?: Program;
   child?: Person;
-  others: { sailor: Person; parent: Required<Person>; shares: boolean }[];
+  others: { sailor: Person; guardian: Required<Person>; shares: boolean }[];
   group?: string | undefined;
   /** The sailor in the team's second division. */
   eastlake?: Person | undefined;
@@ -29,7 +29,7 @@ const scene: {
   others: [],
 };
 
-async function parentOf(squad: Squad, visitor: Visitor, team: boolean, shares: boolean | null, school?: string) {
+async function guardianOf(squad: Squad, visitor: Visitor, team: boolean, shares: boolean | null, school?: string) {
   scene.others = [];
   scene.group = undefined;
   scene.eastlake = undefined;
@@ -44,10 +44,10 @@ async function parentOf(squad: Squad, visitor: Visitor, team: boolean, shares: b
 
 async function another(squad: Squad, first: string, shares: boolean) {
   const sailor = await squad.child(first);
-  const parent = await squad.person(`${first}'s parent`, { share_contact: shares });
-  await squad.guardian(sailor.id, parent.id);
+  const guardian = await squad.person(`${first}'s guardian`, { share_contact: shares });
+  await squad.guardian(sailor.id, guardian.id);
   await squad.signUp(sailor.id, scene.program!);
-  scene.others.push({ sailor, parent, shares });
+  scene.others.push({ sailor, guardian, shares });
 }
 
 /** A sailor's row in the roster's table, which the journeys see at a laptop's size. */
@@ -66,27 +66,27 @@ async function pick(page: Page, filter: "Division" | "School", option: string) {
   await page.getByRole("option", { name: option, exact: true }).click();
 }
 
-Given("I'm a parent whose child is on a team", async ({ squad, visitor }) => {
-  await parentOf(squad, visitor, true, null);
+Given("I'm a guardian whose child is on a team", async ({ squad, visitor }) => {
+  await guardianOf(squad, visitor, true, null);
 });
 
-Given("I'm a parent whose child is on a team, and I share my email and phone", async ({ squad, visitor }) => {
-  await parentOf(squad, visitor, true, true);
+Given("I'm a guardian whose child is on a team, and I share my email and phone", async ({ squad, visitor }) => {
+  await guardianOf(squad, visitor, true, true);
 });
 
-Given("I'm a parent whose child is on a team, at Lakeside Middle School", async ({ squad, visitor }) => {
-  await parentOf(squad, visitor, true, null, "Lakeside Middle School");
+Given("I'm a guardian whose child is on a team, at Lakeside Middle School", async ({ squad, visitor }) => {
+  await guardianOf(squad, visitor, true, null, "Lakeside Middle School");
 });
 
-Given("I'm a parent whose child is in a program that isn't a team", async ({ squad, visitor }) => {
-  await parentOf(squad, visitor, false, null);
+Given("I'm a guardian whose child is in a program that isn't a team", async ({ squad, visitor }) => {
+  await guardianOf(squad, visitor, false, null);
 });
 
-Given("a teammate whose parent shares their email and phone", async ({ squad }) => {
+Given("a teammate whose guardian shares their email and phone", async ({ squad }) => {
   await another(squad, "Kai", true);
 });
 
-Given("a teammate whose parent doesn't share", async ({ squad }) => {
+Given("a teammate whose guardian doesn't share", async ({ squad }) => {
   await another(squad, "Ren", false);
 });
 
@@ -106,7 +106,7 @@ Given("I'm on the Crew", async ({ visitor }) => {
   await setRole(visitor, "Crew");
 });
 
-Given("a team with a sailor whose parent doesn't share", async ({ squad }) => {
+Given("a team with a sailor whose guardian doesn't share", async ({ squad }) => {
   scene.program = await squad.program("J-Pod", { team: true });
   await another(squad, "Ren", false);
 });
@@ -116,29 +116,29 @@ When("I open Rosters", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Rosters" })).toBeVisible();
 });
 
-When(/^I search for (?:the sharing|that) parent's name$/, async ({ page }) => {
-  const { parent } = scene.others.find((o) => o.shares) ?? scene.others[0]!;
-  await page.getByRole("searchbox", { name: "Find a sailor or parent" }).fill(parent.name);
+When(/^I search for (?:the sharing|that) guardian's name$/, async ({ page }) => {
+  const { guardian } = scene.others.find((o) => o.shares) ?? scene.others[0]!;
+  await page.getByRole("searchbox", { name: "Find a sailor or guardian" }).fill(guardian.name);
 });
 
 Then("the roster shows my child and both teammates", async ({ page, squad }) => {
   await shows(page, squad.run, [scene.child!.name, ...scene.others.map((o) => o.sailor.name)]);
 });
 
-Then("the roster shows the sharing parent's email and phone", async ({ page }) => {
-  const { sailor, parent } = scene.others.find((o) => o.shares)!;
-  await expect(row(page, sailor.name).getByRole("link", { name: parent.email })).toHaveAttribute(
+Then("the roster shows the sharing guardian's email and phone", async ({ page }) => {
+  const { sailor, guardian } = scene.others.find((o) => o.shares)!;
+  await expect(row(page, sailor.name).getByRole("link", { name: guardian.email })).toHaveAttribute(
     "href",
-    `mailto:${parent.email}`,
+    `mailto:${guardian.email}`,
   );
-  await expect(row(page, sailor.name).getByRole("link", { name: parent.phone })).toBeVisible();
+  await expect(row(page, sailor.name).getByRole("link", { name: guardian.phone })).toBeVisible();
 });
 
-Then("the roster says the other parent hasn't shared", async ({ page }) => {
-  const { sailor, parent } = scene.others.find((o) => !o.shares)!;
-  await expect(row(page, sailor.name).getByText(parent.name)).toBeVisible();
+Then("the roster says the other guardian hasn't shared", async ({ page }) => {
+  const { sailor, guardian } = scene.others.find((o) => !o.shares)!;
+  await expect(row(page, sailor.name).getByText(guardian.name)).toBeVisible();
   await expect(row(page, sailor.name).getByText("Hasn't shared their email and phone.")).toBeVisible();
-  await expect(row(page, sailor.name).getByText(parent.email)).toHaveCount(0);
+  await expect(row(page, sailor.name).getByText(guardian.email)).toHaveCount(0);
 });
 
 Then(
@@ -183,11 +183,11 @@ Then("the page's address keeps the filters, so I can share it", async ({ page, s
   await shows(page, squad.run, [scene.child!.name]);
 });
 
-Then("the roster shows only that parent's child, with the parent's email and phone", async ({ page, squad }) => {
-  const { sailor, parent } = scene.others.find((o) => o.shares)!;
+Then("the roster shows only that guardian's child, with the guardian's email and phone", async ({ page, squad }) => {
+  const { sailor, guardian } = scene.others.find((o) => o.shares)!;
   await shows(page, squad.run, [sailor.name]);
-  await expect(row(page, sailor.name).getByRole("link", { name: parent.email })).toBeVisible();
-  await expect(row(page, sailor.name).getByRole("link", { name: parent.phone })).toBeVisible();
+  await expect(row(page, sailor.name).getByRole("link", { name: guardian.email })).toBeVisible();
+  await expect(row(page, sailor.name).getByRole("link", { name: guardian.phone })).toBeVisible();
 });
 
 Then("I don't see Rosters in the menu", async ({ page }) => {
@@ -200,11 +200,11 @@ Then("the page says I don't have access to rosters", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "You don't have access to rosters" })).toBeVisible();
 });
 
-Then("the roster shows that parent's email and phone", async ({ page, squad }) => {
-  const [{ sailor, parent }] = scene.others as [(typeof scene.others)[number]];
+Then("the roster shows that guardian's email and phone", async ({ page, squad }) => {
+  const [{ sailor, guardian }] = scene.others as [(typeof scene.others)[number]];
   await shows(page, squad.run, [sailor.name]);
-  await expect(row(page, sailor.name).getByRole("link", { name: parent.email })).toBeVisible();
-  await expect(row(page, sailor.name).getByRole("link", { name: parent.phone })).toBeVisible();
+  await expect(row(page, sailor.name).getByRole("link", { name: guardian.email })).toBeVisible();
+  await expect(row(page, sailor.name).getByRole("link", { name: guardian.phone })).toBeVisible();
 });
 
 const choice = (page: Page) => page.getByRole("switch", { name: "Share my email and phone with my child's team" });

@@ -28,7 +28,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// Kai is on both pods, and shows once with both. A parent who shares shows their email and phone.
+// Kai is on both pods, and shows once with both. A guardian who shares shows their email and phone.
 export const OneTeam: Story = {
   play: async ({ canvas }) => {
     const kai = await canvas.findAllByText("Kai Halyard");
@@ -45,10 +45,22 @@ export const OneTeam: Story = {
   },
 };
 
-// A search finds a sailor by a parent's name.
+// Mia has three guardians, each with whatever they share.
+export const SeveralGuardians: Story = {
+  args: { filters: { q: "mia" } },
+  play: async ({ canvas }) => {
+    for (const name of ["Alex Cleat", "Jordan Cleat", "Sam Rivera"]) {
+      await expect(canvas.getByText(name)).toBeVisible();
+    }
+    await expect(canvas.getByRole("link", { name: "sam.rivera@example.org" })).toBeVisible();
+    await expect(canvas.getByText("Hasn't shared their email and phone.")).toBeVisible();
+  },
+};
+
+// A search finds a sailor by a guardian's name.
 export const Search: Story = {
   play: async ({ args, canvas, userEvent }) => {
-    await userEvent.type(canvas.getByRole("searchbox", { name: "Find a sailor or parent" }), "jo tack");
+    await userEvent.type(canvas.getByRole("searchbox", { name: "Find a sailor or guardian" }), "jo tack");
     await waitFor(() => expect(canvas.queryByText("Ada Bowline")).toBeNull());
     await expect(canvas.getByText("Ola Tack")).toBeVisible();
     await expect(args.onFiltersChange).toHaveBeenLastCalledWith({ q: "jo tack" });

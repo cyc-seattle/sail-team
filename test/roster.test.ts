@@ -65,7 +65,7 @@ describe("currentOfferings", () => {
 describe("buildTeams", () => {
   const people = [
     { id: "child", first_name: "Ada", last_name: "Bowline", school: "Lakeside" },
-    { id: "parent", first_name: "Pat", last_name: "Bowline", email: "pat@example.org", phone: null },
+    { id: "guardian", first_name: "Pat", last_name: "Bowline", email: "pat@example.org", phone: null },
     { id: "quiet", first_name: "Sam", last_name: "Bowline", email: null, phone: null },
     { id: "other", first_name: "Kai", last_name: "Halyard", school: "" },
   ];
@@ -92,8 +92,8 @@ describe("buildTeams", () => {
     ],
     contacts: [
       { subject_id: "child", contact_id: "quiet", relationship_type: "guardian" },
-      { subject_id: "child", contact_id: "parent", relationship_type: "guardian" },
-      { subject_id: "other", contact_id: "parent", relationship_type: "emergency" },
+      { subject_id: "child", contact_id: "guardian", relationship_type: "guardian" },
+      { subject_id: "other", contact_id: "guardian", relationship_type: "emergency" },
     ],
     people,
   });
@@ -103,20 +103,20 @@ describe("buildTeams", () => {
     expect(teams[0]!.divisions[0]).toMatchObject({ group, startsOn: "2026-09-08" });
   });
 
-  it("lists confirmed sailors by name, each with their school and parents, and their parents' details when shared", () => {
+  it("lists confirmed sailors by name, each with their school and guardians, and their guardians' details when shared", () => {
     const jPod = teams[0]!.divisions[0]!;
     expect(jPod.sailors.map((s) => [s.name, s.school])).toEqual([
       ["Ada Bowline", "Lakeside"],
       ["Kai Halyard", null],
     ]);
-    expect(jPod.sailors[0]!.parents).toEqual([
-      { id: "parent", name: "Pat Bowline", email: "pat@example.org", phone: null },
+    expect(jPod.sailors[0]!.guardians).toEqual([
+      { id: "guardian", name: "Pat Bowline", email: "pat@example.org", phone: null },
       { id: "quiet", name: "Sam Bowline", email: null, phone: null },
     ]);
   });
 
-  it("knows who is on a team, sailors and parents both", () => {
-    expect(["child", "parent", "other", "stranger"].map((id) => onTeam(teams[0]!, id))).toEqual([
+  it("knows who is on a team, sailors and guardians both", () => {
+    expect(["child", "guardian", "other", "stranger"].map((id) => onTeam(teams[0]!, id))).toEqual([
       true,
       true,
       true,
@@ -154,7 +154,7 @@ describe("buildTeams", () => {
     expect(names({ division: "j", school: "Lakeside" })).toEqual(["Ada Bowline"]);
   });
 
-  it("finds a sailor by their own name or a parent's, whatever the case, accents, or spaces", () => {
+  it("finds a sailor by their own name or a guardian's, whatever the case, accents, or spaces", () => {
     expect(names({ q: "kai" })).toEqual(["Kai Halyard"]);
     expect(names({ q: "SAM  bowline" })).toEqual(["Ada Bowline"]);
     expect(names({ q: "Bówline" })).toEqual(["Ada Bowline"]);
@@ -223,7 +223,9 @@ describe("reading rosters from Directus", () => {
     const jPod = teams[0]!.divisions[0]!;
     expect(jPod.group?.email).toBe("j-pod@example.org");
     expect(jPod.sailors.find((s) => s.id === rosterIds.child)?.school).toBe("Lakeside Middle School");
-    expect(jPod.sailors.find((s) => s.id === rosterIds.teammate)?.parents.map((p) => p.name)).toEqual(["Lee Halyard"]);
+    expect(jPod.sailors.find((s) => s.id === rosterIds.teammate)?.guardians.map((p) => p.name)).toEqual([
+      "Lee Halyard",
+    ]);
   });
 
   it("asks only for what a household on no team can read, and finds no team", async () => {

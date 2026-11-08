@@ -18,7 +18,7 @@ Feature: Getting around
       | phone  |
 
   Scenario Outline: A parent on a team opens their pages on a <screen>
-    Given I'm a parent whose child is on a team
+    Given I'm a guardian whose child is on a team
     And I'm on a <screen>
     And I've signed in
     Then I can open Home and Rosters from the menu
