@@ -49,9 +49,8 @@ When("I open Household", async ({ page }) => {
 });
 
 Then("I see myself, the other guardian, and my child", async ({ page, visitor }) => {
-  await expect(card(page, `${visitor.name} (you)`)).toContainText("Guardian");
-  await expect(card(page, scene.otherGuardian!.name)).toContainText("Guardian");
-  await expect(card(page, scene.child!.name)).toContainText("Sailor");
+  await expect(card(page, `${visitor.name} (you)`)).toBeVisible();
+  await expect(card(page, scene.otherGuardian!.name)).toBeVisible();
   await expect(card(page, scene.child!.name)).toContainText("Lakeside Middle School");
 });
 
@@ -97,7 +96,7 @@ Then("I can change their name, but not their phone", async ({ page }) => {
   await expect(form.getByLabel("Phone")).toHaveCount(0);
 });
 
-const choice = (page: Page) => page.getByRole("switch", { name: "Share our email and phone numbers with our teams" });
+const choice = (page: Page) => page.getByRole("switch", { name: "Share adults contact information with teammates" });
 
 async function sharing() {
   return (await asAdmin("GET", `/items/households/${scene.household}?fields=share_contact`)).share_contact;

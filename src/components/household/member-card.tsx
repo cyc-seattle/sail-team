@@ -1,12 +1,9 @@
 import { useId, useState, type FormEvent } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { memberChanges, type Member, type MemberChanges } from "@/model/household";
 import { said, type SaveState } from "./save-state.ts";
-
-const roleLabel = { guardian: "Guardian", sailor: "Sailor" } as const;
 
 export interface MemberCardProps {
   member: Member;
@@ -35,13 +32,10 @@ export function MemberCard({ member, editable = true, onSave }: MemberCardProps)
   return (
     <section aria-labelledby={heading} className="grid gap-3 rounded-lg bg-card p-card ring-1 ring-border">
       <div className="flex items-start justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 id={heading} className="font-medium">
-            {member.name}
-            {member.me && <span className="text-muted-foreground"> (you)</span>}
-          </h2>
-          {member.role && <Badge variant="secondary">{roleLabel[member.role]}</Badge>}
-        </div>
+        <h2 id={heading} className="font-medium">
+          {member.name}
+          {member.me && <span className="text-muted-foreground"> (you)</span>}
+        </h2>
         {editable && !editing && (
           <Button
             variant="outline"

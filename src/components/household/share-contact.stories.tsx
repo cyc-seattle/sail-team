@@ -11,7 +11,7 @@ type Story = StoryObj<typeof meta>;
 
 export const NotSharing: Story = {
   play: async ({ args, canvas, userEvent }) => {
-    const choice = canvas.getByRole("switch", { name: "Share our email and phone numbers with our teams" });
+    const choice = canvas.getByRole("switch", { name: "Share adults contact information with teammates" });
     await expect(choice).not.toBeChecked();
     await userEvent.click(choice);
     await expect(args.onChange).toHaveBeenCalledWith(true);
