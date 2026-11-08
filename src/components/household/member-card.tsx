@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { memberChanges, type Member, type MemberChanges } from "@/model/household";
 import { said, type SaveState } from "./save-state.ts";
 
-const roleLabel = { parent: "Parent", sailor: "Sailor" } as const;
+const roleLabel = { guardian: "Guardian", sailor: "Sailor" } as const;
 
 export interface MemberCardProps {
   member: Member;

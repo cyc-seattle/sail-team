@@ -10,7 +10,7 @@ export interface ShareContactProps {
   onChange: (shares: boolean) => void;
 }
 
-/** The household's one choice to share its parents' email and phone with its teams. It saves as soon as it changes. */
+/** The household's one choice to share its guardians' email and phone with its teams. It saves as soon as it changes. */
 export function ShareContact({ shares, state = "idle", disabled = false, onChange }: ShareContactProps) {
   const label = useId();
   const hint = useId();
@@ -21,8 +21,8 @@ export function ShareContact({ shares, state = "idle", disabled = false, onChang
           Share our email and phone numbers with our teams
         </p>
         <p id={hint} className="text-sm text-muted-foreground">
-          Families on the same teams see the parents' email and phone on the roster. Sailors' own are never shown. This
-          choice is for your whole household.
+          Families on the same teams see the guardians' email and phone on the roster. Sailors' own are never shown.
+          This choice is for your whole household.
         </p>
         <p role="status" className={state === "failed" ? "text-sm text-destructive" : "text-sm text-muted-foreground"}>
           {said[state]}

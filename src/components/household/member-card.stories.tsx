@@ -1,22 +1,38 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn } from "storybook/test";
-import { coParent, me, sailor } from "./fixtures";
+import { otherGuardian, me, sailor } from "./fixtures";
 import { MemberCard } from "./member-card";
 
 const meta = {
   component: MemberCard,
   args: { member: me, onSave: fn(async () => {}) },
+  // As wide as a card in the page's two columns.
+  decorators: [
+    (Story) => (
+      <div className="max-w-md">
+        <Story />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof MemberCard>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Me: Story = {};
 
-export const CoParent: Story = { args: { member: coParent } };
+export const OtherGuardian: Story = { args: { member: otherGuardian } };
 
 export const Sailor: Story = { args: { member: sailor } };
 
 export const EditingSailor: Story = {
+  args: { member: sailor },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Edit Addie Tiller" }));
+    await expect(canvas.getByLabelText("School")).toHaveValue("Lakeside Middle School");
+  },
+};
+
+export const SavingSailor: Story = {
   args: { member: sailor },
   play: async ({ args, canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Edit Addie Tiller" }));
@@ -33,8 +49,8 @@ export const EditingSailor: Story = {
   },
 };
 
-export const EditingCoParent: Story = {
-  args: { member: coParent },
+export const EditingOtherGuardian: Story = {
+  args: { member: otherGuardian },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Edit Sam Tiller" }));
     await expect(canvas.getByLabelText("Name")).toBeVisible();

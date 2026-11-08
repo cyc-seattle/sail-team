@@ -16,8 +16,8 @@ export interface GuardianRow {
   contact_id: string;
 }
 
-/** Parents are the guardians Clubspot links, and sailors the people they're guardians of. Anyone else has no role. */
-export type Role = "parent" | "sailor" | null;
+/** Guardians are the people Clubspot links as a sailor's guardian, and sailors the people they're guardians of. Anyone else has no role. */
+export type Role = "guardian" | "sailor" | null;
 
 export interface Member {
   id: string;
@@ -30,7 +30,7 @@ export interface Member {
   school: string | null;
   role: Role;
   me: boolean;
-  /** An adult changes their own phone and their children's, never a co-parent's or a grown sailor's. */
+  /** An adult changes their own phone and their children's, never another guardian's or a grown sailor's. */
   canEditPhone: boolean;
   /** Only sailors have a school. */
   hasSchool: boolean;
@@ -51,7 +51,7 @@ export function memberName(row: Pick<MemberRow, "first_name" | "last_name" | "di
   );
 }
 
-const order: Record<string, number> = { parent: 0, sailor: 1, null: 2 };
+const order: Record<string, number> = { guardian: 0, sailor: 1, null: 2 };
 
 /** Whether someone born on `dateOfBirth` is 18 by `today`, both `YYYY-MM-DD`. */
 function grownUp(dateOfBirth: string, today: string): boolean {
@@ -67,7 +67,7 @@ function isAdult(row: MemberRow, role: Role, today: string): boolean {
   return row.date_of_birth ? grownUp(row.date_of_birth, today) : role !== "sailor";
 }
 
-/** The household's members, parents first, then sailors, then anyone else, each by name. */
+/** The household's members, guardians first, then sailors, then anyone else, each by name. */
 export function buildHousehold(
   household: { id: string; share_contact: boolean | null },
   people: MemberRow[],
@@ -77,11 +77,11 @@ export function buildHousehold(
 ): Household {
   const ids = new Set(people.map((p) => p.id));
   const links = guardians.filter((g) => ids.has(g.subject_id) && ids.has(g.contact_id));
-  const parents = new Set(links.map((g) => g.contact_id));
+  const guardiansOf = new Set(links.map((g) => g.contact_id));
   const sailors = new Set(links.map((g) => g.subject_id));
   const members = people.map((p): Member => {
-    // Someone who is both, such as an adult sailor who is also a parent, shows as a parent.
-    const role: Role = parents.has(p.id) ? "parent" : sailors.has(p.id) ? "sailor" : null;
+    // Someone who is both, such as an adult sailor who is also a guardian, shows as a guardian.
+    const role: Role = guardiansOf.has(p.id) ? "guardian" : sailors.has(p.id) ? "sailor" : null;
     return {
       id: p.id,
       name: memberName(p),

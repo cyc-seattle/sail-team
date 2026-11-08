@@ -18,17 +18,17 @@ export const me = member({
   name: "Robin Tiller",
   email: "robin@example.org",
   phone: "+1 206 555 0110",
-  role: "parent",
+  role: "guardian",
   me: true,
   canEditPhone: true,
 });
 
-export const coParent = member({
-  id: "co-parent",
+export const otherGuardian = member({
+  id: "other guardian",
   name: "Sam Tiller",
   email: "sam@example.org",
   phone: "+1 206 555 0111",
-  role: "parent",
+  role: "guardian",
 });
 
 export const sailor = member({
@@ -41,4 +41,9 @@ export const sailor = member({
   hasSchool: true,
 });
 
-export const household: Household = { id: "household", shares: true, editable: true, members: [me, coParent, sailor] };
+export const household: Household = {
+  id: "household",
+  shares: true,
+  editable: true,
+  members: [me, otherGuardian, sailor],
+};

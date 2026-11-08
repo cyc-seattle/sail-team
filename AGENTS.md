@@ -68,9 +68,9 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
 - `src/directus/household.ts` reads the signed-in person's household: the people Clubspot links through a shared
   sailor, which platform's sync groups (`people.household_id`). It finds their own record by
   `directus_user_id = $CURRENT_USER`, then everyone with the same household, and their guardian links, which make
-  them a parent or a sailor (`src/model/household.ts`). `/household` shows them, and an adult changes each person's
+  them a guardian or a sailor (`src/model/household.ts`). `/household` shows them, and an adult changes each person's
   display name, a sailor's school, their own phone and their children's, and the household's one `share_contact`,
-  which decides whether its parents' email and phone show on the rosters. The app offers only the edits platform's
+  which decides whether its guardians' email and phone show on the rosters. The app offers only the edits platform's
   Community rules allow, and Directus still checks them.
 - `src/mocks/` answers Directus's requests with made-up people and permissions, in `mise run dev` and in tests. Never
   put real club data there.

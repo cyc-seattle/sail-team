@@ -10,16 +10,20 @@ import { makeDirectusUser, type Visitor } from "./visitors";
 const { Given, When, Then } = createBdd(test);
 
 /** What the scenario's Givens made, for its Thens. A worker runs one scenario at a time. */
-const scene: { household?: string; coParent?: { id: string; name: string }; child?: { id: string; name: string } } = {};
+const scene: {
+  household?: string;
+  otherGuardian?: { id: string; name: string };
+  child?: { id: string; name: string };
+} = {};
 
 async function family(squad: Squad, visitor: Visitor, shares: boolean | null) {
   await makeDirectusUser(visitor);
   const me = await squad.visitorPerson(visitor);
-  scene.coParent = await squad.person("Sam");
+  scene.otherGuardian = await squad.person("Sam");
   scene.child = await squad.child("Ada", { school: "Lakeside Middle School" });
   await squad.guardian(scene.child.id, me);
-  await squad.guardian(scene.child.id, scene.coParent.id);
-  scene.household = await squad.household([me, scene.coParent.id, scene.child.id], shares);
+  await squad.guardian(scene.child.id, scene.otherGuardian.id);
+  scene.household = await squad.household([me, scene.otherGuardian.id, scene.child.id], shares);
   await squad.signUp(scene.child.id, await squad.program("J-Pod", { team: true }));
   await hasRole(visitor, "Team");
 }
@@ -28,22 +32,25 @@ async function family(squad: Squad, visitor: Visitor, shares: boolean | null) {
 const card = (page: Page, name: string | RegExp) =>
   page.locator("section", { has: page.getByRole("heading", { level: 2, name }) });
 
-Given("I'm a parent with a co-parent and a child on a team", async ({ squad, visitor }) => {
+Given("I'm a guardian with another guardian and a child on a team", async ({ squad, visitor }) => {
   await family(squad, visitor, null);
 });
 
-Given("I'm a parent with a co-parent and a child on a team, and our household shares", async ({ squad, visitor }) => {
-  await family(squad, visitor, true);
-});
+Given(
+  "I'm a guardian with another guardian and a child on a team, and our household shares",
+  async ({ squad, visitor }) => {
+    await family(squad, visitor, true);
+  },
+);
 
 When("I open Household", async ({ page }) => {
   await page.goto(`${await app()}/household`);
   await expect(page.getByRole("heading", { level: 1, name: "Household" })).toBeVisible();
 });
 
-Then("I see myself, my co-parent, and my child", async ({ page, visitor }) => {
-  await expect(card(page, `${visitor.name} (you)`)).toContainText("Parent");
-  await expect(card(page, scene.coParent!.name)).toContainText("Parent");
+Then("I see myself, the other guardian, and my child", async ({ page, visitor }) => {
+  await expect(card(page, `${visitor.name} (you)`)).toContainText("Guardian");
+  await expect(card(page, scene.otherGuardian!.name)).toContainText("Guardian");
   await expect(card(page, scene.child!.name)).toContainText("Sailor");
   await expect(card(page, scene.child!.name)).toContainText("Lakeside Middle School");
 });
@@ -80,12 +87,12 @@ Then("my household has my new phone and my child's new name and school", async (
   });
 });
 
-When("I edit my co-parent", async ({ page }) => {
-  await page.getByRole("button", { name: `Edit ${scene.coParent!.name}` }).click();
+When("I edit the other guardian", async ({ page }) => {
+  await page.getByRole("button", { name: `Edit ${scene.otherGuardian!.name}` }).click();
 });
 
 Then("I can change their name, but not their phone", async ({ page }) => {
-  const form = card(page, scene.coParent!.name);
+  const form = card(page, scene.otherGuardian!.name);
   await expect(form.getByLabel("Name")).toBeVisible();
   await expect(form.getByLabel("Phone")).toHaveCount(0);
 });

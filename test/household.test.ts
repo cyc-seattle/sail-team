@@ -33,16 +33,16 @@ describe("buildHousehold", () => {
   ];
   const household = buildHousehold({ id: "h", share_contact: null }, people, guardians, "me", today);
 
-  it("lists parents, then sailors, then anyone else, each by name", () => {
+  it("lists guardians, then sailors, then anyone else, each by name", () => {
     expect(household.members.map((m) => [m.name, m.role])).toEqual([
-      ["Robin Tiller", "parent"],
-      ["Sam Tiller", "parent"],
+      ["Robin Tiller", "guardian"],
+      ["Sam Tiller", "guardian"],
       ["Ada Tiller", "sailor"],
       ["Bo Tiller", null],
     ]);
   });
 
-  it("lets a parent change their own phone and their children's, but not a co-parent's", () => {
+  it("lets a guardian change their own phone and their children's, but not another guardian's", () => {
     expect(Object.fromEntries(household.members.map((m) => [m.id, m.canEditPhone]))).toEqual({
       me: true,
       co: false,
@@ -117,8 +117,8 @@ describe("reading the household from Directus", () => {
     expect(household?.id).toBe(rosterIds.household);
     expect(household?.shares).toBe(true);
     expect(household?.members.map((m) => [m.name, m.role, m.me])).toEqual([
-      ["Robin Tiller", "parent", true],
-      ["Sam Tiller", "parent", false],
+      ["Robin Tiller", "guardian", true],
+      ["Sam Tiller", "guardian", false],
       ["Addie Tiller", "sailor", false],
     ]);
   });
