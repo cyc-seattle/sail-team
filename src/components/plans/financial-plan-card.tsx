@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import type { ListedPlan } from "@/model/financial-plans";
+import { isSaved, type ListedPlan } from "@/model/financial-plans";
 import { formatDate } from "@/model/dates";
 import { Money } from "./money";
 import { VersionBadge } from "./version-badge";
@@ -20,7 +20,7 @@ export function FinancialPlanCard({ plan }: { plan: ListedPlan }) {
         {plan.message && <span className="text-sm">{plan.message}</span>}
         <span className="text-xs text-muted-foreground">
           {[
-            plan.status === "saved" ? `Saved ${formatDate(plan.saved_at)}` : "Calculated when you open it",
+            isSaved(plan) ? `Saved ${formatDate(plan.saved_at)}` : "Calculated when you open it",
             plan.parent && `Started from ${plan.parent.name}`,
           ]
             .filter(Boolean)

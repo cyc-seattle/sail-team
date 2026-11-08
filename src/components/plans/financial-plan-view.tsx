@@ -1,17 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  memberName,
-  memberNet,
-  membersInOrder,
-  type FinancialPlanSummary,
-  type Member,
-  type Results,
-} from "@/model/financial-plans";
+import { isSaved, summaryRows, type FinancialPlanSummary, type Member, type Results } from "@/model/financial-plans";
 import { formatDate } from "@/model/dates";
 import { EngineWarnings } from "./engine-warnings";
-import { Money } from "./money";
-import { SummaryTiles } from "./summary-tiles";
+import { OperationsSection } from "./operations-section";
+import { ProgramsSection } from "./programs-section";
+import { SummaryTable } from "./summary-table";
+import { VersionBadge } from "./version-badge";
 
 export interface FinancialPlanViewProps {
   set: FinancialPlanSummary;
@@ -27,7 +22,7 @@ export function SourceNote({ set, savedBy }: { set: FinancialPlanSummary; savedB
   return (
     <Alert>
       <AlertDescription>
-        {set.status === "saved"
+        {isSaved(set)
           ? `These are the numbers ${set.name} was saved with, on ${formatDate(set.saved_at)}${savedBy ? `, by ${savedBy}` : ""}. They never change.`
           : "A draft's numbers are calculated now, by this app, and change as planners change the plan."}
       </AlertDescription>
@@ -35,73 +30,41 @@ export function SourceNote({ set, savedBy }: { set: FinancialPlanSummary; savedB
   );
 }
 
-/** A Financial Plan: where its numbers come from, the organization's totals, what to check, and each of its plans. */
+/** A Financial Plan: its note and where its numbers come from, its summary, what to check, Programs, and Operations. */
 export function FinancialPlanView({ set, savedBy, members, results, others }: FinancialPlanViewProps) {
   return (
     <div className="grid gap-card">
-      {(set.message || set.parent) && (
-        <p className="flex flex-wrap gap-x-2 text-sm">
-          {set.message && <span>{set.message}</span>}
-          {set.parent && (
-            <span className="text-muted-foreground">
-              Started from{" "}
-              <Link to="/plans/financial/$setId" params={{ setId: set.parent.id }} className="text-link underline">
-                {set.parent.name}
-              </Link>
-            </span>
-          )}
-        </p>
-      )}
-      <SourceNote set={set} savedBy={savedBy} />
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+        <VersionBadge state={set.status} />
+        {set.message && <span>{set.message}</span>}
+        {set.parent && (
+          <span className="text-muted-foreground">
+            Started from{" "}
+            <Link to="/plans/financial/$setId" params={{ setId: set.parent.id }} className="text-link underline">
+              {set.parent.name}
+            </Link>
+          </span>
+        )}
+        <span className="text-muted-foreground">
+          {isSaved(set)
+            ? `Saved ${formatDate(set.saved_at)}${savedBy ? ` by ${savedBy}` : ""}. Its numbers never change.`
+            : "Its numbers are worked out now, and change as planners change it."}
+        </span>
+      </p>
       {results ? (
         <>
-          <SummaryTiles
-            tiles={[
-              { label: "Operating net", value: <Money cents={results.totals.operating_net_cents} colored /> },
-              { label: "Fundraising net", value: <Money cents={results.totals.fundraising_net_cents} colored /> },
-              {
-                label: "Capital",
-                value: <Money cents={results.totals.capital_cents} />,
-                hint: "Spent on lasting things",
-              },
-              { label: "Total", value: <Money cents={results.totals.total_cents} colored /> },
-            ]}
-          />
+          <SummaryTable setId={set.id} {...summaryRows(members, results)} />
           <EngineWarnings warnings={results.warnings} />
+          <ProgramsSection setId={set.id} members={members} results={results} />
+          <OperationsSection
+            setId={set.id}
+            operations={members.find((m) => m.kind === "operations")}
+            results={results}
+          />
         </>
       ) : (
         <p className="text-sm text-muted-foreground">Its numbers are still being worked out. Check back in a minute.</p>
       )}
-      <section aria-labelledby="plans" className="grid gap-2">
-        <h2 id="plans" className="text-base font-medium">
-          Plans
-        </h2>
-        {members.length === 0 ? (
-          <p className="text-sm text-muted-foreground">It holds no plans yet.</p>
-        ) : (
-          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {membersInOrder(members).map((member) => (
-              <li key={member.id}>
-                <Link
-                  to="/plans/financial/$setId/$planId"
-                  params={{ setId: set.id, planId: member.plan_id }}
-                  className="grid min-h-tap gap-1 rounded-lg bg-card p-card ring-1 ring-border hover:ring-ring"
-                >
-                  <span className="font-medium">{memberName(member)}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {member.kind === "operations" ? "What the program areas share" : "Program Plan"}
-                  </span>
-                  {results && (
-                    <span className="text-sm">
-                      Net <Money cents={memberNet(results, member)} colored />
-                    </span>
-                  )}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
       {others.length > 0 && (
         <section aria-labelledby="compare" className="grid gap-2">
           <h2 id="compare" className="text-base font-medium">

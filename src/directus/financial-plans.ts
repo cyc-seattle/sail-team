@@ -1,6 +1,7 @@
 import { createItem, customEndpoint, updateItem } from "@directus/sdk";
 import { queryOptions } from "@tanstack/react-query";
 import {
+  isSaved,
   topLine,
   type FinancialPlanSummary,
   type ListedPlan,
@@ -37,7 +38,7 @@ export const financialPlansQuery = queryOptions({
   queryKey: ["financial-plans"],
   queryFn: async (): Promise<ListedPlan[]> => {
     const sets = (await readAll<SetRow>("version_sets", undefined, setFields)).map(summary);
-    const saved = sets.filter((s) => s.status === "saved").map((s) => s.id);
+    const saved = sets.filter(isSaved).map((s) => s.id);
     const lines = saved.length
       ? await readAll<{
           version_set_id: string;
@@ -195,17 +196,20 @@ export const financialPlanQuery = (setId: string) =>
       const set = summary(row);
       const members = await readMembers(setId);
       const [results, savedBy] = await Promise.all([
-        set.status === "saved" ? readSavedResults(setId) : calculateFinancialPlan(set, members),
+        isSaved(set) ? readSavedResults(setId) : calculateFinancialPlan(set, members),
         savedByName(set.saved_by),
       ]);
       return { set, savedBy, members, results };
     },
   });
 
-/** Renames a draft Financial Plan, or changes any one's note. Platform refuses a saved one's new name. */
+/**
+ * Renames a draft Financial Plan, changes any one's note, or moves it on: a draft to saved, a saved one to active.
+ * Platform refuses a saved one's new name, and any move back.
+ */
 export async function updateFinancialPlan(
   id: string,
-  changes: { name?: string; message?: string | null },
+  changes: { name?: string; message?: string | null; status?: "saved" | "active" },
 ): Promise<void> {
   await appDirectus().client.request(updateItem("version_sets", id, changes));
 }
