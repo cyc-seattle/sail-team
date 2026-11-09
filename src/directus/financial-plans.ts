@@ -1,7 +1,6 @@
 import { createItem, customEndpoint, updateItem } from "@directus/sdk";
 import { queryOptions } from "@tanstack/react-query";
 import {
-  isSaved,
   topLine,
   type FinancialPlanSummary,
   type ListedPlan,
@@ -12,7 +11,7 @@ import {
 } from "@/model/financial-plans";
 import type { SavedPnlRow } from "@/model/saved-results";
 import { appDirectus } from "./app.ts";
-import { calculateFinancialPlan, readAll } from "./plans.ts";
+import { readAll } from "./plans.ts";
 
 const setFields = [
   "id",
@@ -31,28 +30,24 @@ type SetRow = Omit<FinancialPlanSummary, "parent"> & { parent_id: { id: string; 
 
 const summary = ({ parent_id, ...set }: SetRow): FinancialPlanSummary => ({ ...set, parent: parent_id ?? null });
 
-const totalFields = ["operating_net_cents", "fundraising_net_cents", "capital_cents", "total_cents"];
+const totalFields = ["calculated_at", "operating_net_cents", "fundraising_net_cents", "capital_cents", "total_cents"];
 
-/** Every Financial Plan, with a saved one's top-line numbers, for the list. */
+/** Every Financial Plan, with its top-line numbers once platform has worked them out, for the list. */
 export const financialPlansQuery = queryOptions({
   queryKey: ["financial-plans"],
   queryFn: async (): Promise<ListedPlan[]> => {
-    const sets = (await readAll<SetRow>("version_sets", undefined, setFields)).map(summary);
-    const saved = sets.filter(isSaved).map((s) => s.id);
-    const lines = saved.length
-      ? await readAll<{
-          version_set_id: string;
-          amount_cents: number;
-          function: PlanLine["function"];
-          account_id: { type: string };
-        }>("plan_result_lines", { version_set_id: { _in: saved } }, [
-          "version_set_id",
-          "amount_cents",
-          "function",
-          "account_id.type",
-        ])
-      : [];
-    return sets.map((set) => {
+    const [sets, worked, lines] = await Promise.all([
+      readAll<SetRow>("version_sets", undefined, setFields),
+      readAll<{ version_set_id: string }>("plan_results", undefined, ["version_set_id"]),
+      readAll<{
+        version_set_id: string;
+        amount_cents: number;
+        function: PlanLine["function"];
+        account_id: { type: string };
+      }>("plan_result_lines", undefined, ["version_set_id", "amount_cents", "function", "account_id.type"]),
+    ]);
+    const done = new Set(worked.map((r) => r.version_set_id));
+    return sets.map(summary).map((set) => {
       const own = lines
         .filter((l) => l.version_set_id === set.id)
         .map((l) => ({
@@ -61,9 +56,11 @@ export const financialPlansQuery = queryOptions({
           revenue: l.account_id.type === "revenue",
           capital: l.account_id.type === "asset",
         }));
-      return { ...set, topLine: own.length ? topLine(own) : null };
+      return { ...set, topLine: done.has(set.id) ? topLine(own) : null };
     });
   },
+  // Until every plan's numbers are in, so a draft that's just been saved or started shows them when they are.
+  refetchInterval: (query) => (query.state.data?.some((p) => !p.topLine) ? 5_000 : false),
 });
 
 /** A Financial Plan's plans, each with the copy of it the Financial Plan holds. */
@@ -92,11 +89,14 @@ async function readMembers(setId: string): Promise<Member[]> {
   }));
 }
 
-/** A saved Financial Plan's results, as they were worked out when it was saved. Null until the hook has written them. */
-async function readSavedResults(setId: string): Promise<Results | null> {
+/**
+ * A Financial Plan's results, as platform last worked them out. Null until it has, or when the engine failed on a
+ * draft.
+ */
+async function readResults(setId: string): Promise<Results | null> {
   const bySet = { version_set_id: { _eq: setId } };
   const [totals, pnl, lines, warnings] = await Promise.all([
-    readAll<Totals>("plan_results", bySet, totalFields),
+    readAll<Totals & { calculated_at: string | null }>("plan_results", bySet, totalFields),
     readAll<SavedPnlRow & { version_set_member_id: string | null }>("plan_result_pnl", bySet, [
       "level",
       "subject_key",
@@ -138,9 +138,10 @@ async function readSavedResults(setId: string): Promise<Results | null> {
   if (!totals[0]) {
     return null;
   }
+  const { calculated_at, ...total } = totals[0];
   return {
-    live: false,
-    totals: totals[0],
+    calculated_at,
+    totals: total,
     pnl: pnl.map(({ version_set_member_id, ...row }) => ({ ...row, member: version_set_member_id })),
     lines: lines.map((l) => ({
       key: l.line,
@@ -182,13 +183,13 @@ export interface FinancialPlan {
   set: FinancialPlanSummary;
   savedBy: string | null;
   members: Member[];
-  /** Null for a saved one whose results aren't in yet. */
+  /** Null until platform has worked them out. */
   results: Results | null;
 }
 
 /**
- * A Financial Plan, its plans, and its P&L: for a saved one, as it was saved, never recalculated; for a draft, calculated
- * now. Null when there's no such Financial Plan.
+ * A Financial Plan, its plans, and its P&L as platform worked it out: for a saved one, when it was saved; for a draft,
+ * after its latest change. Null when there's no such Financial Plan.
  */
 export const financialPlanQuery = (setId: string) =>
   queryOptions({
@@ -200,17 +201,14 @@ export const financialPlanQuery = (setId: string) =>
       }
       const set = summary(row);
       const members = await readMembers(setId);
-      const [results, savedBy] = await Promise.all([
-        isSaved(set) ? readSavedResults(setId) : calculateFinancialPlan(set, members),
-        savedByName(set.saved_by),
-      ]);
+      const [results, savedBy] = await Promise.all([readResults(setId), savedByName(set.saved_by)]);
       return { set, savedBy, members, results };
     },
   });
 
 /**
- * Renames a draft Financial Plan, changes any one's note, or moves it on: a draft to saved, a saved one to active.
- * Platform refuses a saved one's new name, and any move back.
+ * Renames a Financial Plan, changes its note, or moves it on: a draft to saved, a saved one to active. Platform
+ * refuses any move back.
  */
 export async function updateFinancialPlan(
   id: string,

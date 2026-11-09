@@ -10,7 +10,10 @@ export interface FinancialPlanSummary {
   name: string;
   /** Its note, such as "Reviewed with the board". */
   message: string | null;
-  /** A draft changes; a saved one never does. The active one is the saved one the club is running this year. */
+  /**
+   * A draft's plans change; a saved one's never do, though its name and note can. The active one is the saved one the
+   * club is running this year.
+   */
   status: "draft" | "saved" | "active";
   saved_at: string | null;
   saved_by: string | null;
@@ -21,7 +24,7 @@ export interface FinancialPlanSummary {
 /** Whether it's saved, and so never changes: saved, or saved and active. */
 export const isSaved = (set: Pick<FinancialPlanSummary, "status">) => set.status !== "draft";
 
-/** A Financial Plan in the list, with a saved one's top-line numbers. A draft's are worked out only when it's opened. */
+/** A Financial Plan in the list, with its top-line numbers. Null until platform has worked them out. */
 export type ListedPlan = FinancialPlanSummary & { topLine: TopLine | null };
 
 /** The organization's totals in a Financial Plan. */
@@ -146,10 +149,9 @@ export function measuresOf(results: Pick<Results, "pnl">, member: Pick<Member, "
   };
 }
 
-/** A Financial Plan's P&L: as it was saved, or, for a draft, calculated now. */
+/** A Financial Plan's P&L, as platform last worked it out: for a draft, after its latest change; for a saved one, once. */
 export interface Results {
-  /** Whether it was calculated now, for a draft, rather than read as it was saved. */
-  live: boolean;
+  calculated_at: string | null;
   totals: Totals;
   pnl: MemberPnl[];
   lines: PlanLine[];
@@ -163,37 +165,6 @@ export function memberNet(results: Results, member: Member): number {
     return area.net_cents;
   }
   return results.lines.filter((l) => l.member === member.id).reduce((sum, l) => sum + signedCents(l), 0);
-}
-
-/** What the engine knows about each thing a line can be charged to, to find the member that holds it. */
-export interface Owners {
-  /** Each offering's plan copy, by the offering's key. */
-  offeringVersion: Map<string, string>;
-  /** Each product's program area, by its id. */
-  productArea: Map<string, string | null>;
-  /** Each program area's plan copy in the Financial Plan, by the area's id. */
-  areaVersion: Map<string, string>;
-  /** The Operations Plan's copy. */
-  operations: string | null;
-}
-
-/**
- * The plan copy that holds what a line or P&L row is charged to, as platform's saved-versions hook decides it: an
- * offering goes with its own plan, a product or program area with that area's Program Plan, and the rest, such as
- * pools and the organization, with the Operations Plan.
- */
-export function ownerOf(type: string, key: string | null, owners: Owners): string | null {
-  if (type === "offering" && key) {
-    return owners.offeringVersion.get(key) ?? owners.operations;
-  }
-  if (type === "product" && key) {
-    const area = owners.productArea.get(key);
-    return (area && owners.areaVersion.get(area)) ?? owners.operations;
-  }
-  if (type === "program_area" && key) {
-    return owners.areaVersion.get(key) ?? owners.operations;
-  }
-  return owners.operations;
 }
 
 /** Names as a sentence lists them: `a`, `a and b`, or `a, b, and c`. */
@@ -251,4 +222,25 @@ export function outsideTopLine(lines: Pick<PlanLine, "amount_cents" | "revenue" 
     fundraising: { revenue_cents: revenue, expense_cents: expense, net_cents: revenue - expense },
     capital_cents: sum(lines.filter((l) => l.capital)),
   };
+}
+
+/** How long a Financial Plan's numbers may be missing before the page says they couldn't be worked out. */
+export const stuckAfterMs = 30_000;
+
+/**
+ * How often to read a Financial Plan again, in milliseconds, or false not to. Platform works out a draft's numbers
+ * about a second after each change, wherever it's made, so a draft is read again every few seconds, and one whose
+ * numbers are missing sooner, until they arrive. A saved one's numbers never change once they're in.
+ */
+export function refreshEvery(
+  plan: { set: Pick<FinancialPlanSummary, "status">; results: Results | null } | null | undefined,
+  stuck: boolean,
+): number | false {
+  if (!plan) {
+    return false;
+  }
+  if (!plan.results) {
+    return stuck ? 5_000 : 2_000;
+  }
+  return isSaved(plan.set) ? false : 5_000;
 }

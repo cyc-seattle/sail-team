@@ -2,6 +2,7 @@ import { expect, type Page } from "@playwright/test";
 import { createBdd } from "playwright-bdd";
 import type { Club } from "./club";
 import { app, opened, test } from "./fixtures";
+import { asAdmin } from "./support";
 
 // Steps for features/plans.feature, against dev, with a made-up organization's Financial Plans (./club.ts).
 
@@ -33,8 +34,7 @@ async function savedBudget(club: Club, name: string, note: string | null = null,
 
 /** The section of the plans page for the run's year. */
 const year = (page: Page, club: Club) => page.getByRole("region", { name: String(club.year) });
-const card = (page: Page, club: Club, name: string) =>
-  year(page, club).getByRole("link", { name: new RegExp(`^${name}`) });
+const card = (page: Page, club: Club, name: string) => year(page, club).getByRole("article", { name, exact: true });
 
 // Plans lists each year's Financial Plans.
 Given(
@@ -59,10 +59,14 @@ Then("under 2027 I see {string}, then {string}", async ({ page, club }, first: s
   await expect(names.nth(1)).toContainText(second);
 });
 
-Then("each shows its note, the day it was saved, and the one it was started from", async ({ page, club }) => {
+Then("each shows its note, the day it was saved, and a link to the one it was started from", async ({ page, club }) => {
   await expect(card(page, club, "Adopted budget")).toContainText("Adopted by the board");
   await expect(card(page, club, "Adopted budget")).toContainText(/Saved \w+ \d+, \d{4}/);
   await expect(card(page, club, "Adopted budget")).toContainText("Started from Budget");
+  await expect(card(page, club, "Adopted budget").getByRole("link", { name: "Budget", exact: true })).toHaveAttribute(
+    "href",
+    new RegExp(`/plans/financial/${named.get("Budget")}$`),
+  );
   await expect(card(page, club, "Budget")).toContainText("Reviewed with the board");
 });
 
@@ -266,14 +270,27 @@ Then("the page says when {string} was saved", async ({ page }, name: string) => 
 });
 
 // A draft's P&L.
+/** The draft's offering, for a planner's AI to change. */
+let draftOffering: string | undefined;
+
 Given(
   "a draft Financial Plan whose Youth Racing plan has one offering of 10 sailors at $1,000 each",
   async ({ club }) => {
     const { operations, youth } = await plansWithCopies(club);
-    await club.offering(youth, OFFERING, 10, 100_000);
+    draftOffering = (await club.offering(youth, OFFERING, 10, 100_000))["id"] as string;
     opened.set = await club.financialPlan("Two coaches", [operations, youth]);
   },
 );
+
+When("a planner's AI raises the offering's price to $1,200", async ({ page }) => {
+  await expect(offeringRow(page).first()).toContainText("$10,000");
+  // Over Directus's items API, as an AI over MCP changes it.
+  await asAdmin("PATCH", `/items/plan_offerings/${draftOffering}`, { price_cents: 120_000 });
+});
+
+Then("its offering takes in $12,000, without my reloading the page", async ({ page }) => {
+  await expect(offeringRow(page).first()).toContainText("$12,000");
+});
 
 const offeringRow = (page: Page) =>
   page.getByRole("region", { name: "Offerings" }).getByRole("row", { name: new RegExp(OFFERING) });
@@ -288,8 +305,8 @@ Then("its offering takes in $10,000", async ({ page }) => {
   await expect(offeringRow(page).first()).toContainText("$10,000");
 });
 
-Then("the page says the draft's numbers are calculated now, and will change as the plan does", async ({ page }) => {
-  await expect(page.getByText(/calculated now.*change as planners change the plan/)).toBeVisible();
+Then("the page says the draft's numbers are worked out again after every change", async ({ page }) => {
+  await expect(page.getByText(/worked out again after every change/)).toBeVisible();
 });
 
 // An offering's P&L, three ways.
@@ -370,18 +387,9 @@ Then("the page is titled {string} and shows the note {string}", async ({ page },
   await expect(page.getByText(note)).toBeVisible();
 });
 
-When("I open {string} and edit it", async ({ page }, name: string) => {
-  await page.goto(`${await app()}/plans/financial/${named.get(name)}`);
-  await page.getByRole("button", { name: "Edit" }).click();
-});
-
-Then("I can change its note, but not its name", async ({ page }) => {
-  const dialog = page.getByRole("dialog");
-  await expect(dialog.getByLabel("Name")).toBeDisabled();
-  await dialog.getByLabel("Note").fill("Reviewed with the board");
-  await dialog.getByRole("button", { name: "Save" }).click();
-  await expect(dialog).toBeHidden();
-  await expect(page.getByText("Reviewed with the board")).toBeVisible();
+Then("its numbers are the ones it was saved with", async ({ page }) => {
+  const row = summary(page).getByRole("row", { name: /^Total/ });
+  await expect(row).toContainText("$5,000");
 });
 
 When("I open {string} and start a draft from it named {string}", async ({ page }, parent: string, name: string) => {

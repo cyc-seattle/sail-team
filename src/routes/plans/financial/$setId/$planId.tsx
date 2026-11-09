@@ -1,6 +1,6 @@
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { SourceNote } from "@/components/plans/financial-plan-view";
+import { PendingNumbers, SourceNote } from "@/components/plans/financial-plan-view";
 import { PageHeader } from "@/components/plans/page-header";
 import { PlanView } from "@/components/plans/plan-view";
 import { UnitSwitch } from "@/components/plans/unit-switch";
@@ -8,9 +8,9 @@ import { NoAccess } from "@/components/shell/no-access";
 import { NoticePage } from "@/components/shell/notice-page";
 import { canRead } from "@/directus/access";
 import { assumptionsQuery } from "@/directus/assumptions";
-import { financialPlanQuery } from "@/directus/financial-plans";
 import { useSession } from "@/directus/use-session";
-import { measuresOf, memberName } from "@/model/financial-plans";
+import { useFinancialPlan } from "@/hooks/use-financial-plan";
+import { isSaved, measuresOf, memberName } from "@/model/financial-plans";
 import { sharedCosts } from "@/model/plan-lines";
 import { savedPnl } from "@/model/saved-results";
 
@@ -29,12 +29,14 @@ function ProgramPlanPage() {
 /** One plan in a Financial Plan: its assumptions and its full P&L, worked out with the other plans in it. */
 function Loaded() {
   const { setId, planId } = Route.useParams();
-  const { data } = useSuspenseQuery(financialPlanQuery(setId));
+  const { data, stuck } = useFinancialPlan(setId);
   const member = data?.members.find((m) => m.plan_id === planId);
   const operations = data?.members.find((m) => m.kind === "operations")?.version_id ?? null;
   const { data: assumptions } = useQuery({
     ...assumptionsQuery(member!, operations),
     enabled: !!member,
+    // A draft's assumptions change wherever its plans are changed, as its numbers do.
+    refetchInterval: data && !isSaved(data.set) ? 5_000 : false,
   });
   if (!data || !member) {
     return <NoticePage title="There's no such plan in this Financial Plan" />;
@@ -51,7 +53,7 @@ function Loaded() {
     return (
       <main className="mx-auto max-w-6xl p-card">
         {header}
-        <p className="text-sm text-muted-foreground">Its numbers are still being worked out. Check back in a minute.</p>
+        <PendingNumbers stuck={stuck} />
       </main>
     );
   }
@@ -63,7 +65,7 @@ function Loaded() {
     <main className="mx-auto max-w-6xl p-card">
       {header}
       <PlanView
-        note={<SourceNote set={set} savedBy={savedBy} />}
+        note={<SourceNote set={set} savedBy={savedBy} calculatedAt={results.calculated_at} />}
         warnings={results.warnings}
         lines={results.lines.filter((l) => l.member === member.id)}
         shared={isOperations ? sharedCosts(results.lines) : undefined}

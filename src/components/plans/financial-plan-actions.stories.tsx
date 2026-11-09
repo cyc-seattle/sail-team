@@ -41,6 +41,22 @@ export const Saved: Story = {
   },
 };
 
+/** A saved plan's name and note can change, though its numbers can't. */
+export const RenameSaved: Story = {
+  args: { set: budget },
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Edit" }));
+    const dialog = within(await within(canvasElement.ownerDocument.body).findByRole("dialog"));
+    const name = dialog.getByLabelText("Name");
+    await userEvent.clear(name);
+    await userEvent.type(name, "Adopted budget");
+    await userEvent.click(dialog.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(args.onEdit).toHaveBeenCalledWith({ name: "Adopted budget", message: "Reviewed with the board" }),
+    );
+  },
+};
+
 export const Active: Story = {
   args: { set: { ...budget, status: "active" } },
   play: async ({ canvas }) => {

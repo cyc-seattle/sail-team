@@ -20,7 +20,7 @@ import { UnitSwitch } from "./unit-switch";
 const meta = {
   component: PlanView,
   args: {
-    note: <SourceNote set={budget} savedBy="Pat Example" />,
+    note: <SourceNote set={budget} savedBy="Pat Example" calculatedAt="2027-03-10T18:00:00Z" />,
     warnings,
     lines: lines.filter((l) => l.member === "youth"),
     offerings,
@@ -70,9 +70,9 @@ export const OperationsPlan: Story = {
 };
 
 export const Draft: Story = {
-  args: { note: <SourceNote set={twoCoaches} savedBy={null} />, warnings: [] },
+  args: { note: <SourceNote set={twoCoaches} savedBy={null} calculatedAt="2027-04-02T23:05:00Z" />, warnings: [] },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/calculated now/)).toBeVisible();
+    await expect(canvas.getByText(/worked out again after every change/)).toBeVisible();
   },
 };
 

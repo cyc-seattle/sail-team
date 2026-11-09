@@ -10,7 +10,7 @@ import { LinesTable } from "./lines-table";
 import { PnlTable, type PnlRow } from "./pnl-table";
 
 export interface PlanViewProps {
-  /** Where the numbers come from: as saved, or calculated now. */
+  /** Where the numbers come from: as saved, or as worked out after a draft's latest change. */
   note: ReactNode;
   warnings: EngineWarning[];
   /** Its lines, such as coach wages, and, in a Program Plan, its share of the shared costs. */

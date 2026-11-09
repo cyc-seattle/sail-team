@@ -298,7 +298,8 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       fixed_boats: null,
     },
   ],
-  // Budget's results, as platform worked them out when it was saved.
+  // Budget's results, as platform worked them out when it was saved, and Two coaches', after its latest change. Three
+  // coaches' are still being worked out.
   plan_results: [
     {
       version_set_id: budget,
@@ -307,6 +308,14 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       fundraising_net_cents: 120_000,
       capital_cents: 300_000,
       total_cents: 320_000,
+    },
+    {
+      version_set_id: twoCoaches,
+      calculated_at: "2027-04-02T23:05:00Z",
+      operating_net_cents: 700_000,
+      fundraising_net_cents: 0,
+      capital_cents: 0,
+      total_cents: 700_000,
     },
   ],
   plan_result_pnl: [
@@ -352,6 +361,20 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       days: 4,
       sailor_days: 24,
     },
+    ...(["offering", "product", "program_area"] as const).map((level) => ({
+      version_set_id: twoCoaches,
+      version_set_member_id: id(621),
+      level,
+      subject_key: { offering: id(311), product: camp, program_area: youth }[level],
+      name: { offering: "Beginner camp, week 1", product: "Beginner camp", program_area: "Youth Racing" }[level],
+      revenue_cents: 1_000_000,
+      expense_cents: 300_000,
+      net_cents: 700_000,
+      mtdc_cents: 100_000,
+      enrollment: 10,
+      days: 1,
+      sailor_days: 10,
+    })),
   ],
   plan_result_lines: [
     {
@@ -415,6 +438,23 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       function: null,
       account_id: { id: office, type: "asset", number: "1500", name: "Equipment" },
     },
+    // Two coaches' camp: its tuition, its supplies, and its share of the office.
+    ...(
+      [
+        ["revenue", "Revenue", 1_000_000, "program", { id: tuition, type: "revenue", number: "4000", name: "Tuition" }],
+        ["supplies", "Camp supplies", 100_000, "management", null],
+        ["pool:office", "Office share: Office rent", 200_000, "management", null],
+      ] as const
+    ).map(([line, name, amount, fn, account]) => ({
+      version_set_id: twoCoaches,
+      version_set_member_id: id(621),
+      line,
+      line_name: name,
+      cost_center_name: "Beginner camp, week 1",
+      amount_cents: amount,
+      function: fn,
+      account_id: account ?? { id: office, type: "expense", number: "7000", name: "Office" },
+    })),
   ],
   plan_result_warnings: [
     {
@@ -422,6 +462,12 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       code: "position_double_booked",
       message: "The head coach coaches two groups at once on June 6, so another coach is needed for 3 hours.",
       subject_key: null,
+    },
+    {
+      version_set_id: twoCoaches,
+      code: "closed_date",
+      message: "Beginner camp, week 1 has an activity on 2027-07-05, a closed day: the Fourth of July, observed",
+      subject_key: id(511),
     },
   ],
 };

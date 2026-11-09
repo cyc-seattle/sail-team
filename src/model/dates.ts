@@ -10,6 +10,19 @@ export function formatDate(timestamp: string | null): string {
   return timestamp ? day.format(new Date(timestamp)) : "";
 }
 
+const moment = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+  timeZone: "America/Los_Angeles",
+});
+
+/** A timestamp to the minute, in Seattle's time: `March 3 at 4:05 PM`. Empty for none. */
+export function formatMoment(timestamp: string | null): string {
+  return timestamp ? moment.format(new Date(timestamp)) : "";
+}
+
 const calendarDay = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",

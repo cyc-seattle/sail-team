@@ -47,6 +47,9 @@ const plan = (id: string, fields: Partial<FinancialPlanSummary>): FinancialPlanS
   ...fields,
 });
 
+/** When platform worked a plan's numbers out: a saved one's when it was saved, a draft's after its latest change. */
+const calculatedAt = (draft: boolean) => (draft ? "2027-04-02T23:05:00Z" : "2027-03-10T18:00:00Z");
+
 const totals = (operating: number): Totals => ({
   operating_net_cents: operating,
   fundraising_net_cents: 120_000,
@@ -64,9 +67,10 @@ export const budget = {
 };
 export const twoCoaches = {
   ...plan("two", { name: "Two coaches", status: "draft", parent: { id: "budget", name: "Budget" } }),
-  topLine: null,
+  topLine: { revenue_cents: 1_400_000, expense_cents: 800_000, gross_cents: 1_100_000, net_cents: 600_000 },
 };
 export const threeCoaches = {
+  // Its numbers are still being worked out.
   ...plan("three", { name: "Three coaches", status: "draft", parent: { id: "budget", name: "Budget" } }),
   topLine: null,
 };
@@ -169,15 +173,15 @@ const areaRow = (key: string, name: string, net: number, memberId: string) => ({
   member: memberId,
 });
 
-export const results = (operating: number, live = false): Results => ({
-  live,
+export const results = (operating: number, draft = false): Results => ({
+  calculated_at: calculatedAt(draft),
   totals: totals(operating),
   pnl: [
     areaRow("youth", "Youth Racing", operating - 100_000, "youth"),
     areaRow("adult", "Adult Programs", 300_000, "adult"),
   ],
   lines,
-  warnings: live ? [] : warnings.slice(0, 1),
+  warnings: draft ? [] : warnings.slice(0, 1),
 });
 
 const offeringAssumptions = (
@@ -396,7 +400,7 @@ const sumOf = (rows: Pnl[], level: Pnl["level"], key: string): Pnl => ({
 });
 
 /** The fuller year's results. */
-export const clubResults = (live = false): Results => {
+export const clubResults = (draft = false): Results => {
   const lines = [...offeringRows.flatMap((o) => o.lines), ...opsLines];
   const pnl = [
     ...offeringRows.map((o) => pnlRow(o.pnl, o.name, o.m.id)),
@@ -415,5 +419,11 @@ export const clubResults = (live = false): Results => {
       pnlRow({ ...offering(p.name, p.revenue, p.expense, 0, 0), level: "product" }, p.name, "ops"),
     ),
   ];
-  return { live, totals: totals(500_000), pnl, lines, warnings: live ? [] : warnings.slice(0, 1) };
+  return {
+    calculated_at: calculatedAt(draft),
+    totals: totals(500_000),
+    pnl,
+    lines,
+    warnings: draft ? [] : warnings.slice(0, 1),
+  };
 };
