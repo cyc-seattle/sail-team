@@ -22,7 +22,7 @@ Feature: Seeing the Financial Plans
       And a saved Financial Plan for 2027 named "Budget", noted "Reviewed with the board"
       And a later one started from it named "Adopted budget", noted "Adopted by the board"
       And I've signed in
-      When I open Plans
+      When I open Planning
       Then under 2027 I see "Adopted budget", then "Budget"
       And each shows its note, the day it was saved, and a link to the one it was started from
 
@@ -30,7 +30,7 @@ Feature: Seeing the Financial Plans
       Given I'm a planner who can read plans
       And a saved Financial Plan for 2027 whose camp takes in $10,000 and spends $5,000 running it
       And I've signed in
-      When I open Plans
+      When I open Planning
       Then the Financial Plan shows revenue of $10,000, expenses of $5,000, gross of $5,000, and net of $5,000
 
     Scenario: A year's drafts are listed with its saved Financial Plans
@@ -38,7 +38,7 @@ Feature: Seeing the Financial Plans
       And a saved Financial Plan for 2027 named "Budget"
       And two drafts started from it, named "Two coaches" and "Three coaches"
       And I've signed in
-      When I open Plans
+      When I open Planning
       Then under 2027 I see "Two coaches" and "Three coaches", each marked as a draft, and "Budget"
 
   Rule: Two Financial Plans started from the same one can be compared side by side
@@ -195,6 +195,6 @@ Feature: Seeing the Financial Plans
     Scenario: A coach who can't read plans doesn't see them
       Given I'm a coach who can't read plans
       And I've signed in
-      When I open Plans
+      When I open Planning
       Then the page says I don't have access to plans
       And no plan, version, or amount appears

@@ -57,7 +57,7 @@ export const teamPermissions: Permissions = {
 /** A Plan Writer, who can start Financial Plans and change them. */
 const write = () => ({ ...read("full"), create: { access: "full" as const }, update: { access: "full" as const } });
 
-/** A planner who is also a parent on a team, so `mise run dev` shows both Plans and Rosters. */
+/** A planner who is also a parent on a team, so `mise run dev` shows both Planning and Rosters. */
 export const plannerPermissions: Permissions = {
   ...teamPermissions,
   plans: read("full"),

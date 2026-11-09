@@ -9,7 +9,7 @@ Feature: Getting around
     And I can read plans
     And I'm on a <screen>
     And I've signed in
-    Then I can open Home, Plans, and Rosters from the menu
+    Then I can open Home, Planning, and Rosters from the menu
     And my account menu shows my name
 
     Examples:
@@ -22,7 +22,7 @@ Feature: Getting around
     And I'm on a <screen>
     And I've signed in
     Then I can open Home, Rosters, and Household from the menu
-    But the menu doesn't offer Plans
+    But the menu doesn't offer Planning
     And my account menu shows my name
 
     Examples:

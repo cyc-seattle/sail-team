@@ -1,0 +1,116 @@
+// The shapes the Planning reports show. Wireframes only: nothing fills these from Directus yet (#63).
+
+/** One account's amount in a statement, such as coach wages. */
+export interface AccountAmount {
+  /** Its number in the chart of accounts. None for a share of a pool, such as G&A. */
+  number: string | null;
+  name: string;
+  cents: number;
+}
+
+/** Revenue, direct costs, and indirect costs: the steps from revenue to net. */
+export interface Steps {
+  revenue_cents: number;
+  direct_cents: number;
+  indirect_cents: number;
+}
+
+export const expensesOf = (s: Steps) => s.direct_cents + s.indirect_cents;
+export const contributionOf = (s: Steps) => s.revenue_cents - s.direct_cents;
+export const netOf = (s: Steps) => s.revenue_cents - s.direct_cents - s.indirect_cents;
+
+/** A program area on the Overview, or Non-program, with its counts. Non-program has no offerings. */
+export interface OverviewRow extends Steps {
+  /** Its report's key: a plan's id, or `non-program`. */
+  report: string;
+  name: string;
+  offerings: number;
+  sailors: number;
+  days: number;
+  sailor_days: number;
+}
+
+export type SortKey = "name" | "revenue_cents" | "direct_cents" | "indirect_cents" | "net_cents";
+export interface Sort {
+  key: SortKey;
+  descending: boolean;
+}
+
+/** The Overview opens with the largest revenue first. */
+export const defaultSort: Sort = { key: "revenue_cents", descending: true };
+
+/** Program areas in the given order. Non-program, which sells no offerings, always stays last. */
+export function sortRows(rows: OverviewRow[], sort: Sort): OverviewRow[] {
+  const value = (row: OverviewRow) => (sort.key === "net_cents" ? netOf(row) : row[sort.key]);
+  const sorted = rows
+    .filter((r) => r.offerings > 0)
+    .sort((a, b) => {
+      const [x, y] = [value(a), value(b)];
+      const order = typeof x === "string" ? x.localeCompare(String(y)) : x - Number(y);
+      return sort.descending ? -order : order;
+    });
+  return [...sorted, ...rows.filter((r) => r.offerings === 0)];
+}
+
+/** The next sort when a column's header is pressed: the same column turns around, another starts from the top. */
+export function nextSort(current: Sort, key: SortKey): Sort {
+  if (current.key === key) {
+    return { key, descending: !current.descending };
+  }
+  return { key, descending: key !== "name" };
+}
+
+export function totalOf(rows: OverviewRow[]): OverviewRow {
+  const sum = (field: keyof Steps | "offerings" | "sailors" | "days" | "sailor_days") =>
+    rows.reduce((total, r) => total + r[field], 0);
+  return {
+    report: "total",
+    name: "Total",
+    revenue_cents: sum("revenue_cents"),
+    direct_cents: sum("direct_cents"),
+    indirect_cents: sum("indirect_cents"),
+    offerings: sum("offerings"),
+    sailors: sum("sailors"),
+    days: sum("days"),
+    sailor_days: sum("sailor_days"),
+  };
+}
+
+/** How a program is coached, which holds for every one of its offerings. */
+export interface ProgramSettings {
+  name: string;
+  coach_level: string;
+  sailors_per_coach: number;
+  ribs_per_coach: number;
+  /** The share of sailors who bring their own boat. */
+  byob_share: number;
+}
+
+/** One offering in a program area's report. */
+export interface ReportOffering extends Steps {
+  key: string;
+  program: string;
+  season: string;
+  starts_on: string;
+  ends_on: string;
+  price_cents: number;
+  target: number;
+  max: number;
+  days: number;
+}
+
+/** An offering with its number within its program, such as Guppies 3, counted by start date. */
+export type NumberedOffering = ReportOffering & { label: string };
+
+/**
+ * Offerings grouped by program, each program's by start date and numbered from 1. Programs come in the order their
+ * first offering starts.
+ */
+export function numberedOfferings(offerings: ReportOffering[]): { program: string; offerings: NumberedOffering[] }[] {
+  const byStart = [...offerings].sort((a, b) => a.starts_on.localeCompare(b.starts_on) || a.key.localeCompare(b.key));
+  const programs = [...new Set(byStart.map((o) => o.program))];
+  return programs.map((program) => ({
+    program,
+    offerings: byStart.filter((o) => o.program === program).map((o, i) => ({ ...o, label: `${program} ${i + 1}` })),
+  }));
+}

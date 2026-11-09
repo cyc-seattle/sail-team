@@ -3,9 +3,9 @@ import { parentPermissions, plannerPermissions } from "../src/mocks/fixtures.ts"
 import { externalLinks, homeLinksFor, navFor, pagesFor } from "../src/model/nav.ts";
 
 describe("navFor", () => {
-  it("shows Plans to someone who can read plans, Rosters to a household on a team, and Household to a household", () => {
+  it("shows Planning to someone who can read plans, Rosters to a household on a team, and Household to a household", () => {
     expect(navFor(plannerPermissions)).toEqual([
-      { to: "/plans", label: "Plans" },
+      { to: "/plans", label: "Planning" },
       { to: "/roster", label: "Rosters" },
       { to: "/household", label: "Household" },
     ]);

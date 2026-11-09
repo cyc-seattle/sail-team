@@ -25,7 +25,7 @@ Given(/^I'm a (?:parent|coach) who can't read plans$/, async ({ visitor }) => {
   await makeDirectusUser(visitor);
 });
 
-When(/^I open Plans(?: without signing in)?$/, async ({ page }) => {
+When(/^I open Planning(?: without signing in)?$/, async ({ page }) => {
   await page.goto(`${await app()}/plans`);
 });
 
@@ -44,10 +44,10 @@ When("I've signed in", async ({ page, visitor }) => {
   await page.goto(`${await app()}/plans`);
 });
 
-Then("I'm back on Plans", async ({ page }) => {
+Then("I'm back on Planning", async ({ page }) => {
   const { domain } = await devPlatform();
   await expect(page).toHaveURL(new RegExp(`^https://${escaped(domain)}/plans`));
-  await expect(page.getByRole("heading", { level: 1, name: "Plans" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Planning" })).toBeVisible();
 });
 
 Then("the page shows my name", async ({ page, visitor }) => {
@@ -59,6 +59,6 @@ Then("the page says I don't have access to plans", async ({ page }) => {
 });
 
 Then("it shows no plans", async ({ page }) => {
-  await expect(page.getByRole("navigation").getByRole("link", { name: "Plans" })).toHaveCount(0);
+  await expect(page.getByRole("navigation").getByRole("link", { name: "Planning" })).toHaveCount(0);
   await expect(page.locator('a[href^="/plans/"]')).toHaveCount(0);
 });

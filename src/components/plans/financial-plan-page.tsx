@@ -11,7 +11,7 @@ export function FinancialPlanPage({ canUpdate, canCreate, onEdit, onStart, onMov
     <main className="mx-auto max-w-6xl p-card">
       <PageHeader
         title={plan.set.name}
-        back={{ to: "/plans", label: "Plans" }}
+        back={{ to: "/plans", label: "Planning" }}
         actions={
           <>
             <UnitSwitch />
