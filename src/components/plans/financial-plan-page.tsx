@@ -1,6 +1,7 @@
 import { FinancialPlanActions, type FinancialPlanActionsProps } from "./financial-plan-actions";
 import { FinancialPlanView, type FinancialPlanViewProps } from "./financial-plan-view";
 import { PageHeader } from "./page-header";
+import { UnitSwitch } from "./unit-switch";
 
 export type FinancialPlanPageProps = FinancialPlanViewProps & Omit<FinancialPlanActionsProps, "set">;
 
@@ -12,14 +13,17 @@ export function FinancialPlanPage({ canUpdate, canCreate, onEdit, onStart, onMov
         title={plan.set.name}
         back={{ to: "/plans", label: "Plans" }}
         actions={
-          <FinancialPlanActions
-            set={plan.set}
-            canUpdate={canUpdate}
-            canCreate={canCreate}
-            onEdit={onEdit}
-            onStart={onStart}
-            onMove={onMove}
-          />
+          <>
+            <UnitSwitch />
+            <FinancialPlanActions
+              set={plan.set}
+              canUpdate={canUpdate}
+              canCreate={canCreate}
+              onEdit={onEdit}
+              onStart={onStart}
+              onMove={onMove}
+            />
+          </>
         }
       />
       <FinancialPlanView {...plan} />

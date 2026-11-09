@@ -117,7 +117,7 @@ async function readSavedResults(setId: string): Promise<Results | null> {
       amount_cents: number;
       version_set_member_id: string | null;
       function: PlanLine["function"];
-      account_id: { type: string };
+      account_id: { type: string; number: string | null; name: string };
     }>("plan_result_lines", bySet, [
       "line",
       "line_name",
@@ -126,6 +126,8 @@ async function readSavedResults(setId: string): Promise<Results | null> {
       "version_set_member_id",
       "function",
       "account_id.type",
+      "account_id.number",
+      "account_id.name",
     ]),
     readAll<{ code: string; message: string; subject_key: string | null }>("plan_result_warnings", bySet, [
       "code",
@@ -141,8 +143,11 @@ async function readSavedResults(setId: string): Promise<Results | null> {
     totals: totals[0],
     pnl: pnl.map(({ version_set_member_id, ...row }) => ({ ...row, member: version_set_member_id })),
     lines: lines.map((l) => ({
+      key: l.line,
       // Older results have no plain name, so fall back to the engine's own.
       name: l.line_name ?? l.line,
+      account_number: l.account_id.number,
+      account_name: l.account_id.name,
       cost_center_name: l.cost_center_name,
       amount_cents: l.amount_cents,
       revenue: l.account_id.type === "revenue",

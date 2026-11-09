@@ -1,22 +1,35 @@
 import { Link } from "@tanstack/react-router";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { outsideTopLine, topLine, type Member, type Results } from "@/model/financial-plans";
-import { Money } from "./money";
+import { measuresOf, outsideTopLine, topLine, type Member, type Results } from "@/model/financial-plans";
+import type { Measures } from "@/model/pnl-view";
+import { ViewedMoney } from "./viewed-money";
 
 const pinned = "sticky left-0 z-10 bg-background";
 
-function Row({ name, revenue, expense, net }: { name: string; revenue: number; expense: number; net: number }) {
+function Row({
+  name,
+  revenue,
+  expense,
+  net,
+  measures,
+}: {
+  name: string;
+  revenue: number;
+  expense: number;
+  net: number;
+  measures: Measures;
+}) {
   return (
     <TableRow>
       <TableCell className={pinned}>{name}</TableCell>
       <TableCell className="text-right">
-        <Money cents={revenue} whole />
+        <ViewedMoney cents={revenue} measures={measures} />
       </TableCell>
       <TableCell className="text-right">
-        <Money cents={expense} whole />
+        <ViewedMoney cents={expense} measures={measures} />
       </TableCell>
       <TableCell className="text-right">
-        <Money cents={net} colored whole />
+        <ViewedMoney cents={net} measures={measures} colored />
       </TableCell>
     </TableRow>
   );
@@ -39,6 +52,8 @@ export function OperationsSection({
   const own = operations ? topLine(results.lines.filter((l) => l.member === operations.id)) : null;
   const unshared = own ? own.expense_cents - products.reduce((t, p) => t + p.expense_cents, 0) : 0;
   const { fundraising, capital_cents } = outsideTopLine(results.lines);
+  // Everything here is the whole organization's, so per-day amounts divide by every offering's days.
+  const measures = measuresOf(results, null);
   return (
     <section aria-labelledby="non-program" className="grid gap-2">
       <h2 id="non-program" className="text-base font-medium">
@@ -68,6 +83,7 @@ export function OperationsSection({
         <TableBody>
           {products.map((p) => (
             <Row
+              measures={measures}
               key={p.subject_key}
               name={p.name}
               revenue={p.revenue_cents}
@@ -75,14 +91,15 @@ export function OperationsSection({
               net={p.net_cents}
             />
           ))}
-          <Row name="Shared costs no program pays" revenue={0} expense={unshared} net={-unshared} />
+          <Row measures={measures} name="Shared costs no program pays" revenue={0} expense={unshared} net={-unshared} />
           <Row
+            measures={measures}
             name="Fundraising"
             revenue={fundraising.revenue_cents}
             expense={fundraising.expense_cents}
             net={fundraising.net_cents}
           />
-          <Row name="Capital" revenue={0} expense={capital_cents} net={-capital_cents} />
+          <Row measures={measures} name="Capital" revenue={0} expense={capital_cents} net={-capital_cents} />
         </TableBody>
       </Table>
       <p className="text-xs text-muted-foreground">Fundraising and capital aren't in the summary above.</p>

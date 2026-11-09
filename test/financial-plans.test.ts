@@ -20,7 +20,10 @@ const line = (
   fn: PlanLine["function"],
   capital = false,
 ): Omit<PlanLine, "member"> => ({
+  key: name,
   name,
+  account_number: null,
+  account_name: name,
   cost_center_name: "Organization",
   amount_cents,
   revenue,
