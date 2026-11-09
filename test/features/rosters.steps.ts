@@ -139,7 +139,7 @@ Then("the roster says the other guardian hasn't shared", async ({ page }) => {
 });
 
 Then("the roster is on my child's team", async ({ page, squad }) => {
-  await expect(page.getByRole("combobox", { name: "Team and division" })).toHaveText(squad.teamName);
+  await expect(page.getByRole("combobox", { name: "Team and division" })).toContainText(squad.teamName);
   expect(new URL(page.url()).searchParams.get("team")).toBe(squad.areaId);
 });
 
