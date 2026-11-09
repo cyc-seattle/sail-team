@@ -2,7 +2,6 @@ import { expect, type Page } from "@playwright/test";
 import { createBdd } from "playwright-bdd";
 import { app, test } from "./fixtures";
 import { hasRole, setRole, type Program, type Squad } from "./squad";
-import { asAdmin } from "./support";
 import { makeDirectusUser, type Visitor } from "./visitors";
 
 // Steps for features/rosters.feature, against dev, with made-up programs and families (./squad.ts). Directus's rules
@@ -27,22 +26,24 @@ const scene: {
   others: [],
 };
 
-async function parentOf(squad: Squad, visitor: Visitor, team: boolean, shares: boolean | null, school?: string) {
+async function parentOf(squad: Squad, visitor: Visitor, team: boolean, school?: string) {
   scene.others = [];
   scene.group = undefined;
   await makeDirectusUser(visitor);
-  const me = await squad.visitorPerson(visitor, shares);
+  const me = await squad.visitorPerson(visitor);
   scene.program = await squad.program(team ? "J-Pod" : "Learn to sail", { team });
   scene.child = await squad.child("Ada", { school: school ?? null });
   await squad.guardian(scene.child.id, me);
+  await squad.household([me, scene.child.id], null);
   await squad.signUp(scene.child.id, scene.program);
   await hasRole(visitor, team ? "Team" : "Community");
 }
 
 async function another(squad: Squad, first: string, shares: boolean) {
   const sailor = await squad.child(first);
-  const parent = await squad.person(`${first}'s parent`, { share_contact: shares });
+  const parent = await squad.person(`${first}'s parent`);
   await squad.guardian(sailor.id, parent.id);
+  await squad.household([sailor.id, parent.id], shares);
   await squad.signUp(sailor.id, scene.program!);
   scene.others.push({ sailor, parent, shares });
 }
@@ -59,19 +60,15 @@ async function card(page: Page, name: string) {
 }
 
 Given("I'm a parent whose child is on a team", async ({ squad, visitor }) => {
-  await parentOf(squad, visitor, true, null);
-});
-
-Given("I'm a parent whose child is on a team, and I share my email and phone", async ({ squad, visitor }) => {
-  await parentOf(squad, visitor, true, true);
+  await parentOf(squad, visitor, true);
 });
 
 Given("I'm a parent whose child is on a team, at Lakeside Middle School", async ({ squad, visitor }) => {
-  await parentOf(squad, visitor, true, null, "Lakeside Middle School");
+  await parentOf(squad, visitor, true, "Lakeside Middle School");
 });
 
 Given("I'm a parent whose child is in a program that isn't a team", async ({ squad, visitor }) => {
-  await parentOf(squad, visitor, false, null);
+  await parentOf(squad, visitor, false);
 });
 
 Given("a teammate whose parent shares their email and phone", async ({ squad }) => {
@@ -188,31 +185,4 @@ Then("that parent's card shows their email and phone", async ({ page }) => {
   const popup = await card(page, parent.name);
   await expect(popup.getByRole("link", { name: parent.email })).toBeVisible();
   await expect(popup.getByRole("link", { name: parent.phone })).toBeVisible();
-});
-
-const choice = (page: Page) => page.getByRole("switch", { name: "Share my email and phone with my child's team" });
-
-async function sharing(visitor: Visitor) {
-  return (await asAdmin("GET", `/items/people/${visitor.personId}?fields=share_contact`)).share_contact;
-}
-
-When("I stop sharing my email and phone with my child's team", async ({ page }) => {
-  await expect(page.getByRole("heading", { level: 1, name: "Rosters" })).toBeVisible();
-  await expect(choice(page)).toBeChecked();
-  await choice(page).click();
-  await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
-});
-
-When("I share them again", async ({ page }) => {
-  await choice(page).click();
-  await expect(choice(page)).toBeChecked();
-  await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
-});
-
-Then("the club has me down as not sharing", async ({ visitor }) => {
-  await expect.poll(() => sharing(visitor)).toBe(false);
-});
-
-Then("the club has me down as sharing", async ({ visitor }) => {
-  await expect.poll(() => sharing(visitor)).toBe(true);
 });

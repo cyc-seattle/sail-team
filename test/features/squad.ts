@@ -127,6 +127,15 @@ export class Squad {
     await this.create("contacts", { subject_id: childId, contact_id: guardianId, relationship_type: "guardian" });
   }
 
+  /** A household of `people`, as platform makes one for each family Clubspot links, and whether it shares. */
+  async household(people: string[], shares: boolean | null): Promise<string> {
+    const household = await this.create("households", { share_contact: shares });
+    for (const id of people) {
+      await asAdmin("PATCH", `/items/people/${id}`, { household_id: household["id"] });
+    }
+    return household["id"] as string;
+  }
+
   /** Confirms `personId` in `program`, as Clubspot and clubspot-sync would. */
   async signUp(personId: string, program: Program): Promise<void> {
     const participant = await this.create("clubspot_participants", {
@@ -160,12 +169,11 @@ export class Squad {
    * The visitor's own person, which `cleanUp` in ./visitors.ts deletes by their email. platform's `group-policies` hook
    * links it to their login, which this waits for.
    */
-  async visitorPerson(visitor: Visitor, shares: boolean | null): Promise<string> {
+  async visitorPerson(visitor: Visitor): Promise<string> {
     const person = await asAdmin("POST", "/items/people", {
       first_name: visitor.firstName,
       last_name: visitor.lastName,
       email: visitor.email,
-      share_contact: shares,
     });
     visitor.personId = person.id;
     await expect

@@ -39,7 +39,8 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
 - `src/components/ui/` holds shadcn's components on Base UI, `src/components/` the club's own, each with a story beside
   it. `src/components/plans/` holds the plans pages': Page Header, Summary Tiles, Money, P&L Table, Lines Table,
   Chart Card, Engine Warnings, Version Badge, and the Financial Plan Card, List, and View, and Compare View.
-  `src/components/home/` holds the home page's Link List. `src/components/shell/` holds the App Shell around every
+  `src/components/home/` holds the home page's Link List. `src/components/household/` holds the household page's
+  Share Contact, Member Card, and Household View. `src/components/shell/` holds the App Shell around every
   signed-in page: the sidebar on a laptop, and the tab bar on a phone, whose More opens the sidebar.
   `src/styles/tokens.css` holds the design tokens. Read [docs/design.md](docs/design.md) before changing any of
   them, or use the [`design`](.agents/skills/design/SKILL.md) skill.
@@ -63,8 +64,15 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   schools, the email and phone Directus lets the person see, and each division's Google Group. Directus's rules decide
   who appears, so the page filters only on ids, statuses, and dates, which platform's query guard allows, and joins
   the rest in the browser (`src/model/roster.ts`). `/roster` lists the teams, and `/roster/<area id>` shows one, by
-  division or, with `?by=school`, by school. Only households on a team and Crew see them (`canSeeRosters`). The
-  signed-in adult finds their own record by `directus_user_id = $CURRENT_USER` and changes their own `share_contact`.
+  division or, with `?by=school`, by school. Only households on a team and Crew see them (`canSeeRosters`).
+- `src/directus/household.ts` reads the signed-in person's household: the people Clubspot links through a shared
+  sailor, which platform's sync groups (`people.household_id`). It finds their own record by
+  `directus_user_id = $CURRENT_USER`, then their household with its `members`, since the query guard refuses a Team
+  user's filter on `household_id`, and their guardian links, which make them a guardian or a sailor
+  (`src/model/household.ts`). `/household` shows them, and an adult changes each person's display name, a sailor's
+  school, their own phone and that of a child whose date of birth is on file, and the household's one
+  `share_contact`, which decides whether its adults' email and phone show on the rosters. The app offers only the edits platform's
+  Community rules allow, and Directus still checks them.
 - `src/mocks/` answers Directus's requests with made-up people and permissions, in `mise run dev` and in tests. Never
   put real club data there.
 - `mise run integration` runs the journeys against dev, as your ADC login (deploy-dev in Actions), with

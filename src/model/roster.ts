@@ -183,13 +183,6 @@ export function teamSize(team: TeamRoster): number {
   return new Set(team.divisions.flatMap((d) => d.sailors.map((s) => s.id))).size;
 }
 
-/** Whether `personId` is a sailor or a sailor's parent on `team`. */
-export function onTeam(team: TeamRoster, personId: string): boolean {
-  return team.divisions.some((d) =>
-    d.sailors.some((s) => s.id === personId || s.parents.some((p) => p.id === personId)),
-  );
-}
-
 export type GroupBy = "division" | "school";
 
 export interface TeamSailor extends RosterSailor {

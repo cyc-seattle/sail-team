@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as HouseholdRouteImport } from './routes/household'
 import { Route as PlansIndexRouteImport } from './routes/plans/index'
 import { Route as RosterIndexRouteImport } from './routes/roster/index'
 import { Route as RosterTeamIdRouteImport } from './routes/roster/$teamId'
@@ -23,6 +24,11 @@ import { Route as PlansFinancialSetIdPlanIdRouteImport } from './routes/plans/fi
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HouseholdRoute = HouseholdRouteImport.update({
+  id: '/household',
+  path: '/household',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlansIndexRoute = PlansIndexRouteImport.update({
@@ -75,6 +81,7 @@ const PlansFinancialSetIdPlanIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/household': typeof HouseholdRoute
   '/roster/$teamId': typeof RosterTeamIdRoute
   '/plans/': typeof PlansIndexRoute
   '/roster/': typeof RosterIndexRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/household': typeof HouseholdRoute
   '/roster/$teamId': typeof RosterTeamIdRoute
   '/plans': typeof PlansIndexRoute
   '/roster': typeof RosterIndexRoute
@@ -100,6 +108,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/household': typeof HouseholdRoute
   '/roster/$teamId': typeof RosterTeamIdRoute
   '/plans/': typeof PlansIndexRoute
   '/roster/': typeof RosterIndexRoute
@@ -114,6 +123,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/household'
     | '/roster/$teamId'
     | '/plans/'
     | '/roster/'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/household'
     | '/roster/$teamId'
     | '/plans'
     | '/roster'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/household'
     | '/roster/$teamId'
     | '/plans/'
     | '/roster/'
@@ -151,6 +163,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  HouseholdRoute: typeof HouseholdRoute
   RosterTeamIdRoute: typeof RosterTeamIdRoute
   PlansIndexRoute: typeof PlansIndexRoute
   RosterIndexRoute: typeof RosterIndexRoute
@@ -169,6 +182,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/household': {
+      id: '/household'
+      path: '/household'
+      fullPath: '/household'
+      preLoaderRoute: typeof HouseholdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/plans/': {
@@ -239,6 +259,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  HouseholdRoute: HouseholdRoute,
   RosterTeamIdRoute: RosterTeamIdRoute,
   PlansIndexRoute: PlansIndexRoute,
   RosterIndexRoute: RosterIndexRoute,
