@@ -67,11 +67,14 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   plan's old address, `/plans/club/<set>`, sends people to its Financial Plan.
 - `src/directus/roster.ts` reads the team rosters. A team is a program area, such as Doublehanded, and its programs
   marked as a team, such as J-Pod and K-Pod, are its divisions; a program that isn't a team has no roster. It reads
-  each division's current or most recent offering, its confirmed registrations, the sailors' parents, their names and
-  schools, the email and phone Directus lets the person see, and each division's Google Group. Directus's rules decide
-  who appears, so the page filters only on ids, statuses, and dates, which platform's query guard allows, and joins
-  the rest in the browser (`src/model/roster.ts`). `/roster` lists the teams, and `/roster/<area id>` shows one, by
-  division or, with `?by=school`, by school. Only households on a team and Crew see them (`canSeeRosters`).
+  each division's current or most recent offering, its confirmed registrations, the sailors' guardians, their names
+  and schools, the email and phone Directus lets the person see, and each division's Google Group. Directus's rules
+  decide who appears, so the page filters only on ids, statuses, and dates, which platform's query guard allows, and
+  joins the rest in the browser (`src/model/roster.ts`). `/roster` shows one team at a time, opening on the person's
+  own: a table on a laptop and a card each on a phone, narrowed to one of its divisions or a school, with a search by
+  sailor's or guardian's name that looks across every team. All of it is kept in the address. `/roster/<area id>`,
+  where each team had its own page, sends people to `/roster?team=<area id>`. Only households on a team and Crew see
+  them (`canSeeRosters`).
 - `src/directus/household.ts` reads the signed-in person's household: the people Clubspot links through a shared
   sailor, which platform's sync groups (`people.household_id`). It finds their own record by
   `directus_user_id = $CURRENT_USER`, then their household with its `members`, since the query guard refuses a Team

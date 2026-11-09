@@ -20,11 +20,15 @@ export const rosterIds = {
   me: "00000000-0000-4000-8000-000000000721",
   child: "00000000-0000-4000-8000-000000000722",
   teammate: "00000000-0000-4000-8000-000000000723",
-  teammateParent: "00000000-0000-4000-8000-000000000724",
+  teammateGuardian: "00000000-0000-4000-8000-000000000724",
   adultSailor: "00000000-0000-4000-8000-000000000725",
   coParent: "00000000-0000-4000-8000-000000000726",
   household: "00000000-0000-4000-8000-000000000741",
 };
+
+// Mia has three guardians, so a roster shows how several read.
+const miasSecond = "00000000-0000-4000-8000-000000000727";
+const miasThird = "00000000-0000-4000-8000-000000000728";
 
 // Dates move with today, so the rosters stay current.
 const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
@@ -52,7 +56,7 @@ const program = (id: string, name: string, team: boolean, area: { id: string; na
   google_group_id: group ? { id: `${id}-group`, email: group, name } : null,
 });
 
-// More made-up sailors, each with one parent, so a team is long enough to see how it reads.
+// More made-up sailors, each with one guardian, so a team is long enough to see how it reads.
 const more = [
   ["Mia", "Cleat", "Lakeside Middle School", "K"],
   ["Noor", "Jibe", "Lakeside Middle School", "K"],
@@ -61,7 +65,7 @@ const more = [
   ["Ola", "Tack", null, "J"],
   ["Sol", "Rudder", "Harbor View Middle School", "K"],
 ] as const;
-const moreId = (i: number, parent = false) => `00000000-0000-4000-8000-0000000008${parent ? 5 : 0}${i}`;
+const moreId = (i: number, guardian = false) => `00000000-0000-4000-8000-0000000008${guardian ? 5 : 0}${i}`;
 
 export const rosterTables: Record<string, Record<string, unknown>[]> = {
   programs: [
@@ -92,8 +96,10 @@ export const rosterTables: Record<string, Record<string, unknown>[]> = {
   contacts: [
     { subject_id: rosterIds.child, contact_id: rosterIds.me, relationship_type: "guardian" },
     { subject_id: rosterIds.child, contact_id: rosterIds.coParent, relationship_type: "guardian" },
-    { subject_id: rosterIds.teammate, contact_id: rosterIds.teammateParent, relationship_type: "guardian" },
+    { subject_id: rosterIds.teammate, contact_id: rosterIds.teammateGuardian, relationship_type: "guardian" },
     ...more.map((_, i) => ({ subject_id: moreId(i), contact_id: moreId(i, true), relationship_type: "guardian" })),
+    { subject_id: moreId(0), contact_id: miasSecond, relationship_type: "guardian" },
+    { subject_id: moreId(0), contact_id: miasThird, relationship_type: "guardian" },
   ],
   people: [
     person(rosterIds.me, planner.first_name!, planner.last_name!, {
@@ -114,8 +120,10 @@ export const rosterTables: Record<string, Record<string, unknown>[]> = {
       date_of_birth: "2013-05-01",
       household_id: rosterIds.household,
     }),
+    person(miasSecond, "Jordan", "Cleat"),
+    person(miasThird, "Sam", "Rivera", { email: "sam.rivera@example.org", share_contact: true }),
     person(rosterIds.teammate, "Kai", "Halyard", { school: "Harbor View Middle School" }),
-    person(rosterIds.teammateParent, "Lee", "Halyard"),
+    person(rosterIds.teammateGuardian, "Lee", "Halyard"),
     person(rosterIds.adultSailor, "Ren", "Mainsheet", {
       email: "ren@example.org",
       phone: "+1 206 555 0177",

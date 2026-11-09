@@ -41,7 +41,7 @@ export interface PersonRow {
   /** Null when the person didn't share it, or the viewer can't see it. */
   email?: string | null;
   phone?: string | null;
-  /** Null when not on file, or the viewer can't see it, as for a parent. */
+  /** Null when not on file, or the viewer can't see it, as for a guardian. */
   school?: string | null;
 }
 
@@ -54,7 +54,7 @@ export interface RosterPerson {
 
 export interface RosterSailor extends RosterPerson {
   school: string | null;
-  parents: RosterPerson[];
+  guardians: RosterPerson[];
 }
 
 /** One team program, such as J-Pod, in its current or most recent offering. */
@@ -137,10 +137,10 @@ export function buildTeams(rows: {
 }): TeamRoster[] {
   const programs = new Map(rows.programs.map((p) => [p.id, p]));
   const people = new Map(rows.people.map((p) => [p.id, p]));
-  const parentsOf = new Map<string, string[]>();
+  const guardiansOf = new Map<string, string[]>();
   for (const link of rows.contacts) {
     if (link.relationship_type === "guardian") {
-      parentsOf.set(link.subject_id, [...new Set([...(parentsOf.get(link.subject_id) ?? []), link.contact_id])]);
+      guardiansOf.set(link.subject_id, [...new Set([...(guardiansOf.get(link.subject_id) ?? []), link.contact_id])]);
     }
   }
   const teams = new Map<string, TeamRoster>();
@@ -170,7 +170,7 @@ export function buildTeams(rows: {
         .map((id) => ({
           ...rosterPerson(id, people),
           school: people.get(id)?.school || null,
-          parents: (parentsOf.get(id) ?? []).map((parent) => rosterPerson(parent, people)).sort(byName),
+          guardians: (guardiansOf.get(id) ?? []).map((guardian) => rosterPerson(guardian, people)).sort(byName),
         }))
         .sort(byName),
     });
@@ -178,50 +178,99 @@ export function buildTeams(rows: {
   return [...teams.values()].map((team) => ({ ...team, divisions: team.divisions.sort(byName) })).sort(byName);
 }
 
-/** How many sailors a team has, counting one on two of its divisions once. */
-export function teamSize(team: TeamRoster): number {
-  return new Set(team.divisions.flatMap((d) => d.sailors.map((s) => s.id))).size;
+/** Whether `personId` is a sailor or a sailor's guardian on `team`. */
+export function onTeam(team: TeamRoster, personId: string): boolean {
+  return team.divisions.some((d) =>
+    d.sailors.some((s) => s.id === personId || s.guardians.some((p) => p.id === personId)),
+  );
 }
 
-export type GroupBy = "division" | "school";
-
-export interface TeamSailor extends RosterSailor {
-  /** The names of the team's divisions they're on. */
-  divisions: string[];
+/** A sailor on one team, with the team's divisions they're on. A sailor on two teams has an entry on each. */
+export interface RosterEntry extends RosterSailor {
+  teamId: string;
+  team: string;
+  divisions: { id: string; name: string }[];
 }
 
-export interface RosterGroup {
-  name: string;
-  sailors: TeamSailor[];
-}
-
-export const NO_SCHOOL = "School not on file";
-
-/** A team's sailors in groups: one for each division, or one for each school, with no school on file last. */
-export function groupTeam(team: TeamRoster, by: GroupBy): RosterGroup[] {
-  if (by === "division") {
-    return team.divisions.map((d) => ({
-      name: d.name,
-      sailors: d.sailors.map((s) => ({ ...s, divisions: [d.name] })),
-    }));
-  }
-  const sailors = new Map<string, TeamSailor>();
-  for (const division of team.divisions) {
-    for (const sailor of division.sailors) {
-      const held = sailors.get(sailor.id);
-      sailors.set(
-        sailor.id,
-        held ? { ...held, divisions: [...held.divisions, division.name] } : { ...sailor, divisions: [division.name] },
-      );
+/** Each team's sailors, once per team, by name, then team. */
+export function rosterEntries(teams: TeamRoster[]): RosterEntry[] {
+  const entries = new Map<string, RosterEntry>();
+  for (const team of teams) {
+    for (const division of team.divisions) {
+      for (const sailor of division.sailors) {
+        const key = `${team.id}:${sailor.id}`;
+        const held = entries.get(key);
+        const placed = { id: division.id, name: division.name };
+        entries.set(
+          key,
+          held
+            ? { ...held, divisions: [...held.divisions, placed] }
+            : { ...sailor, teamId: team.id, team: team.name, divisions: [placed] },
+        );
+      }
     }
   }
-  const schools = new Map<string | null, TeamSailor[]>();
-  for (const sailor of sailors.values()) {
-    schools.set(sailor.school, [...(schools.get(sailor.school) ?? []), sailor]);
-  }
-  return [...schools.entries()]
-    .sort(([a], [b]) => (a === null ? 1 : b === null ? -1 : a.localeCompare(b)))
-    .map(([school, members]) => ({ name: school ?? NO_SCHOOL, sailors: members.sort(byName) }));
+  return [...entries.values()].sort((a, b) => a.name.localeCompare(b.name) || a.team.localeCompare(b.team));
+}
+
+/** The team the roster opens on: the viewer's own, or the first they can see. */
+export function defaultTeam(teams: TeamRoster[], personId: string | null): string | undefined {
+  return (teams.find((t) => personId !== null && onTeam(t, personId)) ?? teams[0])?.id;
+}
+
+/** What the roster is narrowed to. Each but the team is unset for all. */
+export interface RosterFilters {
+  team?: string;
+  /** One of the team's divisions. */
+  division?: string;
+  /** A school's name, or `NO_SCHOOL` for sailors with none on file. */
+  school?: string;
+  /** Part of a sailor's or a guardian's name. */
+  q?: string;
+}
+
+export const NO_SCHOOL = "none";
+
+/** `filters` with `changes` made, leaving out any filter that's unset or empty. */
+export function withFilters(
+  filters: RosterFilters,
+  changes: Partial<Record<keyof RosterFilters, unknown>>,
+): RosterFilters {
+  const merged: Partial<Record<keyof RosterFilters, unknown>> = { ...filters, ...changes };
+  return Object.fromEntries(
+    Object.entries(merged).filter(([, value]) => typeof value === "string" && value.trim() !== ""),
+  ) as RosterFilters;
+}
+
+/** Lower case, with accents dropped, so "zoe" finds Zoë. */
+const fold = (text: string) => text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/\s+/g, " ").trim();
+
+/**
+ * The sailors that match every filter. A search finds a sailor by their own name or a guardian's, on every team, so it
+ * looks past the team and division.
+ */
+export function filterRoster(entries: RosterEntry[], filters: RosterFilters): RosterEntry[] {
+  const q = fold(filters.q ?? "");
+  return entries.filter(
+    (entry) =>
+      (q || !filters.team || entry.teamId === filters.team) &&
+      (q || !filters.division || entry.divisions.some((d) => d.id === filters.division)) &&
+      (!filters.school || (entry.school ?? NO_SCHOOL) === filters.school) &&
+      (!q || [entry, ...entry.guardians].some((person) => fold(person.name).includes(q))),
+  );
+}
+
+/** The schools on the roster, by name. */
+export function schoolsOn(entries: RosterEntry[]): string[] {
+  return [...new Set(entries.flatMap((e) => (e.school ? [e.school] : [])))].sort((a, b) => a.localeCompare(b));
+}
+
+/** The divisions a team or division filter picks, or every division when neither is set. */
+export function divisionsIn(teams: TeamRoster[], filters: RosterFilters): Division[] {
+  return teams
+    .filter((t) => !filters.team || t.id === filters.team)
+    .flatMap((t) => t.divisions)
+    .filter((d) => !filters.division || d.id === filters.division);
 }
 
 /** The group's page on Google Groups, from its address. */

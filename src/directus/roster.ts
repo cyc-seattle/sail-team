@@ -118,3 +118,10 @@ export const teamsQuery = (permissions: Permissions) =>
       return buildTeams({ programs, offerings: teamOfferings, registrations, contacts, people });
     },
   });
+
+/** The signed-in person's own record's id, found by their login, so the roster opens on their team. */
+export const myIdQuery = queryOptions({
+  queryKey: ["rosters", "me"],
+  queryFn: async (): Promise<string | null> =>
+    (await readAll<{ id: string }>("people", ["id"], { directus_user_id: { _eq: "$CURRENT_USER" } }))[0]?.id ?? null,
+});
