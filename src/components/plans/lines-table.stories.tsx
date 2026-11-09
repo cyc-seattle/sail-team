@@ -10,10 +10,10 @@ const youth = statement(lines.filter((l) => l.member === "youth"));
 const meta = {
   component: LinesTable,
   args: {
-    label: "Revenue and costs",
+    label: "Revenue and expenses",
     sections: [
       { title: "Revenue", categories: youth.revenue },
-      { title: "Costs", categories: youth.costs },
+      { title: "Expenses", categories: youth.expenses },
     ],
     measures,
     net: true,

@@ -71,7 +71,7 @@ export interface Section {
 
 /**
  * Line items, such as coach wages, under their category, which is their account, with a total for each category and
- * each section, in the view the Unit Switch chose. With revenue and costs as its sections, the footer shows the net.
+ * each section, in the view the Unit Switch chose. With revenue and expenses as its sections, the footer shows the net.
  */
 export function LinesTable({
   sections,

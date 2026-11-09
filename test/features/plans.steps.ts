@@ -220,7 +220,7 @@ When("I open Youth Racing's plan in {string}", async ({ page, club }, name: stri
 });
 
 const lineRow = (page: Page, name: RegExp) =>
-  page.getByRole("region", { name: "Revenue and costs" }).getByRole("row", { name });
+  page.getByRole("region", { name: "Revenue and expenses" }).getByRole("row", { name });
 
 Then("the offering shows $10,000 in, $3,000 of coaches' wages, and $1,000 of shared costs", async ({ page }) => {
   await expect(lineRow(page, /^Total revenue/)).toContainText("$10,000");

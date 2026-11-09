@@ -17,7 +17,7 @@ export interface PlanViewProps {
   lines: PlanLine[];
   /** For the Operations Plan: the shared costs it holds, each at its full amount. */
   shared?: PlanLine[] | undefined;
-  /** Each of its offerings' revenue, costs, and net. */
+  /** Each of its offerings' revenue, expenses, and net. */
   offerings: PnlRow[];
   /** Still loading when not given. */
   assumptions?: Assumptions | undefined;
@@ -36,9 +36,9 @@ function Section({ id, title, children }: { id: string; title: string; children:
   );
 }
 
-/** One plan in a Financial Plan: what to check, its assumptions, its revenue and costs by category, and its offerings. */
+/** One plan in a Financial Plan: what to check, its assumptions, its revenue and expenses by category, and its offerings. */
 export function PlanView({ note, warnings, lines, shared, offerings, assumptions, measures }: PlanViewProps) {
-  const { revenue, costs, capital } = statement(lines);
+  const { revenue, expenses, capital } = statement(lines);
   const programOf = new Map(assumptions?.offerings.map((o) => [o.key, o.program]));
   const programs = [...new Set(offerings.map((o) => programOf.get(o.pnl.key) ?? "Other"))].sort();
   const operations = assumptions?.operations;
@@ -64,12 +64,12 @@ export function PlanView({ note, warnings, lines, shared, offerings, assumptions
           </>
         )}
       </Section>
-      <Section id="revenue-and-costs" title="Revenue and costs">
+      <Section id="revenue-and-expenses" title="Revenue and expenses">
         <LinesTable
-          label="Revenue and costs"
+          label="Revenue and expenses"
           sections={[
             { title: "Revenue", categories: revenue },
-            { title: "Costs", categories: costs },
+            { title: "Expenses", categories: expenses },
           ]}
           measures={measures}
           net

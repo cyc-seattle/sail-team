@@ -33,13 +33,13 @@ describe("categories", () => {
 });
 
 describe("statement", () => {
-  it("splits revenue from costs", () => {
-    const { revenue, costs } = statement([
+  it("splits revenue from expenses", () => {
+    const { revenue, expenses } = statement([
       line("Revenue", "Tuition", 1_000, true),
       line("Coach wages", "Coach wages", 300),
     ]);
     expect(revenue.map((c) => c.name)).toEqual(["Tuition"]);
-    expect(costs.map((c) => c.name)).toEqual(["Coach wages"]);
+    expect(expenses.map((c) => c.name)).toEqual(["Coach wages"]);
   });
 });
 

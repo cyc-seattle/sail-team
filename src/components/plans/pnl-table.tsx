@@ -41,7 +41,7 @@ const total = (rows: PnlRow[]) =>
   );
 
 /**
- * Each offering's, product's, or program area's revenue, costs, and net, with the total in the footer, in the view
+ * Each offering's, product's, or program area's revenue, expenses, and net, with the total in the footer, in the view
  * the Unit Switch chose. Given groups, such as each program's offerings, it adds a subtotal for each.
  */
 export function PnlTable({
@@ -61,7 +61,7 @@ export function PnlTable({
         <TableRow>
           <TableHead>{label}</TableHead>
           <TableHead className="text-right">Revenue</TableHead>
-          <TableHead className="text-right">Costs</TableHead>
+          <TableHead className="text-right">Expenses</TableHead>
           <TableHead className="text-right">Net</TableHead>
         </TableRow>
       </TableHeader>
