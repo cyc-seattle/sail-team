@@ -27,7 +27,7 @@ export const Draft: Story = {
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Save" }));
     const dialog = within(await within(canvasElement.ownerDocument.body).findByRole("dialog"));
-    await expect(dialog.getByText(/never change/)).toBeVisible();
+    await waitFor(() => expect(dialog.getByText(/never change/)).toBeVisible());
     await userEvent.click(dialog.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(args.onMove).toHaveBeenCalledWith("saved"));
   },
