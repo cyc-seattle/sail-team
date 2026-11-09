@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { BotIcon, TriangleAlertIcon } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { TriangleAlertIcon } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDate } from "@/model/dates";
 import { Money } from "../money";
@@ -28,60 +29,33 @@ export interface PlanSummary {
   parent: { id: string; name: string } | null;
   /** Its note. For a draft from the planning agent, the agent's report on what it did and what's left. */
   note: string | null;
-  /** Whether the planning agent wrote it. */
-  from_agent: boolean;
   warnings: number;
   revenue_cents: number;
   expense_cents: number;
   net_cents: number;
 }
 
-function PlanLink({ plan }: { plan: PlanSummary }) {
-  return (
-    <Link to="/plans/financial/$setId" params={{ setId: plan.id }} className="font-medium text-link underline">
-      {plan.name}
-    </Link>
-  );
-}
+const ALL = "all";
+const statusOrder: Record<VersionState, number> = { active: 0, draft: 1, saved: 2 };
+const statusItems = [
+  { value: ALL, label: "Every status" },
+  { value: "active", label: "Active" },
+  { value: "draft", label: "Draft" },
+  { value: "saved", label: "Saved" },
+];
 
-function Warnings({ plan }: { plan: PlanSummary }) {
-  if (plan.warnings === 0) {
-    return null;
-  }
-  return (
-    <span className="inline-flex items-center gap-1 text-sm">
-      <TriangleAlertIcon aria-hidden className="size-4 text-warning" />
-      {plan.warnings === 1 ? "1 warning" : `${plan.warnings} warnings`}
-    </span>
-  );
-}
-
-function TopLine({ plan }: { plan: PlanSummary }) {
-  return (
-    <dl className="grid grid-cols-3 gap-x-card text-sm sm:text-right">
-      {(
-        [
-          ["Revenue", plan.revenue_cents, false],
-          ["Expenses", plan.expense_cents, false],
-          ["Net", plan.net_cents, true],
-        ] as const
-      ).map(([label, cents, colored]) => (
-        <div key={label} className="grid">
-          <dt className="text-xs text-muted-foreground">{label}</dt>
-          <dd>
-            <Money cents={cents} colored={colored} whole />
-          </dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
+/** Active first, then drafts by name, then saved ones, newest first. */
+const byStatus = (a: PlanSummary, b: PlanSummary) =>
+  statusOrder[a.status] - statusOrder[b.status] ||
+  (a.status === "draft" ? a.name.localeCompare(b.name) : (b.saved_at ?? "").localeCompare(a.saved_at ?? ""));
 
 /** Deleting a draft takes its plans and numbers with it, so it asks first. */
 function DeleteDraft({ plan }: { plan: PlanSummary }) {
   return (
     <Dialog>
-      <DialogTrigger render={<Button variant="destructive" />}>Delete</DialogTrigger>
+      <DialogTrigger render={<Button variant="destructive" size="sm" aria-label={`Delete ${plan.name}`} />}>
+        Delete
+      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Delete {plan.name}?</DialogTitle>
@@ -96,139 +70,138 @@ function DeleteDraft({ plan }: { plan: PlanSummary }) {
   );
 }
 
-/**
- * A draft: who wrote it, what it started from, its note, and its numbers. Keeping it means saving it, and the buttons to
- * compare, save or delete it sit on the right.
- */
-function DraftCard({ plan }: { plan: PlanSummary }) {
+function FilterSelect({
+  label,
+  value,
+  items,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  items: { value: string; label: string }[];
+  onChange: (value: string) => void;
+}) {
   return (
-    <article aria-label={plan.name} className="grid gap-3 rounded-lg bg-card p-card ring-1 ring-border">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="grid gap-1">
-          <span className="flex flex-wrap items-center gap-2">
-            <PlanLink plan={plan} />
-            <VersionBadge state={plan.status} />
-            {plan.from_agent && (
-              <Badge variant="outline">
-                <BotIcon aria-hidden />
-                Planning agent
-              </Badge>
-            )}
-          </span>
-          {plan.parent && (
-            <span className="text-xs text-muted-foreground">
-              Started from{" "}
-              <Link to="/plans/financial/$setId" params={{ setId: plan.parent.id }} className="text-link underline">
-                {plan.parent.name}
-              </Link>
-            </span>
-          )}
-        </div>
-        <TopLine plan={plan} />
-      </div>
-      {plan.note && <p className="max-w-3xl text-sm whitespace-pre-line">{plan.note}</p>}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Warnings plan={plan} />
-        <div className="ml-auto flex flex-wrap gap-2">
-          {plan.parent && (
-            <Button
-              variant="outline"
-              render={
-                <Link to="/plans/compare/$a/$b" params={{ a: plan.parent.id, b: plan.id }}>
-                  Compare with {plan.parent.name}
-                </Link>
-              }
-            />
-          )}
-          <Button>Save</Button>
-          <DeleteDraft plan={plan} />
-        </div>
-      </div>
-    </article>
+    <Select items={items} value={value} onValueChange={(v) => onChange(String(v ?? ALL))}>
+      <SelectTrigger aria-label={label} className="w-full data-[size=default]:h-tap md:w-44 md:data-[size=default]:h-8">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {items.map((item) => (
+          <SelectItem key={item.value} value={item.value}>
+            {item.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
 /**
- * Planning's first page: each year's active Financial Plan, its drafts, including any the planning agent wrote, and
- * the plans saved before, newest year first.
+ * Planning's first page: every Financial Plan in one table, narrowed by year and status, opening on the newest year.
+ * A draft, such as one the planning agent wrote, is kept by saving it or thrown away by deleting it, from its row.
  */
 export function PlanningPage({ plans }: { plans: PlanSummary[] }) {
   const years = [...new Set(plans.map((p) => p.year))].sort((a, b) => b - a);
+  const [year, setYear] = useState(String(years[0] ?? ALL));
+  const [status, setStatus] = useState(ALL);
+  const shown = plans
+    .filter((p) => (year === ALL || String(p.year) === year) && (status === ALL || p.status === status))
+    .sort((a, b) => b.year - a.year || byStatus(a, b));
   return (
     <main className="mx-auto grid max-w-6xl gap-6 p-card">
       <PageHeader title="Planning" />
-      <div className="grid gap-12">
-        {years.map((year) => {
-          const own = plans.filter((p) => p.year === year);
-          const active = own.find((p) => p.status === "active");
-          const drafts = own.filter((p) => p.status === "draft");
-          const saved = own
-            .filter((p) => p.status === "saved")
-            .sort((a, b) => (b.saved_at ?? "").localeCompare(a.saved_at ?? ""));
-          return (
-            <section key={year} aria-labelledby={`year-${year}`} className="grid gap-6">
-              <h2 id={`year-${year}`} className="text-xl font-semibold">
-                {year}
-              </h2>
-              {active && (
-                <article
-                  aria-label={active.name}
-                  className="flex flex-wrap items-start justify-between gap-3 rounded-lg bg-card p-card ring-1 ring-border"
-                >
-                  <div className="grid gap-1">
-                    <span className="flex flex-wrap items-center gap-2">
-                      <PlanLink plan={active} />
-                      <VersionBadge state="active" />
-                    </span>
-                    <span className="text-xs text-muted-foreground">Saved {formatDate(active.saved_at)}</span>
-                    <Warnings plan={active} />
-                  </div>
-                  <TopLine plan={active} />
-                </article>
-              )}
-              {drafts.length > 0 && (
-                <section aria-labelledby={`drafts-${year}`} className="grid gap-3">
-                  <h3 id={`drafts-${year}`} className="font-medium">
-                    Drafts
-                  </h3>
-                  {drafts.map((d) => (
-                    <DraftCard key={d.id} plan={d} />
-                  ))}
-                </section>
-              )}
-              {saved.length > 0 && (
-                <section aria-labelledby={`saved-${year}`} className="grid gap-3">
-                  <h3 id={`saved-${year}`} className="font-medium">
-                    Saved before
-                  </h3>
-                  <Table aria-labelledby={`saved-${year}`}>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Plan</TableHead>
-                        <TableHead>Saved</TableHead>
-                        <TableHead className="text-right">Net</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {saved.map((p) => (
-                        <TableRow key={p.id}>
-                          <TableCell>
-                            <PlanLink plan={p} />
-                          </TableCell>
-                          <TableCell className="tabular-nums">{formatDate(p.saved_at)}</TableCell>
-                          <TableCell className="text-right">
-                            <Money cents={p.net_cents} colored whole />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </section>
-              )}
-            </section>
-          );
-        })}
+      <div className="flex flex-col gap-2 md:flex-row">
+        <FilterSelect
+          label="Year"
+          value={year}
+          onChange={setYear}
+          items={[{ value: ALL, label: "Every year" }, ...years.map((y) => ({ value: String(y), label: String(y) }))]}
+        />
+        <FilterSelect label="Status" value={status} onChange={setStatus} items={statusItems} />
       </div>
+      {shown.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No plans match.</p>
+      ) : (
+        <Table aria-label="Financial Plans">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="sticky left-0 z-10 bg-background">Plan</TableHead>
+              <TableHead>Year</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Revenue</TableHead>
+              <TableHead className="text-right">Expenses</TableHead>
+              <TableHead className="text-right">Net</TableHead>
+              <TableHead>
+                <span className="sr-only">Actions</span>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {shown.map((p) => (
+              <TableRow key={p.id} className="align-top">
+                <TableCell className="sticky left-0 z-10 max-w-80 min-w-56 bg-background whitespace-normal">
+                  <div className="grid gap-1">
+                    <Link
+                      to="/plans/financial/$setId"
+                      params={{ setId: p.id }}
+                      className="font-medium text-link underline"
+                    >
+                      {p.name}
+                    </Link>
+                    <span className="text-xs text-muted-foreground">
+                      {p.saved_at ? `Saved ${formatDate(p.saved_at)}` : null}
+                      {p.saved_at && p.parent ? ". " : null}
+                      {p.parent && (
+                        <>
+                          Started from{" "}
+                          <Link
+                            to="/plans/financial/$setId"
+                            params={{ setId: p.parent.id }}
+                            className="text-link underline"
+                          >
+                            {p.parent.name}
+                          </Link>
+                        </>
+                      )}
+                    </span>
+                    {p.note && <p className="text-sm">{p.note}</p>}
+                    {p.warnings > 0 && (
+                      <span className="inline-flex items-center gap-1 text-sm">
+                        <TriangleAlertIcon aria-hidden className="size-4 text-warning" />
+                        {p.warnings === 1 ? "1 warning" : `${p.warnings} warnings`}
+                      </span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="tabular-nums">{p.year}</TableCell>
+                <TableCell>
+                  <VersionBadge state={p.status} />
+                </TableCell>
+                <TableCell className="text-right">
+                  <Money cents={p.revenue_cents} whole />
+                </TableCell>
+                <TableCell className="text-right">
+                  <Money cents={p.expense_cents} whole />
+                </TableCell>
+                <TableCell className="text-right">
+                  <Money cents={p.net_cents} colored whole />
+                </TableCell>
+                <TableCell>
+                  {p.status === "draft" && (
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" aria-label={`Save ${p.name}`}>
+                        Save
+                      </Button>
+                      <DeleteDraft plan={p} />
+                    </div>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
     </main>
   );
 }

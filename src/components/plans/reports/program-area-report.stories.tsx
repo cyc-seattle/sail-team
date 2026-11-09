@@ -37,10 +37,10 @@ export const Doublehanded: Story = {
   },
 };
 
-/** The settings and rules open from the top of the page. */
-export const SettingsOpen: Story = {
+/** The area's assumptions open from the top of the page. */
+export const AssumptionsOpen: Story = {
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByText("Settings and rules", { selector: "h2" }));
+    await userEvent.click(canvas.getByText("Assumptions", { selector: "h2" }));
     await expect(canvas.getByRole("list", { name: "J-Pod rules" })).toBeVisible();
   },
 };

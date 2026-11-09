@@ -190,38 +190,13 @@ export function enrollment(offerings: ReportOffering[], by: EnrollmentBy): Enrol
   });
 }
 
-/** What the engine flags in an allocation: more than the club has, more sailors than it can take, or no staff. */
-export type WarningKind = "over_inventory" | "over_capacity" | "unallocated";
-
-export const warningLabels: Record<WarningKind, string> = {
-  over_inventory: "Over inventory",
-  over_capacity: "Over capacity",
-  unallocated: "No staff",
-};
-
 /** One of the engine's warnings, on a date, in a program area. */
 export interface PlanWarning {
   key: string;
   /** The program area's report key. */
   area: string;
   date: string;
-  kind: WarningKind;
   message: string;
-}
-
-/** Each program area's warnings counted by kind, for the areas that have any, most warnings first. */
-export function warningCounts(warnings: PlanWarning[]): { area: string; counts: Record<WarningKind, number> }[] {
-  const areas = [...new Set(warnings.map((w) => w.area))];
-  return areas
-    .map((area) => {
-      const own = warnings.filter((w) => w.area === area);
-      const counts = Object.fromEntries(
-        (Object.keys(warningLabels) as WarningKind[]).map((k) => [k, own.filter((w) => w.kind === k).length]),
-      ) as Record<WarningKind, number>;
-      return { area, counts, total: own.length };
-    })
-    .sort((a, b) => b.total - a.total)
-    .map(({ area, counts }) => ({ area, counts }));
 }
 
 /** A rules field's text as the list it's read as: one rule a line, blank lines dropped. */

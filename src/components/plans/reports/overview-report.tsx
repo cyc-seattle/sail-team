@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowDownIcon, ArrowUpIcon, TriangleAlertIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import { Fragment, useState, type ReactNode } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   defaultSort,
@@ -12,8 +11,6 @@ import {
   programFees,
   sortRows,
   totalOf,
-  warningCounts,
-  warningLabels,
   type EnrollmentBy,
   type EnrollmentRow,
   type OverviewRow,
@@ -26,10 +23,10 @@ import { cn } from "@/lib/utils";
 import { Money } from "../money";
 import { ReportSection } from "./report-page";
 import { SegmentedControl } from "./segmented-control";
+import { WarningsSection } from "./warnings-section";
 
 /** The name column stays put while the numbers scroll sideways on a phone. */
 const pinned = "sticky left-0 z-10 bg-background";
-const pinnedOnCard = "sticky left-0 z-10 bg-card";
 const count = (n: number) => n.toLocaleString("en-US");
 
 function AreaLink({ setId, row }: { setId: string; row: OverviewRow }) {
@@ -116,51 +113,9 @@ export interface OverviewReportProps {
   warnings: PlanWarning[];
 }
 
-/** How many warnings each program area has, by kind, each area linking to its page, where they're listed by date. */
-function WarningsCard({ setId, rows, warnings }: { setId: string; rows: OverviewRow[]; warnings: PlanWarning[] }) {
-  const kinds = Object.keys(warningLabels) as (keyof typeof warningLabels)[];
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <TriangleAlertIcon aria-hidden className="size-4 text-warning" />
-          <h2 id="warnings">{warnings.length === 1 ? "1 warning" : `${warnings.length} warnings`}</h2>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table aria-labelledby="warnings">
-          <TableHeader>
-            <TableRow>
-              <TableHead className={pinnedOnCard}>Program area</TableHead>
-              {kinds.map((k) => (
-                <TableHead key={k} className="text-right">
-                  {warningLabels[k]}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {warningCounts(warnings).map(({ area, counts }) => {
-              const row = rows.find((r) => r.report === area);
-              return (
-                <TableRow key={area}>
-                  <TableCell className={pinnedOnCard}>{row ? <AreaLink setId={setId} row={row} /> : area}</TableCell>
-                  {kinds.map((k) => (
-                    <Count key={k}>{counts[k] || ""}</Count>
-                  ))}
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
-}
-
 /**
- * A Financial Plan's year by program area: revenue to net, sortable, then the engine's warnings, each program's fees,
- * and enrollment by session or by program. Program areas keep the first table's order all the way down.
+ * A Financial Plan's year by program area: the engine's warnings, closed at first, then revenue to net, sortable,
+ * each program's fees, and enrollment by session or by program. Program areas keep the first table's order all the way down.
  */
 export function OverviewReport({ setId, rows, offerings, warnings }: OverviewReportProps) {
   const [sort, setSort] = useState<Sort>(defaultSort);
@@ -181,6 +136,12 @@ export function OverviewReport({ setId, rows, offerings, warnings }: OverviewRep
   };
   return (
     <>
+      <WarningsSection
+        warnings={warnings}
+        setId={setId}
+        areas={Object.fromEntries(rows.map((r) => [r.report, r.name]))}
+      />
+
       <ReportSection id="revenue-and-expenses" title="Revenue and expenses">
         <Table aria-label="Revenue and expenses">
           <TableHeader>
@@ -231,8 +192,6 @@ export function OverviewReport({ setId, rows, offerings, warnings }: OverviewRep
           </TableFooter>
         </Table>
       </ReportSection>
-
-      {warnings.length > 0 && <WarningsCard setId={setId} rows={rows} warnings={warnings} />}
 
       <ReportSection id="program-fees" title="Program fees">
         <Table aria-label="Program fees">

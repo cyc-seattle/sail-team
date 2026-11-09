@@ -66,11 +66,11 @@ export const Summer: Story = {
   },
 };
 
-/** Settings and rules open from the top of a program area's report. */
-export const SummerSettingsOpen: Story = {
+/** A program area's assumptions open from the top of its report. */
+export const SummerAssumptionsOpen: Story = {
   args: { ...Summer.args },
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByText("Settings and rules", { selector: "h2" }));
+    await userEvent.click(canvas.getByText("Assumptions", { selector: "h2" }));
     await expect(canvas.getByRole("list", { name: "Guppies rules" })).toBeVisible();
   },
 };

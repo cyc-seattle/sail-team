@@ -7,7 +7,6 @@ import {
   numberedOfferings,
   programFees,
   rulesOf,
-  warningCounts,
   sessionGrid,
   sortRows,
   type OverviewRow,
@@ -128,24 +127,6 @@ describe("enrollment", () => {
     expect(enrollment(offerings, "program").map((r) => [r.name, r.sailors])).toEqual([
       ["J-Pod", 18],
       ["K-Pod", 12],
-    ]);
-  });
-});
-
-describe("warningCounts", () => {
-  it("counts each area's warnings by kind, the area with most first", () => {
-    const w = (area: string, kind: "over_inventory" | "over_capacity" | "unallocated") => ({
-      key: `${area}-${kind}`,
-      area,
-      kind,
-      date: "2027-07-13",
-      message: "",
-    });
-    expect(
-      warningCounts([w("doublehanded", "unallocated"), w("summer", "over_inventory"), w("summer", "over_capacity")]),
-    ).toEqual([
-      { area: "summer", counts: { over_inventory: 1, over_capacity: 1, unallocated: 0 } },
-      { area: "doublehanded", counts: { over_inventory: 0, over_capacity: 0, unallocated: 1 } },
     ]);
   });
 });

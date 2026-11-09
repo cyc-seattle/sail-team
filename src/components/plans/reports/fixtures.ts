@@ -273,28 +273,24 @@ export const warnings: PlanWarning[] = [
     key: "w1",
     area: "summer",
     date: "2027-07-12",
-    kind: "over_inventory",
     message: "14 Sailqubes allocated, 12 available (Guppies 9, Opti Camp 5).",
   },
   {
     key: "w2",
     area: "summer",
     date: "2027-07-13",
-    kind: "over_capacity",
     message: "Guppies: 14 sailors, but the allocation takes 10 (1 Level 1 Instructor at 10 per coach).",
   },
   {
     key: "w3",
     area: "summer",
     date: "2027-07-19",
-    kind: "over_inventory",
     message: "7 RIBs allocated, 6 available.",
   },
   {
     key: "w4",
     area: "doublehanded",
     date: "2027-08-02",
-    kind: "unallocated",
     message: "J-Pod practice has no staff.",
   },
 ];
@@ -304,7 +300,6 @@ const planSummary = (fields: Partial<PlanSummary> & Pick<PlanSummary, "id" | "na
   saved_at: null,
   parent: null,
   note: null,
-  from_agent: false,
   warnings: 0,
   revenue_cents: 49_900_000,
   expense_cents: 44_600_000,
@@ -312,14 +307,13 @@ const planSummary = (fields: Partial<PlanSummary> & Pick<PlanSummary, "id" | "na
   ...fields,
 });
 
-/** Each year's Financial Plans: the active one, drafts including one from the planning agent, and older saved ones. */
+/** Two years of Financial Plans: each year's active one, drafts including one from the planning agent, and older saved ones. */
 export const planningPlans: PlanSummary[] = [
   planSummary({ id: "budget", name: "Budget", status: "active", saved_at: "2027-03-10T18:00:00Z", warnings: 2 }),
   planSummary({
     id: "agent",
     name: "2027 allocations, Nov 9",
     status: "draft",
-    from_agent: true,
     parent: { id: "budget", name: "Budget" },
     warnings: 4,
     expense_cents: 44_100_000,

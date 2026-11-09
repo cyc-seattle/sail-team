@@ -1,4 +1,3 @@
-import { ChevronRightIcon } from "lucide-react";
 import { Fragment, type ReactNode } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -10,12 +9,13 @@ import {
 } from "@/model/reports";
 import { cn } from "@/lib/utils";
 import { Money } from "../money";
+import { CollapsibleSection } from "./collapsible-section";
 import { OfferingName } from "./offering-name";
 import { ReportSection } from "./report-page";
 import { RulesList } from "./rules-list";
 import { SessionGrid } from "./session-grid";
 import { StatementTable } from "./statement-table";
-import { WarningsTable } from "./warnings-table";
+import { WarningsSection } from "./warnings-section";
 
 const pinned = "sticky left-0 z-10 bg-background";
 const count = (n: number) => n.toLocaleString("en-US");
@@ -36,7 +36,7 @@ function Amount({ cents, whole = false }: { cents: number; whole?: boolean }) {
  * The area's rules, then each program's settings and rules, closed until someone opens them. The planning agent reads
  * the rules; the engine checks only the settings.
  */
-function SettingsAndRules({
+function AreaAssumptions({
   area,
   rules,
   programs,
@@ -46,12 +46,8 @@ function SettingsAndRules({
   programs: ProgramSettings[];
 }) {
   return (
-    <details className="group">
-      <summary className="flex min-h-tap cursor-pointer list-none items-center gap-1 [&::-webkit-details-marker]:hidden">
-        <ChevronRightIcon aria-hidden className="size-4 transition-transform group-open:rotate-90" />
-        <h2 className="text-lg font-medium">Settings and rules</h2>
-      </summary>
-      <div className="mt-3 grid max-w-3xl gap-6">
+    <CollapsibleSection title="Assumptions">
+      <div className="grid max-w-3xl gap-6">
         <section aria-labelledby="area-rules" className="grid gap-2">
           <h3 id="area-rules" className="text-sm font-medium">
             {area}
@@ -71,7 +67,7 @@ function SettingsAndRules({
           </section>
         ))}
       </div>
-    </details>
+    </CollapsibleSection>
   );
 }
 
@@ -89,20 +85,17 @@ export interface ProgramAreaReportProps {
 }
 
 /**
- * One program area: its settings and rules, closed at first, its warnings by date, its revenue and expenses by account, then its sailors by
+ * One program area: its warnings and its assumptions, both closed at first, its revenue and expenses by account, then its sailors by
  * session and each offering's fee and size, by program and start date, the figures used to compare with other centers.
  */
 export function ProgramAreaReport({ area, rules, warnings, statement, programs, offerings }: ProgramAreaReportProps) {
   const groups = numberedOfferings(offerings);
   return (
     <>
-      <SettingsAndRules area={area} rules={rules} programs={programs} />
-
-      {warnings.length > 0 && (
-        <ReportSection id="warnings" title="Warnings">
-          <WarningsTable warnings={warnings} />
-        </ReportSection>
-      )}
+      <div className="grid gap-2">
+        <WarningsSection warnings={warnings} />
+        <AreaAssumptions area={area} rules={rules} programs={programs} />
+      </div>
 
       <ReportSection id="revenue-and-expenses" title="Revenue and expenses">
         <StatementTable
@@ -115,7 +108,7 @@ export function ProgramAreaReport({ area, rules, warnings, statement, programs, 
         />
       </ReportSection>
 
-      <ReportSection id="sessions" title="Sailors by session">
+      <ReportSection id="enrollment" title="Enrollment">
         <SessionGrid offerings={offerings} />
       </ReportSection>
 
