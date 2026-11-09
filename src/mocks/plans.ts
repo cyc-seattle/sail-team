@@ -96,7 +96,8 @@ const offering = (offeringId: string, version: string, key: string, name: string
   id: offeringId,
   version_id: version,
   key,
-  product_id: camp,
+  // Expanded when a request asks for its name, as the assumptions do.
+  product_id: { id: camp, name: "Beginner camp" },
   catalog_offering_id: null,
   name,
   season_term: null,
@@ -219,6 +220,57 @@ export const tables: Record<string, Record<string, unknown>[]> = {
   plan_offerings: [
     offering(id(301), ids.youthTwo, id(311), "Beginner camp, week 1", 100_000),
     offering(id(302), ids.youthThree, id(311), "Beginner camp, week 1", 90_000),
+    { ...offering(id(303), ids.youthSaved, id(311), "Beginner camp, week 1", 100_000), coach_level_key: id(811) },
+  ],
+  // Budget's Operations Plan's rates. The drafts have none, so their numbers stay simple.
+  plan_rates: [
+    {
+      id: id(801),
+      version_id: ids.opsSaved,
+      key: id(802),
+      payroll_tax_rate: "0.1",
+      lodging_per_night_cents: 15_000,
+      mileage_rate_cents: 70,
+      rib_resource_kind_id: null,
+    },
+  ],
+  plan_staff_levels: [
+    {
+      id: id(810),
+      version_id: ids.opsSaved,
+      key: id(811),
+      name: "Lead coach",
+      pay_type: "hourly",
+      hourly_rate_cents: 3_000,
+      qualifications: null,
+    },
+  ],
+  plan_salaried_positions: [
+    {
+      id: id(820),
+      version_id: ids.opsSaved,
+      key: id(821),
+      name: "Executive Director",
+      annual_salary_cents: 9_000_000,
+      paid_hours_per_year: 2_080,
+      qualifications: null,
+      ga_share: "0.6",
+      remainder_pool_id: null,
+      form_990_line: null,
+    },
+  ],
+  plan_revenue_charges: [
+    {
+      id: id(830),
+      version_id: ids.opsSaved,
+      key: id(831),
+      name: "Card fees",
+      rate: "0.03",
+      product_kinds: ["program"],
+      account_id: tuition,
+      excluded_from_mtdc: false,
+      note: null,
+    },
   ],
   plan_pools: [officeTwo.pool, officeThree.pool],
   plan_budget_lines: [officeTwo.line, officeThree.line, supplies(ids.youthTwo, 1), supplies(ids.youthThree, 2)],
@@ -310,7 +362,7 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       cost_center_name: "Beginner camp, week 1",
       amount_cents: 1_000_000,
       function: "program",
-      account_id: { id: tuition, type: "revenue" },
+      account_id: { id: tuition, type: "revenue", number: "4000", name: "Tuition" },
     },
     {
       version_set_id: budget,
@@ -320,7 +372,7 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       cost_center_name: "Beginner camp, week 1",
       amount_cents: 300_000,
       function: "program",
-      account_id: { id: office, type: "expense" },
+      account_id: { id: office, type: "expense", number: "7000", name: "Office" },
     },
     {
       version_set_id: budget,
@@ -330,7 +382,7 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       cost_center_name: "Beginner camp, week 1",
       amount_cents: 300_000,
       function: "management",
-      account_id: { id: office, type: "expense" },
+      account_id: { id: office, type: "expense", number: "7000", name: "Office" },
     },
     {
       version_set_id: budget,
@@ -340,7 +392,7 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       cost_center_name: "Organization",
       amount_cents: 200_000,
       function: "management",
-      account_id: { id: office, type: "expense" },
+      account_id: { id: office, type: "expense", number: "7000", name: "Office" },
     },
     // Fundraising and capital, which the top-line numbers leave out.
     {
@@ -351,7 +403,7 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       cost_center_name: "Organization",
       amount_cents: 50_000,
       function: "fundraising",
-      account_id: { id: tuition, type: "revenue" },
+      account_id: { id: tuition, type: "revenue", number: "4000", name: "Tuition" },
     },
     {
       version_set_id: budget,
@@ -361,7 +413,7 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       cost_center_name: "Organization",
       amount_cents: 80_000,
       function: null,
-      account_id: { id: office, type: "asset" },
+      account_id: { id: office, type: "asset", number: "1500", name: "Equipment" },
     },
   ],
   plan_result_warnings: [

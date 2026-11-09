@@ -101,7 +101,7 @@ Feature: Seeing the Financial Plans
       Then its offering takes in $10,000
       And the page says the draft's numbers are calculated now, and will change as the plan does
 
-  Rule: The P&L shows each offering's totals, per day, and per sailor-day
+  Rule: The P&L shows each offering's totals, per day, and per sailor-day, and remembers which
 
     Scenario: An offering's P&L, three ways
       Given I'm a planner who can read plans
@@ -111,6 +111,16 @@ Feature: Seeing the Financial Plans
       Then the offering's net is $4,000
       And its net per day is $400
       And its net per sailor-day is $40
+      And it's still per sailor-day when I come back to the page
+
+  Rule: A plan shows the assumptions its numbers come from
+
+    Scenario: An offering's price and sailors
+      Given I'm a planner who can read plans
+      And a draft Financial Plan whose Youth Racing plan has one offering of 10 sailors at $1,000 each
+      And I've signed in
+      When I open Youth Racing's plan in the draft
+      Then its assumptions show the offering's 10 sailors at $1,000 each
 
   Rule: The planning engine's warnings show in words a planner understands
 

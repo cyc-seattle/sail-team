@@ -1,8 +1,8 @@
 import type { Pnl } from "@cyc-seattle/platform/planning";
-import { useState } from "react";
+import { Fragment } from "react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { inView, sumPnl, viewLabels, type PnlView } from "@/model/pnl-view";
+import { usePnlView } from "@/hooks/use-pnl-view";
+import { inView, sumPnl, type PnlView } from "@/model/pnl-view";
 import { Money } from "./money";
 
 export interface PnlRow {
@@ -22,78 +22,87 @@ function Amounts({ pnl, view }: { pnl: Pnl; view: PnlView }) {
   return (
     <>
       <TableCell className="text-right">
-        <Money cents={totals.revenue_cents} />
+        <Money cents={totals.revenue_cents} whole={view === "year"} />
       </TableCell>
       <TableCell className="text-right">
-        <Money cents={totals.expense_cents} />
+        <Money cents={totals.expense_cents} whole={view === "year"} />
       </TableCell>
       <TableCell className="text-right">
-        <Money cents={totals.net_cents} colored />
+        <Money cents={totals.net_cents} colored whole={view === "year"} />
       </TableCell>
     </>
   );
 }
 
+const total = (rows: PnlRow[]) =>
+  sumPnl(
+    rows.map((r) => r.pnl),
+    "total",
+  );
+
 /**
- * Each offering's, product's, or program area's revenue, expenses, and net, with the total in the footer. The toggle
- * shows them for the year, per day, or per sailor-day.
+ * Each offering's, product's, or program area's revenue, expenses, and net, with the total in the footer, in the view
+ * the Unit Switch chose. Given groups, such as each program's offerings, it adds a subtotal for each.
  */
-export function PnlTable({ rows, label }: { rows: PnlRow[]; label: string }) {
-  const [view, setView] = useState<PnlView>("year");
+export function PnlTable({
+  rows,
+  label,
+  groups,
+}: {
+  rows: PnlRow[];
+  label: string;
+  groups?: { name: string; rows: PnlRow[] }[];
+}) {
+  const [view] = usePnlView();
+  const grouped = groups && groups.length > 1;
   return (
-    <div className="grid gap-2">
-      <ToggleGroup
-        value={[view]}
-        onValueChange={(values: string[]) => {
-          const next = values[0] as PnlView | undefined;
-          // Pressing the chosen view again would leave none chosen, so it stays.
-          if (next) {
-            setView(next);
-          }
-        }}
-        variant="outline"
-        size="sm"
-        aria-label="Show amounts"
-        className="justify-self-end"
-      >
-        {(Object.keys(viewLabels) as PnlView[]).map((v) => (
-          <ToggleGroupItem key={v} value={v}>
-            {viewLabels[v]}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{label}</TableHead>
-            <TableHead className="text-right">Revenue</TableHead>
-            <TableHead className="text-right">Expenses</TableHead>
-            <TableHead className="text-right">Net</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((row) => (
-            <TableRow key={row.pnl.key}>
-              <TableCell>{row.name}</TableCell>
-              <Amounts pnl={row.pnl} view={view} />
-            </TableRow>
-          ))}
-        </TableBody>
-        {rows.length > 1 && (
-          <TableFooter>
-            <TableRow>
-              <TableCell>Total</TableCell>
-              <Amounts
-                pnl={sumPnl(
-                  rows.map((r) => r.pnl),
-                  "total",
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>{label}</TableHead>
+          <TableHead className="text-right">Revenue</TableHead>
+          <TableHead className="text-right">Expenses</TableHead>
+          <TableHead className="text-right">Net</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {grouped
+          ? groups.map((group) => (
+              <Fragment key={group.name}>
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={4} className="pt-4 font-medium">
+                    {group.name}
+                  </TableCell>
+                </TableRow>
+                {group.rows.map((row) => (
+                  <TableRow key={row.pnl.key}>
+                    <TableCell className="pl-6 whitespace-normal">{row.name}</TableCell>
+                    <Amounts pnl={row.pnl} view={view} />
+                  </TableRow>
+                ))}
+                {group.rows.length > 1 && (
+                  <TableRow className="font-medium">
+                    <TableCell className="pl-6 whitespace-normal">{group.name} total</TableCell>
+                    <Amounts pnl={total(group.rows)} view={view} />
+                  </TableRow>
                 )}
-                view={view}
-              />
-            </TableRow>
-          </TableFooter>
-        )}
-      </Table>
-    </div>
+              </Fragment>
+            ))
+          : rows.map((row) => (
+              <TableRow key={row.pnl.key}>
+                <TableCell className="whitespace-normal">{row.name}</TableCell>
+                <Amounts pnl={row.pnl} view={view} />
+              </TableRow>
+            ))}
+      </TableBody>
+      {rows.length > 1 && (
+        <TableFooter>
+          <TableRow>
+            <TableCell>Total</TableCell>
+            <Amounts pnl={total(rows)} view={view} />
+          </TableRow>
+        </TableFooter>
+      )}
+    </Table>
   );
 }

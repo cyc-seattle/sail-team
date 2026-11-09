@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { costRecovery, type SummaryRow } from "@/model/financial-plans";
-import { Money } from "./money";
+import { ViewedMoney } from "./viewed-money";
 
 const percent = (n: number | null) => (n === null ? "" : `${Math.round(n * 100)}%`);
 
@@ -13,16 +13,16 @@ function Cells({ row }: { row: SummaryRow }) {
   return (
     <>
       <TableCell className="text-right">
-        <Money cents={t.revenue_cents} whole />
+        <ViewedMoney cents={t.revenue_cents} measures={row.measures} />
       </TableCell>
       <TableCell className="text-right">
-        <Money cents={t.expense_cents} whole />
+        <ViewedMoney cents={t.expense_cents} measures={row.measures} />
       </TableCell>
       <TableCell className="text-right">
-        <Money cents={t.gross_cents} colored whole />
+        <ViewedMoney cents={t.gross_cents} measures={row.measures} colored />
       </TableCell>
       <TableCell className="text-right">
-        <Money cents={t.net_cents} colored whole />
+        <ViewedMoney cents={t.net_cents} measures={row.measures} colored />
       </TableCell>
       <TableCell className="text-right tabular-nums">{percent(costRecovery(t))}</TableCell>
     </>
