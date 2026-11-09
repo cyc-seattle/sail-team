@@ -4,6 +4,7 @@ import {
   netOf,
   nextSort,
   numberedOfferings,
+  sessionGrid,
   sortRows,
   type OverviewRow,
   type ReportOffering,
@@ -50,22 +51,20 @@ describe("netOf", () => {
   });
 });
 
-describe("numberedOfferings", () => {
-  const offering = (program: string, season: string, starts_on: string): ReportOffering => ({
-    key: `${program} ${season}`,
-    program,
-    season,
-    starts_on,
-    ends_on: starts_on,
-    price_cents: 0,
-    target: 0,
-    max: 0,
-    days: 0,
-    revenue_cents: 0,
-    direct_cents: 0,
-    indirect_cents: 0,
-  });
+const offering = (program: string, session: string, starts_on: string): ReportOffering => ({
+  key: `${program} ${session}`,
+  program,
+  session,
+  starts_on,
+  ends_on: starts_on,
+  fee_cents: 0,
+  estimated: 0,
+  max: 0,
+  days: 0,
+  hours: 0,
+});
 
+describe("numberedOfferings", () => {
   it("numbers each program's offerings by start date, programs in the order they start", () => {
     const groups = numberedOfferings([
       offering("K-Pod", "Fall", "2027-09-08"),
@@ -73,9 +72,24 @@ describe("numberedOfferings", () => {
       offering("K-Pod", "Spring", "2027-03-02"),
       offering("J-Pod", "Spring", "2027-03-01"),
     ]);
-    expect(groups.map((g) => [g.program, g.offerings.map((o) => `${o.label} ${o.season}`)])).toEqual([
+    expect(groups.map((g) => [g.program, g.offerings.map((o) => `${o.label} ${o.session}`)])).toEqual([
       ["J-Pod", ["J-Pod 1 Spring", "J-Pod 2 Fall"]],
       ["K-Pod", ["K-Pod 1 Spring", "K-Pod 2 Fall"]],
+    ]);
+  });
+});
+
+describe("sessionGrid", () => {
+  it("puts sessions in the order they start, with a gap where a program skips one", () => {
+    const { sessions, rows } = sessionGrid([
+      offering("Race Camp", "Week 2", "2027-06-28"),
+      offering("Guppies", "Week 2", "2027-06-28"),
+      offering("Guppies", "Week 1", "2027-06-21"),
+    ]);
+    expect(sessions).toEqual(["Week 1", "Week 2"]);
+    expect(rows.map((r) => [r.program, r.cells.map((c) => c?.label ?? null)])).toEqual([
+      ["Guppies", ["Guppies 1", "Guppies 2"]],
+      ["Race Camp", [null, "Race Camp 1"]],
     ]);
   });
 });

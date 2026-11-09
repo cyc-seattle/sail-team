@@ -8,7 +8,7 @@ const meta = {
     label: "Revenue and expenses",
     sections: [
       { title: "Revenue", accounts: doublehandedStatement.revenue },
-      { title: "Direct costs", accounts: doublehandedStatement.direct, leaves: "Contribution" },
+      { title: "Direct costs", accounts: doublehandedStatement.direct, leaves: "Gross" },
       { title: "Indirect costs", accounts: doublehandedStatement.indirect, leaves: "Net" },
     ],
   },
@@ -16,7 +16,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Revenue, less direct costs, is the contribution; less indirect costs, the net. */
+/** Revenue, less direct costs, is the gross; less indirect costs, the net. */
 export const ProgramArea: Story = {};
 
 export const RevenueAndCosts: Story = {

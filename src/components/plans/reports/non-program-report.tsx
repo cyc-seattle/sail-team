@@ -25,14 +25,15 @@ export interface SharedCost {
   /** The pool it's spread from: G&A, program admin, or space. */
   pool: string;
   total_cents: number;
-  to_programs_cents: number;
+  /** The part spread over the programs' offerings. */
+  allocated_cents: number;
 }
 
 const add = <T,>(rows: T[], of: (row: T) => number) => rows.reduce((total, r) => total + of(r), 0);
 
 /**
- * What CSC sells outside the programs, which carries no shared costs, then each shared cost by account: its full amount, how much the programs carry,
- * and what's left that no program pays.
+ * What CSC sells outside the programs, which carries no shared costs, then each shared cost by account: the part
+ * allocated to the programs, the part left unallocated, and its total.
  */
 export function NonProgramReport({ products, shared }: { products: Product[]; shared: SharedCost[] }) {
   const total = {
@@ -83,9 +84,9 @@ export function NonProgramReport({ products, shared }: { products: Product[]; sh
               <TableHead>
                 <span className="sr-only">Name</span>
               </TableHead>
+              <TableHead className="text-right">Allocated</TableHead>
+              <TableHead className="text-right">Unallocated</TableHead>
               <TableHead className="text-right">Total</TableHead>
-              <TableHead className="text-right">To programs</TableHead>
-              <TableHead className="text-right">No program pays</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -102,9 +103,9 @@ export function NonProgramReport({ products, shared }: { products: Product[]; sh
                     <TableRow key={c.number}>
                       <TableCell className="text-muted-foreground tabular-nums">{c.number}</TableCell>
                       <TableCell className="whitespace-normal">{c.name}</TableCell>
+                      <Amount cents={c.allocated_cents} />
+                      <Amount cents={c.total_cents - c.allocated_cents} />
                       <Amount cents={c.total_cents} />
-                      <Amount cents={c.to_programs_cents} />
-                      <Amount cents={c.total_cents - c.to_programs_cents} />
                     </TableRow>
                   ))}
                 </Fragment>
@@ -115,9 +116,9 @@ export function NonProgramReport({ products, shared }: { products: Product[]; sh
             <TableRow>
               <TableCell />
               <TableCell>Total</TableCell>
+              <Amount cents={add(shared, (c) => c.allocated_cents)} />
+              <Amount cents={add(shared, (c) => c.total_cents - c.allocated_cents)} />
               <Amount cents={add(shared, (c) => c.total_cents)} />
-              <Amount cents={add(shared, (c) => c.to_programs_cents)} />
-              <Amount cents={add(shared, (c) => c.total_cents - c.to_programs_cents)} />
             </TableRow>
           </TableFooter>
         </Table>

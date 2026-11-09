@@ -6,7 +6,7 @@ import { Money } from "../money";
 export interface StatementSection {
   title: string;
   accounts: AccountAmount[];
-  /** For a cost section, the name of what's left after it, such as Contribution or Net. */
+  /** For a cost section, the name of what's left after it, such as Gross or Net. */
   leaves?: string;
 }
 

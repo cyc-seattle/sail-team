@@ -76,41 +76,63 @@ export function totalOf(rows: OverviewRow[]): OverviewRow {
   };
 }
 
-/** How a program is coached, which holds for every one of its offerings. */
+/** A program's hard rules, which hold for every one of its offerings. */
 export interface ProgramSettings {
   name: string;
-  coach_level: string;
+  /** The staff level that leads it, such as an instructor or a coach. */
+  staff_level: string;
   sailors_per_coach: number;
-  ribs_per_coach: number;
-  /** The share of sailors who bring their own boat. */
-  byob_share: number;
 }
 
 /** One offering in a program area's report. */
-export interface ReportOffering extends Steps {
+export interface ReportOffering {
   key: string;
   program: string;
-  season: string;
+  /** When it runs, as staff name it: Week 3 of summer, or Spring. */
+  session: string;
   starts_on: string;
   ends_on: string;
-  price_cents: number;
-  target: number;
+  /** What one sailor pays for the whole offering. */
+  fee_cents: number;
+  /** How many sailors the plan expects. */
+  estimated: number;
   max: number;
   days: number;
+  /** Hours on the water for one sailor, across the whole offering. */
+  hours: number;
 }
 
 /** An offering with its number within its program, such as Guppies 3, counted by start date. */
 export type NumberedOffering = ReportOffering & { label: string };
+
+const byStart = (offerings: ReportOffering[]) =>
+  [...offerings].sort((a, b) => a.starts_on.localeCompare(b.starts_on) || a.key.localeCompare(b.key));
 
 /**
  * Offerings grouped by program, each program's by start date and numbered from 1. Programs come in the order their
  * first offering starts.
  */
 export function numberedOfferings(offerings: ReportOffering[]): { program: string; offerings: NumberedOffering[] }[] {
-  const byStart = [...offerings].sort((a, b) => a.starts_on.localeCompare(b.starts_on) || a.key.localeCompare(b.key));
-  const programs = [...new Set(byStart.map((o) => o.program))];
+  const sorted = byStart(offerings);
+  const programs = [...new Set(sorted.map((o) => o.program))];
   return programs.map((program) => ({
     program,
-    offerings: byStart.filter((o) => o.program === program).map((o, i) => ({ ...o, label: `${program} ${i + 1}` })),
+    offerings: sorted.filter((o) => o.program === program).map((o, i) => ({ ...o, label: `${program} ${i + 1}` })),
   }));
+}
+
+/**
+ * Each program's offerings by session: the sessions in the order they first start, and for each program, its offering
+ * in each session, if it has one.
+ */
+export function sessionGrid(offerings: ReportOffering[]): {
+  sessions: string[];
+  rows: { program: string; cells: (NumberedOffering | undefined)[] }[];
+} {
+  const sessions = [...new Set(byStart(offerings).map((o) => o.session))];
+  const rows = numberedOfferings(offerings).map(({ program, offerings: own }) => ({
+    program,
+    cells: sessions.map((session) => own.find((o) => o.session === session)),
+  }));
+  return { sessions, rows };
 }

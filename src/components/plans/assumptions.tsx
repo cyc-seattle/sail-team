@@ -97,10 +97,19 @@ export function OfferingAssumptionsTable({ offerings }: { offerings: OfferingAss
   );
 }
 
-/** The rates the Operations Plan sets for the year: each kind in its own small table, when it has any. */
-export function OperationsAssumptionsView({ assumptions: a }: { assumptions: OperationsAssumptions }) {
+/**
+ * The rates the Operations Plan sets for the year: each kind in its own small table, when it has any, side by side on a
+ * laptop unless `stacked`.
+ */
+export function OperationsAssumptionsView({
+  assumptions: a,
+  stacked = false,
+}: {
+  assumptions: OperationsAssumptions;
+  stacked?: boolean;
+}) {
   return (
-    <div className="grid gap-card md:grid-cols-2">
+    <div className={stacked ? "grid max-w-3xl gap-10" : "grid gap-card md:grid-cols-2"}>
       {a.rates && (
         <RateTable title="Rates" head={["Rate", "Amount"]}>
           <TableRow>

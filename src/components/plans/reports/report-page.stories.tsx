@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect } from "storybook/test";
+import { expect, userEvent } from "storybook/test";
 import { operationsAssumptions } from "../fixtures";
 import {
   capital,
@@ -46,6 +46,15 @@ export const Summer: Story = {
   args: {
     current: "summer",
     children: <ProgramAreaReport statement={summerStatement} programs={summerPrograms} offerings={summerOfferings} />,
+  },
+};
+
+/** Program settings open from the top of a program area's report. */
+export const SummerSettingsOpen: Story = {
+  args: { ...Summer.args },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByText("Program settings", { selector: "h2" }));
+    await expect(canvas.getByRole("table", { name: "Program settings" })).toBeVisible();
   },
 };
 

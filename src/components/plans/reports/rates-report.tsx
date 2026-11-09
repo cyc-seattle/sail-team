@@ -8,7 +8,7 @@ export function RatesReport({ assumptions }: { assumptions: OperationsAssumption
       <h2 id="rates" className="sr-only">
         Assumptions
       </h2>
-      <OperationsAssumptionsView assumptions={assumptions} />
+      <OperationsAssumptionsView assumptions={assumptions} stacked />
     </section>
   );
 }

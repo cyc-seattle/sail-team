@@ -36,13 +36,13 @@ export const overviewRows: OverviewRow[] = [
 /** Every report a Financial Plan has, in the order the switcher lists them. */
 export const reports = [
   { key: "overview", name: "Overview" },
+  { key: "rates", name: "Assumptions" },
   ...overviewRows
     .filter((r) => r.offerings > 0)
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((r) => ({ key: r.report, name: r.name })),
   { key: "non-program", name: "Non-program" },
   { key: "fundraising", name: "Fundraising and capital" },
-  { key: "rates", name: "Assumptions" },
 ];
 
 const account = (number: string | null, name: string, cents: number): AccountAmount => ({ number, name, cents });
@@ -69,52 +69,53 @@ export const summerStatement = {
 };
 
 export const summerPrograms: ProgramSettings[] = [
-  { name: "Guppies", coach_level: "Level 1", sailors_per_coach: 5, ribs_per_coach: 1, byob_share: 0 },
-  { name: "Opti Camp", coach_level: "Level 2", sailors_per_coach: 8, ribs_per_coach: 1, byob_share: 0 },
-  { name: "Race Camp", coach_level: "Level 3", sailors_per_coach: 10, ribs_per_coach: 1, byob_share: 0.5 },
+  { name: "Guppies", staff_level: "Instructor 1", sailors_per_coach: 5 },
+  { name: "Opti Camp", staff_level: "Instructor 2", sailors_per_coach: 8 },
+  { name: "Race Camp", staff_level: "Coach 3", sailors_per_coach: 10 },
 ];
 
 const week = (n: number) => {
   const start = new Date(Date.UTC(2027, 5, 21 + 7 * n));
   const end = new Date(start.getTime() + 4 * 86_400_000);
   const iso = (d: Date) => d.toISOString().slice(0, 10);
-  return { starts_on: iso(start), ends_on: iso(end) };
+  return { session: `Week ${n + 1}`, starts_on: iso(start), ends_on: iso(end) };
 };
 
-const camp = (program: string, n: number, price: number, target: number, max: number): ReportOffering => ({
+const camp = (program: string, n: number, fee: number, estimated: number, max: number, hours: number) => ({
   key: `${program}-${n}`,
   program,
-  season: "Summer",
   ...week(n),
-  price_cents: price,
-  target,
+  fee_cents: fee,
+  estimated,
   max,
   days: 5,
-  revenue_cents: price * target,
-  direct_cents: Math.round(price * target * 0.55),
-  indirect_cents: Math.round(price * target * 0.25),
+  hours,
 });
 
 // Listed out of order on purpose: the report sorts them by start date.
 export const summerOfferings: ReportOffering[] = [
-  ...[0, 2, 4, 6, 8, 1, 3, 5, 7].map((n) => camp("Opti Camp", n, 52_500, n % 3 === 0 ? 12 : 16, 16)),
-  ...[0, 1, 2, 3, 4, 5, 6, 7, 8].map((n) => camp("Guppies", n, 39_500, n < 2 ? 6 : 9, 10)),
-  ...[1, 4, 7].map((n) => camp("Race Camp", n, 61_000, 8, 12)),
+  ...[0, 2, 4, 6, 8, 1, 3, 5, 7].map((n) => camp("Opti Camp", n, 52_500, n % 3 === 0 ? 12 : 16, 16, 30)),
+  ...[0, 1, 2, 3, 4, 5, 6, 7, 8].map((n) => camp("Guppies", n, 39_500, n < 2 ? 6 : 9, 10, 15)),
+  ...[1, 4, 7].map((n) => camp("Race Camp", n, 61_000, 8, 12, 35)),
 ];
 
-const season = (program: string, name: string, starts_on: string, ends_on: string, target: number): ReportOffering => ({
-  key: `${program}-${name}`,
+const season = (
+  program: string,
+  session: string,
+  starts_on: string,
+  ends_on: string,
+  estimated: number,
+): ReportOffering => ({
+  key: `${program}-${session}`,
   program,
-  season: name,
+  session,
   starts_on,
   ends_on,
-  price_cents: 145_000,
-  target,
+  fee_cents: 145_000,
+  estimated,
   max: 16,
   days: 22,
-  revenue_cents: 145_000 * target,
-  direct_cents: 95_000 * target,
-  indirect_cents: 36_000 * target,
+  hours: 66,
 });
 
 // Spring and fall interleaved, as the old pages listed them.
@@ -128,9 +129,9 @@ export const doublehandedOfferings: ReportOffering[] = [
 ];
 
 export const doublehandedPrograms: ProgramSettings[] = [
-  { name: "J-Pod", coach_level: "Level 3", sailors_per_coach: 8, ribs_per_coach: 1, byob_share: 0.25 },
-  { name: "K-Pod", coach_level: "Level 3", sailors_per_coach: 10, ribs_per_coach: 1, byob_share: 0.5 },
-  { name: "L-Pod", coach_level: "Level 4", sailors_per_coach: 12, ribs_per_coach: 1, byob_share: 0.75 },
+  { name: "J-Pod", staff_level: "Coach 3", sailors_per_coach: 8 },
+  { name: "K-Pod", staff_level: "Coach 3", sailors_per_coach: 10 },
+  { name: "L-Pod", staff_level: "Coach 4", sailors_per_coach: 12 },
 ];
 
 export const doublehandedStatement = {
@@ -154,19 +155,19 @@ export const products: Product[] = [
 ];
 
 export const sharedCosts: SharedCost[] = [
-  { number: "6010", name: "Director's salary", pool: "G&A", total_cents: 5_400_000, to_programs_cents: 4_900_000 },
-  { number: "6110", name: "Insurance", pool: "G&A", total_cents: 1_800_000, to_programs_cents: 1_600_000 },
-  { number: "6210", name: "Accounting", pool: "G&A", total_cents: 600_000, to_programs_cents: 550_000 },
-  { number: "6220", name: "Clubspot and QuickBooks", pool: "G&A", total_cents: 450_000, to_programs_cents: 400_000 },
+  { number: "6010", name: "Director's salary", pool: "G&A", total_cents: 5_400_000, allocated_cents: 4_900_000 },
+  { number: "6110", name: "Insurance", pool: "G&A", total_cents: 1_800_000, allocated_cents: 1_600_000 },
+  { number: "6210", name: "Accounting", pool: "G&A", total_cents: 600_000, allocated_cents: 550_000 },
+  { number: "6220", name: "Clubspot and QuickBooks", pool: "G&A", total_cents: 450_000, allocated_cents: 400_000 },
   {
     number: "6020",
     name: "Program Director",
     pool: "Program admin",
     total_cents: 3_300_000,
-    to_programs_cents: 3_300_000,
+    allocated_cents: 3_300_000,
   },
-  { number: "6310", name: "Clubhouse fee", pool: "Space", total_cents: 1_200_000, to_programs_cents: 900_000 },
-  { number: "6320", name: "Dinghy floats", pool: "Space", total_cents: 800_000, to_programs_cents: 600_000 },
+  { number: "6310", name: "Clubhouse fee", pool: "Space", total_cents: 1_200_000, allocated_cents: 900_000 },
+  { number: "6320", name: "Dinghy floats", pool: "Space", total_cents: 800_000, allocated_cents: 600_000 },
 ];
 
 export const fundraising = {
