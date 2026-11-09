@@ -58,7 +58,7 @@ When(
   "I change my child's name to {string} and their school to {string}, which isn't on the list",
   async ({ page }, name: string, school: string) => {
     await page.getByRole("button", { name: `Edit ${scene.child!.name}` }).click();
-    await page.getByLabel("Name").fill(name);
+    await page.getByLabel("Name", { exact: true }).fill(name);
     await page.getByRole("combobox", { name: "School" }).click();
     await page.getByRole("option", { name: "Other" }).click();
     await page.getByLabel("School name").fill(school);
