@@ -3,8 +3,8 @@ Feature: Team rosters
   J-Pod and K-Pod, are its divisions. It opens on the person's own team, and lists each sailor with their division,
   school, and guardians, and how to reach the guardians who chose to share their email and phone. It narrows to one of
   the team's divisions or a school, and a search finds anyone on any team by a sailor's or a guardian's name. Only
-  households on a team and Crew see the rosters. Every adult decides on the page whether to share their own email and
-  phone. Every household and program here is made up for the run.
+  households on a team and Crew see the rosters. Each household decides on its Household page whether to share its
+  guardians' email and phone. Every household and program here is made up for the run.
 
   Rule: A household on a team sees the team, with the email and phone of the adults who share them
 
@@ -62,14 +62,3 @@ Feature: Team rosters
       When I open Rosters
       And I search for that guardian's name
       Then the roster shows that guardian's email and phone
-
-  Rule: Each adult decides whether to share their own email and phone
-
-    Scenario: A guardian stops sharing, then shares again
-      Given I'm a guardian whose child is on a team, and I share my email and phone
-      And I've signed in
-      When I open Rosters
-      And I stop sharing my email and phone with my child's team
-      Then the club has me down as not sharing
-      When I share them again
-      Then the club has me down as sharing

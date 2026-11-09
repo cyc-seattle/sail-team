@@ -22,10 +22,11 @@ export const rosterIds = {
   teammate: "00000000-0000-4000-8000-000000000723",
   teammateGuardian: "00000000-0000-4000-8000-000000000724",
   adultSailor: "00000000-0000-4000-8000-000000000725",
+  coParent: "00000000-0000-4000-8000-000000000726",
+  household: "00000000-0000-4000-8000-000000000741",
 };
 
-// Sailors with more than one guardian, so a roster shows how they read.
-const childsSecond = "00000000-0000-4000-8000-000000000726";
+// Mia has three guardians, so a roster shows how several read.
 const miasSecond = "00000000-0000-4000-8000-000000000727";
 const miasThird = "00000000-0000-4000-8000-000000000728";
 
@@ -39,6 +40,9 @@ const person = (id: string, first: string, last: string, rest: Record<string, un
   email: null,
   phone: null,
   school: null,
+  display_name: null,
+  date_of_birth: null,
+  household_id: null,
   share_contact: null,
   directus_user_id: null,
   ...rest,
@@ -91,8 +95,8 @@ export const rosterTables: Record<string, Record<string, unknown>[]> = {
   ],
   contacts: [
     { subject_id: rosterIds.child, contact_id: rosterIds.me, relationship_type: "guardian" },
+    { subject_id: rosterIds.child, contact_id: rosterIds.coParent, relationship_type: "guardian" },
     { subject_id: rosterIds.teammate, contact_id: rosterIds.teammateGuardian, relationship_type: "guardian" },
-    { subject_id: rosterIds.child, contact_id: childsSecond, relationship_type: "guardian" },
     ...more.map((_, i) => ({ subject_id: moreId(i), contact_id: moreId(i, true), relationship_type: "guardian" })),
     { subject_id: moreId(0), contact_id: miasSecond, relationship_type: "guardian" },
     { subject_id: moreId(0), contact_id: miasThird, relationship_type: "guardian" },
@@ -100,11 +104,22 @@ export const rosterTables: Record<string, Record<string, unknown>[]> = {
   people: [
     person(rosterIds.me, planner.first_name!, planner.last_name!, {
       email: planner.email,
+      phone: "+1 206 555 0110",
       share_contact: true,
       directus_user_id: planner.id,
+      household_id: rosterIds.household,
     }),
-    person(rosterIds.child, "Ada", "Tiller", { school: "Lakeside Middle School" }),
-    person(childsSecond, "Sky", "Tiller", { phone: "+1 206 555 0162", share_contact: true }),
+    person(rosterIds.coParent, "Sam", "Tiller", {
+      email: "sam@example.org",
+      phone: "+1 206 555 0111",
+      household_id: rosterIds.household,
+    }),
+    person(rosterIds.child, "Ada", "Tiller", {
+      school: "Lakeside Middle School",
+      display_name: "Addie Tiller",
+      date_of_birth: "2013-05-01",
+      household_id: rosterIds.household,
+    }),
     person(miasSecond, "Jordan", "Cleat"),
     person(miasThird, "Sam", "Rivera", { email: "sam.rivera@example.org", share_contact: true }),
     person(rosterIds.teammate, "Kai", "Halyard", { school: "Harbor View Middle School" }),
@@ -122,3 +137,13 @@ export const rosterTables: Record<string, Record<string, unknown>[]> = {
     ]),
   ],
 };
+
+// A household holds its members, as Directus returns them for `members.*`. They're the same rows as `people`, so a
+// change to one shows in both.
+rosterTables["households"] = [
+  {
+    id: rosterIds.household,
+    share_contact: true,
+    members: rosterTables["people"]!.filter((p) => p["household_id"] === rosterIds.household),
+  },
+];

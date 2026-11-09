@@ -2,7 +2,6 @@ import { expect, type Page } from "@playwright/test";
 import { createBdd } from "playwright-bdd";
 import { app, test } from "./fixtures";
 import { hasRole, setRole, type Program, type Squad } from "./squad";
-import { asAdmin } from "./support";
 import { makeDirectusUser, type Visitor } from "./visitors";
 
 // Steps for features/rosters.feature, against dev, with made-up programs and families (./squad.ts). Directus's rules
@@ -29,23 +28,25 @@ const scene: {
   others: [],
 };
 
-async function guardianOf(squad: Squad, visitor: Visitor, team: boolean, shares: boolean | null, school?: string) {
+async function guardianOf(squad: Squad, visitor: Visitor, team: boolean, school?: string) {
   scene.others = [];
   scene.group = undefined;
   scene.eastlake = undefined;
   await makeDirectusUser(visitor);
-  const me = await squad.visitorPerson(visitor, shares);
+  const me = await squad.visitorPerson(visitor);
   scene.program = await squad.program(team ? "J-Pod" : "Learn to sail", { team });
   scene.child = await squad.child("Ada", { school: school ?? null });
   await squad.guardian(scene.child.id, me);
+  await squad.household([me, scene.child.id], null);
   await squad.signUp(scene.child.id, scene.program);
   await hasRole(visitor, team ? "Team" : "Community");
 }
 
 async function another(squad: Squad, first: string, shares: boolean) {
   const sailor = await squad.child(first);
-  const guardian = await squad.person(`${first}'s guardian`, { share_contact: shares });
+  const guardian = await squad.person(`${first}'s guardian`);
   await squad.guardian(sailor.id, guardian.id);
+  await squad.household([sailor.id, guardian.id], shares);
   await squad.signUp(sailor.id, scene.program!);
   scene.others.push({ sailor, guardian, shares });
 }
@@ -67,19 +68,15 @@ async function pick(page: Page, filter: "Team and division" | "School", option: 
 }
 
 Given("I'm a guardian whose child is on a team", async ({ squad, visitor }) => {
-  await guardianOf(squad, visitor, true, null);
-});
-
-Given("I'm a guardian whose child is on a team, and I share my email and phone", async ({ squad, visitor }) => {
-  await guardianOf(squad, visitor, true, true);
+  await guardianOf(squad, visitor, true);
 });
 
 Given("I'm a guardian whose child is on a team, at Lakeside Middle School", async ({ squad, visitor }) => {
-  await guardianOf(squad, visitor, true, null, "Lakeside Middle School");
+  await guardianOf(squad, visitor, true, "Lakeside Middle School");
 });
 
 Given("I'm a guardian whose child is in a program that isn't a team", async ({ squad, visitor }) => {
-  await guardianOf(squad, visitor, false, null);
+  await guardianOf(squad, visitor, false);
 });
 
 Given("a teammate whose guardian shares their email and phone", async ({ squad }) => {
@@ -211,31 +208,4 @@ Then("the roster shows that guardian's email and phone", async ({ page, squad })
   await shows(page, squad.run, [sailor.name]);
   await expect(row(page, sailor.name).getByRole("link", { name: guardian.email })).toBeVisible();
   await expect(row(page, sailor.name).getByRole("link", { name: guardian.phone })).toBeVisible();
-});
-
-const choice = (page: Page) => page.getByRole("switch", { name: "Share my email and phone with my child's team" });
-
-async function sharing(visitor: Visitor) {
-  return (await asAdmin("GET", `/items/people/${visitor.personId}?fields=share_contact`)).share_contact;
-}
-
-When("I stop sharing my email and phone with my child's team", async ({ page }) => {
-  await expect(page.getByRole("heading", { level: 1, name: "Rosters" })).toBeVisible();
-  await expect(choice(page)).toBeChecked();
-  await choice(page).click();
-  await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
-});
-
-When("I share them again", async ({ page }) => {
-  await choice(page).click();
-  await expect(choice(page)).toBeChecked();
-  await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
-});
-
-Then("the club has me down as not sharing", async ({ visitor }) => {
-  await expect.poll(() => sharing(visitor)).toBe(false);
-});
-
-Then("the club has me down as sharing", async ({ visitor }) => {
-  await expect.poll(() => sharing(visitor)).toBe(true);
 });

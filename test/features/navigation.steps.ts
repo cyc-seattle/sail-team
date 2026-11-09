@@ -13,7 +13,12 @@ const sizes = { laptop: { width: 1440, height: 900 }, phone: { width: 390, heigh
 const screen: { size: keyof typeof sizes } = { size: "laptop" };
 
 /** Each page's heading, which shows it opened. */
-const headings: Record<string, string> = { Home: "Sail Team", Plans: "Plans", Rosters: "Rosters" };
+const headings: Record<string, string> = {
+  Home: "Sail Team",
+  Plans: "Plans",
+  Rosters: "Rosters",
+  Household: "Household",
+};
 
 /** The menu that holds a page's link: on a phone, its tab, or More's sidebar if it has none. */
 async function menu(page: Page, label: string) {
@@ -60,7 +65,8 @@ Then("my account menu shows my name", async ({ page, visitor }) => {
   if (screen.size === "phone" && !(await page.getByRole("dialog").count())) {
     await page.getByRole("button", { name: "More" }).click();
   }
-  await page.getByRole("button", { name: visitor.name }).click();
+  // Exact, since the Household page's cards have an "Edit <name>" button too.
+  await page.getByRole("button", { name: visitor.name, exact: true }).click();
   await expect(page.getByText(`Signed in as ${visitor.name}`)).toBeVisible();
   await expect(page.getByRole("menuitemradio", { name: "Dark" })).toBeVisible();
 });

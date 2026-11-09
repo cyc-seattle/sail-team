@@ -1,14 +1,13 @@
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { PageHeader } from "@/components/plans/page-header";
-import { ShareContact, type SaveState } from "@/components/roster/share-contact";
 import { Roster } from "@/components/roster/roster";
 import { NoAccess } from "@/components/shell/no-access";
 import { canSeeRosters, type Permissions } from "@/directus/access";
-import { myRecordQuery, setShareContact, teamsQuery, type MyRecord } from "@/directus/roster";
+import { myIdQuery, teamsQuery } from "@/directus/roster";
 import { useSession } from "@/directus/use-session";
-import { defaultTeam, onTeam, withFilters, type RosterFilters } from "@/model/roster";
+import { defaultTeam, withFilters, type RosterFilters } from "@/model/roster";
 
 export const Route = createFileRoute("/roster/")({
   validateSearch: (search: Record<string, unknown>): RosterFilters =>
@@ -31,11 +30,11 @@ function Rosters() {
 
 function AllTeams({ permissions }: { permissions: Permissions }) {
   const { data: teams } = useSuspenseQuery(teamsQuery(permissions));
-  const { data: me } = useSuspenseQuery(myRecordQuery);
+  const { data: myId } = useSuspenseQuery(myIdQuery);
   const filters = Route.useSearch();
   const navigate = Route.useNavigate();
   // The roster shows one team at a time, opening on the viewer's own, and the address says which.
-  const team = teams.some((t) => t.id === filters.team) ? filters.team : defaultTeam(teams, me?.id ?? null);
+  const team = teams.some((t) => t.id === filters.team) ? filters.team : defaultTeam(teams, myId);
   useEffect(() => {
     if (team && team !== filters.team) {
       // A division belongs to the team the address named, so it goes when that team does.
@@ -44,38 +43,12 @@ function AllTeams({ permissions }: { permissions: Permissions }) {
         replace: true,
       });
     }
-  }, [team, filters.team, navigate]);
-  const guardian =
-    me !== null &&
-    teams.some((t) => t.divisions.some((d) => d.sailors.some((s) => s.guardians.some((p) => p.id === me.id))));
+  }, [team, filters, navigate]);
   return (
-    <>
-      {me && teams.some((t) => onTeam(t, me.id)) && <MyChoice me={me} guardian={guardian} />}
-      <Roster
-        teams={teams}
-        filters={withFilters(filters, { team })}
-        onFiltersChange={(next) => navigate({ search: next, replace: true })}
-      />
-    </>
-  );
-}
-
-function MyChoice({ me, guardian }: { me: MyRecord; guardian: boolean }) {
-  const queryClient = useQueryClient();
-  const save = useMutation({
-    mutationFn: (shares: boolean) => setShareContact(me.id, shares),
-    onSuccess: (_, shares) => {
-      queryClient.setQueryData(myRecordQuery.queryKey, (old) => old && { ...old, share_contact: shares });
-      return queryClient.invalidateQueries({ queryKey: ["rosters"] });
-    },
-  });
-  const state: SaveState = save.isPending ? "saving" : save.isError ? "failed" : save.isSuccess ? "saved" : "idle";
-  return (
-    <ShareContact
-      shares={save.isPending ? save.variables : me.share_contact === true}
-      guardian={guardian}
-      state={state}
-      onChange={(shares) => save.mutate(shares)}
+    <Roster
+      teams={teams}
+      filters={withFilters(filters, { team })}
+      onFiltersChange={(next) => navigate({ search: next, replace: true })}
     />
   );
 }

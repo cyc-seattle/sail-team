@@ -1,7 +1,7 @@
 import { setupServer } from "msw/node";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { readableFields } from "../src/directus/access.ts";
-import { myRecordQuery, setShareContact, teamsQuery } from "../src/directus/roster.ts";
+import { myIdQuery, teamsQuery } from "../src/directus/roster.ts";
 import { parentPermissions, teamPermissions } from "../src/mocks/fixtures.ts";
 import { handlers } from "../src/mocks/handlers.ts";
 import { rosterIds } from "../src/mocks/roster.ts";
@@ -250,10 +250,7 @@ describe("reading rosters from Directus", () => {
     expect(await run(teamsQuery(parentPermissions))).toEqual([]);
   });
 
-  it("finds the signed-in person's own record by their login, and changes whether they share", async () => {
-    expect(await run(myRecordQuery)).toEqual({ id: rosterIds.me, share_contact: true });
-    await setShareContact(rosterIds.me, false);
-    expect(await run(myRecordQuery)).toEqual({ id: rosterIds.me, share_contact: false });
-    await setShareContact(rosterIds.me, true);
+  it("finds the signed-in person's own record by their login, so the roster opens on their team", async () => {
+    expect(await run(myIdQuery)).toBe(rosterIds.me);
   });
 });

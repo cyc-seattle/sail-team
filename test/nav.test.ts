@@ -3,15 +3,20 @@ import { parentPermissions, plannerPermissions } from "../src/mocks/fixtures.ts"
 import { externalLinks, homeLinksFor, navFor, pagesFor } from "../src/model/nav.ts";
 
 describe("navFor", () => {
-  it("shows Plans to someone who can read plans, and Rosters to a household on a team", () => {
+  it("shows Plans to someone who can read plans, Rosters to a household on a team, and Household to a household", () => {
     expect(navFor(plannerPermissions)).toEqual([
       { to: "/plans", label: "Plans" },
       { to: "/roster", label: "Rosters" },
+      { to: "/household", label: "Household" },
     ]);
   });
 
   it("hides Rosters from a household on no team", () => {
-    expect(navFor(parentPermissions)).toEqual([]);
+    expect(navFor(parentPermissions)).toEqual([{ to: "/household", label: "Household" }]);
+  });
+
+  it("shows nothing to someone with no household", () => {
+    expect(navFor({})).toEqual([]);
   });
 });
 
@@ -21,7 +26,7 @@ describe("homeLinksFor", () => {
   });
 
   it("still lists other sites for someone who can open no section", () => {
-    expect(homeLinksFor(parentPermissions)).toEqual(externalLinks);
+    expect(homeLinksFor({})).toEqual(externalLinks);
   });
 });
 
@@ -31,6 +36,6 @@ describe("pagesFor", () => {
   });
 
   it("still offers Home to someone who can open no section", () => {
-    expect(pagesFor(parentPermissions)).toEqual([{ to: "/", label: "Home" }]);
+    expect(pagesFor({})).toEqual([{ to: "/", label: "Home" }]);
   });
 });

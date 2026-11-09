@@ -21,7 +21,7 @@ Feature: Getting around
     Given I'm a guardian whose child is on a team
     And I'm on a <screen>
     And I've signed in
-    Then I can open Home and Rosters from the menu
+    Then I can open Home, Rosters, and Household from the menu
     But the menu doesn't offer Plans
     And my account menu shows my name
 

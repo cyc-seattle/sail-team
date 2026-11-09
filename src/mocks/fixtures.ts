@@ -18,9 +18,22 @@ const read = (access: "partial" | "full", fields = ["*"]) => ({
   share: none,
 });
 
-/** A household on no team, as Community's rules give it: their own household, by name. */
+/** A household on no team, as Community's rules give it: everyone in their own household, with their details. */
 export const parentPermissions: Permissions = {
-  people: read("partial", ["id", "first_name", "last_name", "share_contact", "directus_user_id"]),
+  people: read("partial", [
+    "id",
+    "first_name",
+    "last_name",
+    "display_name",
+    "email",
+    "phone",
+    "school",
+    "date_of_birth",
+    "household_id",
+    "share_contact",
+    "directus_user_id",
+  ]),
+  households: read("partial", ["id", "share_contact"]),
   contacts: read("partial", ["subject_id", "contact_id", "relationship_type"]),
   registrations: read("partial", ["id", "person_id", "offering_id", "status"]),
   offerings: read("partial", ["id", "program_id", "starts_on", "ends_on"]),
@@ -34,16 +47,6 @@ export const parentPermissions: Permissions = {
  */
 export const teamPermissions: Permissions = {
   ...parentPermissions,
-  people: read("partial", [
-    "id",
-    "first_name",
-    "last_name",
-    "email",
-    "phone",
-    "school",
-    "share_contact",
-    "directus_user_id",
-  ]),
   programs: read("partial", ["id", "name", "team", "product_id", "google_group_id"]),
   products: read("partial", ["id", "program_area_id"]),
   google_groups: read("partial", ["id", "name", "email"]),
