@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent } from "storybook/test";
-import { operationsAssumptions } from "../fixtures";
+
 import {
+  areaOfferings,
   capital,
   doublehandedOfferings,
   doublehandedPrograms,
@@ -9,6 +10,7 @@ import {
   fundraising,
   overviewRows,
   products,
+  reportAssumptions,
   reports,
   sharedCosts,
   summerOfferings,
@@ -35,7 +37,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Overview: Story = {
-  args: { children: <OverviewReport setId="budget" rows={overviewRows} /> },
+  args: { children: <OverviewReport setId="budget" rows={overviewRows} offerings={areaOfferings} /> },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { level: 1, name: "Budget" })).toBeVisible();
     await expect(canvas.getByRole("heading", { name: "Revenue and expenses" })).toBeVisible();
@@ -80,7 +82,7 @@ export const FundraisingAndCapital: Story = {
 };
 
 export const Assumptions: Story = {
-  args: { current: "rates", children: <RatesReport assumptions={operationsAssumptions.operations!} /> },
+  args: { current: "rates", children: <RatesReport assumptions={reportAssumptions} /> },
 };
 
 export const Draft: Story = { args: { ...Overview.args, name: "Two more coaches", status: "draft" } };

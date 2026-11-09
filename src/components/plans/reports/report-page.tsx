@@ -24,13 +24,26 @@ export function ReportPage({ setId, name, status, reports, current, children }: 
   );
 }
 
-/** A titled part of a report, spaced well apart from the next. */
-export function ReportSection({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+/** A titled part of a report, spaced well apart from the next, with any controls for it on the right. */
+export function ReportSection({
+  id,
+  title,
+  actions,
+  children,
+}: {
+  id: string;
+  title: string;
+  actions?: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <section aria-labelledby={id} className="grid gap-4">
-      <h2 id={id} className="text-lg font-medium">
-        {title}
-      </h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 id={id} className="text-lg font-medium">
+          {title}
+        </h2>
+        {actions}
+      </div>
       {children}
     </section>
   );

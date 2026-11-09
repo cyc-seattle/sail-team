@@ -1,5 +1,6 @@
 // Made-up numbers for the Planning report wireframes. Never real figures.
 import type { AccountAmount, OverviewRow, ProgramSettings, ReportOffering } from "@/model/reports";
+import { operationsAssumptions } from "../fixtures";
 import type { Product, SharedCost } from "./non-program-report";
 
 const area = (
@@ -126,7 +127,61 @@ export const doublehandedOfferings: ReportOffering[] = [
   season("L-Pod", "Spring", "2027-03-04", "2027-06-10", 8),
   season("K-Pod", "Fall", "2027-09-08", "2027-11-20", 12),
   season("L-Pod", "Fall", "2027-09-09", "2027-11-18", 10),
+  season("J-Pod", "Summer", "2027-06-22", "2027-08-12", 9),
+  season("K-Pod", "Summer", "2027-06-23", "2027-08-13", 11),
 ];
+
+const offering = (
+  program: string,
+  session: string,
+  starts_on: string,
+  ends_on: string,
+  fee_cents: number,
+  estimated: number,
+  max: number,
+  days: number,
+  hours: number,
+): ReportOffering => ({
+  key: `${program}-${session}`,
+  program,
+  session,
+  starts_on,
+  ends_on,
+  fee_cents,
+  estimated,
+  max,
+  days,
+  hours,
+});
+
+/** Every program area's offerings, for the Overview's fees and enrollment. */
+export const areaOfferings: Record<string, ReportOffering[]> = {
+  summer: summerOfferings,
+  doublehanded: doublehandedOfferings,
+  singlehanded: [
+    offering("Opti Green", "Spring", "2027-03-06", "2027-06-05", 98_000, 10, 12, 14, 42),
+    offering("Opti Green", "Fall", "2027-09-11", "2027-11-13", 88_000, 8, 12, 10, 30),
+    offering("Opti Gold", "Spring", "2027-03-07", "2027-06-06", 125_000, 9, 10, 14, 49),
+    offering("Opti Gold", "Fall", "2027-09-12", "2027-11-14", 110_000, 8, 10, 10, 35),
+    offering("ILCA", "Spring", "2027-03-07", "2027-06-06", 135_000, 9, 12, 14, 49),
+    offering("ILCA", "Fall", "2027-09-12", "2027-11-14", 120_000, 8, 12, 10, 35),
+  ],
+  lts: [
+    offering("Adult Learn to Sail", "Spring", "2027-04-10", "2027-05-15", 52_000, 6, 6, 6, 21),
+    offering("Adult Learn to Sail", "Summer", "2027-06-12", "2027-07-17", 52_000, 6, 6, 6, 21),
+    offering("Adult Learn to Sail", "Fall", "2027-08-21", "2027-09-25", 52_000, 6, 6, 6, 21),
+    offering("Youth Learn to Sail", "Spring", "2027-04-06", "2027-05-25", 42_000, 10, 12, 8, 24),
+    offering("Youth Learn to Sail", "Fall", "2027-09-14", "2027-10-26", 42_000, 10, 12, 7, 21),
+  ],
+  adventure: [
+    offering("Adventure", "Spring", "2027-04-03", "2027-06-05", 72_000, 8, 12, 10, 35),
+    offering("Adventure", "Fall", "2027-09-11", "2027-11-06", 72_000, 7, 12, 9, 31),
+  ],
+  hp: [
+    offering("High Performance", "Spring", "2027-03-06", "2027-06-12", 300_000, 6, 6, 30, 180),
+    offering("High Performance", "Fall", "2027-09-11", "2027-11-20", 300_000, 6, 6, 30, 180),
+  ],
+};
 
 export const doublehandedPrograms: ProgramSettings[] = [
   { name: "J-Pod", staff_level: "Coach 3", sailors_per_coach: 8 },
@@ -185,3 +240,10 @@ export const capital = [
   account("1520", "Six Optis", 2_100_000),
   account("1530", "Float repairs", 1_200_000),
 ];
+
+/** The Operations Plan's rates, with each salaried position's bonus on the position itself. */
+export const reportAssumptions = {
+  ...operationsAssumptions.operations!,
+  positions: operationsAssumptions.operations!.positions.map((p, i) => ({ ...p, bonus_rate: i === 0 ? null : 0.1 })),
+  bonuses: [],
+};

@@ -3,7 +3,9 @@ import {
   defaultSort,
   netOf,
   nextSort,
+  enrollment,
   numberedOfferings,
+  programFees,
   sessionGrid,
   sortRows,
   type OverviewRow,
@@ -90,6 +92,40 @@ describe("sessionGrid", () => {
     expect(rows.map((r) => [r.program, r.cells.map((c) => c?.label ?? null)])).toEqual([
       ["Guppies", ["Guppies 1", "Guppies 2"]],
       ["Race Camp", [null, "Race Camp 1"]],
+    ]);
+  });
+});
+
+describe("programFees", () => {
+  it("averages each program's fees over its sailors, days and hours", () => {
+    const fees = programFees([
+      { ...offering("Guppies", "Week 1", "2027-06-21"), fee_cents: 40_000, estimated: 5, days: 5, hours: 20 },
+      { ...offering("Guppies", "Week 2", "2027-06-28"), fee_cents: 20_000, estimated: 5, days: 5, hours: 20 },
+    ]);
+    expect(fees).toEqual([
+      { program: "Guppies", per_offering_cents: 30_000, per_day_cents: 6_000, per_hour_cents: 1_500 },
+    ]);
+  });
+});
+
+describe("enrollment", () => {
+  const offerings = [
+    { ...offering("J-Pod", "Fall", "2027-09-07"), estimated: 10, max: 16, days: 20 },
+    { ...offering("K-Pod", "Spring", "2027-03-02"), estimated: 12, max: 16, days: 20 },
+    { ...offering("J-Pod", "Spring", "2027-03-01"), estimated: 8, max: 16, days: 20 },
+  ];
+
+  it("adds up each session, in the order they start", () => {
+    expect(enrollment(offerings, "session")).toEqual([
+      { name: "Spring", offerings: 2, sailors: 20, max: 32, sailor_days: 400 },
+      { name: "Fall", offerings: 1, sailors: 10, max: 16, sailor_days: 200 },
+    ]);
+  });
+
+  it("adds up each program instead", () => {
+    expect(enrollment(offerings, "program").map((r) => [r.name, r.sailors])).toEqual([
+      ["J-Pod", 18],
+      ["K-Pod", 12],
     ]);
   });
 });

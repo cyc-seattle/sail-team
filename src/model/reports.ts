@@ -16,7 +16,7 @@ export interface Steps {
 }
 
 export const expensesOf = (s: Steps) => s.direct_cents + s.indirect_cents;
-export const contributionOf = (s: Steps) => s.revenue_cents - s.direct_cents;
+export const grossOf = (s: Steps) => s.revenue_cents - s.direct_cents;
 export const netOf = (s: Steps) => s.revenue_cents - s.direct_cents - s.indirect_cents;
 
 /** A program area on the Overview, or Non-program, with its counts. Non-program has no offerings. */
@@ -30,7 +30,7 @@ export interface OverviewRow extends Steps {
   sailor_days: number;
 }
 
-export type SortKey = "name" | "revenue_cents" | "direct_cents" | "indirect_cents" | "net_cents";
+export type SortKey = "name" | "revenue_cents" | "direct_cents" | "gross_cents" | "indirect_cents" | "net_cents";
 export interface Sort {
   key: SortKey;
   descending: boolean;
@@ -41,7 +41,8 @@ export const defaultSort: Sort = { key: "revenue_cents", descending: true };
 
 /** Program areas in the given order. Non-program, which sells no offerings, always stays last. */
 export function sortRows(rows: OverviewRow[], sort: Sort): OverviewRow[] {
-  const value = (row: OverviewRow) => (sort.key === "net_cents" ? netOf(row) : row[sort.key]);
+  const value = (row: OverviewRow) =>
+    sort.key === "net_cents" ? netOf(row) : sort.key === "gross_cents" ? grossOf(row) : row[sort.key];
   const sorted = rows
     .filter((r) => r.offerings > 0)
     .sort((a, b) => {
@@ -135,4 +136,54 @@ export function sessionGrid(offerings: ReportOffering[]): {
     cells: sessions.map((session) => own.find((o) => o.session === session)),
   }));
   return { sessions, rows };
+}
+
+/** What a sailor pays in one program, on average: for an offering, for a day, and for an hour on the water. */
+export interface ProgramFee {
+  program: string;
+  per_offering_cents: number;
+  per_day_cents: number;
+  per_hour_cents: number;
+}
+
+/** Each program's average fees, weighted by the sailors expected in each offering, programs in the order they start. */
+export function programFees(offerings: ReportOffering[]): ProgramFee[] {
+  return numberedOfferings(offerings).map(({ program, offerings: own }) => {
+    const sum = (of: (o: ReportOffering) => number) => own.reduce((total, o) => total + of(o), 0);
+    const paid = sum((o) => o.fee_cents * o.estimated);
+    const per = (by: number) => (by > 0 ? Math.round(paid / by) : 0);
+    return {
+      program,
+      per_offering_cents: per(sum((o) => o.estimated)),
+      per_day_cents: per(sum((o) => o.estimated * o.days)),
+      per_hour_cents: per(sum((o) => o.estimated * o.hours)),
+    };
+  });
+}
+
+/** One row of enrollment: a session, or a program. */
+export interface EnrollmentRow {
+  name: string;
+  offerings: number;
+  sailors: number;
+  max: number;
+  sailor_days: number;
+}
+
+export type EnrollmentBy = "session" | "program";
+
+/** Offerings added up by session or by program, in the order each first starts. */
+export function enrollment(offerings: ReportOffering[], by: EnrollmentBy): EnrollmentRow[] {
+  const sorted = byStart(offerings);
+  const names = [...new Set(sorted.map((o) => o[by]))];
+  return names.map((name) => {
+    const own = sorted.filter((o) => o[by] === name);
+    return {
+      name,
+      offerings: own.length,
+      sailors: own.reduce((total, o) => total + o.estimated, 0),
+      max: own.reduce((total, o) => total + o.max, 0),
+      sailor_days: own.reduce((total, o) => total + o.estimated * o.days, 0),
+    };
+  });
 }

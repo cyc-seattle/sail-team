@@ -35,7 +35,13 @@ export interface OfferingAssumptions extends Pick<
 export interface OperationsAssumptions {
   rates: Pick<PlanRates, "payroll_tax_rate" | "lodging_per_night_cents" | "mileage_rate_cents"> | null;
   staffLevels: Pick<PlanStaffLevel, "key" | "name" | "pay_type" | "hourly_rate_cents">[];
-  positions: Pick<PlanSalariedPosition, "key" | "name" | "annual_salary_cents" | "paid_hours_per_year" | "ga_share">[];
+  positions: (Pick<
+    PlanSalariedPosition,
+    "key" | "name" | "annual_salary_cents" | "paid_hours_per_year" | "ga_share"
+  > & {
+    /** Its bonus as a share of net, when bonuses sit on the position (#63); null for none. Unset while they don't. */
+    bonus_rate?: number | null;
+  })[];
   charges: Pick<PlanRevenueCharge, "key" | "name" | "rate" | "product_kinds">[];
   resources: Pick<
     PlanResource,

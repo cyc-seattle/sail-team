@@ -1,15 +1,21 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   defaultSort,
-  expensesOf,
+  enrollment,
+  grossOf,
   netOf,
   nextSort,
+  programFees,
   sortRows,
   totalOf,
+  type EnrollmentBy,
+  type EnrollmentRow,
   type OverviewRow,
+  type ReportOffering,
   type Sort,
   type SortKey,
 } from "@/model/reports";
@@ -19,23 +25,20 @@ import { ReportSection } from "./report-page";
 
 /** The name column stays put while the numbers scroll sideways on a phone. */
 const pinned = "sticky left-0 z-10 bg-background";
-const none = <span className="text-muted-foreground">—</span>;
 const count = (n: number) => n.toLocaleString("en-US");
 
-function Name({ setId, row }: { setId: string; row: OverviewRow }) {
+function AreaLink({ setId, row }: { setId: string; row: OverviewRow }) {
   return (
-    <TableCell className={pinned}>
-      <Link to="/plans/financial/$setId/$planId" params={{ setId, planId: row.report }} className="text-link underline">
-        {row.name}
-      </Link>
-    </TableCell>
+    <Link to="/plans/financial/$setId/$planId" params={{ setId, planId: row.report }} className="text-link underline">
+      {row.name}
+    </Link>
   );
 }
 
-function Amount({ cents, colored = false }: { cents: number | null; colored?: boolean }) {
+function Amount({ cents, colored = false, whole = true }: { cents: number; colored?: boolean; whole?: boolean }) {
   return (
     <TableCell className="text-right">
-      {cents === null ? none : <Money cents={cents} colored={colored} whole />}
+      <Money cents={cents} colored={colored} whole={whole} />
     </TableCell>
   );
 }
@@ -77,30 +80,57 @@ function SortHead({
   );
 }
 
-/** Whole dollars per one of something, or a dash when there's nothing to divide by. */
-const per = (cents: number, by: number) => (by > 0 ? Math.round(cents / by) : null);
+/** A program area's name as a row above its programs or sessions. */
+function AreaRow({ setId, row, span }: { setId: string; row: OverviewRow; span: number }) {
+  return (
+    <TableRow className="hover:bg-transparent">
+      <TableCell className={cn(pinned, "pt-4 font-medium")}>
+        <AreaLink setId={setId} row={row} />
+      </TableCell>
+      <TableCell colSpan={span} />
+    </TableRow>
+  );
+}
 
-function PerOfferingAndDay({ row }: { row: OverviewRow }) {
+function EnrollmentCells({ row }: { row: EnrollmentRow }) {
   return (
     <>
-      <Amount cents={per(row.revenue_cents, row.offerings)} />
-      <Amount cents={per(expensesOf(row), row.offerings)} />
-      <Amount cents={per(row.revenue_cents, row.days)} />
-      <Amount cents={per(expensesOf(row), row.days)} />
+      <Count>{count(row.offerings)}</Count>
+      <Count>{count(row.sailors)}</Count>
+      <Count>{count(row.max)}</Count>
+      <Count>{count(row.sailor_days)}</Count>
     </>
   );
 }
 
+export interface OverviewReportProps {
+  setId: string;
+  rows: OverviewRow[];
+  /** Each program area's offerings, by its report's key. */
+  offerings: Record<string, ReportOffering[]>;
+}
+
 /**
- * A Financial Plan's year by program area: revenue to net, sortable, then what a sailor pays, the amounts per offering
- * and per day, and the counts, each in its own table so no table mixes dollars with counts.
+ * A Financial Plan's year by program area: revenue to net, sortable, then each program's fees, then enrollment by
+ * session or by program. Program areas keep the first table's order all the way down.
  */
-export function OverviewReport({ setId, rows }: { setId: string; rows: OverviewRow[] }) {
+export function OverviewReport({ setId, rows, offerings }: OverviewReportProps) {
   const [sort, setSort] = useState<Sort>(defaultSort);
+  const [by, setBy] = useState<EnrollmentBy>("session");
   const sorted = sortRows(rows, sort);
-  const programs = sorted.filter((r) => r.offerings > 0);
+  const areas = sorted.filter((r) => r.offerings > 0).map((row) => ({ row, offerings: offerings[row.report] ?? [] }));
   const total = totalOf(rows);
-  const programTotal = { ...totalOf(programs), name: "All programs" };
+  const all = enrollment(
+    areas.flatMap((a) => a.offerings),
+    "program",
+  );
+  const allTotal: EnrollmentRow = {
+    name: "All programs",
+    offerings: all.reduce((t, r) => t + r.offerings, 0),
+    sailors: all.reduce((t, r) => t + r.sailors, 0),
+    max: all.reduce((t, r) => t + r.max, 0),
+    sailor_days: all.reduce((t, r) => t + r.sailor_days, 0),
+  };
   return (
     <>
       <ReportSection id="revenue-and-expenses" title="Revenue and expenses">
@@ -116,6 +146,9 @@ export function OverviewReport({ setId, rows }: { setId: string; rows: OverviewR
               <SortHead sortKey="direct_cents" sort={sort} onSort={setSort}>
                 Direct costs
               </SortHead>
+              <SortHead sortKey="gross_cents" sort={sort} onSort={setSort}>
+                Gross
+              </SortHead>
               <SortHead sortKey="indirect_cents" sort={sort} onSort={setSort}>
                 Indirect costs
               </SortHead>
@@ -127,9 +160,12 @@ export function OverviewReport({ setId, rows }: { setId: string; rows: OverviewR
           <TableBody>
             {sorted.map((row) => (
               <TableRow key={row.report}>
-                <Name setId={setId} row={row} />
+                <TableCell className={pinned}>
+                  <AreaLink setId={setId} row={row} />
+                </TableCell>
                 <Amount cents={row.revenue_cents} />
                 <Amount cents={row.direct_cents} />
+                <Amount cents={grossOf(row)} colored />
                 <Amount cents={row.indirect_cents} />
                 <Amount cents={netOf(row)} colored />
               </TableRow>
@@ -140,6 +176,7 @@ export function OverviewReport({ setId, rows }: { setId: string; rows: OverviewR
               <TableCell className={pinned}>Total</TableCell>
               <Amount cents={total.revenue_cents} />
               <Amount cents={total.direct_cents} />
+              <Amount cents={grossOf(total)} colored />
               <Amount cents={total.indirect_cents} />
               <Amount cents={netOf(total)} colored />
             </TableRow>
@@ -147,91 +184,82 @@ export function OverviewReport({ setId, rows }: { setId: string; rows: OverviewR
         </Table>
       </ReportSection>
 
-      <ReportSection id="what-a-sailor-pays" title="What a sailor pays">
-        <Table aria-label="What a sailor pays">
+      <ReportSection id="program-fees" title="Program fees">
+        <Table aria-label="Program fees">
           <TableHeader>
             <TableRow>
-              <TableHead className={pinned}>Program area</TableHead>
-              <TableHead className="text-right">Average per offering</TableHead>
-              <TableHead className="text-right">Average per day</TableHead>
+              <TableHead className={pinned}>Program</TableHead>
+              <TableHead className="text-right">Per offering</TableHead>
+              <TableHead className="text-right">Per day</TableHead>
+              <TableHead className="text-right">Per hour</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {programs.map((row) => (
-              <TableRow key={row.report}>
-                <Name setId={setId} row={row} />
-                <Amount cents={per(row.revenue_cents, row.sailors)} />
-                <Amount cents={per(row.revenue_cents, row.sailor_days)} />
-              </TableRow>
+            {areas.map(({ row, offerings: own }) => (
+              <Fragment key={row.report}>
+                <AreaRow setId={setId} row={row} span={3} />
+                {programFees(own).map((fee) => (
+                  <TableRow key={fee.program}>
+                    <TableCell className={cn(pinned, "pl-6")}>{fee.program}</TableCell>
+                    <Amount cents={fee.per_offering_cents} />
+                    <Amount cents={fee.per_day_cents} whole={false} />
+                    <Amount cents={fee.per_hour_cents} whole={false} />
+                  </TableRow>
+                ))}
+              </Fragment>
             ))}
           </TableBody>
-          <TableFooter className="bg-transparent">
-            <TableRow>
-              <TableCell className={pinned}>{programTotal.name}</TableCell>
-              <Amount cents={per(programTotal.revenue_cents, programTotal.sailors)} />
-              <Amount cents={per(programTotal.revenue_cents, programTotal.sailor_days)} />
-            </TableRow>
-          </TableFooter>
         </Table>
       </ReportSection>
 
-      <ReportSection id="per-offering-and-day" title="Per offering and per day">
-        <Table aria-label="Per offering and per day">
+      <ReportSection
+        id="enrollment"
+        title="Enrollment"
+        actions={
+          <ToggleGroup
+            value={[by]}
+            onValueChange={(values: string[]) => {
+              const next = values[0] as EnrollmentBy | undefined;
+              if (next) {
+                setBy(next);
+              }
+            }}
+            variant="outline"
+            size="sm"
+            aria-label="Group enrollment"
+          >
+            <ToggleGroupItem value="session">By session</ToggleGroupItem>
+            <ToggleGroupItem value="program">By program</ToggleGroupItem>
+          </ToggleGroup>
+        }
+      >
+        <Table aria-label="Enrollment">
           <TableHeader>
             <TableRow>
-              <TableHead className={pinned}>Program area</TableHead>
-              <TableHead className="text-right">Revenue per offering</TableHead>
-              <TableHead className="text-right">Expenses per offering</TableHead>
-              <TableHead className="text-right">Revenue per day</TableHead>
-              <TableHead className="text-right">Expenses per day</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {programs.map((row) => (
-              <TableRow key={row.report}>
-                <Name setId={setId} row={row} />
-                <PerOfferingAndDay row={row} />
-              </TableRow>
-            ))}
-          </TableBody>
-          <TableFooter className="bg-transparent">
-            <TableRow>
-              <TableCell className={pinned}>{programTotal.name}</TableCell>
-              <PerOfferingAndDay row={programTotal} />
-            </TableRow>
-          </TableFooter>
-        </Table>
-      </ReportSection>
-
-      <ReportSection id="sailors-and-days" title="Sailors and days">
-        <Table aria-label="Sailors and days">
-          <TableHeader>
-            <TableRow>
-              <TableHead className={pinned}>Program area</TableHead>
+              <TableHead className={pinned}>{by === "session" ? "Session" : "Program"}</TableHead>
               <TableHead className="text-right">Offerings</TableHead>
               <TableHead className="text-right">Sailors</TableHead>
-              <TableHead className="text-right">Days</TableHead>
+              <TableHead className="text-right">Max</TableHead>
               <TableHead className="text-right">Sailor-days</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {programs.map((row) => (
-              <TableRow key={row.report}>
-                <Name setId={setId} row={row} />
-                <Count>{count(row.offerings)}</Count>
-                <Count>{count(row.sailors)}</Count>
-                <Count>{count(row.days)}</Count>
-                <Count>{count(row.sailor_days)}</Count>
-              </TableRow>
+            {areas.map(({ row, offerings: own }) => (
+              <Fragment key={row.report}>
+                <AreaRow setId={setId} row={row} span={4} />
+                {enrollment(own, by).map((e) => (
+                  <TableRow key={e.name}>
+                    <TableCell className={cn(pinned, "pl-6")}>{e.name}</TableCell>
+                    <EnrollmentCells row={e} />
+                  </TableRow>
+                ))}
+              </Fragment>
             ))}
           </TableBody>
           <TableFooter className="bg-transparent">
             <TableRow>
-              <TableCell className={pinned}>{programTotal.name}</TableCell>
-              <Count>{count(programTotal.offerings)}</Count>
-              <Count>{count(programTotal.sailors)}</Count>
-              <Count>{count(programTotal.days)}</Count>
-              <Count>{count(programTotal.sailor_days)}</Count>
+              <TableCell className={pinned}>{allTotal.name}</TableCell>
+              <EnrollmentCells row={allTotal} />
             </TableRow>
           </TableFooter>
         </Table>

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent } from "storybook/test";
 import { withRouter } from "../../../../.storybook/with-router";
-import { overviewRows } from "./fixtures";
+import { areaOfferings, overviewRows } from "./fixtures";
 import { OverviewReport } from "./overview-report";
 
 const meta = {
@@ -9,7 +9,7 @@ const meta = {
   decorators: [
     withRouter("/plans/financial/budget", ["/plans/financial/$setId", "/plans/financial/$setId/$planId", "/plans"]),
   ],
-  args: { setId: "budget", rows: overviewRows },
+  args: { setId: "budget", rows: overviewRows, offerings: areaOfferings },
 } satisfies Meta<typeof OverviewReport>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -33,5 +33,16 @@ export const ByNet: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Net" }));
     await expect(canvas.getByRole("columnheader", { name: "Net" })).toHaveAttribute("aria-sort", "ascending");
     await expect(table.querySelector("tbody tr")).toHaveTextContent("High Performance");
+  },
+};
+
+/** Enrollment opens by session, and can be grouped by program instead. */
+export const EnrollmentByProgram: Story = {
+  play: async ({ canvas }) => {
+    const table = canvas.getByRole("table", { name: "Enrollment" });
+    await expect(table).toHaveTextContent("Week 1");
+    await userEvent.click(canvas.getByRole("button", { name: "By program" }));
+    await expect(table).toHaveTextContent("Guppies");
+    await expect(table).not.toHaveTextContent("Week 1");
   },
 };
