@@ -1,9 +1,8 @@
-import type { FinancialPlanSummary, Totals } from "@/model/financial-plans";
-import { plansByYear } from "@/model/financial-plans";
+import { plansByYear, type ListedPlan } from "@/model/financial-plans";
 import { FinancialPlanCard } from "./financial-plan-card";
 
 /** Every Financial Plan, by year, newest year first: each year's drafts, then its saved ones, newest first. */
-export function FinancialPlanList({ plans }: { plans: (FinancialPlanSummary & { totals: Totals | null })[] }) {
+export function FinancialPlanList({ plans }: { plans: ListedPlan[] }) {
   if (plans.length === 0) {
     return <p className="text-sm text-muted-foreground">There are no Financial Plans yet.</p>;
   }

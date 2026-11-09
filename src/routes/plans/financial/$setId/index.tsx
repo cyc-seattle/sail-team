@@ -1,18 +1,22 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { FinancialPlanView } from "@/components/plans/financial-plan-view";
-import { PageHeader } from "@/components/plans/page-header";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { FinancialPlanPage } from "@/components/plans/financial-plan-page";
 import { NoAccess } from "@/components/shell/no-access";
 import { NoticePage } from "@/components/shell/notice-page";
-import { canRead } from "@/directus/access";
-import { financialPlanQuery, financialPlansQuery, type FinancialPlan } from "@/directus/financial-plans";
+import { canRead, canWrite } from "@/directus/access";
+import {
+  financialPlanQuery,
+  startFinancialPlan,
+  updateFinancialPlan,
+  type FinancialPlan,
+} from "@/directus/financial-plans";
 import { useSession } from "@/directus/use-session";
 
 export const Route = createFileRoute("/plans/financial/$setId/")({
-  component: FinancialPlanPage,
+  component: FinancialPlanRoute,
 });
 
-function FinancialPlanPage() {
+function FinancialPlanRoute() {
   const session = useSession();
   if (session.kind !== "signed-in" || !canRead(session.permissions, "plans")) {
     return <NoAccess what="plans" />;
@@ -30,24 +34,30 @@ function Loaded() {
 }
 
 function Found({ plan }: { plan: FinancialPlan }) {
-  const { data: all } = useSuspenseQuery(financialPlansQuery);
+  const session = useSession();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const permissions = session.kind === "signed-in" ? session.permissions : undefined;
   const { set } = plan;
-  const others = all.filter((s) => s.fiscal_year === set.fiscal_year && s.id !== set.id);
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ["financial-plans"] });
   return (
-    <main className="mx-auto max-w-6xl p-card">
-      <PageHeader
-        title={set.name}
-        description={[
-          `Financial Plan for ${set.fiscal_year}`,
-          set.status === "draft" ? "a draft" : null,
-          set.parent ? `started from ${set.parent.name}` : null,
-        ]
-          .filter(Boolean)
-          .join(", ")
-          .concat(set.message ? `. ${set.message}` : "")}
-        back={{ to: "/plans", label: "All plans" }}
-      />
-      <FinancialPlanView {...plan} others={others} />
-    </main>
+    <FinancialPlanPage
+      {...plan}
+      canUpdate={canWrite(permissions, "version_sets", "update")}
+      canCreate={canWrite(permissions, "version_sets", "create")}
+      onEdit={async ({ name, message }) => {
+        await updateFinancialPlan(set.id, set.status === "draft" ? { name, message } : { message });
+        await refresh();
+      }}
+      onStart={async (details) => {
+        const id = await startFinancialPlan(plan, details);
+        await refresh();
+        await navigate({ to: "/plans/financial/$setId", params: { setId: id } });
+      }}
+      onMove={async (status) => {
+        await updateFinancialPlan(set.id, { status });
+        await refresh();
+      }}
+    />
   );
 }

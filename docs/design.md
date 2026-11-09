@@ -52,6 +52,7 @@ Every token has a dark value, so a component that uses the utilities needs no `d
   switch, such as per year or per day.
 - An icon-only button has an `aria-label` and a tooltip with the same name, and each action keeps one icon everywhere.
 - Page text uses plain words a club volunteer would say.
+- A page has a title and no subtitle. Don't add a sentence under the title describing the page.
 - Every chart sits in a `ChartCard`, above the table of the same numbers, with how it's worked out behind the info
   button.
 

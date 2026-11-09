@@ -9,8 +9,10 @@ Feature: Seeing the Financial Plans
 
   Plans is where planners, and anyone else who can read plans, see the Financial Plans and what each plan in them
   takes in and spends. A Program Plan's P&L includes its coaches' wages, its RIBs, and its share of the shared
-  costs, such as the office, worked out with the other plans in the same Financial Plan. Plans only shows plans; it
-  doesn't change them. Every plan and number here is made up for the run.
+  costs, such as the office, worked out with the other plans in the same Financial Plan. A planner who can change
+  plans can rename a draft, change any Financial Plan's note, save a draft, mark a saved one active, and start a new
+  draft from one here. Everything else
+  about a plan is changed through their AI. Every plan and number here is made up for the run.
 
   Rule: Plans lists each year's Financial Plans, newest first, with their names and notes
 
@@ -23,12 +25,12 @@ Feature: Seeing the Financial Plans
       Then under 2027 I see "Adopted budget", then "Budget"
       And each shows its note, the day it was saved, and the one it was started from
 
-    Scenario: Each Financial Plan shows its operating net
+    Scenario: Each saved Financial Plan shows its revenue, expenses, gross, and net
       Given I'm a planner who can read plans
-      And a saved Financial Plan for 2027 with an operating net of $5,000
+      And a saved Financial Plan for 2027 whose camp takes in $10,000 and spends $5,000 running it
       And I've signed in
       When I open Plans
-      Then the Financial Plan shows an operating net of $5,000
+      Then the Financial Plan shows revenue of $10,000, expenses of $5,000, gross of $5,000, and net of $5,000
 
     Scenario: A year's drafts are listed with its saved Financial Plans
       Given I'm a planner who can read plans
@@ -48,15 +50,16 @@ Feature: Seeing the Financial Plans
       Then I see each one's operating net side by side, $4,000 and $2,000
       And I see that "Two coaches" nets $2,000 more
 
-  Rule: A Financial Plan shows the organization's totals, and each of its plans
+  Rule: A Financial Plan shows a summary of each program area and Non-program, then each program's offerings
 
     Scenario: A Financial Plan with an Operations Plan and two Program Plans
       Given I'm a planner who can read plans
       And a saved Financial Plan with an Operations Plan, and Program Plans for Youth Racing and Adult Sailing
       And I've signed in
       When I open that Financial Plan
-      Then I see the organization's operating net, fundraising, capital, and total
-      And I see its Operations Plan and both Program Plans, each with its net
+      Then the summary has a row for Youth Racing, Adult Sailing, Non-program, and the total
+      And Youth Racing's row shows revenue of $10,000 and net of $5,000
+      And under Programs I see Youth Racing's camp, with its sailors
       And I see the Financial Plan it was started from
 
   Rule: A Program Plan shows its full P&L, with its wages and its share of the shared costs
@@ -117,6 +120,54 @@ Feature: Seeing the Financial Plans
       And I've signed in
       When I open the draft
       Then the page warns that the practice falls on a closed day, and names the day
+
+  Rule: A planner who can change plans can name a Financial Plan, note it, save it, mark it active, and start a draft from it
+
+    Scenario: Renaming a draft and noting it
+      Given I'm a planner who can change plans
+      And a draft Financial Plan named "Two coaches"
+      And I've signed in
+      When I open "Two coaches"
+      And I rename it "Two coaches, more boats" and note it "For the board"
+      Then the page is titled "Two coaches, more boats" and shows the note "For the board"
+
+    Scenario: A saved Financial Plan keeps its name
+      Given I'm a planner who can change plans
+      And a saved Financial Plan for 2027 named "Budget"
+      And I've signed in
+      When I open "Budget" and edit it
+      Then I can change its note, but not its name
+
+    Scenario: Starting a draft from a saved Financial Plan
+      Given I'm a planner who can change plans
+      And a saved Financial Plan for 2027 named "Budget"
+      And I've signed in
+      When I open "Budget" and start a draft from it named "Budget, three coaches"
+      Then I'm on the draft "Budget, three coaches", started from "Budget"
+      And it holds the same plans as "Budget"
+
+    Scenario: A planner who can only read plans can't change them
+      Given I'm a planner who can read plans
+      And a saved Financial Plan for 2027 named "Budget"
+      And I've signed in
+      When I open "Budget"
+      Then I see no way to edit it or start a draft from it
+
+    Scenario: Saving a draft
+      Given I'm a planner who can change plans
+      And a draft Financial Plan named "Two coaches"
+      And I've signed in
+      When I open "Two coaches"
+      And I save it
+      Then it's marked saved, with the day it was saved
+
+    Scenario: Marking a saved Financial Plan active
+      Given I'm a planner who can change plans
+      And a saved Financial Plan for 2027 named "Budget"
+      And I've signed in
+      When I open "Budget"
+      And I mark it active
+      Then it's marked active
 
   Rule: Only someone who can read plans can see them
 

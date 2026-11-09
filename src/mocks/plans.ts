@@ -222,7 +222,7 @@ export const tables: Record<string, Record<string, unknown>[]> = {
   ],
   plan_pools: [officeTwo.pool, officeThree.pool],
   plan_budget_lines: [officeTwo.line, officeThree.line, supplies(ids.youthTwo, 1), supplies(ids.youthThree, 2)],
-  // The club is closed on the Fourth, and Two coaches' camp has a practice that day.
+  // The Fourth is a closed day, and Two coaches' camp has a practice that day.
   plan_closed_dates: [
     { id: id(401), version_id: ids.opsTwo, key: id(411), date: "2027-07-05", name: "the Fourth of July, observed" },
   ],
@@ -309,6 +309,7 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       line_name: "Tuition",
       cost_center_name: "Beginner camp, week 1",
       amount_cents: 1_000_000,
+      function: "program",
       account_id: { id: tuition, type: "revenue" },
     },
     {
@@ -318,6 +319,7 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       line_name: "Coach wages",
       cost_center_name: "Beginner camp, week 1",
       amount_cents: 300_000,
+      function: "program",
       account_id: { id: office, type: "expense" },
     },
     {
@@ -327,6 +329,7 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       line_name: "Office share: Office rent",
       cost_center_name: "Beginner camp, week 1",
       amount_cents: 300_000,
+      function: "management",
       account_id: { id: office, type: "expense" },
     },
     {
@@ -336,7 +339,29 @@ export const tables: Record<string, Record<string, unknown>[]> = {
       line_name: "Insurance",
       cost_center_name: "Organization",
       amount_cents: 200_000,
+      function: "management",
       account_id: { id: office, type: "expense" },
+    },
+    // Fundraising and capital, which the top-line numbers leave out.
+    {
+      version_set_id: budget,
+      version_set_member_id: ids.opsMember,
+      line: "org:gala",
+      line_name: "Spring gala",
+      cost_center_name: "Organization",
+      amount_cents: 50_000,
+      function: "fundraising",
+      account_id: { id: tuition, type: "revenue" },
+    },
+    {
+      version_set_id: budget,
+      version_set_member_id: ids.opsMember,
+      line: "org:coach-boat",
+      line_name: "Coach boat",
+      cost_center_name: "Organization",
+      amount_cents: 80_000,
+      function: null,
+      account_id: { id: office, type: "asset" },
     },
   ],
   plan_result_warnings: [
