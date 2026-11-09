@@ -44,10 +44,12 @@ function ComboboxInput({
   disabled = false,
   showTrigger = true,
   showClear = false,
+  triggerLabel = "Show options",
   ...props
 }: ComboboxPrimitive.Input.Props & {
   showTrigger?: boolean;
   showClear?: boolean;
+  triggerLabel?: string;
 }) {
   return (
     <InputGroup className={cn("w-auto", className)}>
@@ -58,6 +60,7 @@ function ComboboxInput({
             size="icon-xs"
             variant="ghost"
             render={<ComboboxTrigger />}
+            aria-label={triggerLabel}
             // The input opens the list from the keyboard, so the button stays out of the tab order, as in the
             // ARIA combobox pattern. Base UI hides it from screen readers while the list is open.
             tabIndex={-1}

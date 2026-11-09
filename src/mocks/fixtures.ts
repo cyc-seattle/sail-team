@@ -34,6 +34,7 @@ export const parentPermissions: Permissions = {
     "directus_user_id",
   ]),
   households: read("partial", ["id", "share_contact"]),
+  schools: read("full"),
   contacts: read("partial", ["subject_id", "contact_id", "relationship_type"]),
   registrations: read("partial", ["id", "person_id", "offering_id", "status"]),
   offerings: read("partial", ["id", "program_id", "starts_on", "ends_on"]),

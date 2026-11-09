@@ -147,3 +147,14 @@ rosterTables["households"] = [
     members: rosterTables["people"]!.filter((p) => p["household_id"] === rosterIds.household),
   },
 ];
+
+// The known schools a sailor's school is picked from.
+rosterTables["schools"] = [
+  "Ballard High School",
+  "Eastlake High School",
+  "Garfield High School",
+  "Harbor View Middle School",
+  "Lakeside Middle School",
+  "Lincoln High School",
+  "Roosevelt High School",
+].map((name, i) => ({ id: i + 1, name }));

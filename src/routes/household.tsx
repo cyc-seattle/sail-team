@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/plans/page-header";
 import { NoAccess } from "@/components/shell/no-access";
 import { NoticePage } from "@/components/shell/notice-page";
 import { canSeeHousehold } from "@/directus/access";
-import { householdQuery, setHouseholdSharing, updateMember } from "@/directus/household";
+import { householdQuery, schoolsQuery, setHouseholdSharing, updateMember } from "@/directus/household";
 import { useSession } from "@/directus/use-session";
 import type { Household as HouseholdData } from "@/model/household";
 
@@ -37,6 +37,7 @@ function Household() {
 
 function Editable({ household }: { household: HouseholdData }) {
   const queryClient = useQueryClient();
+  const { data: schools } = useSuspenseQuery(schoolsQuery);
   const share = useMutation({
     mutationFn: (shares: boolean) => setHouseholdSharing(household.id, shares),
     onSuccess: () =>
@@ -55,6 +56,7 @@ function Editable({ household }: { household: HouseholdData }) {
   return (
     <HouseholdView
       household={share.isPending ? { ...household, shares: share.variables } : household}
+      schools={schools}
       shareState={shareState}
       onShareChange={(shares) => share.mutate(shares)}
       onSaveMember={async (personId, changes) => {

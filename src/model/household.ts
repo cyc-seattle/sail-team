@@ -1,3 +1,5 @@
+import { toE164 } from "./phone.ts";
+
 /** A person in a household as Directus returns them. A field the person can't read is missing. */
 export interface MemberRow {
   id: string;
@@ -30,8 +32,6 @@ export interface Member {
   school: string | null;
   role: Role;
   me: boolean;
-  /** An adult changes their own phone and a child's whose date of birth is on file, never another adult's. */
-  canEditPhone: boolean;
   /** Only sailors have a school. */
   hasSchool: boolean;
 }
@@ -39,7 +39,7 @@ export interface Member {
 export interface Household {
   id: string;
   shares: boolean;
-  /** Whether the signed-in person is an adult, who may change the household. A sailor who signs in only sees it. */
+  /** Whether the signed-in person is an adult, who decides whether the household shares. Anyone in it changes its people. */
   editable: boolean;
   members: Member[];
 }
@@ -62,11 +62,6 @@ function grownUp(dateOfBirth: string, today: string): boolean {
 /** Who's an adult, as platform's Community rules decide: 18 or over, or with no date of birth, someone's guardian. */
 function isAdult(row: MemberRow, role: Role, today: string): boolean {
   return row.date_of_birth ? grownUp(row.date_of_birth, today) : role === "guardian";
-}
-
-/** Who an adult may change the phone of besides themselves: only someone whose date of birth says they're under 18. */
-function isKnownMinor(row: MemberRow, today: string): boolean {
-  return !!row.date_of_birth && !grownUp(row.date_of_birth, today);
 }
 
 /** The household's members, guardians first, then sailors, then anyone else, each by name. */
@@ -93,7 +88,6 @@ export function buildHousehold(
       school: p.school ?? null,
       role,
       me: p.id === meId,
-      canEditPhone: p.id === meId || isKnownMinor(p, today),
       hasSchool: role === "sailor",
     };
   });
@@ -110,12 +104,16 @@ export interface MemberChanges {
   school?: string | null;
 }
 
-/** The changes to save from an edit form's values, leaving out what this member's form doesn't offer. */
+/**
+ * The changes to save from an edit form's values, whose phone is in E.164. It leaves out a phone that didn't change, so
+ * one stored in a form the field can't read is kept, and a school for anyone but a sailor.
+ */
 export function memberChanges(member: Member, form: { name: string; phone: string; school: string }): MemberChanges {
   const blank = (value: string) => value.trim() || null;
+  const phone = blank(form.phone);
   return {
     display_name: blank(form.name),
-    ...(member.canEditPhone && { phone: blank(form.phone) }),
+    ...(phone !== (toE164(member.phone) ?? null) && { phone }),
     ...(member.hasSchool && { school: blank(form.school) }),
   };
 }

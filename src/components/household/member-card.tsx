@@ -2,19 +2,22 @@ import { useId, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PhoneField } from "@/components/phone-field";
 import { memberChanges, type Member, type MemberChanges } from "@/model/household";
+import { formatPhone, toE164 } from "@/model/phone";
 import { said, type SaveState } from "./save-state.ts";
+import { SchoolField } from "./school-field.tsx";
 
 export interface MemberCardProps {
   member: Member;
-  /** Whether the signed-in person may change them, which only an adult may. */
-  editable?: boolean;
+  /** The known schools a sailor's school is picked from. */
+  schools: string[];
   /** Saves the form. It resolves once saved, and rejects if it didn't, which keeps the form open. */
   onSave: (changes: MemberChanges) => Promise<void>;
 }
 
-/** One person in the household: their name, email, phone, and a sailor's school, with a form to change what they may. */
-export function MemberCard({ member, editable = true, onSave }: MemberCardProps) {
+/** One person in the household: their name, email, phone, and a sailor's school, with a form to change all but the email. */
+export function MemberCard({ member, schools, onSave }: MemberCardProps) {
   const [editing, setEditing] = useState(false);
   const [state, setState] = useState<SaveState>("idle");
   const save = async (changes: MemberChanges) => {
@@ -30,13 +33,16 @@ export function MemberCard({ member, editable = true, onSave }: MemberCardProps)
   };
   const heading = useId();
   return (
-    <section aria-labelledby={heading} className="grid gap-3 rounded-lg bg-card p-card ring-1 ring-border">
+    <section
+      aria-labelledby={heading}
+      className="grid content-start gap-3 rounded-lg bg-card p-card ring-1 ring-border"
+    >
       <div className="flex items-start justify-between gap-2">
         <h2 id={heading} className="font-medium">
           {member.name}
           {member.me && <span className="text-muted-foreground"> (you)</span>}
         </h2>
-        {editable && !editing && (
+        {!editing && (
           <Button
             variant="outline"
             className="min-h-tap"
@@ -52,6 +58,7 @@ export function MemberCard({ member, editable = true, onSave }: MemberCardProps)
       {editing ? (
         <MemberForm
           member={member}
+          schools={schools}
           saving={state === "saving"}
           onCancel={() => setEditing(false)}
           onSave={(changes) => void save(changes)}
@@ -72,12 +79,7 @@ function Details({ member }: { member: Member }) {
       <dt className="text-muted-foreground">Email</dt>
       <dd className="break-all">{member.email ?? "None on file"}</dd>
       <dt className="text-muted-foreground">Phone</dt>
-      <dd>
-        {member.phone ?? "None on file"}
-        {!member.canEditPhone && member.role === "guardian" && (
-          <span className="block text-muted-foreground">Only they can change their phone.</span>
-        )}
-      </dd>
+      <dd>{member.phone ? formatPhone(member.phone) : "None on file"}</dd>
       {member.hasSchool && (
         <>
           <dt className="text-muted-foreground">School</dt>
@@ -90,25 +92,31 @@ function Details({ member }: { member: Member }) {
 
 function MemberForm({
   member,
+  schools,
   saving,
   onCancel,
   onSave,
 }: {
   member: Member;
+  schools: string[];
   saving: boolean;
   onCancel: () => void;
   onSave: (changes: MemberChanges) => void;
 }) {
   const id = useId();
   const [name, setName] = useState(member.displayName ?? "");
-  const [phone, setPhone] = useState(member.phone ?? "");
+  const [phone, setPhone] = useState(toE164(member.phone));
   const [school, setSchool] = useState(member.school ?? "");
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    onSave(memberChanges(member, { name, phone, school }));
+    onSave(memberChanges(member, { name, phone: phone ?? "", school }));
   };
   return (
     <form onSubmit={submit} className="grid gap-3">
+      <dl className="grid grid-cols-[auto_1fr] gap-x-4 text-sm">
+        <dt className="text-muted-foreground">Email</dt>
+        <dd className="break-all">{member.email ?? "None on file"}</dd>
+      </dl>
       <div className="grid gap-1.5">
         <Label htmlFor={`${id}-name`}>Name</Label>
         <Input
@@ -123,25 +131,11 @@ function MemberForm({
           Leave it blank to use the name on file.
         </p>
       </div>
-      {member.canEditPhone && (
-        <div className="grid gap-1.5">
-          <Label htmlFor={`${id}-phone`}>Phone</Label>
-          <Input
-            id={`${id}-phone`}
-            type="tel"
-            autoComplete={member.me ? "tel" : "off"}
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="min-h-tap"
-          />
-        </div>
-      )}
-      {member.hasSchool && (
-        <div className="grid gap-1.5">
-          <Label htmlFor={`${id}-school`}>School</Label>
-          <Input id={`${id}-school`} value={school} onChange={(e) => setSchool(e.target.value)} className="min-h-tap" />
-        </div>
-      )}
+      <div className="grid gap-1.5">
+        <Label htmlFor={`${id}-phone`}>Phone</Label>
+        <PhoneField id={`${id}-phone`} value={phone} onChange={setPhone} autoComplete={member.me ? "tel" : "off"} />
+      </div>
+      {member.hasSchool && <SchoolField schools={schools} value={school} onChange={setSchool} />}
       <div className="flex justify-end gap-2">
         <Button type="button" variant="ghost" className="min-h-tap" onClick={onCancel}>
           Cancel

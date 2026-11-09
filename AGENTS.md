@@ -41,7 +41,7 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   Chart Card, Engine Warnings, Version Badge, the Financial Plan Card, List, View, Page, and Actions, the Plan Details
   Dialog, the Summary Table, the Programs and Operations (Non-program) Sections, and Compare View.
   `src/components/home/` holds the home page's Link List. `src/components/household/` holds the household page's
-  Share Contact, Member Card, and Household View. `src/components/shell/` holds the App Shell around every
+  Share Contact, Member Card, School Field, and Household View, and `src/components/phone-field.tsx` the Phone Field. `src/components/shell/` holds the App Shell around every
   signed-in page: the sidebar on a laptop, and the tab bar on a phone, whose More opens the sidebar.
   `src/styles/tokens.css` holds the design tokens. Read [docs/design.md](docs/design.md) before changing any of
   them, or use the [`design`](.agents/skills/design/SKILL.md) skill.
@@ -74,10 +74,11 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   sailor, which platform's sync groups (`people.household_id`). It finds their own record by
   `directus_user_id = $CURRENT_USER`, then their household with its `members`, since the query guard refuses a Team
   user's filter on `household_id`, and their guardian links, which make them a guardian or a sailor
-  (`src/model/household.ts`). `/household` shows them, and an adult changes each person's display name, a sailor's
-  school, their own phone and that of a child whose date of birth is on file, and the household's one
-  `share_contact`, which decides whether its adults' email and phone show on the rosters. The app offers only the edits platform's
-  Community rules allow, and Directus still checks them.
+  (`src/model/household.ts`). `/household` shows them, and anyone in it, children included, changes each person's display
+  name and phone, and a sailor's school, picked from the known `schools` or typed in after choosing Other. Phones are
+  saved in E.164 and shown formatted (`src/model/phone.ts`), since Clubspot stores most as bare digits. Only an adult
+  changes the household's one `share_contact`, which decides whether its adults' email and phone show on the rosters.
+  Directus still checks every edit.
 - `src/mocks/` answers Directus's requests with made-up people and permissions, in `mise run dev` and in tests. Never
   put real club data there.
 - `mise run integration` runs the journeys against dev, as your ADC login (deploy-dev in Actions), with

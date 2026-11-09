@@ -8,7 +8,6 @@ const member = (fields: Partial<Member> & Pick<Member, "id" | "name">): Member =
   school: null,
   role: null,
   me: false,
-  canEditPhone: false,
   hasSchool: false,
   ...fields,
 });
@@ -17,10 +16,9 @@ export const me = member({
   id: "me",
   name: "Robin Tiller",
   email: "robin@example.org",
-  phone: "+1 206 555 0110",
+  phone: "2065550110",
   role: "guardian",
   me: true,
-  canEditPhone: true,
 });
 
 export const otherGuardian = member({
@@ -37,7 +35,6 @@ export const sailor = member({
   displayName: "Addie Tiller",
   school: "Lakeside Middle School",
   role: "sailor",
-  canEditPhone: true,
   hasSchool: true,
 });
 
@@ -47,3 +44,15 @@ export const household: Household = {
   editable: true,
   members: [me, otherGuardian, sailor],
 };
+
+export const schools = [
+  "Ballard High School",
+  "Eastlake High School",
+  "Garfield High School",
+  "Hamilton International Middle School",
+  "Lakeside Middle School",
+  "Lakeside Upper School",
+  "Lincoln High School",
+  "Roosevelt High School",
+  "Whitman Middle School",
+];

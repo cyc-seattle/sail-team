@@ -60,3 +60,12 @@ export async function setHouseholdSharing(householdId: string, share: boolean): 
     }),
   );
 }
+
+/** The known schools' names, which a sailor's school is picked from. */
+export const schoolsQuery = queryOptions({
+  queryKey: ["schools"],
+  queryFn: async (): Promise<string[]> => {
+    const rows = await readAll<{ name: string }>("schools", ["name"], {});
+    return rows.map((r) => r.name).sort((a, b) => a.localeCompare(b));
+  },
+});

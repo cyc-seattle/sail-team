@@ -55,45 +55,53 @@ Then("I see myself, the other guardian, and my child", async ({ page, visitor })
 });
 
 When(
-  "I change my child's name to {string} and their school to {string}",
+  "I change my child's name to {string} and their school to {string}, which isn't on the list",
   async ({ page }, name: string, school: string) => {
     await page.getByRole("button", { name: `Edit ${scene.child!.name}` }).click();
     await page.getByLabel("Name").fill(name);
-    await page.getByLabel("School").fill(school);
+    await page.getByRole("combobox", { name: "School" }).click();
+    await page.getByRole("option", { name: "Other" }).click();
+    await page.getByLabel("School name").fill(school);
     await page.getByRole("button", { name: "Save" }).click();
     await expect(card(page, name).getByRole("status")).toHaveText("Saved.");
   },
 );
 
-When("I change my phone to {string}", async ({ page, visitor }, phone: string) => {
-  await page.getByRole("button", { name: `Edit ${visitor.name}` }).click();
-  await page.getByLabel("Phone").fill(phone);
+async function changePhone(page: Page, name: string, phone: string) {
+  await page.getByRole("button", { name: `Edit ${name}` }).click();
+  await page.getByRole("textbox", { name: "Phone" }).fill(phone);
   await page.getByRole("button", { name: "Save" }).click();
+  await expect(card(page, name).getByRole("status")).toHaveText("Saved.");
+}
+
+When("I change my phone to {string}", async ({ page, visitor }, phone: string) => {
+  await changePhone(page, visitor.name, phone);
+});
+
+When("I change the other guardian's phone to {string}", async ({ page }, phone: string) => {
+  await changePhone(page, scene.otherGuardian!.name, phone);
+});
+
+Then("my child shows as Addie, at Salish Sea Academy", async ({ page }) => {
+  await expect(card(page, "Addie")).toContainText("Salish Sea Academy");
+});
+
+Then("my phone shows as {string}", async ({ page, visitor }, phone: string) => {
   await expect(card(page, `${visitor.name} (you)`)).toContainText(phone);
 });
 
-Then("my child shows as Addie, at Eastlake High School", async ({ page }) => {
-  await expect(card(page, "Addie")).toContainText("Eastlake High School");
+Then("the other guardian's phone shows as {string}", async ({ page }, phone: string) => {
+  await expect(card(page, scene.otherGuardian!.name)).toContainText(phone);
 });
 
 Then("my household has my new phone and my child's new name and school", async ({ visitor }) => {
   expect(await asAdmin("GET", `/items/people/${visitor.personId}?fields=phone`)).toMatchObject({
-    phone: "+1 206 555 0199",
+    phone: "+12065550199",
   });
   expect(await asAdmin("GET", `/items/people/${scene.child!.id}?fields=display_name,school`)).toMatchObject({
     display_name: "Addie",
-    school: "Eastlake High School",
+    school: "Salish Sea Academy",
   });
-});
-
-When("I edit the other guardian", async ({ page }) => {
-  await page.getByRole("button", { name: `Edit ${scene.otherGuardian!.name}` }).click();
-});
-
-Then("I can change their name, but not their phone", async ({ page }) => {
-  const form = card(page, scene.otherGuardian!.name);
-  await expect(form.getByLabel("Name")).toBeVisible();
-  await expect(form.getByLabel("Phone")).toHaveCount(0);
 });
 
 const choice = (page: Page) => page.getByRole("switch", { name: "Share adults contact information with teammates" });
