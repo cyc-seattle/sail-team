@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, screen, userEvent } from "storybook/test";
+import { expect, screen, userEvent, waitFor } from "storybook/test";
 import { ChartCard } from "./chart-card";
 
 const meta = {
@@ -18,6 +18,6 @@ export const Closed: Story = {};
 export const About: Story = {
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "About sailors per offering" }));
-    await expect(await screen.findByText(/Target is how many/)).toBeVisible();
+    await waitFor(async () => expect(await screen.findByText(/Target is how many/)).toBeVisible());
   },
 };

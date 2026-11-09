@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, screen, userEvent } from "storybook/test";
+import { expect, screen, userEvent, waitFor } from "storybook/test";
 import { numberedOfferings } from "@/model/reports";
 import { summerOfferings } from "./fixtures";
 import { OfferingName } from "./offering-name";
@@ -16,6 +16,6 @@ type Story = StoryObj<typeof meta>;
 export const WithDates: Story = {
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Guppies 3" }));
-    await expect(await screen.findByText("Jul 5, 2027 to Jul 9, 2027")).toBeVisible();
+    await waitFor(async () => expect(await screen.findByText("Jul 5, 2027 to Jul 9, 2027")).toBeVisible());
   },
 };
