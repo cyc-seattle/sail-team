@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ExternalLinkIcon } from "lucide-react";
+import { ExternalLinkIcon, MailIcon } from "lucide-react";
 import type { HomeLink } from "@/model/nav";
 
 const card =
@@ -18,7 +18,11 @@ export function LinkList({ links }: { links: HomeLink[] }) {
           ) : (
             <a href={link.href} className={card}>
               {link.label}
-              <ExternalLinkIcon className="size-4 text-muted-foreground" aria-hidden />
+              {link.href.startsWith("mailto:") ? (
+                <MailIcon className="size-4 text-muted-foreground" aria-hidden />
+              ) : (
+                <ExternalLinkIcon className="size-4 text-muted-foreground" aria-hidden />
+              )}
             </a>
           )}
         </li>

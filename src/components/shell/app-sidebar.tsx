@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ExternalLinkIcon } from "lucide-react";
+import { ExternalLinkIcon, MailIcon } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -57,7 +57,7 @@ export function AppSidebar({ name, pages }: { name: string; pages: NavItem[] }) 
                 {externalLinks.map((link) => (
                   <SidebarMenuItem key={link.href}>
                     <SidebarMenuButton className={item} render={<a href={link.href} />}>
-                      <ExternalLinkIcon aria-hidden />
+                      {link.href.startsWith("mailto:") ? <MailIcon aria-hidden /> : <ExternalLinkIcon aria-hidden />}
                       <span>{link.label}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

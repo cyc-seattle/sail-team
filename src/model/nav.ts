@@ -13,10 +13,11 @@ const sections: (NavItem & { shown: (permissions: Permissions) => boolean })[] =
   { to: "/household", label: "Household", shown: canSeeHousehold },
 ];
 
-/** Sites outside this app, which everyone sees on the home page. */
+/** Sites outside this app, and where to ask for help, which everyone sees on the home page and in the menu. */
 export const externalLinks: ExternalLink[] = [
   { href: "https://theclubspot.com", label: "Clubspot" },
   { href: "https://calendar.google.com", label: "Google Calendar" },
+  { href: "mailto:info@cyccommunitysailing.org", label: "Support" },
 ];
 
 /** Another site the team uses. */

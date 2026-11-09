@@ -35,6 +35,20 @@ export const Staff: Story = {
   },
 };
 
+/** Everyone has Support, an email link, with the other sites. On a phone, More opens it. */
+export const Support: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body);
+    const more = canvas.queryByRole("button", { name: "More" });
+    if (more) {
+      await userEvent.click(more);
+      await waitFor(async () => expect(await body.findByRole("dialog", { name: "Menu" })).toBeVisible());
+    }
+    const support = (await body.findAllByRole("link", { name: "Support" })).find((link) => link.checkVisibility());
+    await expect(support).toHaveAttribute("href", "mailto:info@cyccommunitysailing.org");
+  },
+};
+
 /** A parent on a team, who can open Rosters but not Plans. */
 export const TeamParent: Story = { args: { name: "Lee Halyard", pages: [staff[0]!, staff[2]!] } };
 

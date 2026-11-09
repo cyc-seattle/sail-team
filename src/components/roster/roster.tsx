@@ -132,7 +132,7 @@ function Guardians({ guardians, tap = false }: { guardians: RosterPerson[]; tap?
     <ul className="grid gap-2">
       {guardians.map((guardian) => (
         <li key={guardian.id} className="grid">
-          <span>{guardian.name}</span>
+          <span className="font-medium">{guardian.name}</span>
           <Reach person={guardian} tap={tap} />
         </li>
       ))}
