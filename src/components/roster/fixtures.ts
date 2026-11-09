@@ -8,10 +8,10 @@ const person = (id: string, name: string, email: string | null = null, phone: st
   phone,
 });
 
-const sailor = (id: string, name: string, school: string | null, parents: RosterPerson[]): RosterSailor => ({
+const sailor = (id: string, name: string, school: string | null, guardians: RosterPerson[]): RosterSailor => ({
   ...person(id, name),
   school,
-  parents,
+  guardians,
 });
 
 export const pat = person("pat", "Pat Bowline", "pat.bowline@example.org", "+1 206 555 0141");
@@ -41,8 +41,12 @@ export const doublehanded: TeamRoster = {
       startsOn: "2026-09-08",
       endsOn: "2026-11-20",
       sailors: [
-        sailor("mia", "Mia Cleat", "Lakeside Middle School", [person("alex", "Alex Cleat", null, "+1 206 555 0150")]),
-        { ...person("ren", "Ren Mainsheet", "ren@example.org", "+1 206 555 0177"), school: null, parents: [] },
+        sailor("mia", "Mia Cleat", "Lakeside Middle School", [
+          person("alex", "Alex Cleat", null, "+1 206 555 0150"),
+          person("jordan", "Jordan Cleat"),
+          person("sam-r", "Sam Rivera", "sam.rivera@example.org"),
+        ]),
+        { ...person("ren", "Ren Mainsheet", "ren@example.org", "+1 206 555 0177"), school: null, guardians: [] },
         sailor("kai", "Kai Halyard", "Harbor View Middle School", [person("lee", "Lee Halyard")]),
       ],
     },
