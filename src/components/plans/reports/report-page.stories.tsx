@@ -3,9 +3,11 @@ import { expect, userEvent } from "storybook/test";
 
 import {
   areaOfferings,
+  assumptionsRules,
   capital,
   doublehandedOfferings,
   doublehandedPrograms,
+  doublehandedRules,
   doublehandedStatement,
   fundraising,
   overviewRows,
@@ -15,7 +17,9 @@ import {
   sharedCosts,
   summerOfferings,
   summerPrograms,
+  summerRules,
   summerStatement,
+  warnings,
 } from "./fixtures";
 import { FundraisingCapitalReport } from "./fundraising-capital-report";
 import { NonProgramReport } from "./non-program-report";
@@ -37,7 +41,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Overview: Story = {
-  args: { children: <OverviewReport setId="budget" rows={overviewRows} offerings={areaOfferings} /> },
+  args: {
+    children: <OverviewReport setId="budget" rows={overviewRows} offerings={areaOfferings} warnings={warnings} />,
+  },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { level: 1, name: "Budget" })).toBeVisible();
     await expect(canvas.getByRole("heading", { name: "Revenue and expenses" })).toBeVisible();
@@ -47,16 +53,25 @@ export const Overview: Story = {
 export const Summer: Story = {
   args: {
     current: "summer",
-    children: <ProgramAreaReport statement={summerStatement} programs={summerPrograms} offerings={summerOfferings} />,
+    children: (
+      <ProgramAreaReport
+        area="Summer"
+        rules={summerRules}
+        warnings={warnings.filter((w) => w.area === "summer")}
+        statement={summerStatement}
+        programs={summerPrograms}
+        offerings={summerOfferings}
+      />
+    ),
   },
 };
 
-/** Program settings open from the top of a program area's report. */
+/** Settings and rules open from the top of a program area's report. */
 export const SummerSettingsOpen: Story = {
   args: { ...Summer.args },
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByText("Program settings", { selector: "h2" }));
-    await expect(canvas.getByRole("table", { name: "Program settings" })).toBeVisible();
+    await userEvent.click(canvas.getByText("Settings and rules", { selector: "h2" }));
+    await expect(canvas.getByRole("list", { name: "Guppies rules" })).toBeVisible();
   },
 };
 
@@ -65,6 +80,9 @@ export const Doublehanded: Story = {
     current: "doublehanded",
     children: (
       <ProgramAreaReport
+        area="Doublehanded"
+        rules={doublehandedRules}
+        warnings={warnings.filter((w) => w.area === "doublehanded")}
         statement={doublehandedStatement}
         programs={doublehandedPrograms}
         offerings={doublehandedOfferings}
@@ -82,7 +100,7 @@ export const FundraisingAndCapital: Story = {
 };
 
 export const Assumptions: Story = {
-  args: { current: "rates", children: <RatesReport assumptions={reportAssumptions} /> },
+  args: { current: "rates", children: <RatesReport assumptions={reportAssumptions} rules={assumptionsRules} /> },
 };
 
 export const Draft: Story = { args: { ...Overview.args, name: "Two more coaches", status: "draft" } };

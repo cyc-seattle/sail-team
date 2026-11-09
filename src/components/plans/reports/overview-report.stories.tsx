@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent } from "storybook/test";
 import { withRouter } from "../../../../.storybook/with-router";
-import { areaOfferings, overviewRows } from "./fixtures";
+import { areaOfferings, overviewRows, warnings } from "./fixtures";
 import { OverviewReport } from "./overview-report";
 
 const meta = {
@@ -9,7 +9,7 @@ const meta = {
   decorators: [
     withRouter("/plans/financial/budget", ["/plans/financial/$setId", "/plans/financial/$setId/$planId", "/plans"]),
   ],
-  args: { setId: "budget", rows: overviewRows, offerings: areaOfferings },
+  args: { setId: "budget", rows: overviewRows, offerings: areaOfferings, warnings },
 } satisfies Meta<typeof OverviewReport>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -46,3 +46,6 @@ export const EnrollmentByProgram: Story = {
     await expect(table).not.toHaveTextContent("Week 1");
   },
 };
+
+/** A plan with nothing to warn about has no warnings card. */
+export const NoWarnings: Story = { args: { warnings: [] } };

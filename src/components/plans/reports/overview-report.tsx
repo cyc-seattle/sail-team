@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, TriangleAlertIcon } from "lucide-react";
 import { Fragment, useState, type ReactNode } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   defaultSort,
   enrollment,
@@ -12,9 +12,12 @@ import {
   programFees,
   sortRows,
   totalOf,
+  warningCounts,
+  warningLabels,
   type EnrollmentBy,
   type EnrollmentRow,
   type OverviewRow,
+  type PlanWarning,
   type ReportOffering,
   type Sort,
   type SortKey,
@@ -22,9 +25,11 @@ import {
 import { cn } from "@/lib/utils";
 import { Money } from "../money";
 import { ReportSection } from "./report-page";
+import { SegmentedControl } from "./segmented-control";
 
 /** The name column stays put while the numbers scroll sideways on a phone. */
 const pinned = "sticky left-0 z-10 bg-background";
+const pinnedOnCard = "sticky left-0 z-10 bg-card";
 const count = (n: number) => n.toLocaleString("en-US");
 
 function AreaLink({ setId, row }: { setId: string; row: OverviewRow }) {
@@ -108,13 +113,56 @@ export interface OverviewReportProps {
   rows: OverviewRow[];
   /** Each program area's offerings, by its report's key. */
   offerings: Record<string, ReportOffering[]>;
+  warnings: PlanWarning[];
+}
+
+/** How many warnings each program area has, by kind, each area linking to its page, where they're listed by date. */
+function WarningsCard({ setId, rows, warnings }: { setId: string; rows: OverviewRow[]; warnings: PlanWarning[] }) {
+  const kinds = Object.keys(warningLabels) as (keyof typeof warningLabels)[];
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <TriangleAlertIcon aria-hidden className="size-4 text-warning" />
+          <h2 id="warnings">{warnings.length === 1 ? "1 warning" : `${warnings.length} warnings`}</h2>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table aria-labelledby="warnings">
+          <TableHeader>
+            <TableRow>
+              <TableHead className={pinnedOnCard}>Program area</TableHead>
+              {kinds.map((k) => (
+                <TableHead key={k} className="text-right">
+                  {warningLabels[k]}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {warningCounts(warnings).map(({ area, counts }) => {
+              const row = rows.find((r) => r.report === area);
+              return (
+                <TableRow key={area}>
+                  <TableCell className={pinnedOnCard}>{row ? <AreaLink setId={setId} row={row} /> : area}</TableCell>
+                  {kinds.map((k) => (
+                    <Count key={k}>{counts[k] || ""}</Count>
+                  ))}
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
 }
 
 /**
- * A Financial Plan's year by program area: revenue to net, sortable, then each program's fees, then enrollment by
- * session or by program. Program areas keep the first table's order all the way down.
+ * A Financial Plan's year by program area: revenue to net, sortable, then the engine's warnings, each program's fees,
+ * and enrollment by session or by program. Program areas keep the first table's order all the way down.
  */
-export function OverviewReport({ setId, rows, offerings }: OverviewReportProps) {
+export function OverviewReport({ setId, rows, offerings, warnings }: OverviewReportProps) {
   const [sort, setSort] = useState<Sort>(defaultSort);
   const [by, setBy] = useState<EnrollmentBy>("session");
   const sorted = sortRows(rows, sort);
@@ -184,6 +232,8 @@ export function OverviewReport({ setId, rows, offerings }: OverviewReportProps) 
         </Table>
       </ReportSection>
 
+      {warnings.length > 0 && <WarningsCard setId={setId} rows={rows} warnings={warnings} />}
+
       <ReportSection id="program-fees" title="Program fees">
         <Table aria-label="Program fees">
           <TableHeader>
@@ -216,21 +266,15 @@ export function OverviewReport({ setId, rows, offerings }: OverviewReportProps) 
         id="enrollment"
         title="Enrollment"
         actions={
-          <ToggleGroup
-            value={[by]}
-            onValueChange={(values: string[]) => {
-              const next = values[0] as EnrollmentBy | undefined;
-              if (next) {
-                setBy(next);
-              }
-            }}
-            variant="outline"
-            size="sm"
-            aria-label="Group enrollment"
-          >
-            <ToggleGroupItem value="session">By session</ToggleGroupItem>
-            <ToggleGroupItem value="program">By program</ToggleGroupItem>
-          </ToggleGroup>
+          <SegmentedControl
+            label="Group enrollment"
+            value={by}
+            onChange={setBy}
+            options={[
+              { value: "session", label: "By session" },
+              { value: "program", label: "By program" },
+            ]}
+          />
         }
       >
         <Table aria-label="Enrollment">

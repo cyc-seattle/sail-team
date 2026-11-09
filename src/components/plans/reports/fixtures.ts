@@ -1,7 +1,8 @@
 // Made-up numbers for the Planning report wireframes. Never real figures.
-import type { AccountAmount, OverviewRow, ProgramSettings, ReportOffering } from "@/model/reports";
+import type { AccountAmount, OverviewRow, PlanWarning, ProgramSettings, ReportOffering } from "@/model/reports";
 import { operationsAssumptions } from "../fixtures";
 import type { Product, SharedCost } from "./non-program-report";
+import type { PlanSummary } from "./planning-page";
 
 const area = (
   report: string,
@@ -70,9 +71,20 @@ export const summerStatement = {
 };
 
 export const summerPrograms: ProgramSettings[] = [
-  { name: "Guppies", staff_level: "Instructor 1", sailors_per_coach: 5 },
-  { name: "Opti Camp", staff_level: "Instructor 2", sailors_per_coach: 8 },
-  { name: "Race Camp", staff_level: "Coach 3", sailors_per_coach: 10 },
+  {
+    name: "Guppies",
+    staff_level: "Level 1 Instructor",
+    sailors_per_coach: 10,
+    rules:
+      "If there are more than 12 Guppies, add a Junior Instructor.\nGuppies sail Sailqubes. The Harpoon can take up to 10 instead.",
+  },
+  {
+    name: "Opti Camp",
+    staff_level: "Level 2 Instructor",
+    sailors_per_coach: 8,
+    rules: "About a third bring their own Optis.\nNever fewer than 2 coaches on the water.",
+  },
+  { name: "Race Camp", staff_level: "Level 3 Coach", sailors_per_coach: 10, rules: null },
 ];
 
 const week = (n: number) => {
@@ -184,9 +196,9 @@ export const areaOfferings: Record<string, ReportOffering[]> = {
 };
 
 export const doublehandedPrograms: ProgramSettings[] = [
-  { name: "J-Pod", staff_level: "Coach 3", sailors_per_coach: 8 },
-  { name: "K-Pod", staff_level: "Coach 3", sailors_per_coach: 10 },
-  { name: "L-Pod", staff_level: "Coach 4", sailors_per_coach: 12 },
+  { name: "J-Pod", staff_level: "Level 3 Coach", sailors_per_coach: 8, rules: "Travel regattas take two coaches." },
+  { name: "K-Pod", staff_level: "Level 3 Coach", sailors_per_coach: 10, rules: null },
+  { name: "L-Pod", staff_level: "Level 4 Coach", sailors_per_coach: 12, rules: "Most sailors bring their own 420s." },
 ];
 
 export const doublehandedStatement = {
@@ -247,3 +259,104 @@ export const reportAssumptions = {
   positions: operationsAssumptions.operations!.positions.map((p, i) => ({ ...p, bonus_rate: i === 0 ? null : 0.1 })),
   bonuses: [],
 };
+
+export const summerRules =
+  "Guppies and Opti Camp share the dock in the morning.\nNo sailing on Monday, July 5.\nThe Program Director coaches Race Camp, at salary.";
+
+export const doublehandedRules = "J-Pod and K-Pod share coaches on Wednesdays.";
+
+export const assumptionsRules =
+  "Keep one RIB ashore for repairs on summer weekdays.\nNo more than 6 RIBs on the water at once.";
+
+export const warnings: PlanWarning[] = [
+  {
+    key: "w1",
+    area: "summer",
+    date: "2027-07-12",
+    kind: "over_inventory",
+    message: "14 Sailqubes allocated, 12 available (Guppies 9, Opti Camp 5).",
+  },
+  {
+    key: "w2",
+    area: "summer",
+    date: "2027-07-13",
+    kind: "over_capacity",
+    message: "Guppies: 14 sailors, but the allocation takes 10 (1 Level 1 Instructor at 10 per coach).",
+  },
+  {
+    key: "w3",
+    area: "summer",
+    date: "2027-07-19",
+    kind: "over_inventory",
+    message: "7 RIBs allocated, 6 available.",
+  },
+  {
+    key: "w4",
+    area: "doublehanded",
+    date: "2027-08-02",
+    kind: "unallocated",
+    message: "J-Pod practice has no staff.",
+  },
+];
+
+const planSummary = (fields: Partial<PlanSummary> & Pick<PlanSummary, "id" | "name" | "status">): PlanSummary => ({
+  year: 2027,
+  saved_at: null,
+  parent: null,
+  note: null,
+  from_agent: false,
+  warnings: 0,
+  revenue_cents: 49_900_000,
+  expense_cents: 44_600_000,
+  net_cents: 5_300_000,
+  ...fields,
+});
+
+/** Each year's Financial Plans: the active one, drafts including one from the planning agent, and older saved ones. */
+export const planningPlans: PlanSummary[] = [
+  planSummary({ id: "budget", name: "Budget", status: "active", saved_at: "2027-03-10T18:00:00Z", warnings: 2 }),
+  planSummary({
+    id: "agent",
+    name: "2027 allocations, Nov 9",
+    status: "draft",
+    from_agent: true,
+    parent: { id: "budget", name: "Budget" },
+    warnings: 4,
+    expense_cents: 44_100_000,
+    net_cents: 5_800_000,
+    note: "Allocated staff, RIBs and boats for every summer week and the spring and fall seasons, and put J-Pod and K-Pod together on Wednesdays.\nLeft 4 warnings: July 12 and 19 need more Sailqubes and RIBs than CSC has, July 13 needs a second Guppies instructor that the rules allow only past 12 sailors, and J-Pod's August 2 practice has no coach free.",
+  }),
+  planSummary({
+    id: "two-coaches",
+    name: "Two more coaches",
+    status: "draft",
+    parent: { id: "budget", name: "Budget" },
+    note: "What a second full-time coach would cost.",
+    expense_cents: 47_800_000,
+    net_cents: 2_100_000,
+  }),
+  planSummary({
+    id: "board",
+    name: "Board review",
+    status: "saved",
+    saved_at: "2027-02-02T18:00:00Z",
+    net_cents: 4_400_000,
+  }),
+  planSummary({
+    id: "first",
+    name: "First pass",
+    status: "saved",
+    saved_at: "2027-01-15T18:00:00Z",
+    net_cents: 1_200_000,
+  }),
+  planSummary({
+    id: "2026",
+    name: "2026 Budget",
+    year: 2026,
+    status: "active",
+    saved_at: "2026-03-04T18:00:00Z",
+    revenue_cents: 45_200_000,
+    expense_cents: 42_900_000,
+    net_cents: 2_300_000,
+  }),
+];

@@ -1,14 +1,18 @@
 import type { OperationsAssumptions } from "@/model/assumptions";
 import { OperationsAssumptionsView } from "../assumptions";
+import { ReportSection } from "./report-page";
+import { RulesList } from "./rules-list";
 
-/** The rates every plan in a Financial Plan uses, set in its Operations Plan. */
-export function RatesReport({ assumptions }: { assumptions: OperationsAssumptions }) {
+/** The rules the planning agent follows across every program, then the rates every plan in a Financial Plan uses. */
+export function RatesReport({ assumptions, rules }: { assumptions: OperationsAssumptions; rules: string | null }) {
   return (
-    <section aria-labelledby="rates">
-      <h2 id="rates" className="sr-only">
-        Assumptions
-      </h2>
-      <OperationsAssumptionsView assumptions={assumptions} stacked />
-    </section>
+    <>
+      <ReportSection id="rules" title="Rules">
+        <RulesList rules={rules} label="Rules" />
+      </ReportSection>
+      <ReportSection id="rates" title="Rates">
+        <OperationsAssumptionsView assumptions={assumptions} stacked />
+      </ReportSection>
+    </>
   );
 }

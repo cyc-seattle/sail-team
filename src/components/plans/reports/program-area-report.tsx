@@ -1,13 +1,21 @@
 import { ChevronRightIcon } from "lucide-react";
 import { Fragment, type ReactNode } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { numberedOfferings, type AccountAmount, type ProgramSettings, type ReportOffering } from "@/model/reports";
+import {
+  numberedOfferings,
+  type AccountAmount,
+  type PlanWarning,
+  type ProgramSettings,
+  type ReportOffering,
+} from "@/model/reports";
 import { cn } from "@/lib/utils";
 import { Money } from "../money";
 import { OfferingName } from "./offering-name";
 import { ReportSection } from "./report-page";
+import { RulesList } from "./rules-list";
 import { SessionGrid } from "./session-grid";
 import { StatementTable } from "./statement-table";
+import { WarningsTable } from "./warnings-table";
 
 const pinned = "sticky left-0 z-10 bg-background";
 const count = (n: number) => n.toLocaleString("en-US");
@@ -24,32 +32,45 @@ function Amount({ cents, whole = false }: { cents: number; whole?: boolean }) {
   );
 }
 
-/** Each program's hard rules, closed until someone opens them. */
-function ProgramSettingsTable({ programs }: { programs: ProgramSettings[] }) {
+/**
+ * The area's rules, then each program's settings and rules, closed until someone opens them. The planning agent reads
+ * the rules; the engine checks only the settings.
+ */
+function SettingsAndRules({
+  area,
+  rules,
+  programs,
+}: {
+  area: string;
+  rules: string | null;
+  programs: ProgramSettings[];
+}) {
   return (
     <details className="group">
       <summary className="flex min-h-tap cursor-pointer list-none items-center gap-1 [&::-webkit-details-marker]:hidden">
         <ChevronRightIcon aria-hidden className="size-4 transition-transform group-open:rotate-90" />
-        <h2 className="text-lg font-medium">Program settings</h2>
+        <h2 className="text-lg font-medium">Settings and rules</h2>
       </summary>
-      <Table aria-label="Program settings" className="mt-3">
-        <TableHeader>
-          <TableRow>
-            <TableHead className={pinned}>Program</TableHead>
-            <TableHead>Staff level</TableHead>
-            <TableHead className="text-right">Sailors per coach</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {programs.map((p) => (
-            <TableRow key={p.name}>
-              <TableCell className={pinned}>{p.name}</TableCell>
-              <TableCell>{p.staff_level}</TableCell>
-              <Num>{p.sailors_per_coach}</Num>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <div className="mt-3 grid max-w-3xl gap-6">
+        <section aria-labelledby="area-rules" className="grid gap-2">
+          <h3 id="area-rules" className="text-sm font-medium">
+            {area}
+          </h3>
+          <RulesList rules={rules} label={`${area} rules`} />
+        </section>
+        {programs.map((p) => (
+          <section key={p.name} aria-label={p.name} className="grid gap-2 border-t pt-4">
+            <h3 className="text-sm font-medium">{p.name}</h3>
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+              <dt className="text-muted-foreground">Staff level</dt>
+              <dd>{p.staff_level}</dd>
+              <dt className="text-muted-foreground">Sailors per coach</dt>
+              <dd className="tabular-nums">{p.sailors_per_coach}</dd>
+            </dl>
+            <RulesList rules={p.rules} label={`${p.name} rules`} />
+          </section>
+        ))}
+      </div>
     </details>
   );
 }
@@ -57,20 +78,31 @@ function ProgramSettingsTable({ programs }: { programs: ProgramSettings[] }) {
 const offeringHead = ["Fee", "Fee per day", "Sailors", "Sailor-days", "Fee per hour", "Sailor-hours"];
 
 export interface ProgramAreaReportProps {
+  /** The program area's name, such as Summer. */
+  area: string;
+  /** The area's own rules, for what spans its programs. */
+  rules: string | null;
+  warnings: PlanWarning[];
   statement: { revenue: AccountAmount[]; direct: AccountAmount[]; indirect: AccountAmount[] };
   programs: ProgramSettings[];
   offerings: ReportOffering[];
 }
 
 /**
- * One program area: its programs' settings, closed at first, its revenue and expenses by account, then its sailors by
+ * One program area: its settings and rules, closed at first, its warnings by date, its revenue and expenses by account, then its sailors by
  * session and each offering's fee and size, by program and start date, the figures used to compare with other centers.
  */
-export function ProgramAreaReport({ statement, programs, offerings }: ProgramAreaReportProps) {
+export function ProgramAreaReport({ area, rules, warnings, statement, programs, offerings }: ProgramAreaReportProps) {
   const groups = numberedOfferings(offerings);
   return (
     <>
-      <ProgramSettingsTable programs={programs} />
+      <SettingsAndRules area={area} rules={rules} programs={programs} />
+
+      {warnings.length > 0 && (
+        <ReportSection id="warnings" title="Warnings">
+          <WarningsTable warnings={warnings} />
+        </ReportSection>
+      )}
 
       <ReportSection id="revenue-and-expenses" title="Revenue and expenses">
         <StatementTable

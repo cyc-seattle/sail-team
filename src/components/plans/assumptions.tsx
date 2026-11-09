@@ -128,7 +128,7 @@ export function OperationsAssumptionsView({
         </RateTable>
       )}
       {a.staffLevels.length > 0 && (
-        <RateTable title="Coach and staff pay" head={["Level", "Per hour"]}>
+        <RateTable title="Staff levels" head={["Level", "Per hour"]}>
           {a.staffLevels.map((l) => (
             <TableRow key={l.key}>
               <TableCell>{l.name}</TableCell>
