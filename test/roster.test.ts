@@ -1,7 +1,7 @@
 import { setupServer } from "msw/node";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { readableFields } from "../src/directus/access.ts";
-import { myRecordQuery, setShareContact, teamsQuery } from "../src/directus/roster.ts";
+import { teamsQuery } from "../src/directus/roster.ts";
 import { parentPermissions, teamPermissions } from "../src/mocks/fixtures.ts";
 import { handlers } from "../src/mocks/handlers.ts";
 import { rosterIds } from "../src/mocks/roster.ts";
@@ -13,7 +13,6 @@ import {
   groupUrl,
   monthsBefore,
   NO_SCHOOL,
-  onTeam,
   seattleToday,
   teamSize,
   type OfferingRow,
@@ -116,15 +115,6 @@ describe("buildTeams", () => {
     expect(teamSize(teams[0]!)).toBe(2);
   });
 
-  it("knows who is on a team, sailors and parents both", () => {
-    expect(["child", "parent", "other", "stranger"].map((id) => onTeam(teams[0]!, id))).toEqual([
-      true,
-      true,
-      true,
-      false,
-    ]);
-  });
-
   it("lets a team stand on its own when the person can't read its area", () => {
     const [team] = buildTeams({
       programs: [{ id: "j", name: "J-Pod", team: true }],
@@ -206,12 +196,5 @@ describe("reading rosters from Directus", () => {
 
   it("asks only for what a household on no team can read, and finds no team", async () => {
     expect(await run(teamsQuery(parentPermissions))).toEqual([]);
-  });
-
-  it("finds the signed-in person's own record by their login, and changes whether they share", async () => {
-    expect(await run(myRecordQuery)).toEqual({ id: rosterIds.me, share_contact: true });
-    await setShareContact(rosterIds.me, false);
-    expect(await run(myRecordQuery)).toEqual({ id: rosterIds.me, share_contact: false });
-    await setShareContact(rosterIds.me, true);
   });
 });

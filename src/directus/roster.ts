@@ -1,4 +1,4 @@
-import { customEndpoint, updateItem } from "@directus/sdk";
+import { customEndpoint } from "@directus/sdk";
 import { queryOptions } from "@tanstack/react-query";
 import {
   buildTeams,
@@ -118,23 +118,3 @@ export const teamsQuery = (permissions: Permissions) =>
       return buildTeams({ programs, offerings: teamOfferings, registrations, contacts, people });
     },
   });
-
-export interface MyRecord {
-  id: string;
-  share_contact: boolean | null;
-}
-
-/** The signed-in person's own record, found by their login, or null if the club hasn't linked one to them. */
-export const myRecordQuery = queryOptions({
-  queryKey: ["rosters", "me"],
-  queryFn: async (): Promise<MyRecord | null> =>
-    (
-      await readAll<MyRecord>("people", ["id", "share_contact"], {
-        directus_user_id: { _eq: "$CURRENT_USER" },
-      })
-    )[0] ?? null,
-});
-
-export async function setShareContact(personId: string, share: boolean): Promise<void> {
-  await client().request(updateItem("people", personId, { share_contact: share }));
-}

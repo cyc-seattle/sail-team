@@ -1,4 +1,4 @@
-import { canRead, canSeeRosters, type Permissions } from "@/directus/access";
+import { canRead, canSeeHousehold, canSeeRosters, type Permissions } from "@/directus/access";
 
 /** A page of this app. */
 export interface NavItem {
@@ -10,6 +10,7 @@ export interface NavItem {
 const sections: (NavItem & { shown: (permissions: Permissions) => boolean })[] = [
   { to: "/plans", label: "Plans", shown: (p) => canRead(p, "plans") },
   { to: "/roster", label: "Rosters", shown: canSeeRosters },
+  { to: "/household", label: "Household", shown: canSeeHousehold },
 ];
 
 /** Sites outside this app, which everyone sees on the home page. */

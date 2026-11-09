@@ -34,9 +34,14 @@ export function readableFields(permissions: Permissions | undefined, collection:
 }
 
 /**
- * Whether someone may open the team rosters: households on a team and Crew. Both read other people's email, which
- * Community's rules, for their own household only, never give.
+ * Whether someone may open the team rosters: households on a team and Crew. Both read which programs are teams, which
+ * Community's rules never give. Community reads email too, for its own household, so email can't tell them apart.
  */
 export function canSeeRosters(permissions: Permissions | undefined): boolean {
-  return canRead(permissions, "people") && readableFields(permissions, "people", ["email"]).length > 0;
+  return canRead(permissions, "programs") && readableFields(permissions, "programs", ["team"]).length > 0;
+}
+
+/** Whether someone may open the Household page: anyone Directus links to a household. */
+export function canSeeHousehold(permissions: Permissions | undefined): boolean {
+  return canRead(permissions, "households");
 }

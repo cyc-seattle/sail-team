@@ -66,7 +66,8 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
       session.me ? HttpResponse.json({ data: session.permissions }) : forbidden(),
     ),
     http.get(`${directusUrl}/items/:table/:id`, ({ params, request }) => {
-      const row = tables[params["table"] as string]?.find((r) => r["id"] === params["id"]);
+      const table = params["table"] as string;
+      const row = (tables[table] ?? rosterTables[table])?.find((r) => r["id"] === params["id"]);
       return row
         ? HttpResponse.json({ data: shape(row, new URL(request.url).searchParams.get("fields")) })
         : forbidden();
