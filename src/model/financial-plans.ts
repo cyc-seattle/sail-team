@@ -9,12 +9,19 @@ export interface FinancialPlanSummary {
   name: string;
   /** Its note, such as "Reviewed with the board". */
   message: string | null;
-  status: "draft" | "saved";
+  /** A draft changes; a saved one never does. The active one is the saved one the club is running this year. */
+  status: "draft" | "saved" | "active";
   saved_at: string | null;
   saved_by: string | null;
   /** The Financial Plan it started as a copy of. */
   parent: { id: string; name: string } | null;
 }
+
+/** Whether it's saved, and so never changes: saved, or saved and active. */
+export const isSaved = (set: Pick<FinancialPlanSummary, "status">) => set.status !== "draft";
+
+/** A Financial Plan in the list, with a saved one's top-line numbers. A draft's are worked out only when it's opened. */
+export type ListedPlan = FinancialPlanSummary & { topLine: TopLine | null };
 
 /** The organization's totals in a Financial Plan. */
 export interface Totals {
@@ -35,10 +42,10 @@ export function plansByYear<T extends FinancialPlanSummary>(sets: T[]): { year: 
     sets: sets
       .filter((s) => s.fiscal_year === year)
       .sort((a, b) => {
-        if (a.status !== b.status) {
-          return a.status === "draft" ? -1 : 1;
+        if (isSaved(a) !== isSaved(b)) {
+          return isSaved(a) ? 1 : -1;
         }
-        return a.status === "draft" ? a.name.localeCompare(b.name) : (b.saved_at ?? "").localeCompare(a.saved_at ?? "");
+        return !isSaved(a) ? a.name.localeCompare(b.name) : (b.saved_at ?? "").localeCompare(a.saved_at ?? "");
       }),
   }));
 }
@@ -54,9 +61,9 @@ export interface Member {
   area_name: string | null;
 }
 
-/** What a member is called on the page: its program area's name, or "Operations Plan". */
+/** What a member is called on the page: its program area's name, or "Non-program" for the Operations Plan. */
 export function memberName(member: Member): string {
-  return member.kind === "operations" ? "Operations Plan" : (member.area_name ?? member.plan_name);
+  return member.kind === "operations" ? "Non-program" : (member.area_name ?? member.plan_name);
 }
 
 /** The Operations Plan first, then each Program Plan by name. */
@@ -80,6 +87,10 @@ export interface PlanLine {
   cost_center_name: string;
   amount_cents: number;
   revenue: boolean;
+  /** On an asset account: spent on something lasting, such as a coach boat. */
+  capital: boolean;
+  /** What the money is for: running programs, managing the club, or fundraising. */
+  function: "program" | "management" | "fundraising" | null;
   member: string | null;
 }
 
@@ -89,6 +100,33 @@ export const signedCents = (line: Pick<PlanLine, "amount_cents" | "revenue">) =>
 
 /** One P&L row, with the member it's charged in. */
 export type MemberPnl = SavedPnlRow & { member: string | null };
+
+/** Operating revenue, expenses, gross and net. */
+export interface TopLine {
+  revenue_cents: number;
+  expense_cents: number;
+  /** Revenue less the direct program costs, before overhead. */
+  gross_cents: number;
+  net_cents: number;
+}
+
+/**
+ * The top-line numbers from some lines, leaving out fundraising and capital as platform's engine does for the
+ * organization's operating totals.
+ */
+export function topLine(lines: Pick<PlanLine, "amount_cents" | "revenue" | "capital" | "function">[]): TopLine {
+  const operating = lines.filter((l) => !l.capital && l.function !== "fundraising");
+  const sum = (ls: typeof lines) => ls.reduce((total, l) => total + l.amount_cents, 0);
+  const revenue = sum(operating.filter((l) => l.revenue));
+  const expenses = operating.filter((l) => !l.revenue);
+  const expense = sum(expenses);
+  return {
+    revenue_cents: revenue,
+    expense_cents: expense,
+    gross_cents: revenue - sum(expenses.filter((l) => l.function === "program")),
+    net_cents: revenue - expense,
+  };
+}
 
 /** A Financial Plan's P&L: as it was saved, or, for a draft, calculated now. */
 export interface Results {
@@ -146,4 +184,49 @@ export function listOf(names: string[]): string {
     return names.join(" and ");
   }
   return `${names.slice(0, -1).join(", ")}, and ${names.at(-1)}`;
+}
+
+/** One row of a Financial Plan's summary: a program area, Non-program, or the total. */
+export interface SummaryRow {
+  name: string;
+  /** The member it's for. Null for the total. */
+  member: Member | null;
+  topLine: TopLine;
+}
+
+/** A row for each program area by name, then Non-program, then the total, which adds them up. */
+export function summaryRows(members: Member[], results: Results): { rows: SummaryRow[]; total: SummaryRow } {
+  const rows = membersInOrder(members)
+    .sort((a, b) => Number(a.kind === "operations") - Number(b.kind === "operations"))
+    .map((member): SummaryRow => {
+      return {
+        name: memberName(member),
+        member,
+        topLine: topLine(results.lines.filter((l) => l.member === member.id)),
+      };
+    });
+  return {
+    rows,
+    total: {
+      name: "Total",
+      member: null,
+      topLine: topLine(results.lines),
+    },
+  };
+}
+
+/** Revenue as a share of expenses: 1 when a row pays its way. Null when it has no expenses. */
+export const costRecovery = (t: TopLine): number | null =>
+  t.expense_cents > 0 ? t.revenue_cents / t.expense_cents : null;
+
+/** What the top-line numbers leave out: fundraising, and spending on lasting things. */
+export function outsideTopLine(lines: Pick<PlanLine, "amount_cents" | "revenue" | "capital" | "function">[]) {
+  const fundraising = lines.filter((l) => !l.capital && l.function === "fundraising");
+  const sum = (ls: typeof lines) => ls.reduce((total, l) => total + l.amount_cents, 0);
+  const revenue = sum(fundraising.filter((l) => l.revenue));
+  const expense = sum(fundraising.filter((l) => !l.revenue));
+  return {
+    fundraising: { revenue_cents: revenue, expense_cents: expense, net_cents: revenue - expense },
+    capital_cents: sum(lines.filter((l) => l.capital)),
+  };
 }

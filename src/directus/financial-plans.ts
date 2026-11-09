@@ -1,6 +1,15 @@
-import { customEndpoint } from "@directus/sdk";
+import { createItem, customEndpoint, updateItem } from "@directus/sdk";
 import { queryOptions } from "@tanstack/react-query";
-import type { FinancialPlanSummary, Member, Results, Totals } from "@/model/financial-plans";
+import {
+  isSaved,
+  topLine,
+  type FinancialPlanSummary,
+  type ListedPlan,
+  type Member,
+  type PlanLine,
+  type Results,
+  type Totals,
+} from "@/model/financial-plans";
 import type { SavedPnlRow } from "@/model/saved-results";
 import { appDirectus } from "./app.ts";
 import { calculateFinancialPlan, readAll } from "./plans.ts";
@@ -24,19 +33,36 @@ const summary = ({ parent_id, ...set }: SetRow): FinancialPlanSummary => ({ ...s
 
 const totalFields = ["operating_net_cents", "fundraising_net_cents", "capital_cents", "total_cents"];
 
-/** Every Financial Plan, with a saved one's totals, for the list. */
+/** Every Financial Plan, with a saved one's top-line numbers, for the list. */
 export const financialPlansQuery = queryOptions({
   queryKey: ["financial-plans"],
-  queryFn: async (): Promise<(FinancialPlanSummary & { totals: Totals | null })[]> => {
+  queryFn: async (): Promise<ListedPlan[]> => {
     const sets = (await readAll<SetRow>("version_sets", undefined, setFields)).map(summary);
-    const saved = sets.filter((s) => s.status === "saved").map((s) => s.id);
-    const totals = saved.length
-      ? await readAll<Totals & { version_set_id: string }>("plan_results", { version_set_id: { _in: saved } }, [
-          ...totalFields,
+    const saved = sets.filter(isSaved).map((s) => s.id);
+    const lines = saved.length
+      ? await readAll<{
+          version_set_id: string;
+          amount_cents: number;
+          function: PlanLine["function"];
+          account_id: { type: string };
+        }>("plan_result_lines", { version_set_id: { _in: saved } }, [
           "version_set_id",
+          "amount_cents",
+          "function",
+          "account_id.type",
         ])
       : [];
-    return sets.map((set) => ({ ...set, totals: totals.find((t) => t.version_set_id === set.id) ?? null }));
+    return sets.map((set) => {
+      const own = lines
+        .filter((l) => l.version_set_id === set.id)
+        .map((l) => ({
+          amount_cents: l.amount_cents,
+          function: l.function,
+          revenue: l.account_id.type === "revenue",
+          capital: l.account_id.type === "asset",
+        }));
+      return { ...set, topLine: own.length ? topLine(own) : null };
+    });
   },
 });
 
@@ -90,6 +116,7 @@ async function readSavedResults(setId: string): Promise<Results | null> {
       cost_center_name: string;
       amount_cents: number;
       version_set_member_id: string | null;
+      function: PlanLine["function"];
       account_id: { type: string; number: string | null; name: string };
     }>("plan_result_lines", bySet, [
       "line",
@@ -97,6 +124,7 @@ async function readSavedResults(setId: string): Promise<Results | null> {
       "cost_center_name",
       "amount_cents",
       "version_set_member_id",
+      "function",
       "account_id.type",
       "account_id.number",
       "account_id.name",
@@ -123,6 +151,8 @@ async function readSavedResults(setId: string): Promise<Results | null> {
       cost_center_name: l.cost_center_name,
       amount_cents: l.amount_cents,
       revenue: l.account_id.type === "revenue",
+      capital: l.account_id.type === "asset",
+      function: l.function,
       member: l.version_set_member_id,
     })),
     warnings: warnings.map((w) => ({ code: w.code, message: w.message, ...(w.subject_key && { key: w.subject_key }) })),
@@ -171,9 +201,49 @@ export const financialPlanQuery = (setId: string) =>
       const set = summary(row);
       const members = await readMembers(setId);
       const [results, savedBy] = await Promise.all([
-        set.status === "saved" ? readSavedResults(setId) : calculateFinancialPlan(set, members),
+        isSaved(set) ? readSavedResults(setId) : calculateFinancialPlan(set, members),
         savedByName(set.saved_by),
       ]);
       return { set, savedBy, members, results };
     },
   });
+
+/**
+ * Renames a draft Financial Plan, changes any one's note, or moves it on: a draft to saved, a saved one to active.
+ * Platform refuses a saved one's new name, and any move back.
+ */
+export async function updateFinancialPlan(
+  id: string,
+  changes: { name?: string; message?: string | null; status?: "saved" | "active" },
+): Promise<void> {
+  await appDirectus().client.request(updateItem("version_sets", id, changes));
+}
+
+/**
+ * Starts a draft Financial Plan from `parent`, in its year, and returns its id once platform's hook has copied the
+ * parent's plans into it. The hook copies them after it answers, so this waits for them.
+ */
+export async function startFinancialPlan(
+  parent: FinancialPlan,
+  { name, message }: { name: string; message: string | null },
+): Promise<string> {
+  const id = crypto.randomUUID();
+  await appDirectus().client.request(
+    createItem("version_sets", {
+      id,
+      organization_id: parent.set.organization_id,
+      fiscal_year: parent.set.fiscal_year,
+      name,
+      message,
+      parent_id: parent.set.id,
+    }),
+  );
+  for (let tries = 0; tries < 30; tries++) {
+    const copies = await readAll("version_set_members", { version_set_id: { _eq: id } }, ["id"]);
+    if (copies.length >= parent.members.length) {
+      return id;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  return id;
+}

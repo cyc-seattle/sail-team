@@ -38,7 +38,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
 
 /** One plan in a Financial Plan: what to check, its assumptions, its revenue and costs by category, and its offerings. */
 export function PlanView({ note, warnings, lines, shared, offerings, assumptions, measures }: PlanViewProps) {
-  const { revenue, costs } = statement(lines);
+  const { revenue, costs, capital } = statement(lines);
   const programOf = new Map(assumptions?.offerings.map((o) => [o.key, o.program]));
   const programs = [...new Set(offerings.map((o) => programOf.get(o.pnl.key) ?? "Other"))].sort();
   const operations = assumptions?.operations;
@@ -75,6 +75,12 @@ export function PlanView({ note, warnings, lines, shared, offerings, assumptions
           net
         />
       </Section>
+      {capital.length > 0 && (
+        <Section id="capital" title="Capital">
+          <p className="text-sm text-muted-foreground">Paid for by fundraising, so it isn&apos;t in the net.</p>
+          <LinesTable label="Capital" sections={[{ title: "Capital", categories: capital }]} measures={measures} />
+        </Section>
+      )}
       {shared && shared.length > 0 && (
         <Section id="shared-costs" title="Shared costs">
           <p className="text-sm text-muted-foreground">Divided among every program&apos;s offerings.</p>

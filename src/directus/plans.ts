@@ -106,6 +106,8 @@ export async function calculateFinancialPlan(year: YearRef, members: Member[]): 
       cost_center_name: nameOf(l.cost_center_key),
       amount_cents: l.amount_cents,
       revenue: accounts.get(l.account_id)?.["type"] === "revenue",
+      capital: accounts.get(l.account_id)?.["type"] === "asset",
+      function: l.function,
       member: member(l.cost_center_type, l.cost_center_key),
     })),
     warnings: output.warnings,

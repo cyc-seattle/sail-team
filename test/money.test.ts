@@ -13,6 +13,16 @@ describe("formatCents", () => {
   });
 });
 
+describe("formatCents to the whole dollar", () => {
+  it.each([
+    [123456, "$1,235"],
+    [-5049, "−$50"],
+    [0, "$0"],
+  ])("shows %i cents as %s", (cents, text) => {
+    expect(formatCents(cents, true)).toBe(text);
+  });
+});
+
 describe("toneOf", () => {
   it.each([
     [1, "positive"],

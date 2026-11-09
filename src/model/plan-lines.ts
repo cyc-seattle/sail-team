@@ -36,9 +36,13 @@ export function categories(lines: Line[]): Category[] {
     );
 }
 
-/** A plan's revenue and its costs, each by category. */
-export function statement(lines: PlanLine[]): { revenue: Category[]; costs: Category[] } {
-  return { revenue: categories(lines.filter((l) => l.revenue)), costs: categories(lines.filter((l) => !l.revenue)) };
+/** A plan's revenue, its costs, and its capital, such as a coach boat, which fundraising pays for, each by category. */
+export function statement(lines: PlanLine[]): { revenue: Category[]; costs: Category[]; capital: Category[] } {
+  return {
+    revenue: categories(lines.filter((l) => l.revenue)),
+    costs: categories(lines.filter((l) => !l.revenue && !l.capital)),
+    capital: categories(lines.filter((l) => l.capital)),
+  };
 }
 
 /**

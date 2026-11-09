@@ -5,11 +5,31 @@ import {
   membersInOrder,
   ownerOf,
   plansByYear,
+  summaryRows,
+  topLine,
   type FinancialPlanSummary,
   type Member,
+  type PlanLine,
   type Results,
 } from "../src/model/financial-plans.ts";
-import { line } from "../src/components/plans/fixtures.ts";
+
+const line = (
+  name: string,
+  amount_cents: number,
+  revenue: boolean,
+  fn: PlanLine["function"],
+  capital = false,
+): Omit<PlanLine, "member"> => ({
+  key: name,
+  name,
+  account_number: null,
+  account_name: name,
+  cost_center_name: "Organization",
+  amount_cents,
+  revenue,
+  capital,
+  function: fn,
+});
 
 const summary = (id: string, fields: Partial<FinancialPlanSummary>): FinancialPlanSummary => ({
   id,
@@ -105,8 +125,8 @@ describe("memberNet", () => {
       },
     ],
     lines: [
-      { ...line("Insurance", "Insurance", 5, false), cost_center_name: "Organization", member: "o" },
-      { ...line("Merchandise", "Sales", 8, true), cost_center_name: "Merchandise", member: "o" },
+      { ...line("Insurance", 5, false, "management"), member: "o" },
+      { ...line("Merchandise", 8, true, "program"), member: "o" },
     ],
     warnings: [],
   };
@@ -114,6 +134,52 @@ describe("memberNet", () => {
   it("is a Program Plan's area net, or the Operations Plan's lines added up", () => {
     expect(memberNet(results, member("y", "program_area", "youth"))).toBe(6);
     expect(memberNet(results, member("o", "operations", null))).toBe(3);
+  });
+});
+
+describe("topLine", () => {
+  it("takes direct program costs from revenue for the gross, and every operating cost for the net", () => {
+    const lines = [
+      line("Tuition", 1_000, true, "program"),
+      line("Coach wages", 300, false, "program"),
+      line("Office share", 200, false, "management"),
+    ];
+    expect(topLine(lines)).toEqual({ revenue_cents: 1_000, expense_cents: 500, gross_cents: 700, net_cents: 500 });
+  });
+
+  it("leaves out fundraising and capital", () => {
+    const lines = [
+      line("Tuition", 1_000, true, "program"),
+      line("Spring gala", 400, true, "fundraising"),
+      line("Gala catering", 100, false, "fundraising"),
+      line("Coach boat", 900, false, null, true),
+    ];
+    expect(topLine(lines)).toEqual({ revenue_cents: 1_000, expense_cents: 0, gross_cents: 1_000, net_cents: 1_000 });
+  });
+});
+
+describe("summaryRows", () => {
+  it("has a row for each program area, then Non-program, and a total of every operating line", () => {
+    const members = [member("o", "operations", null), member("y", "program_area", "youth")];
+    members[1]!.area_name = "Youth Racing";
+    const results = {
+      live: false,
+      totals: { operating_net_cents: 0, fundraising_net_cents: 0, capital_cents: 0, total_cents: 0 },
+      pnl: [],
+      warnings: [],
+      lines: [
+        { ...line("Tuition", 1_000, true, "program"), member: "y" },
+        { ...line("Coach wages", 400, false, "program"), member: "y" },
+        { ...line("Office", 300, false, "management"), member: "o" },
+        { ...line("Gala", 900, true, "fundraising"), member: "o" },
+      ],
+    };
+    const { rows, total } = summaryRows(members, results);
+    expect(rows.map((r) => [r.name, r.topLine.net_cents])).toEqual([
+      ["Youth Racing", 600],
+      ["Non-program", -300],
+    ]);
+    expect(total.topLine).toEqual({ revenue_cents: 1_000, expense_cents: 700, gross_cents: 600, net_cents: 300 });
   });
 });
 

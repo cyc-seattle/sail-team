@@ -38,10 +38,12 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
 - `src/router.ts` makes the router. Tests make their own with a memory history.
 - `src/components/ui/` holds shadcn's components on Base UI, `src/components/` the club's own, each with a story beside
   it. `src/components/plans/` holds the plans pages': Page Header, Summary Tiles, Money, P&L Table, Lines Table,
-  Assumptions, Unit Switch, Engine Warnings, Version Badge, the Financial Plan Card, List, and View, Plan View, and
-  Compare View. The Unit Switch's choice of for the year, per day, or per sailor-day is saved in localStorage
+  Assumptions, Unit Switch, Engine Warnings, Version Badge, the Financial Plan Card, List, View, Page, and Actions, the
+  Plan Details Dialog, the Summary Table, the Programs and Operations (Non-program) Sections, Plan View, and Compare
+  View. The Unit Switch's choice of for the year, per day, or per sailor-day is saved in localStorage
   (`src/hooks/use-pnl-view.ts`), so every P&L on every page shows the same.
-  `src/components/home/` holds the home page's Link List. `src/components/shell/` holds the App Shell around every
+  `src/components/home/` holds the home page's Link List. `src/components/household/` holds the household page's
+  Share Contact, Member Card, and Household View. `src/components/shell/` holds the App Shell around every
   signed-in page: the sidebar on a laptop, and the tab bar on a phone, whose More opens the sidebar.
   `src/styles/tokens.css` holds the design tokens. Read [docs/design.md](docs/design.md) before changing any of
   them, or use the [`design`](.agents/skills/design/SKILL.md) skill.
@@ -56,10 +58,12 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   shared costs, is one filter. A draft is calculated in the browser by the planning engine this app bundles
   (`src/directus/plans.ts`), from the same rows platform reads at save time (`src/model/plan-data.ts`): the catalog,
   and every plan the draft holds. Its lines and P&L rows are charged to members the way platform's hook does
-  (`ownerOf` in `src/model/financial-plans.ts`). A plan's page shows its assumptions, read from its copy's own rows (`src/directus/assumptions.ts`), and its lines
-  by category, which is their account (`src/model/plan-lines.ts`). The Operations Plan's page also adds each shared
-  cost back up from every offering's share. `/plans` lists each year's Financial Plans, `/plans/financial/<set>`
-  shows one, `/plans/financial/<set>/<plan>` one plan in it, and `/plans/compare/<a>/<b>` two side by side. A club
+  (`ownerOf` in `src/model/financial-plans.ts`). A plan's page shows its assumptions, read from its copy's own rows
+  (`src/directus/assumptions.ts`), and its lines by category, which is their account (`src/model/plan-lines.ts`). The
+  Operations Plan's page also adds each shared cost back up from every offering's share. `/plans` lists each year's
+  Financial Plans, `/plans/financial/<set>` shows one (where a Plan Writer renames a draft, changes a note, saves a
+  draft, marks a saved one active, or starts a draft from it), `/plans/financial/<set>/<plan>` one plan in it, and
+  `/plans/compare/<a>/<b>` two side by side. A club
   plan's old address, `/plans/club/<set>`, sends people to its Financial Plan.
 - `src/directus/roster.ts` reads the team rosters. A team is a program area, such as Doublehanded, and its programs
   marked as a team, such as J-Pod and K-Pod, are its divisions; a program that isn't a team has no roster. It reads
@@ -67,8 +71,15 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   schools, the email and phone Directus lets the person see, and each division's Google Group. Directus's rules decide
   who appears, so the page filters only on ids, statuses, and dates, which platform's query guard allows, and joins
   the rest in the browser (`src/model/roster.ts`). `/roster` lists the teams, and `/roster/<area id>` shows one, by
-  division or, with `?by=school`, by school. Only households on a team and Crew see them (`canSeeRosters`). The
-  signed-in adult finds their own record by `directus_user_id = $CURRENT_USER` and changes their own `share_contact`.
+  division or, with `?by=school`, by school. Only households on a team and Crew see them (`canSeeRosters`).
+- `src/directus/household.ts` reads the signed-in person's household: the people Clubspot links through a shared
+  sailor, which platform's sync groups (`people.household_id`). It finds their own record by
+  `directus_user_id = $CURRENT_USER`, then their household with its `members`, since the query guard refuses a Team
+  user's filter on `household_id`, and their guardian links, which make them a guardian or a sailor
+  (`src/model/household.ts`). `/household` shows them, and an adult changes each person's display name, a sailor's
+  school, their own phone and that of a child whose date of birth is on file, and the household's one
+  `share_contact`, which decides whether its adults' email and phone show on the rosters. The app offers only the edits platform's
+  Community rules allow, and Directus still checks them.
 - `src/mocks/` answers Directus's requests with made-up people and permissions, in `mise run dev` and in tests. Never
   put real club data there.
 - `mise run integration` runs the journeys against dev, as your ADC login (deploy-dev in Actions), with

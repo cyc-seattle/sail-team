@@ -88,7 +88,7 @@ export function LinesTable({
   sections: Section[];
   /** What a per-day or per-sailor-day amount divides by. */
   measures: Measures;
-  /** Whether to end with the first section's total less the others'. */
+  /** Whether to end with the first section's total less the second's: revenue less costs. */
   net?: boolean;
   label: string;
 }) {
@@ -123,7 +123,7 @@ export function LinesTable({
           <TableRow>
             <TableCell>Net</TableCell>
             <Amount
-              cents={sections.reduce((total, s, i) => total + (i === 0 ? 1 : -1) * sum(s.categories), 0)}
+              cents={sum(sections[0]?.categories ?? []) - sum(sections[1]?.categories ?? [])}
               measures={measures}
               colored
             />

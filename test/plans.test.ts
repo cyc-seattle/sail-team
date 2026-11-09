@@ -16,15 +16,20 @@ const run = <T>(options: { queryFn?: unknown }) => (options.queryFn as () => Pro
 const plan = (id: string) => run<FinancialPlan | null>(financialPlanQuery(id)).then((p) => p!);
 
 describe("reading Financial Plans from Directus", () => {
-  it("lists every Financial Plan, with a saved one's totals and what each started from", async () => {
+  it("lists every Financial Plan, with a saved one's top-line numbers and what each started from", async () => {
     const plans = await run<Awaited<ReturnType<NonNullable<typeof financialPlansQuery.queryFn>>>>(financialPlansQuery);
-    expect(plans.map((p) => [p.name, p.status, p.parent?.name ?? null, p.totals?.operating_net_cents ?? null])).toEqual(
-      [
-        ["Budget", "saved", null, 500_000],
-        ["Two coaches", "draft", "Budget", null],
-        ["Three coaches", "draft", "Budget", null],
-      ],
-    );
+    // Its gala and coach boat, fundraising and capital, are left out.
+    expect(plans[0]?.topLine).toEqual({
+      revenue_cents: 1_000_000,
+      expense_cents: 800_000,
+      gross_cents: 700_000,
+      net_cents: 200_000,
+    });
+    expect(plans.map((p) => [p.name, p.status, p.parent?.name ?? null, p.topLine?.net_cents ?? null])).toEqual([
+      ["Budget", "saved", null, 200_000],
+      ["Two coaches", "draft", "Budget", null],
+      ["Three coaches", "draft", "Budget", null],
+    ]);
   });
 
   it("reads a saved one's results as they were saved, each row with the plan it's charged in", async () => {
@@ -59,10 +64,10 @@ describe("reading Financial Plans from Directus", () => {
     expect(office.reduce((sum, l) => sum + l.amount_cents, 0)).toBe(200_000);
     expect(office.every((l) => l.cost_center_name === "Beginner camp, week 1")).toBe(true);
     expect(results!.totals.operating_net_cents).toBe(700_000);
-    expect(memberName(operations)).toBe("Operations Plan");
+    expect(memberName(operations)).toBe("Non-program");
   });
 
-  it("warns about a practice on a day the Operations Plan says the club is closed", async () => {
+  it("warns about a practice on a day the Operations Plan lists as closed", async () => {
     const { results } = await plan(ids.twoCoaches);
     expect(results?.warnings.map((w) => w.code)).toContain("closed_date");
   });

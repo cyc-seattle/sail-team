@@ -287,13 +287,22 @@ export class Club {
   }
 
   /**
-   * Deletes everything the scenario made. Financial Plans go first, with their members and results, then every copy of
+   * Deletes everything the scenario made. Financial Plans go first, with their members and results, the ones a visitor
+   * started in the app before the ones they were started from. Then every copy of
    * the scenario's plans, including those the hook made, with their rows, then the rest, newest first. Dev's
    * `backend:savedVersionsDeletable` lets its first admin delete saved ones; prod refuses it.
    */
   async cleanUp(): Promise<void> {
     const ours = (collection: string) => this.made.filter((m) => m.collection === collection).map((m) => m.id);
-    for (const set of ours("version_sets").reverse()) {
+    const made = ours("version_sets");
+    const all: { id: string }[] = this.organizationId
+      ? await asAdmin(
+          "GET",
+          `/items/version_sets?filter[organization_id][_eq]=${this.organizationId}&fields=id&limit=-1`,
+        )
+      : [];
+    const started = all.map((s) => s.id).filter((id) => !made.includes(id));
+    for (const set of [...started, ...made.reverse()]) {
       await asAdmin("DELETE", `/items/version_sets/${set}`);
     }
     if (this.plans.length > 0) {

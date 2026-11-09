@@ -22,6 +22,8 @@ export const rosterIds = {
   teammate: "00000000-0000-4000-8000-000000000723",
   teammateParent: "00000000-0000-4000-8000-000000000724",
   adultSailor: "00000000-0000-4000-8000-000000000725",
+  coParent: "00000000-0000-4000-8000-000000000726",
+  household: "00000000-0000-4000-8000-000000000741",
 };
 
 // Dates move with today, so the rosters stay current.
@@ -34,6 +36,9 @@ const person = (id: string, first: string, last: string, rest: Record<string, un
   email: null,
   phone: null,
   school: null,
+  display_name: null,
+  date_of_birth: null,
+  household_id: null,
   share_contact: null,
   directus_user_id: null,
   ...rest,
@@ -86,16 +91,29 @@ export const rosterTables: Record<string, Record<string, unknown>[]> = {
   ],
   contacts: [
     { subject_id: rosterIds.child, contact_id: rosterIds.me, relationship_type: "guardian" },
+    { subject_id: rosterIds.child, contact_id: rosterIds.coParent, relationship_type: "guardian" },
     { subject_id: rosterIds.teammate, contact_id: rosterIds.teammateParent, relationship_type: "guardian" },
     ...more.map((_, i) => ({ subject_id: moreId(i), contact_id: moreId(i, true), relationship_type: "guardian" })),
   ],
   people: [
     person(rosterIds.me, planner.first_name!, planner.last_name!, {
       email: planner.email,
+      phone: "+1 206 555 0110",
       share_contact: true,
       directus_user_id: planner.id,
+      household_id: rosterIds.household,
     }),
-    person(rosterIds.child, "Ada", "Tiller", { school: "Lakeside Middle School" }),
+    person(rosterIds.coParent, "Sam", "Tiller", {
+      email: "sam@example.org",
+      phone: "+1 206 555 0111",
+      household_id: rosterIds.household,
+    }),
+    person(rosterIds.child, "Ada", "Tiller", {
+      school: "Lakeside Middle School",
+      display_name: "Addie Tiller",
+      date_of_birth: "2013-05-01",
+      household_id: rosterIds.household,
+    }),
     person(rosterIds.teammate, "Kai", "Halyard", { school: "Harbor View Middle School" }),
     person(rosterIds.teammateParent, "Lee", "Halyard"),
     person(rosterIds.adultSailor, "Ren", "Mainsheet", {
@@ -111,3 +129,13 @@ export const rosterTables: Record<string, Record<string, unknown>[]> = {
     ]),
   ],
 };
+
+// A household holds its members, as Directus returns them for `members.*`. They're the same rows as `people`, so a
+// change to one shows in both.
+rosterTables["households"] = [
+  {
+    id: rosterIds.household,
+    share_contact: true,
+    members: rosterTables["people"]!.filter((p) => p["household_id"] === rosterIds.household),
+  },
+];

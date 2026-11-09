@@ -2,8 +2,8 @@ Feature: Team rosters
   Rosters shows each team: a part of the club's programs, such as Doublehanded, whose team programs, such as J-Pod
   and K-Pod, are its divisions. Each team has its own page, with its sailors grouped by division or by school, and how
   to reach the parents who chose to share their email and phone. Only households on a team and Crew see the rosters.
-  Every adult decides on the page whether to share their own email and phone. Every household and program here is made
-  up for the run.
+  Each household decides on its Household page whether to share its parents' email and phone. Every household and
+  program here is made up for the run.
 
   Rule: A household on a team sees the team, with the email and phone of the adults who share them
 
@@ -49,14 +49,3 @@ Feature: Team rosters
       And I've signed in
       When I open that team from Rosters
       Then that parent's card shows their email and phone
-
-  Rule: Each adult decides whether to share their own email and phone
-
-    Scenario: A parent stops sharing, then shares again
-      Given I'm a parent whose child is on a team, and I share my email and phone
-      And I've signed in
-      When I open Rosters
-      And I stop sharing my email and phone with my child's team
-      Then the club has me down as not sharing
-      When I share them again
-      Then the club has me down as sharing
