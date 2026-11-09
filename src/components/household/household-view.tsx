@@ -1,17 +1,25 @@
-import type { Household, MemberChanges } from "@/model/household";
+import type { Household, MemberChanges, School } from "@/model/household";
 import { MemberCard } from "./member-card.tsx";
 import type { SaveState } from "./save-state.ts";
 import { ShareContact } from "./share-contact.tsx";
 
 export interface HouseholdViewProps {
   household: Household;
+  /** The known schools a sailor's school is picked from. */
+  schools: School[];
   shareState?: SaveState;
   onShareChange: (shares: boolean) => void;
   onSaveMember: (personId: string, changes: MemberChanges) => Promise<void>;
 }
 
 /** The household's sharing choice, then a card for each person in it. */
-export function HouseholdView({ household, shareState = "idle", onShareChange, onSaveMember }: HouseholdViewProps) {
+export function HouseholdView({
+  household,
+  schools,
+  shareState = "idle",
+  onShareChange,
+  onSaveMember,
+}: HouseholdViewProps) {
   return (
     <div className="grid gap-card">
       <ShareContact
@@ -25,7 +33,7 @@ export function HouseholdView({ household, shareState = "idle", onShareChange, o
           <MemberCard
             key={member.id}
             member={member}
-            editable={household.editable}
+            schools={schools}
             onSave={(changes) => onSaveMember(member.id, changes)}
           />
         ))}

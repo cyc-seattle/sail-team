@@ -86,7 +86,12 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
       if (!row) {
         return forbidden();
       }
-      Object.assign(row, await request.json());
+      const changes = (await request.json()) as Row;
+      // A picked school is saved by its id, and read back with its name, as Directus expands the relation.
+      if (changes["school_id"]) {
+        changes["school_id"] = rosterTables["schools"]!.find((s) => s["id"] === changes["school_id"]) ?? null;
+      }
+      Object.assign(row, changes);
       return HttpResponse.json({ data: row });
     }),
     // A new Financial Plan, with its parent's plans copied in, as platform's hook copies them.

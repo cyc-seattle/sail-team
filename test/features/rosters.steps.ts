@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 import { createBdd } from "playwright-bdd";
+import { formatPhone } from "../../src/model/phone.ts";
 import { app, test } from "./fixtures";
 import { hasRole, setRole, type Program, type Squad } from "./squad";
 import { makeDirectusUser, type Visitor } from "./visitors";
@@ -128,7 +129,7 @@ Then("the roster shows the sharing guardian's email and phone", async ({ page })
     "href",
     `mailto:${guardian.email}`,
   );
-  await expect(row(page, sailor.name).getByRole("link", { name: guardian.phone })).toBeVisible();
+  await expect(row(page, sailor.name).getByRole("link", { name: formatPhone(guardian.phone!) })).toBeVisible();
 });
 
 Then("the roster says the other guardian hasn't shared", async ({ page }) => {
@@ -190,7 +191,7 @@ Then("the roster shows only that guardian's child, with the guardian's email and
   const { sailor, guardian } = scene.others.find((o) => o.shares)!;
   await shows(page, squad.run, [sailor.name]);
   await expect(row(page, sailor.name).getByRole("link", { name: guardian.email })).toBeVisible();
-  await expect(row(page, sailor.name).getByRole("link", { name: guardian.phone })).toBeVisible();
+  await expect(row(page, sailor.name).getByRole("link", { name: formatPhone(guardian.phone!) })).toBeVisible();
 });
 
 Then("I don't see Rosters in the menu", async ({ page }) => {
@@ -207,5 +208,5 @@ Then("the roster shows that guardian's email and phone", async ({ page, squad })
   const [{ sailor, guardian }] = scene.others as [(typeof scene.others)[number]];
   await shows(page, squad.run, [sailor.name]);
   await expect(row(page, sailor.name).getByRole("link", { name: guardian.email })).toBeVisible();
-  await expect(row(page, sailor.name).getByRole("link", { name: guardian.phone })).toBeVisible();
+  await expect(row(page, sailor.name).getByRole("link", { name: formatPhone(guardian.phone!) })).toBeVisible();
 });

@@ -6,6 +6,7 @@ import {
   type Household,
   type MemberChanges,
   type MemberRow,
+  type School,
 } from "@/model/household";
 import { seattleToday } from "@/model/roster";
 import { appDirectus } from "./app.ts";
@@ -33,7 +34,7 @@ export const householdQuery = queryOptions({
     }
     const [household] = await readAll<{ id: string; share_contact: boolean | null; members: MemberRow[] }>(
       "households",
-      ["id", "share_contact", "members.*"],
+      ["id", "share_contact", "members.*", "members.school_id.id", "members.school_id.name"],
       { id: { _eq: me.household_id } },
     );
     if (!household) {
@@ -60,3 +61,12 @@ export async function setHouseholdSharing(householdId: string, share: boolean): 
     }),
   );
 }
+
+/** The known schools, by name, which a sailor's school is picked from. */
+export const schoolsQuery = queryOptions({
+  queryKey: ["schools"],
+  queryFn: async (): Promise<School[]> => {
+    const rows = await readAll<School>("schools", ["id", "name"], {});
+    return rows.sort((a, b) => a.name.localeCompare(b.name));
+  },
+});

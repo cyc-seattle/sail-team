@@ -33,12 +33,29 @@ const miasThird = "00000000-0000-4000-8000-000000000728";
 // Dates move with today, so the rosters stay current.
 const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
 
+// The known schools a sailor's school is picked from.
+const schools = Object.fromEntries(
+  [
+    "Ballard High School",
+    "Eastlake High School",
+    "Garfield High School",
+    "Harbor View Middle School",
+    "Lakeside Middle School",
+    "Lincoln High School",
+    "Roosevelt High School",
+  ].map((name, i) => [name, { id: `00000000-0000-4000-8000-00000000050${i}`, name }]),
+);
+
+/** A picked school, as Directus returns `school_id` with its fields asked for. */
+const picked = (name: string | null) => ({ school_id: name ? schools[name]! : null, school: null });
+
 const person = (id: string, first: string, last: string, rest: Record<string, unknown> = {}) => ({
   id,
   first_name: first,
   last_name: last,
   email: null,
   phone: null,
+  school_id: null,
   school: null,
   display_name: null,
   date_of_birth: null,
@@ -68,6 +85,7 @@ const more = [
 const moreId = (i: number, guardian = false) => `00000000-0000-4000-8000-0000000008${guardian ? 5 : 0}${i}`;
 
 export const rosterTables: Record<string, Record<string, unknown>[]> = {
+  schools: Object.values(schools),
   programs: [
     program(jPod, "J-Pod", true, doublehanded, "j-pod@example.org"),
     program(kPod, "K-Pod", true, doublehanded),
@@ -115,14 +133,14 @@ export const rosterTables: Record<string, Record<string, unknown>[]> = {
       household_id: rosterIds.household,
     }),
     person(rosterIds.child, "Ada", "Tiller", {
-      school: "Lakeside Middle School",
+      ...picked("Lakeside Middle School"),
       display_name: "Addie Tiller",
       date_of_birth: "2013-05-01",
       household_id: rosterIds.household,
     }),
     person(miasSecond, "Jordan", "Cleat"),
     person(miasThird, "Sam", "Rivera", { email: "sam.rivera@example.org", share_contact: true }),
-    person(rosterIds.teammate, "Kai", "Halyard", { school: "Harbor View Middle School" }),
+    person(rosterIds.teammate, "Kai", "Halyard", picked("Harbor View Middle School")),
     person(rosterIds.teammateGuardian, "Lee", "Halyard"),
     person(rosterIds.adultSailor, "Ren", "Mainsheet", {
       email: "ren@example.org",
@@ -130,7 +148,7 @@ export const rosterTables: Record<string, Record<string, unknown>[]> = {
       share_contact: true,
     }),
     ...more.flatMap(([first, last, school], i) => [
-      person(moreId(i), first, last, { school }),
+      person(moreId(i), first, last, picked(school)),
       person(moreId(i, true), i % 2 ? "Jo" : "Alex", last, {
         ...(i % 2 === 0 && { email: `${last.toLowerCase()}@example.org`, phone: `+1 206 555 01${50 + i}` }),
       }),

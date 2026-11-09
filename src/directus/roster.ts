@@ -67,6 +67,21 @@ function programFields(permissions: Permissions): string[] {
   ];
 }
 
+/** The people fields the roster reads, with a picked school's name when the person may read schools. */
+function personFields(permissions: Permissions): string[] {
+  const own = readableFields(permissions, "people", [
+    "id",
+    "first_name",
+    "last_name",
+    "email",
+    "phone",
+    "school_id",
+    "school",
+  ]);
+  const named = own.includes("school_id") && readableFields(permissions, "schools", ["name"]).length > 0;
+  return [...own.filter((f) => f !== "school_id"), ...(named ? ["school_id.name"] : [])];
+}
+
 export const teamsQuery = (permissions: Permissions) =>
   queryOptions({
     queryKey: ["rosters"],
@@ -113,7 +128,7 @@ export const teamsQuery = (permissions: Permissions) =>
         "people",
         "id",
         [...new Set([...sailors, ...contacts.map((c) => c.contact_id)])],
-        readableFields(permissions, "people", ["id", "first_name", "last_name", "email", "phone", "school"]),
+        personFields(permissions),
       );
       return buildTeams({ programs, offerings: teamOfferings, registrations, contacts, people });
     },

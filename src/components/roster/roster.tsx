@@ -1,6 +1,7 @@
 import { MailIcon, PhoneIcon } from "lucide-react";
 import { useMemo } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { formatPhone, toE164 } from "@/model/phone";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   divisionsIn,
@@ -131,7 +132,7 @@ function Guardians({ guardians, tap = false }: { guardians: RosterPerson[]; tap?
     <ul className="grid gap-2">
       {guardians.map((guardian) => (
         <li key={guardian.id} className="grid">
-          <span>{guardian.name}</span>
+          <span className="font-medium">{guardian.name}</span>
           <Reach person={guardian} tap={tap} />
         </li>
       ))}
@@ -157,9 +158,9 @@ function Reach({ person, quiet = false, tap = false }: { person: RosterPerson; q
         </a>
       )}
       {person.phone && (
-        <a href={`tel:${person.phone}`} className={link}>
+        <a href={`tel:${toE164(person.phone) ?? person.phone}`} className={link}>
           <PhoneIcon className="size-4 shrink-0" aria-hidden />
-          {person.phone}
+          {formatPhone(person.phone)}
         </a>
       )}
     </span>

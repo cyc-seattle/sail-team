@@ -1,3 +1,5 @@
+import { toE164 } from "./phone.ts";
+
 /** A person in a household as Directus returns them. A field the person can't read is missing. */
 export interface MemberRow {
   id: string;
@@ -6,8 +8,17 @@ export interface MemberRow {
   display_name?: string | null;
   email?: string | null;
   phone?: string | null;
+  /** The school picked from the list, with its name. */
+  school_id?: School | null;
+  /** The school typed in after choosing Other, set only when none is picked. */
   school?: string | null;
   date_of_birth?: string | null;
+}
+
+/** A known school, which a sailor's school is picked from. */
+export interface School {
+  id: string;
+  name: string;
 }
 
 /** A guardian link between two people, from `contacts`. */
@@ -27,11 +38,12 @@ export interface Member {
   displayName: string | null;
   email: string | null;
   phone: string | null;
+  /** The school picked from the list, or null for none or Other. */
+  schoolId: string | null;
+  /** The picked school's name, or the one typed in after choosing Other. */
   school: string | null;
   role: Role;
   me: boolean;
-  /** An adult changes their own phone and a child's whose date of birth is on file, never another adult's. */
-  canEditPhone: boolean;
   /** Only sailors have a school. */
   hasSchool: boolean;
 }
@@ -39,7 +51,7 @@ export interface Member {
 export interface Household {
   id: string;
   shares: boolean;
-  /** Whether the signed-in person is an adult, who may change the household. A sailor who signs in only sees it. */
+  /** Whether the signed-in person is an adult, who decides whether the household shares. Anyone in it changes its people. */
   editable: boolean;
   members: Member[];
 }
@@ -64,11 +76,6 @@ function isAdult(row: MemberRow, role: Role, today: string): boolean {
   return row.date_of_birth ? grownUp(row.date_of_birth, today) : role === "guardian";
 }
 
-/** Who an adult may change the phone of besides themselves: only someone whose date of birth says they're under 18. */
-function isKnownMinor(row: MemberRow, today: string): boolean {
-  return !!row.date_of_birth && !grownUp(row.date_of_birth, today);
-}
-
 /** The household's members, guardians first, then sailors, then anyone else, each by name. */
 export function buildHousehold(
   household: { id: string; share_contact: boolean | null },
@@ -90,10 +97,10 @@ export function buildHousehold(
       displayName: p.display_name ?? null,
       email: p.email ?? null,
       phone: p.phone ?? null,
-      school: p.school ?? null,
+      schoolId: p.school_id?.id ?? null,
+      school: p.school_id?.name ?? p.school ?? null,
       role,
       me: p.id === meId,
-      canEditPhone: p.id === meId || isKnownMinor(p, today),
       hasSchool: role === "sailor",
     };
   });
@@ -107,15 +114,25 @@ export function buildHousehold(
 export interface MemberChanges {
   display_name: string | null;
   phone?: string | null;
+  /** A picked school, with no school typed in, or no picked school, with the one typed in after choosing Other. */
+  school_id?: string | null;
   school?: string | null;
 }
 
-/** The changes to save from an edit form's values, leaving out what this member's form doesn't offer. */
-export function memberChanges(member: Member, form: { name: string; phone: string; school: string }): MemberChanges {
+/**
+ * The changes to save from an edit form's values, whose phone is in E.164. It leaves out a phone that didn't change, so
+ * one stored in a form the field can't read is kept, and a school for anyone but a sailor.
+ */
+export function memberChanges(
+  member: Member,
+  form: { name: string; phone: string; schoolId: string | null; school: string },
+): MemberChanges {
   const blank = (value: string) => value.trim() || null;
+  const phone = blank(form.phone);
   return {
     display_name: blank(form.name),
-    ...(member.canEditPhone && { phone: blank(form.phone) }),
-    ...(member.hasSchool && { school: blank(form.school) }),
+    ...(phone !== (toE164(member.phone) ?? null) && { phone }),
+    ...(member.hasSchool &&
+      (form.schoolId ? { school_id: form.schoolId, school: null } : { school_id: null, school: blank(form.school) })),
   };
 }
