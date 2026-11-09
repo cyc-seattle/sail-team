@@ -65,7 +65,8 @@ Then("my account menu shows my name", async ({ page, visitor }) => {
   if (screen.size === "phone" && !(await page.getByRole("dialog").count())) {
     await page.getByRole("button", { name: "More" }).click();
   }
-  await page.getByRole("button", { name: visitor.name }).click();
+  // Exact, since the Household page's cards have an "Edit <name>" button too.
+  await page.getByRole("button", { name: visitor.name, exact: true }).click();
   await expect(page.getByText(`Signed in as ${visitor.name}`)).toBeVisible();
   await expect(page.getByRole("menuitemradio", { name: "Dark" })).toBeVisible();
 });
