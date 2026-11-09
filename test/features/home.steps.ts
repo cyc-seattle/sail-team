@@ -12,14 +12,14 @@ When("I open the home page", async ({ page }) => {
   await page.goto(`${await app()}/`);
 });
 
-Then("the home page links to Plans", async ({ page }) => {
+Then("the home page links to Planning", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Sail Team" })).toBeVisible();
-  await expect(homeLinks(page).getByRole("link", { name: "Plans" })).toBeVisible();
+  await expect(homeLinks(page).getByRole("link", { name: "Planning" })).toBeVisible();
 });
 
-Then("the home page doesn't link to Plans", async ({ page }) => {
+Then("the home page doesn't link to Planning", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Sail Team" })).toBeVisible();
-  await expect(homeLinks(page).getByRole("link", { name: "Plans" })).toHaveCount(0);
+  await expect(homeLinks(page).getByRole("link", { name: "Planning" })).toHaveCount(0);
 });
 
 Then("it links to Clubspot and Google Calendar", async ({ page }) => {

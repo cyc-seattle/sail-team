@@ -8,7 +8,7 @@ export interface NavItem {
 
 /** Each section, and who sees it. */
 const sections: (NavItem & { shown: (permissions: Permissions) => boolean })[] = [
-  { to: "/plans", label: "Plans", shown: (p) => canRead(p, "plans") },
+  { to: "/plans", label: "Planning", shown: (p) => canRead(p, "plans") },
   { to: "/roster", label: "Rosters", shown: canSeeRosters },
   { to: "/household", label: "Household", shown: canSeeHousehold },
 ];

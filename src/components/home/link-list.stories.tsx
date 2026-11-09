@@ -8,7 +8,7 @@ const meta = {
   component: LinkList,
   decorators: [withRouter("/", ["/plans", "/roster"])],
   args: {
-    links: [{ to: "/plans", label: "Plans" }, { to: "/roster", label: "Rosters" }, ...externalLinks],
+    links: [{ to: "/plans", label: "Planning" }, { to: "/roster", label: "Rosters" }, ...externalLinks],
   },
 } satisfies Meta<typeof LinkList>;
 export default meta;
@@ -16,7 +16,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole("link", { name: "Plans" })).toHaveAttribute("href", "/plans");
+    await expect(await canvas.findByRole("link", { name: "Planning" })).toHaveAttribute("href", "/plans");
     await expect(canvas.getByRole("link", { name: "Clubspot" })).toHaveAttribute("href", "https://theclubspot.com");
   },
 };

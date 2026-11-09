@@ -42,6 +42,8 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   Plan Details Dialog, the Summary Table, the Programs and Operations (Non-program) Sections, Plan View, and Compare
   View. The Unit Switch's choice of for the year, per day, or per sailor-day is saved in localStorage
   (`src/hooks/use-pnl-view.ts`), so every P&L on every page shows the same.
+  `src/components/plans/reports/` holds the proposed Planning reports, as wireframes on made-up data that no route
+  uses yet ([#63](https://github.com/cyc-seattle/sail-team/issues/63)).
   `src/components/home/` holds the home page's Link List. `src/components/household/` holds the household page's
   Share Contact, Member Card, School Field, and Household View, and `src/components/phone-field.tsx` the Phone Field. `src/components/shell/` holds the App Shell around every
   signed-in page: the sidebar on a laptop, and the tab bar on a phone, whose More opens the sidebar.

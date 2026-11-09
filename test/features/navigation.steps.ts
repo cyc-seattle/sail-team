@@ -15,7 +15,7 @@ const screen: { size: keyof typeof sizes } = { size: "laptop" };
 /** Each page's heading, which shows it opened. */
 const headings: Record<string, string> = {
   Home: "Sail Team",
-  Plans: "Plans",
+  Planning: "Planning",
   Rosters: "Rosters",
   Household: "Household",
 };
@@ -49,13 +49,15 @@ Then(/^I can open (.+) from the menu$/, async ({ page }, list: string) => {
   }
 });
 
-Then("the menu doesn't offer Plans", async ({ page }) => {
+Then("the menu doesn't offer Planning", async ({ page }) => {
   if (screen.size === "phone") {
-    await expect(page.getByRole("navigation", { name: "Pages" }).getByRole("link", { name: "Plans" })).toHaveCount(0);
+    await expect(page.getByRole("navigation", { name: "Pages" }).getByRole("link", { name: "Planning" })).toHaveCount(
+      0,
+    );
     await page.getByRole("button", { name: "More" }).click();
   }
   await expect(page.getByRole("navigation", { name: "Menu" }).getByRole("link", { name: "Rosters" })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Menu" }).getByRole("link", { name: "Plans" })).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "Menu" }).getByRole("link", { name: "Planning" })).toHaveCount(0);
   await page.keyboard.press("Escape");
   // The next step reopens More only if it's shut, so wait out its closing.
   await expect(page.getByRole("dialog")).toHaveCount(0);

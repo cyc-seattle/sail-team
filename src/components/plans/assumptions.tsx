@@ -97,10 +97,20 @@ export function OfferingAssumptionsTable({ offerings }: { offerings: OfferingAss
   );
 }
 
-/** The rates the Operations Plan sets for the year: each kind in its own small table, when it has any. */
-export function OperationsAssumptionsView({ assumptions: a }: { assumptions: OperationsAssumptions }) {
+/**
+ * The rates the Operations Plan sets for the year: each kind in its own small table, when it has any, side by side on a
+ * laptop unless `stacked`.
+ */
+export function OperationsAssumptionsView({
+  assumptions: a,
+  stacked = false,
+}: {
+  assumptions: OperationsAssumptions;
+  stacked?: boolean;
+}) {
+  const bonusOnPositions = a.positions.some((p) => p.bonus_rate !== undefined);
   return (
-    <div className="grid gap-card md:grid-cols-2">
+    <div className={stacked ? "grid max-w-3xl gap-10" : "grid gap-card md:grid-cols-2"}>
       {a.rates && (
         <RateTable title="Rates" head={["Rate", "Amount"]}>
           <TableRow>
@@ -118,7 +128,7 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
         </RateTable>
       )}
       {a.staffLevels.length > 0 && (
-        <RateTable title="Coach and staff pay" head={["Level", "Per hour"]}>
+        <RateTable title="Staff levels" head={["Level", "Per hour"]}>
           {a.staffLevels.map((l) => (
             <TableRow key={l.key}>
               <TableCell>{l.name}</TableCell>
@@ -128,7 +138,17 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
         </RateTable>
       )}
       {a.positions.length > 0 && (
-        <RateTable title="Salaried staff" head={["Position", "Salary", "Paid hours a year", "Per hour", "G&A share"]}>
+        <RateTable
+          title="Salaried staff"
+          head={[
+            "Position",
+            "Salary",
+            "Paid hours a year",
+            "Per hour",
+            "G&A share",
+            ...(bonusOnPositions ? ["Bonus, share of net"] : []),
+          ]}
+        >
           {a.positions.map((p) => (
             <TableRow key={p.key}>
               <TableCell>{p.name}</TableCell>
@@ -138,6 +158,7 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
                 {p.paid_hours_per_year ? money(Math.round(p.annual_salary_cents / p.paid_hours_per_year)) : none}
               </Num>
               <Num>{share(p.ga_share)}</Num>
+              {bonusOnPositions && <Num>{share(p.bonus_rate)}</Num>}
             </TableRow>
           ))}
         </RateTable>

@@ -8,17 +8,17 @@ import { financialPlansQuery } from "@/directus/financial-plans";
 import { useSession } from "@/directus/use-session";
 
 export const Route = createFileRoute("/plans/")({
-  component: Plans,
+  component: Planning,
 });
 
-function Plans() {
+function Planning() {
   const session = useSession();
   if (session.kind !== "signed-in" || !canRead(session.permissions, "plans")) {
     return <NoAccess what="plans" />;
   }
   return (
     <main className="mx-auto max-w-6xl p-card">
-      <PageHeader title="Plans" />
+      <PageHeader title="Planning" />
       <AllPlans />
     </main>
   );

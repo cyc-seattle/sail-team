@@ -5,7 +5,7 @@ import { AppShell } from "./app-shell";
 
 const staff = [
   { to: "/", label: "Home" },
-  { to: "/plans", label: "Plans" },
+  { to: "/plans", label: "Planning" },
   { to: "/roster", label: "Rosters" },
 ];
 
@@ -26,7 +26,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** A staff member, who can open Plans and Rosters. */
+/** A staff member, who can open Planning and Rosters. */
 export const Staff: Story = {
   play: async ({ canvas }) => {
     const links = await canvas.findAllByRole("link", { name: "Rosters" });
@@ -49,7 +49,7 @@ export const Support: Story = {
   },
 };
 
-/** A parent on a team, who can open Rosters but not Plans. */
+/** A parent on a team, who can open Rosters but not Planning. */
 export const TeamParent: Story = { args: { name: "Lee Halyard", pages: [staff[0]!, staff[2]!] } };
 
 /** A name too long for the sidebar is cut short, and the page never scrolls sideways. */
