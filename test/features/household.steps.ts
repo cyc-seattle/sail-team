@@ -98,8 +98,9 @@ Then("my household has my new phone and my child's new name and school", async (
   expect(await asAdmin("GET", `/items/people/${visitor.personId}?fields=phone`)).toMatchObject({
     phone: "+12065550199",
   });
-  expect(await asAdmin("GET", `/items/people/${scene.child!.id}?fields=display_name,school`)).toMatchObject({
+  expect(await asAdmin("GET", `/items/people/${scene.child!.id}?fields=display_name,school_id,school`)).toMatchObject({
     display_name: "Addie",
+    school_id: null,
     school: "Salish Sea Academy",
   });
 });

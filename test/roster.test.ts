@@ -65,7 +65,7 @@ describe("currentOfferings", () => {
 
 describe("buildTeams", () => {
   const people = [
-    { id: "child", first_name: "Ada", last_name: "Bowline", school: "Lakeside" },
+    { id: "child", first_name: "Ada", last_name: "Bowline", school_id: { name: "Lakeside" }, school: null },
     { id: "guardian", first_name: "Pat", last_name: "Bowline", email: "pat@example.org", phone: null },
     { id: "quiet", first_name: "Sam", last_name: "Bowline", email: null, phone: null },
     { id: "other", first_name: "Kai", last_name: "Halyard", school: "" },

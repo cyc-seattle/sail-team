@@ -42,6 +42,8 @@ export interface PersonRow {
   email?: string | null;
   phone?: string | null;
   /** Null when not on file, or the viewer can't see it, as for a guardian. */
+  school_id?: { name: string } | null;
+  /** The school typed in after choosing Other, set only when none is picked. */
   school?: string | null;
 }
 
@@ -169,7 +171,7 @@ export function buildTeams(rows: {
       sailors: [...sailorIds]
         .map((id) => ({
           ...rosterPerson(id, people),
-          school: people.get(id)?.school || null,
+          school: people.get(id)?.school_id?.name || people.get(id)?.school || null,
           guardians: (guardiansOf.get(id) ?? []).map((guardian) => rosterPerson(guardian, people)).sort(byName),
         }))
         .sort(byName),

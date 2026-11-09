@@ -75,7 +75,8 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   `directus_user_id = $CURRENT_USER`, then their household with its `members`, since the query guard refuses a Team
   user's filter on `household_id`, and their guardian links, which make them a guardian or a sailor
   (`src/model/household.ts`). `/household` shows them, and anyone in it, children included, changes each person's display
-  name and phone, and a sailor's school, picked from the known `schools` or typed in after choosing Other. Phones are
+  name and phone, and a sailor's school: one of the known `schools` (`school_id`), or none with the one typed in after
+  choosing Other (`school`), never both. Phones are
   saved in E.164 and shown formatted (`src/model/phone.ts`), since Clubspot stores most as bare digits. Only an adult
   changes the household's one `share_contact`, which decides whether its adults' email and phone show on the rosters.
   Directus still checks every edit.

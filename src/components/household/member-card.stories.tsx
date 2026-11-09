@@ -66,7 +66,8 @@ export const SavingSailor: Story = {
     await expect(args.onSave).toHaveBeenCalledWith({
       display_name: "Addie Tiller",
       phone: "+12065550142",
-      school: "Eastlake High School",
+      school_id: "eastlake-high",
+      school: null,
     });
     await expect(canvas.getByRole("status")).toHaveTextContent("Saved.");
   },
@@ -82,13 +83,17 @@ export const OtherSchool: Story = {
     await userEvent.click(await body.findByRole("option", { name: "Other" }));
     await userEvent.type(canvas.getByLabelText("School name"), "Salish Sea Academy");
     await userEvent.click(canvas.getByRole("button", { name: "Save" }));
-    await expect(args.onSave).toHaveBeenCalledWith({ display_name: "Addie Tiller", school: "Salish Sea Academy" });
+    await expect(args.onSave).toHaveBeenCalledWith({
+      display_name: "Addie Tiller",
+      school_id: null,
+      school: "Salish Sea Academy",
+    });
   },
 };
 
-/** A school stored that isn't on the list opens as Other, with its name filled in. */
+/** A school typed in after choosing Other opens as Other, with its name filled in. */
 export const EditingUnlistedSchool: Story = {
-  args: { member: { ...sailor, school: "Hamilton (going to Lincoln)" } },
+  args: { member: { ...sailor, schoolId: null, school: "Hamilton (going to Lincoln)" } },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Edit Addie Tiller" }));
     await expect(canvas.getByRole("combobox", { name: "School" })).toHaveValue("Other");

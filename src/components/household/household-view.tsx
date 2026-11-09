@@ -1,4 +1,4 @@
-import type { Household, MemberChanges } from "@/model/household";
+import type { Household, MemberChanges, School } from "@/model/household";
 import { MemberCard } from "./member-card.tsx";
 import type { SaveState } from "./save-state.ts";
 import { ShareContact } from "./share-contact.tsx";
@@ -6,7 +6,7 @@ import { ShareContact } from "./share-contact.tsx";
 export interface HouseholdViewProps {
   household: Household;
   /** The known schools a sailor's school is picked from. */
-  schools: string[];
+  schools: School[];
   shareState?: SaveState;
   onShareChange: (shares: boolean) => void;
   onSaveMember: (personId: string, changes: MemberChanges) => Promise<void>;

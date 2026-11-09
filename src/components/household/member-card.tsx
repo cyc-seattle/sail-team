@@ -3,15 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneField } from "@/components/phone-field";
-import { memberChanges, type Member, type MemberChanges } from "@/model/household";
+import { memberChanges, type Member, type MemberChanges, type School } from "@/model/household";
 import { formatPhone, toE164 } from "@/model/phone";
 import { said, type SaveState } from "./save-state.ts";
-import { SchoolField } from "./school-field.tsx";
+import { SchoolField, type SchoolChoice } from "./school-field.tsx";
 
 export interface MemberCardProps {
   member: Member;
   /** The known schools a sailor's school is picked from. */
-  schools: string[];
+  schools: School[];
   /** Saves the form. It resolves once saved, and rejects if it didn't, which keeps the form open. */
   onSave: (changes: MemberChanges) => Promise<void>;
 }
@@ -98,7 +98,7 @@ function MemberForm({
   onSave,
 }: {
   member: Member;
-  schools: string[];
+  schools: School[];
   saving: boolean;
   onCancel: () => void;
   onSave: (changes: MemberChanges) => void;
@@ -106,10 +106,13 @@ function MemberForm({
   const id = useId();
   const [name, setName] = useState(member.displayName ?? "");
   const [phone, setPhone] = useState(toE164(member.phone));
-  const [school, setSchool] = useState(member.school ?? "");
+  const [school, setSchool] = useState<SchoolChoice>({
+    schoolId: member.schoolId,
+    school: member.schoolId ? "" : (member.school ?? ""),
+  });
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    onSave(memberChanges(member, { name, phone: phone ?? "", school }));
+    onSave(memberChanges(member, { name, phone: phone ?? "", ...school }));
   };
   return (
     <form onSubmit={submit} className="grid gap-3">

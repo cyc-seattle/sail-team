@@ -3,7 +3,14 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { householdQuery, schoolsQuery, setHouseholdSharing, updateMember } from "../src/directus/household.ts";
 import { handlers } from "../src/mocks/handlers.ts";
 import { rosterIds } from "../src/mocks/roster.ts";
-import { buildHousehold, memberChanges, memberName, type Household, type MemberRow } from "../src/model/household.ts";
+import {
+  buildHousehold,
+  memberChanges,
+  memberName,
+  type Household,
+  type MemberRow,
+  type School,
+} from "../src/model/household.ts";
 
 describe("memberName", () => {
   it.each([
@@ -20,7 +27,13 @@ const today = "2026-11-08";
 
 describe("buildHousehold", () => {
   const people: MemberRow[] = [
-    { id: "kid", first_name: "Ada", last_name: "Tiller", school: "Lakeside", date_of_birth: "2013-05-01" },
+    {
+      id: "kid",
+      first_name: "Ada",
+      last_name: "Tiller",
+      school_id: { id: "lakeside", name: "Lakeside" },
+      date_of_birth: "2013-05-01",
+    },
     { id: "uncle", first_name: "Bo", last_name: "Tiller" },
     { id: "co", first_name: "Sam", last_name: "Tiller", phone: "555" },
     { id: "me", first_name: "Robin", last_name: "Tiller" },
@@ -42,7 +55,9 @@ describe("buildHousehold", () => {
   });
 
   it("gives only sailors a school, and shares only when the household said yes", () => {
-    expect(household.members.filter((m) => m.hasSchool).map((m) => m.id)).toEqual(["kid"]);
+    expect(household.members.filter((m) => m.hasSchool).map((m) => [m.id, m.schoolId, m.school])).toEqual([
+      ["kid", "lakeside", "Lakeside"],
+    ]);
     expect(household.shares).toBe(false);
   });
 
@@ -71,24 +86,39 @@ describe("memberChanges", () => {
     today,
   ).members;
 
+  const none = { schoolId: null, school: "" };
+
   it("clears a blank display name, and gives only a sailor a school", () => {
-    expect(memberChanges(guardian!, { name: "  ", phone: "+12065550199", school: "Eastlake" })).toEqual({
+    expect(memberChanges(guardian!, { name: "  ", phone: "+12065550199", schoolId: "eastlake", school: "" })).toEqual({
       display_name: null,
       phone: "+12065550199",
     });
-    expect(memberChanges(kid!, { name: "Addie", phone: "", school: " Eastlake " })).toEqual({
+    expect(memberChanges(kid!, { name: "Addie", phone: "", schoolId: "eastlake", school: "" })).toEqual({
       display_name: "Addie",
-      school: "Eastlake",
+      school_id: "eastlake",
+      school: null,
+    });
+  });
+
+  it("saves a school typed in after choosing Other with no school picked", () => {
+    expect(memberChanges(kid!, { name: "", phone: "", schoolId: null, school: " Salish Sea Academy " })).toEqual({
+      display_name: null,
+      school_id: null,
+      school: "Salish Sea Academy",
     });
   });
 
   it("leaves out a phone that didn't change, even one stored as bare digits or that isn't a phone", () => {
-    expect(memberChanges(guardian!, { name: "", phone: "+12065550110", school: "" })).toEqual({ display_name: null });
-    expect(memberChanges(kid!, { name: "", phone: "", school: "" })).toEqual({ display_name: null, school: null });
+    expect(memberChanges(guardian!, { name: "", phone: "+12065550110", ...none })).toEqual({ display_name: null });
+    expect(memberChanges(kid!, { name: "", phone: "", ...none })).toEqual({
+      display_name: null,
+      school_id: null,
+      school: null,
+    });
   });
 
   it("clears a phone that was emptied", () => {
-    expect(memberChanges(guardian!, { name: "", phone: "", school: "" })).toEqual({ display_name: null, phone: null });
+    expect(memberChanges(guardian!, { name: "", phone: "", ...none })).toEqual({ display_name: null, phone: null });
   });
 });
 
@@ -112,28 +142,33 @@ describe("reading the household from Directus", () => {
   });
 
   it("saves a member's changes and the household's sharing choice", async () => {
-    await updateMember(rosterIds.child, { display_name: null, phone: null, school: "Eastlake High School" });
+    const [eastlake] = (await run<School[]>(schoolsQuery)).filter((s) => s.name === "Eastlake High School");
+    await updateMember(rosterIds.child, { display_name: null, school_id: eastlake!.id, school: null });
     await setHouseholdSharing(rosterIds.household, false);
-    const household = await run(householdQuery);
+    let household = await run(householdQuery);
     expect(household?.shares).toBe(false);
     expect(household?.members.find((m) => m.id === rosterIds.child)).toMatchObject({
       name: "Ada Tiller",
+      schoolId: eastlake!.id,
       school: "Eastlake High School",
     });
-    await updateMember(rosterIds.child, {
-      display_name: "Addie Tiller",
-      phone: null,
-      school: "Lakeside Middle School",
+    await updateMember(rosterIds.child, { display_name: null, school_id: null, school: "Salish Sea Academy" });
+    household = await run(householdQuery);
+    expect(household?.members.find((m) => m.id === rosterIds.child)).toMatchObject({
+      schoolId: null,
+      school: "Salish Sea Academy",
     });
+    const [lakeside] = (await run<School[]>(schoolsQuery)).filter((s) => s.name === "Lakeside Middle School");
+    await updateMember(rosterIds.child, { display_name: "Addie Tiller", school_id: lakeside!.id, school: null });
     await setHouseholdSharing(rosterIds.household, true);
   });
 });
 
 describe("reading the schools from Directus", () => {
-  it("lists the known schools' names in order", async () => {
-    const schools = await run<string[]>(schoolsQuery);
-    expect(schools[0]).toBe("Ballard High School");
-    expect(schools).toContain("Lakeside Middle School");
-    expect([...schools].sort((a, b) => a.localeCompare(b))).toEqual(schools);
+  it("lists the known schools by name", async () => {
+    const names = (await run<School[]>(schoolsQuery)).map((s) => s.name);
+    expect(names[0]).toBe("Ballard High School");
+    expect(names).toContain("Lakeside Middle School");
+    expect([...names].sort((a, b) => a.localeCompare(b))).toEqual(names);
   });
 });

@@ -9,29 +9,35 @@ import {
 } from "@/components/ui/combobox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { School } from "@/model/household";
+
+/** A picked school, or none with the school typed in after choosing Other, which is blank for no school at all. */
+export interface SchoolChoice {
+  schoolId: string | null;
+  school: string;
+}
 
 export interface SchoolFieldProps {
-  /** The known schools' names. */
-  schools: string[];
-  /** A known school's name, another school typed in, or blank for none. */
-  value: string;
-  onChange: (value: string) => void;
+  /** The known schools, by name. */
+  schools: School[];
+  value: SchoolChoice;
+  onChange: (value: SchoolChoice) => void;
 }
 
 interface Choice {
-  /** A known school, or null for Other. */
-  school: string | null;
+  /** A known school's id, or null for Other. */
+  id: string | null;
   label: string;
 }
 
-const other: Choice = { school: null, label: "Other" };
+const other: Choice = { id: null, label: "Other" };
 
 /** Picks a sailor's school from the known ones, or types another in after choosing Other. */
 export function SchoolField({ schools, value, onChange }: SchoolFieldProps) {
   const id = useId();
-  const choices = [...schools.map((school): Choice => ({ school, label: school })), other];
-  const [typing, setTyping] = useState(!!value.trim() && !schools.includes(value));
-  const selected = typing ? other : (choices.find((c) => c.school === value) ?? null);
+  const choices = [...schools.map((school): Choice => ({ id: school.id, label: school.name })), other];
+  const [typing, setTyping] = useState(!value.schoolId && !!value.school.trim());
+  const selected = typing ? other : (choices.find((c) => c.id && c.id === value.schoolId) ?? null);
   return (
     <div className="grid gap-1.5">
       <Label id={`${id}-label`} htmlFor={`${id}-school`}>
@@ -42,10 +48,10 @@ export function SchoolField({ schools, value, onChange }: SchoolFieldProps) {
         value={selected}
         onValueChange={(choice: Choice | null) => {
           setTyping(choice === other);
-          onChange(choice?.school ?? "");
+          onChange({ schoolId: choice?.id ?? null, school: "" });
         }}
         itemToStringLabel={(choice: Choice) => choice.label}
-        isItemEqualToValue={(a: Choice, b: Choice) => a.school === b.school}
+        isItemEqualToValue={(a: Choice, b: Choice) => a.id === b.id}
         // Other stays on the list whatever's typed, for a school that isn't on it.
         filter={(choice: Choice, query: string) =>
           choice === other || choice.label.toLowerCase().includes(query.trim().toLowerCase())
@@ -64,7 +70,7 @@ export function SchoolField({ schools, value, onChange }: SchoolFieldProps) {
           <ComboboxEmpty>No school matches.</ComboboxEmpty>
           <ComboboxList>
             {(choice: Choice) => (
-              <ComboboxItem key={choice.school ?? ""} value={choice}>
+              <ComboboxItem key={choice.id ?? ""} value={choice}>
                 {choice.label}
               </ComboboxItem>
             )}
@@ -77,7 +83,12 @@ export function SchoolField({ schools, value, onChange }: SchoolFieldProps) {
       {typing && (
         <div className="grid gap-1.5">
           <Label htmlFor={`${id}-other`}>School name</Label>
-          <Input id={`${id}-other`} value={value} onChange={(e) => onChange(e.target.value)} className="min-h-tap" />
+          <Input
+            id={`${id}-other`}
+            value={value.school}
+            onChange={(e) => onChange({ schoolId: null, school: e.target.value })}
+            className="min-h-tap"
+          />
         </div>
       )}
     </div>

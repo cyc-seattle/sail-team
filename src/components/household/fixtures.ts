@@ -1,10 +1,11 @@
 // A made-up household, for stories. Never real club members.
-import type { Household, Member } from "@/model/household";
+import type { Household, Member, School } from "@/model/household";
 
 const member = (fields: Partial<Member> & Pick<Member, "id" | "name">): Member => ({
   displayName: null,
   email: null,
   phone: null,
+  schoolId: null,
   school: null,
   role: null,
   me: false,
@@ -33,6 +34,7 @@ export const sailor = member({
   id: "sailor",
   name: "Addie Tiller",
   displayName: "Addie Tiller",
+  schoolId: "lakeside-middle",
   school: "Lakeside Middle School",
   role: "sailor",
   hasSchool: true,
@@ -45,14 +47,22 @@ export const household: Household = {
   members: [me, otherGuardian, sailor],
 };
 
-export const schools = [
-  "Ballard High School",
-  "Eastlake High School",
-  "Garfield High School",
-  "Hamilton International Middle School",
-  "Lakeside Middle School",
-  "Lakeside Upper School",
-  "Lincoln High School",
-  "Roosevelt High School",
-  "Whitman Middle School",
+const school = (name: string): School => ({
+  id: name
+    .toLowerCase()
+    .replace(/ school$/, "")
+    .replaceAll(" ", "-"),
+  name,
+});
+
+export const schools: School[] = [
+  school("Ballard High School"),
+  school("Eastlake High School"),
+  school("Garfield High School"),
+  school("Hamilton International Middle School"),
+  school("Lakeside Middle School"),
+  school("Lakeside Upper School"),
+  school("Lincoln High School"),
+  school("Roosevelt High School"),
+  school("Whitman Middle School"),
 ];
