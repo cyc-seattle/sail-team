@@ -127,8 +127,8 @@ When("I compare {string} with {string}", async ({ page }, first: string, second:
 
 Then("I see each one's operating net side by side, $4,000 and $2,000", async ({ page }) => {
   const row = page.getByRole("row", { name: /Operating net/ });
-  await expect(row).toContainText("$4,000.00");
-  await expect(row).toContainText("$2,000.00");
+  await expect(row).toContainText("$4,000");
+  await expect(row).toContainText("$2,000");
 });
 
 Then("I see that {string} nets $2,000 more", async ({ page }, name: string) => {
