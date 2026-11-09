@@ -1,8 +1,8 @@
 Feature: Household
   Household shows everyone in the signed-in guardian's household: the people Clubspot links through a shared sailor. A
-  guardian changes how each person's name shows, their own phone and their children's, and a child's school. Emails
-  can't be changed here, and another guardian's phone is theirs to change. The household makes one choice, for everyone in
-  it, whether to share its guardians' email and phone with its teams. Every household here is made up for the run.
+  guardian changes how each person's name shows, their own phone, a child's phone when their date of birth is on file,
+  and a child's school. Emails can't be changed here, and another guardian's phone is theirs to change. The household
+  makes one choice, for everyone in it, whether to share its adults' email and phone with its teammates. Every household here is made up for the run.
 
   Rule: A guardian sees everyone in their household, and changes what's theirs to change
 
@@ -23,7 +23,7 @@ Feature: Household
       And I edit the other guardian
       Then I can change their name, but not their phone
 
-  Rule: The household decides once whether to share its guardians' email and phone
+  Rule: The household decides once whether to share its adults' email and phone
 
     Scenario: A guardian stops sharing, then shares again
       Given I'm a guardian with another guardian and a child on a team, and our household shares

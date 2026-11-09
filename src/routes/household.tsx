@@ -5,7 +5,7 @@ import type { SaveState } from "@/components/household/save-state";
 import { PageHeader } from "@/components/plans/page-header";
 import { NoAccess } from "@/components/shell/no-access";
 import { NoticePage } from "@/components/shell/notice-page";
-import { canSeeHousehold, type Permissions } from "@/directus/access";
+import { canSeeHousehold } from "@/directus/access";
 import { householdQuery, setHouseholdSharing, updateMember } from "@/directus/household";
 import { useSession } from "@/directus/use-session";
 import type { Household as HouseholdData } from "@/model/household";
@@ -19,11 +19,11 @@ function HouseholdPage() {
   if (session.kind !== "signed-in" || !canSeeHousehold(session.permissions)) {
     return <NoAccess what="a household" />;
   }
-  return <Household permissions={session.permissions} />;
+  return <Household />;
 }
 
-function Household({ permissions }: { permissions: Permissions }) {
-  const { data: household } = useSuspenseQuery(householdQuery(permissions));
+function Household() {
+  const { data: household } = useSuspenseQuery(householdQuery);
   if (!household) {
     return <NoticePage title="You have no household on file" />;
   }

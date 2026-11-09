@@ -37,6 +37,7 @@ const person = (id: string, first: string, last: string, rest: Record<string, un
   phone: null,
   school: null,
   display_name: null,
+  date_of_birth: null,
   household_id: null,
   share_contact: null,
   directus_user_id: null,
@@ -63,7 +64,6 @@ const more = [
 const moreId = (i: number, parent = false) => `00000000-0000-4000-8000-0000000008${parent ? 5 : 0}${i}`;
 
 export const rosterTables: Record<string, Record<string, unknown>[]> = {
-  households: [{ id: rosterIds.household, share_contact: true }],
   programs: [
     program(jPod, "J-Pod", true, doublehanded, "j-pod@example.org"),
     program(kPod, "K-Pod", true, doublehanded),
@@ -111,6 +111,7 @@ export const rosterTables: Record<string, Record<string, unknown>[]> = {
     person(rosterIds.child, "Ada", "Tiller", {
       school: "Lakeside Middle School",
       display_name: "Addie Tiller",
+      date_of_birth: "2013-05-01",
       household_id: rosterIds.household,
     }),
     person(rosterIds.teammate, "Kai", "Halyard", { school: "Harbor View Middle School" }),
@@ -128,3 +129,13 @@ export const rosterTables: Record<string, Record<string, unknown>[]> = {
     ]),
   ],
 };
+
+// A household holds its members, as Directus returns them for `members.*`. They're the same rows as `people`, so a
+// change to one shows in both.
+rosterTables["households"] = [
+  {
+    id: rosterIds.household,
+    share_contact: true,
+    members: rosterTables["people"]!.filter((p) => p["household_id"] === rosterIds.household),
+  },
+];

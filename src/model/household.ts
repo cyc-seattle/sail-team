@@ -30,7 +30,7 @@ export interface Member {
   school: string | null;
   role: Role;
   me: boolean;
-  /** An adult changes their own phone and their children's, never another guardian's or a grown sailor's. */
+  /** An adult changes their own phone and a child's whose date of birth is on file, never another adult's. */
   canEditPhone: boolean;
   /** Only sailors have a school. */
   hasSchool: boolean;
@@ -59,12 +59,14 @@ function grownUp(dateOfBirth: string, today: string): boolean {
   return dateOfBirth <= `${year}${today.slice(4)}`;
 }
 
-/**
- * Who's an adult and who's a child, as platform's Community rules decide: by date of birth when it's on file, and
- * otherwise a sailor is a child and anyone else an adult.
- */
+/** Who's an adult, as platform's Community rules decide: 18 or over, or with no date of birth, someone's guardian. */
 function isAdult(row: MemberRow, role: Role, today: string): boolean {
-  return row.date_of_birth ? grownUp(row.date_of_birth, today) : role !== "sailor";
+  return row.date_of_birth ? grownUp(row.date_of_birth, today) : role === "guardian";
+}
+
+/** Who an adult may change the phone of besides themselves: only someone whose date of birth says they're under 18. */
+function isKnownMinor(row: MemberRow, today: string): boolean {
+  return !!row.date_of_birth && !grownUp(row.date_of_birth, today);
 }
 
 /** The household's members, guardians first, then sailors, then anyone else, each by name. */
@@ -91,7 +93,7 @@ export function buildHousehold(
       school: p.school ?? null,
       role,
       me: p.id === meId,
-      canEditPhone: p.id === meId || (role === "sailor" && !isAdult(p, role, today)),
+      canEditPhone: p.id === meId || isKnownMinor(p, today),
       hasSchool: role === "sailor",
     };
   });

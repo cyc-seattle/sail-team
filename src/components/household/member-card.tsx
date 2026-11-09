@@ -74,7 +74,9 @@ function Details({ member }: { member: Member }) {
       <dt className="text-muted-foreground">Phone</dt>
       <dd>
         {member.phone ?? "None on file"}
-        {!member.canEditPhone && <span className="block text-muted-foreground">Only they can change their phone.</span>}
+        {!member.canEditPhone && member.role === "guardian" && (
+          <span className="block text-muted-foreground">Only they can change their phone.</span>
+        )}
       </dd>
       {member.hasSchool && (
         <>
