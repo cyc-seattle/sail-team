@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect } from "storybook/test";
-import { forTheYear } from "../../../.storybook/with-unit-switch";
 import { withRouter } from "../../../.storybook/with-router";
 import { sharedCosts } from "@/model/plan-lines";
 import {
@@ -42,7 +41,6 @@ const meta = {
     ),
     withRouter("/plans/financial/budget/youth", ["/plans/financial/budget"]),
   ],
-  beforeEach: forTheYear,
 } satisfies Meta<typeof PlanView>;
 export default meta;
 type Story = StoryObj<typeof meta>;

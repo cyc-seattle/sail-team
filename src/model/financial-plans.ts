@@ -1,4 +1,5 @@
 import type { EngineWarning } from "@cyc-seattle/platform/planning";
+import type { Measures } from "./pnl-view.ts";
 import type { SavedPnlRow } from "./saved-results.ts";
 
 /** A Financial Plan as the list shows it: the organization's plan for a year, a draft or saved. */
@@ -128,6 +129,23 @@ export function topLine(lines: Pick<PlanLine, "amount_cents" | "revenue" | "capi
   };
 }
 
+/**
+ * What a member's per-day and per-sailor-day amounts divide by: its offerings' days and sailor-days. The Operations
+ * Plan's shared costs, and a Financial Plan's totals (no member), are spread over every offering, so they divide by all.
+ */
+export function measuresOf(results: Pick<Results, "pnl">, member: Pick<Member, "id" | "kind"> | null): Measures {
+  const offerings = results.pnl.filter(
+    (p) => p.level === "offering" && (!member || member.kind === "operations" || p.member === member.id),
+  );
+  const rows = offerings.length
+    ? offerings
+    : results.pnl.filter((p) => p.level === "program_area" && p.member === member?.id);
+  return {
+    days: rows.reduce((total, p) => total + p.days, 0),
+    sailor_days: rows.reduce((total, p) => total + p.sailor_days, 0),
+  };
+}
+
 /** A Financial Plan's P&L: as it was saved, or, for a draft, calculated now. */
 export interface Results {
   /** Whether it was calculated now, for a draft, rather than read as it was saved. */
@@ -192,6 +210,8 @@ export interface SummaryRow {
   /** The member it's for. Null for the total. */
   member: Member | null;
   topLine: TopLine;
+  /** What its per-day and per-sailor-day amounts divide by. */
+  measures: Measures;
 }
 
 /** A row for each program area by name, then Non-program, then the total, which adds them up. */
@@ -203,6 +223,7 @@ export function summaryRows(members: Member[], results: Results): { rows: Summar
         name: memberName(member),
         member,
         topLine: topLine(results.lines.filter((l) => l.member === member.id)),
+        measures: measuresOf(results, member),
       };
     });
   return {
@@ -211,6 +232,7 @@ export function summaryRows(members: Member[], results: Results): { rows: Summar
       name: "Total",
       member: null,
       topLine: topLine(results.lines),
+      measures: measuresOf(results, null),
     },
   };
 }

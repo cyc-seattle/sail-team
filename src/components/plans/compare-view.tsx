@@ -1,5 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
+  measuresOf,
   memberName,
   memberNet,
   type FinancialPlanSummary,
@@ -7,7 +8,9 @@ import {
   type Results,
   type Totals,
 } from "@/model/financial-plans";
+import type { Measures } from "@/model/pnl-view";
 import { Money } from "./money";
+import { ViewedMoney } from "./viewed-money";
 
 export interface Compared {
   set: Pick<FinancialPlanSummary, "id" | "name" | "status">;
@@ -26,15 +29,23 @@ const totals: { label: string; pick: (t: Totals) => number }[] = [
 export function CompareView({ a, b }: { a: Compared; b: Compared }) {
   const netOf = (side: Compared, name: string) => {
     const member = side.members.find((m) => memberName(m) === name);
-    return member && side.results ? memberNet(side.results, member) : null;
+    return member && side.results
+      ? { cents: memberNet(side.results, member), measures: measuresOf(side.results, member) }
+      : null;
   };
+  const total = (side: Compared, pick: (t: Totals) => number) =>
+    side.results ? { cents: pick(side.results.totals), measures: measuresOf(side.results, null) } : null;
   const plans = [...new Set([...a.members, ...b.members].map(memberName))].sort((x, y) =>
     x === "Non-program" ? -1 : y === "Non-program" ? 1 : x.localeCompare(y),
   );
   const difference =
     a.results && b.results ? a.results.totals.operating_net_cents - b.results.totals.operating_net_cents : null;
-  const cell = (cents: number | null) =>
-    cents === null ? <span className="text-muted-foreground">None</span> : <Money cents={cents} colored />;
+  const cell = (amount: { cents: number; measures: Measures } | null) =>
+    amount === null ? (
+      <span className="text-muted-foreground">None</span>
+    ) : (
+      <ViewedMoney cents={amount.cents} measures={amount.measures} colored />
+    );
   return (
     <div className="grid gap-card">
       {difference !== null && (
@@ -61,8 +72,8 @@ export function CompareView({ a, b }: { a: Compared; b: Compared }) {
           {totals.map((row) => (
             <TableRow key={row.label}>
               <TableCell className="font-medium">{row.label}</TableCell>
-              <TableCell className="text-right">{cell(a.results ? row.pick(a.results.totals) : null)}</TableCell>
-              <TableCell className="text-right">{cell(b.results ? row.pick(b.results.totals) : null)}</TableCell>
+              <TableCell className="text-right">{cell(total(a, row.pick))}</TableCell>
+              <TableCell className="text-right">{cell(total(b, row.pick))}</TableCell>
             </TableRow>
           ))}
           {plans.map((name) => (

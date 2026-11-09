@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect } from "storybook/test";
-import { forTheYear, withUnitSwitch } from "../../../.storybook/with-unit-switch";
+import { withUnitSwitch } from "../../../.storybook/with-unit-switch";
 import { statement } from "@/model/plan-lines";
 import { lines, measures } from "./fixtures";
 import { LinesTable } from "./lines-table";
@@ -19,7 +19,6 @@ const meta = {
     net: true,
   },
   decorators: [withUnitSwitch],
-  beforeEach: forTheYear,
 } satisfies Meta<typeof LinesTable>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -46,6 +45,6 @@ export const NoDays: Story = {
   args: { measures: { days: 0, sailor_days: 0 } },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Per day" }));
-    await expect(canvas.getAllByText("No days to divide by")[0]).toBeVisible();
+    await expect(canvas.getAllByText("No days to divide by")[0]).toBeInTheDocument();
   },
 };

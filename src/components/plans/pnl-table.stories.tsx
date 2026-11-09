@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect } from "storybook/test";
-import { forTheYear, withUnitSwitch } from "../../../.storybook/with-unit-switch";
+import { withUnitSwitch } from "../../../.storybook/with-unit-switch";
 import { offering, offerings } from "./fixtures";
 import { PnlTable } from "./pnl-table";
 
@@ -8,7 +8,6 @@ const meta = {
   component: PnlTable,
   args: { rows: offerings, label: "Offering" },
   decorators: [withUnitSwitch],
-  beforeEach: forTheYear,
 } satisfies Meta<typeof PnlTable>;
 export default meta;
 type Story = StoryObj<typeof meta>;

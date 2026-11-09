@@ -2,20 +2,14 @@ import { Fragment } from "react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { usePnlView } from "@/hooks/use-pnl-view";
 import type { Category } from "@/model/plan-lines";
-import { amountInView, viewLabels, type Measures } from "@/model/pnl-view";
+import { viewLabels, type Measures } from "@/model/pnl-view";
 import { cn } from "@/lib/utils";
-import { Money } from "./money";
+import { ViewedMoney } from "./viewed-money";
 
 function Amount({ cents, measures, colored = false }: { cents: number; measures: Measures; colored?: boolean }) {
-  const [view] = usePnlView();
-  const amount = amountInView(cents, view, measures);
   return (
     <TableCell className="text-right">
-      {amount === null ? (
-        <span className="text-muted-foreground">No days to divide by</span>
-      ) : (
-        <Money cents={amount} colored={colored} whole={view === "year"} />
-      )}
+      <ViewedMoney cents={cents} measures={measures} colored={colored} />
     </TableCell>
   );
 }

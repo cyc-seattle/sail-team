@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Fragment } from "react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { memberName, membersInOrder, type Member, type Results } from "@/model/financial-plans";
-import { Money } from "./money";
+import { ViewedMoney } from "./viewed-money";
 
 type Row = Pick<Pnl, "enrollment" | "days" | "sailor_days" | "revenue_cents" | "expense_cents" | "net_cents">;
 
@@ -21,16 +21,13 @@ function Cells({ row, days = true }: { row: Row; days?: boolean }) {
       <TableCell className="text-right tabular-nums">{days ? count(row.days) : ""}</TableCell>
       <TableCell className="text-right tabular-nums">{count(row.sailor_days)}</TableCell>
       <TableCell className="text-right">
-        <Money cents={row.revenue_cents} whole />
+        <ViewedMoney cents={row.revenue_cents} measures={row} />
       </TableCell>
       <TableCell className="text-right">
-        <Money cents={row.expense_cents} whole />
+        <ViewedMoney cents={row.expense_cents} measures={row} />
       </TableCell>
       <TableCell className="text-right">
-        <Money cents={row.net_cents} colored whole />
-      </TableCell>
-      <TableCell className="text-right">
-        {row.sailor_days > 0 ? <Money cents={Math.round(row.net_cents / row.sailor_days)} colored /> : null}
+        <ViewedMoney cents={row.net_cents} measures={row} colored />
       </TableCell>
     </>
   );
@@ -65,14 +62,13 @@ export function ProgramsSection({ setId, members, results }: { setId: string; me
               <TableHead className="text-right">Revenue</TableHead>
               <TableHead className="text-right">Expenses</TableHead>
               <TableHead className="text-right">Net</TableHead>
-              <TableHead className="text-right">Net per sailor-day</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {areas.map(({ area, offerings }) => (
               <Fragment key={area.id}>
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={8} className="pt-card font-medium">
+                  <TableCell colSpan={7} className="pt-card font-medium">
                     <Link
                       to="/plans/financial/$setId/$planId"
                       params={{ setId, planId: area.plan_id }}

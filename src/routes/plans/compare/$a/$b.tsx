@@ -2,6 +2,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { CompareView } from "@/components/plans/compare-view";
 import { PageHeader } from "@/components/plans/page-header";
+import { UnitSwitch } from "@/components/plans/unit-switch";
 import { NoAccess } from "@/components/shell/no-access";
 import { NoticePage } from "@/components/shell/notice-page";
 import { canRead } from "@/directus/access";
@@ -33,6 +34,7 @@ function Loaded() {
       <PageHeader
         title={`${first.set.name} and ${second.set.name}`}
         back={{ to: `/plans/financial/${a}`, label: first.set.name }}
+        actions={<UnitSwitch />}
       />
       <CompareView a={first} b={second} />
     </main>

@@ -1,10 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect } from "storybook/test";
-import { forTheYear } from "../../../.storybook/with-unit-switch";
 import { viewKey } from "@/model/pnl-view";
 import { UnitSwitch } from "./unit-switch";
 
-const meta = { component: UnitSwitch, beforeEach: forTheYear } satisfies Meta<typeof UnitSwitch>;
+const meta = { component: UnitSwitch } satisfies Meta<typeof UnitSwitch>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 

@@ -10,9 +10,8 @@ import { canRead } from "@/directus/access";
 import { assumptionsQuery } from "@/directus/assumptions";
 import { financialPlanQuery } from "@/directus/financial-plans";
 import { useSession } from "@/directus/use-session";
-import { memberName } from "@/model/financial-plans";
+import { measuresOf, memberName } from "@/model/financial-plans";
 import { sharedCosts } from "@/model/plan-lines";
-import { sumPnl } from "@/model/pnl-view";
 import { savedPnl } from "@/model/saved-results";
 
 export const Route = createFileRoute("/plans/financial/$setId/$planId")({
@@ -59,12 +58,6 @@ function Loaded() {
   const own = results.pnl.filter((p) => p.member === member.id);
   const offerings = own.filter((p) => p.level === "offering").map(savedPnl);
   const isOperations = member.kind === "operations";
-  // The Operations Plan's shared costs are spread over every offering, so its per-day amounts divide by all of them.
-  const counted = isOperations ? results.pnl.filter((p) => p.level === "offering").map(savedPnl) : offerings;
-  const measures = sumPnl(
-    (counted.length ? counted : own.filter((p) => p.level === "program_area").map(savedPnl)).map((r) => r.pnl),
-    "total",
-  );
   const days = new Map(offerings.map((o) => [o.pnl.key, o.pnl.days]));
   return (
     <main className="mx-auto max-w-6xl p-card">
@@ -81,7 +74,7 @@ function Loaded() {
             offerings: assumptions.offerings.map((o) => ({ ...o, days: days.get(o.key) ?? null })),
           }
         }
-        measures={measures}
+        measures={measuresOf(results, member)}
       />
     </main>
   );
