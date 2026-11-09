@@ -34,11 +34,7 @@ function Loaded() {
   const { set, results, savedBy } = data;
   return (
     <main className="mx-auto max-w-6xl p-card">
-      <PageHeader
-        title={memberName(member)}
-        description={`${member.plan_name}, in ${set.name}, the ${set.status === "draft" ? "draft " : ""}Financial Plan for ${set.fiscal_year}`}
-        back={{ to: `/plans/financial/${setId}`, label: set.name }}
-      />
+      <PageHeader title={memberName(member)} back={{ to: `/plans/financial/${setId}`, label: set.name }} />
       {results ? (
         <VersionPnl
           note={<SourceNote set={set} savedBy={savedBy} />}

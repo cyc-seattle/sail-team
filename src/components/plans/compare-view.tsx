@@ -29,7 +29,7 @@ export function CompareView({ a, b }: { a: Compared; b: Compared }) {
     return member && side.results ? memberNet(side.results, member) : null;
   };
   const plans = [...new Set([...a.members, ...b.members].map(memberName))].sort((x, y) =>
-    x === "Operations Plan" ? -1 : y === "Operations Plan" ? 1 : x.localeCompare(y),
+    x === "Non-program" ? -1 : y === "Non-program" ? 1 : x.localeCompare(y),
   );
   const difference =
     a.results && b.results ? a.results.totals.operating_net_cents - b.results.totals.operating_net_cents : null;

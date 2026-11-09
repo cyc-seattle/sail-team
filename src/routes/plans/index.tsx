@@ -18,10 +18,7 @@ function Plans() {
   }
   return (
     <main className="mx-auto max-w-6xl p-card">
-      <PageHeader
-        title="Plans"
-        description="Each year's Financial Plans: the Operations Plan and Program Plans, and the P&L they make together."
-      />
+      <PageHeader title="Plans" />
       <AllPlans />
     </main>
   );

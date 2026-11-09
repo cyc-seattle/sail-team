@@ -38,7 +38,8 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
 - `src/router.ts` makes the router. Tests make their own with a memory history.
 - `src/components/ui/` holds shadcn's components on Base UI, `src/components/` the club's own, each with a story beside
   it. `src/components/plans/` holds the plans pages': Page Header, Summary Tiles, Money, P&L Table, Lines Table,
-  Chart Card, Engine Warnings, Version Badge, and the Financial Plan Card, List, and View, and Compare View.
+  Chart Card, Engine Warnings, Version Badge, the Financial Plan Card, List, View, Page, and Actions, the Plan Details
+  Dialog, the Summary Table, the Programs and Operations (Non-program) Sections, and Compare View.
   `src/components/home/` holds the home page's Link List. `src/components/household/` holds the household page's
   Share Contact, Member Card, and Household View. `src/components/shell/` holds the App Shell around every
   signed-in page: the sidebar on a laptop, and the tab bar on a phone, whose More opens the sidebar.
@@ -56,7 +57,8 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   (`src/directus/plans.ts`), from the same rows platform reads at save time (`src/model/plan-data.ts`): the catalog,
   and every plan the draft holds. Its lines and P&L rows are charged to members the way platform's hook does
   (`ownerOf` in `src/model/financial-plans.ts`). `/plans` lists each year's Financial Plans, `/plans/financial/<set>`
-  shows one, `/plans/financial/<set>/<plan>` one plan in it, and `/plans/compare/<a>/<b>` two side by side. A club
+  shows one (where a Plan Writer renames a draft, changes a note, saves a draft, marks a saved one active, or starts a
+  draft from it), `/plans/financial/<set>/<plan>` one plan in it, and `/plans/compare/<a>/<b>` two side by side. A club
   plan's old address, `/plans/club/<set>`, sends people to its Financial Plan.
 - `src/directus/roster.ts` reads the team rosters. A team is a program area, such as Doublehanded, and its programs
   marked as a team, such as J-Pod and K-Pod, are its divisions; a program that isn't a team has no roster. It reads

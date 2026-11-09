@@ -66,15 +66,20 @@ Then("each shows its note, the day it was saved, and the one it was started from
   await expect(card(page, club, "Budget")).toContainText("Reviewed with the board");
 });
 
-Given("a saved Financial Plan for 2027 with an operating net of $5,000", async ({ club }) => {
+Given("a saved Financial Plan for 2027 whose camp takes in $10,000 and spends $5,000 running it", async ({ club }) => {
   named.clear();
   club.ownYear();
   await savedBudget(club, "Budget");
 });
 
-Then("the Financial Plan shows an operating net of $5,000", async ({ page, club }) => {
-  await expect(card(page, club, "Budget")).toContainText("Operating net $5,000.00");
-});
+Then(
+  "the Financial Plan shows revenue of $10,000, expenses of $5,000, gross of $5,000, and net of $5,000",
+  async ({ page, club }) => {
+    await expect(card(page, club, "Budget")).toContainText(
+      /Revenue\s*\$10,000.*Expenses\s*\$5,000.*Gross\s*\$5,000.*Net\s*\$5,000/,
+    );
+  },
+);
 
 Given("a saved Financial Plan for 2027 named {string}", async ({ club }, name: string) => {
   named.clear();
@@ -150,20 +155,27 @@ When("I open that Financial Plan", async ({ page }) => {
   await page.goto(`${await app()}/plans/financial/${opened.set}`);
 });
 
-Then("I see the organization's operating net, fundraising, capital, and total", async ({ page }) => {
-  for (const tile of ["Operating net", "Fundraising net", "Capital", "Total"]) {
-    await expect(page.getByText(tile, { exact: true })).toBeVisible();
+const summary = (page: Page) => page.getByRole("table", { name: "Summary" });
+
+Then("the summary has a row for Youth Racing, Adult Sailing, Non-program, and the total", async ({ page, club }) => {
+  for (const name of [club.area, `Adult Sailing ${club.run}`, "Non-program", "Total"]) {
+    await expect(summary(page).getByRole("row", { name: new RegExp(`^${name}`) })).toBeVisible();
   }
 });
 
-Then("I see its Operations Plan and both Program Plans, each with its net", async ({ page, club }) => {
-  for (const name of ["Operations Plan", club.area, `Adult Sailing ${club.run}`]) {
-    await expect(page.getByRole("link", { name: new RegExp(name) })).toContainText("Net");
-  }
+Then("Youth Racing's row shows revenue of $10,000 and net of $5,000", async ({ page, club }) => {
+  const row = summary(page).getByRole("row", { name: new RegExp(`^${club.area}`) });
+  await expect(row.getByRole("cell").nth(1)).toHaveText("$10,000");
+  await expect(row.getByRole("cell").nth(4)).toHaveText("$5,000");
+});
+
+Then("under Programs I see Youth Racing's camp, with its sailors", async ({ page }) => {
+  const camp = page.getByRole("table", { name: "Programs" }).getByRole("row", { name: new RegExp(`^${OFFERING}`) });
+  await expect(camp.getByRole("cell").nth(1)).toHaveText("10");
 });
 
 Then("I see the Financial Plan it was started from", async ({ page }) => {
-  await expect(page.getByText(/started from Budget/)).toBeVisible();
+  await expect(page.getByText(/started from Budget/i)).toBeVisible();
 });
 
 // A Program Plan's full P&L.
@@ -316,4 +328,96 @@ Then("the page warns that the practice falls on a closed day, and names the day"
 Then("no plan, version, or amount appears", async ({ page }) => {
   await expect(page.locator('a[href^="/plans/"]')).toHaveCount(0);
   await expect(page.getByText(/\$\d/)).toHaveCount(0);
+});
+
+// Naming, noting, and starting a draft.
+Given("a draft Financial Plan named {string}", async ({ club }, name: string) => {
+  named.clear();
+  const { operations, youth } = await plansWithCopies(club);
+  named.set(name, await club.financialPlan(name, [operations, youth]));
+});
+
+When(/^I open "([^"]+)"$/, async ({ page }, name: string) => {
+  await page.goto(`${await app()}/plans/financial/${named.get(name)}`);
+  await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+});
+
+When("I rename it {string} and note it {string}", async ({ page }, name: string, note: string) => {
+  await page.getByRole("button", { name: "Edit" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Name").fill(name);
+  await dialog.getByLabel("Note").fill(note);
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toBeHidden();
+});
+
+Then("the page is titled {string} and shows the note {string}", async ({ page }, name: string, note: string) => {
+  await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+  await expect(page.getByText(note)).toBeVisible();
+});
+
+When("I open {string} and edit it", async ({ page }, name: string) => {
+  await page.goto(`${await app()}/plans/financial/${named.get(name)}`);
+  await page.getByRole("button", { name: "Edit" }).click();
+});
+
+Then("I can change its note, but not its name", async ({ page }) => {
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByLabel("Name")).toBeDisabled();
+  await dialog.getByLabel("Note").fill("Reviewed with the board");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText("Reviewed with the board")).toBeVisible();
+});
+
+When("I open {string} and start a draft from it named {string}", async ({ page }, parent: string, name: string) => {
+  await page.goto(`${await app()}/plans/financial/${named.get(parent)}`);
+  await page.getByRole("button", { name: "Start a draft from this" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Name").fill(name);
+  await dialog.getByRole("button", { name: "Start the draft" }).click();
+  await expect(dialog).toBeHidden({ timeout: 30_000 });
+});
+
+Then("I'm on the draft {string}, started from {string}", async ({ page }, name: string, parent: string) => {
+  await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+  await expect(page).not.toHaveURL(new RegExp(named.get(parent)!));
+  await expect(page.getByText(new RegExp(`started from ${parent}`, "i"))).toBeVisible();
+});
+
+Then("it holds the same plans as {string}", async ({ page, club }, parent: string) => {
+  await expect(page.getByRole("link", { name: parent, exact: true }).first()).toBeVisible();
+  for (const name of ["Non-program", club.area]) {
+    await expect(page.getByRole("link", { name: new RegExp(name) }).first()).toBeVisible();
+  }
+});
+
+Then("I see no way to edit it or start a draft from it", async ({ page }) => {
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Edit" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Start a draft from this" })).toHaveCount(0);
+});
+
+When("I save it", async ({ page }) => {
+  await page.getByRole("button", { name: "Save" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toBeHidden({ timeout: 30_000 });
+});
+
+Then("it's marked saved, with the day it was saved", async ({ page }) => {
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Saved \w+ \d+, \d{4}/)).toBeVisible();
+});
+
+When("I mark it active", async ({ page }) => {
+  await page.getByRole("button", { name: "Mark active" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", { name: "Mark active" }).click();
+  await expect(dialog).toBeHidden({ timeout: 30_000 });
+});
+
+Then("it's marked active", async ({ page }) => {
+  await expect(page.getByText("Active", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Mark active" })).toHaveCount(0);
 });

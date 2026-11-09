@@ -81,11 +81,30 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
       return HttpResponse.json({ data: rows.map((r) => shape(r, query.get("fields"))) });
     }),
     http.patch(`${directusUrl}/items/:table/:id`, async ({ params, request }) => {
-      const row = rosterTables[params["table"] as string]?.find((r) => r["id"] === params["id"]);
+      const table = params["table"] as string;
+      const row = (tables[table] ?? rosterTables[table])?.find((r) => r["id"] === params["id"]);
       if (!row) {
         return forbidden();
       }
       Object.assign(row, await request.json());
+      return HttpResponse.json({ data: row });
+    }),
+    // A new Financial Plan, with its parent's plans copied in, as platform's hook copies them.
+    http.post(`${directusUrl}/items/version_sets`, async ({ request }) => {
+      const body = (await request.json()) as Row;
+      const parent = tables["version_sets"]!.find((s) => s["id"] === body["parent_id"]);
+      const row: Row = {
+        saved_at: null,
+        saved_by: null,
+        ...body,
+        status: "draft",
+        parent_id: parent ? { id: parent["id"], name: parent["name"] } : null,
+      };
+      tables["version_sets"]!.push(row);
+      const members = tables["version_set_members"]!;
+      for (const m of members.filter((m) => (m["version_set_id"] as Row)["id"] === parent?.["id"])) {
+        members.push({ ...m, id: crypto.randomUUID(), version_set_id: row });
+      }
       return HttpResponse.json({ data: row });
     }),
   ];
