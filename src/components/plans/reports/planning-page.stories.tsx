@@ -30,10 +30,19 @@ export const Drafts: Story = {
   },
 };
 
-/** Deleting a draft asks first. */
+/** A draft's details, such as the planning agent's report, show on hover or a tap. */
+export const AgentsReport: Story = {
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "About 2027 allocations, Nov 9" }));
+    await waitFor(async () => expect(await screen.findByText(/Allocated staff, RIBs and boats/)).toBeVisible());
+  },
+};
+
+/** Deleting a draft, from its Actions menu, asks first. */
 export const DeletingTheAgentsDraft: Story = {
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "Delete 2027 allocations, Nov 9" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Actions for 2027 allocations, Nov 9" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Delete" }));
     await waitFor(async () => expect(await screen.findByText("Delete 2027 allocations, Nov 9?")).toBeVisible());
   },
 };

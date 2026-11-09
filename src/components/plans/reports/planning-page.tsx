@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { TriangleAlertIcon } from "lucide-react";
+import { ChevronDownIcon, InfoIcon, TriangleAlertIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,8 +10,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDate } from "@/model/dates";
@@ -49,24 +55,82 @@ const byStatus = (a: PlanSummary, b: PlanSummary) =>
   statusOrder[a.status] - statusOrder[b.status] ||
   (a.status === "draft" ? a.name.localeCompare(b.name) : (b.saved_at ?? "").localeCompare(a.saved_at ?? ""));
 
-/** Deleting a draft takes its plans and numbers with it, so it asks first. */
-function DeleteDraft({ plan }: { plan: PlanSummary }) {
+/**
+ * A plan's buttons in one menu: a draft is saved or deleted, and a saved one marked active. Deleting asks first, since
+ * the draft's plans and numbers go with it.
+ */
+function PlanActions({ plan }: { plan: PlanSummary }) {
+  const [deleting, setDeleting] = useState(false);
+  if (plan.status === "active") {
+    return null;
+  }
   return (
-    <Dialog>
-      <DialogTrigger render={<Button variant="destructive" size="sm" aria-label={`Delete ${plan.name}`} />}>
-        Delete
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Delete {plan.name}?</DialogTitle>
-          <DialogDescription>Its plans and numbers go with it. This can&apos;t be undone.</DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
-          <DialogClose render={<Button variant="destructive" />}>Delete</DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<Button variant="outline" size="sm" aria-label={`Actions for ${plan.name}`} />}>
+          Actions
+          <ChevronDownIcon aria-hidden />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {plan.status === "draft" ? (
+            <>
+              <DropdownMenuItem>Save</DropdownMenuItem>
+              <DropdownMenuItem variant="destructive" onClick={() => setDeleting(true)}>
+                Delete
+              </DropdownMenuItem>
+            </>
+          ) : (
+            <DropdownMenuItem>Mark active</DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Dialog open={deleting} onOpenChange={setDeleting}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete {plan.name}?</DialogTitle>
+            <DialogDescription>Its plans and numbers go with it. This can&apos;t be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <DialogClose render={<Button variant="destructive" />}>Delete</DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+/** When a plan was saved, what it started from, and its note, such as the planning agent's report, on hover or a tap. */
+function PlanDetails({ plan }: { plan: PlanSummary }) {
+  if (!plan.saved_at && !plan.parent && !plan.note) {
+    return null;
+  }
+  return (
+    <Popover>
+      <PopoverTrigger
+        openOnHover
+        delay={100}
+        aria-label={`About ${plan.name}`}
+        className="inline-flex size-tap shrink-0 items-center justify-center rounded-md text-muted-foreground hover:text-foreground md:size-6"
+      >
+        <InfoIcon aria-hidden className="size-4" />
+      </PopoverTrigger>
+      <PopoverContent align="start" aria-label={`About ${plan.name}`} className="w-80">
+        <p className="text-xs text-muted-foreground">
+          {plan.saved_at ? `Saved ${formatDate(plan.saved_at)}` : null}
+          {plan.saved_at && plan.parent ? ". " : null}
+          {plan.parent && (
+            <>
+              Started from{" "}
+              <Link to="/plans/financial/$setId" params={{ setId: plan.parent.id }} className="text-link underline">
+                {plan.parent.name}
+              </Link>
+            </>
+          )}
+        </p>
+        {plan.note && <p>{plan.note}</p>}
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -99,7 +163,8 @@ function FilterSelect({
 
 /**
  * Planning's first page: every Financial Plan in one table, narrowed by year and status, opening on the newest year.
- * A draft, such as one the planning agent wrote, is kept by saving it or thrown away by deleting it, from its row.
+ * One line a plan: its details on hover, and its actions in a menu, where a draft, such as one the planning agent
+ * wrote, is saved or deleted.
  */
 export function PlanningPage({ plans }: { plans: PlanSummary[] }) {
   const years = [...new Set(plans.map((p) => p.year))].sort((a, b) => b - a);
@@ -139,9 +204,9 @@ export function PlanningPage({ plans }: { plans: PlanSummary[] }) {
           </TableHeader>
           <TableBody>
             {shown.map((p) => (
-              <TableRow key={p.id} className="align-top">
-                <TableCell className="sticky left-0 z-10 max-w-80 min-w-56 bg-background whitespace-normal">
-                  <div className="grid gap-1">
+              <TableRow key={p.id}>
+                <TableCell className="sticky left-0 z-10 bg-background">
+                  <span className="flex items-center gap-1">
                     <Link
                       to="/plans/financial/$setId"
                       params={{ setId: p.id }}
@@ -149,30 +214,15 @@ export function PlanningPage({ plans }: { plans: PlanSummary[] }) {
                     >
                       {p.name}
                     </Link>
-                    <span className="text-xs text-muted-foreground">
-                      {p.saved_at ? `Saved ${formatDate(p.saved_at)}` : null}
-                      {p.saved_at && p.parent ? ". " : null}
-                      {p.parent && (
-                        <>
-                          Started from{" "}
-                          <Link
-                            to="/plans/financial/$setId"
-                            params={{ setId: p.parent.id }}
-                            className="text-link underline"
-                          >
-                            {p.parent.name}
-                          </Link>
-                        </>
-                      )}
-                    </span>
-                    {p.note && <p className="text-sm">{p.note}</p>}
+                    <PlanDetails plan={p} />
                     {p.warnings > 0 && (
-                      <span className="inline-flex items-center gap-1 text-sm">
+                      <span className="inline-flex items-center gap-1 text-muted-foreground">
                         <TriangleAlertIcon aria-hidden className="size-4 text-warning" />
-                        {p.warnings === 1 ? "1 warning" : `${p.warnings} warnings`}
+                        <span className="sr-only">Warnings:</span>
+                        {p.warnings}
                       </span>
                     )}
-                  </div>
+                  </span>
                 </TableCell>
                 <TableCell className="tabular-nums">{p.year}</TableCell>
                 <TableCell>
@@ -187,15 +237,8 @@ export function PlanningPage({ plans }: { plans: PlanSummary[] }) {
                 <TableCell className="text-right">
                   <Money cents={p.net_cents} colored whole />
                 </TableCell>
-                <TableCell>
-                  {p.status === "draft" && (
-                    <div className="flex justify-end gap-2">
-                      <Button size="sm" aria-label={`Save ${p.name}`}>
-                        Save
-                      </Button>
-                      <DeleteDraft plan={p} />
-                    </div>
-                  )}
+                <TableCell className="text-right">
+                  <PlanActions plan={p} />
                 </TableCell>
               </TableRow>
             ))}

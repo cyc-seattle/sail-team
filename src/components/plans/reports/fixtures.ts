@@ -295,7 +295,9 @@ export const warnings: PlanWarning[] = [
   },
 ];
 
-const planSummary = (fields: Partial<PlanSummary> & Pick<PlanSummary, "id" | "name" | "status">): PlanSummary => ({
+const planSummary = (
+  fields: Partial<Omit<PlanSummary, "net_cents">> & Pick<PlanSummary, "id" | "name" | "status">,
+): PlanSummary => ({
   year: 2027,
   saved_at: null,
   parent: null,
@@ -303,8 +305,8 @@ const planSummary = (fields: Partial<PlanSummary> & Pick<PlanSummary, "id" | "na
   warnings: 0,
   revenue_cents: 49_900_000,
   expense_cents: 44_600_000,
-  net_cents: 5_300_000,
   ...fields,
+  net_cents: (fields.revenue_cents ?? 49_900_000) - (fields.expense_cents ?? 44_600_000),
 });
 
 /** Two years of Financial Plans: each year's active one, drafts including one from the planning agent, and older saved ones. */
@@ -317,7 +319,6 @@ export const planningPlans: PlanSummary[] = [
     parent: { id: "budget", name: "Budget" },
     warnings: 4,
     expense_cents: 44_100_000,
-    net_cents: 5_800_000,
     note: "Allocated staff, RIBs and boats for every summer week and the spring and fall seasons, and put J-Pod and K-Pod together on Wednesdays.\nLeft 4 warnings: July 12 and 19 need more Sailqubes and RIBs than CSC has, July 13 needs a second Guppies instructor that the rules allow only past 12 sailors, and J-Pod's August 2 practice has no coach free.",
   }),
   planSummary({
@@ -327,21 +328,20 @@ export const planningPlans: PlanSummary[] = [
     parent: { id: "budget", name: "Budget" },
     note: "What a second full-time coach would cost.",
     expense_cents: 47_800_000,
-    net_cents: 2_100_000,
   }),
   planSummary({
     id: "board",
     name: "Board review",
     status: "saved",
     saved_at: "2027-02-02T18:00:00Z",
-    net_cents: 4_400_000,
+    expense_cents: 45_500_000,
   }),
   planSummary({
     id: "first",
     name: "First pass",
     status: "saved",
     saved_at: "2027-01-15T18:00:00Z",
-    net_cents: 1_200_000,
+    expense_cents: 48_700_000,
   }),
   planSummary({
     id: "2026",
@@ -351,6 +351,5 @@ export const planningPlans: PlanSummary[] = [
     saved_at: "2026-03-04T18:00:00Z",
     revenue_cents: 45_200_000,
     expense_cents: 42_900_000,
-    net_cents: 2_300_000,
   }),
 ];
