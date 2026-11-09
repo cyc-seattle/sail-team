@@ -26,6 +26,11 @@ describe("changing Financial Plans in Directus", () => {
     });
   });
 
+  it("renames a saved one", async () => {
+    await updateFinancialPlan(ids.budget, { name: "Adopted budget", message: "Reviewed with the board" });
+    expect((await plan(ids.budget)).set.name).toBe("Adopted budget");
+  });
+
   it("starts a draft from a saved one, in its year, holding a copy of each of its plans", async () => {
     const budget = await plan(ids.budget);
     const id = await startFinancialPlan(budget, { name: "Budget copy", message: null });

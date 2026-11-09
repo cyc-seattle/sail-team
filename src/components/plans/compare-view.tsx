@@ -40,9 +40,10 @@ export function CompareView({ a, b }: { a: Compared; b: Compared }) {
   );
   const difference =
     a.results && b.results ? a.results.totals.operating_net_cents - b.results.totals.operating_net_cents : null;
-  const cell = (amount: { cents: number; measures: Measures } | null) =>
+  const cell = (amount: { cents: number; measures: Measures } | null, side: Compared) =>
     amount === null ? (
-      <span className="text-muted-foreground">None</span>
+      // A plan with no numbers yet is still being worked out, not empty.
+      <span className="text-muted-foreground">{side.results ? "None" : "Working out…"}</span>
     ) : (
       <ViewedMoney cents={amount.cents} measures={amount.measures} colored />
     );
@@ -72,15 +73,15 @@ export function CompareView({ a, b }: { a: Compared; b: Compared }) {
           {totals.map((row) => (
             <TableRow key={row.label}>
               <TableCell className="font-medium">{row.label}</TableCell>
-              <TableCell className="text-right">{cell(total(a, row.pick))}</TableCell>
-              <TableCell className="text-right">{cell(total(b, row.pick))}</TableCell>
+              <TableCell className="text-right">{cell(total(a, row.pick), a)}</TableCell>
+              <TableCell className="text-right">{cell(total(b, row.pick), b)}</TableCell>
             </TableRow>
           ))}
           {plans.map((name) => (
             <TableRow key={name}>
               <TableCell>{name}</TableCell>
-              <TableCell className="text-right">{cell(netOf(a, name))}</TableCell>
-              <TableCell className="text-right">{cell(netOf(b, name))}</TableCell>
+              <TableCell className="text-right">{cell(netOf(a, name), a)}</TableCell>
+              <TableCell className="text-right">{cell(netOf(b, name), b)}</TableCell>
             </TableRow>
           ))}
         </TableBody>

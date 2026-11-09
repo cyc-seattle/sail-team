@@ -26,8 +26,6 @@ export interface PlanDetailsDialogProps {
   /** A line under the title, when the dialog needs to say what will happen. */
   description?: string;
   initial: PlanDetails;
-  /** False for a saved Financial Plan, whose name never changes. */
-  nameEditable?: boolean;
   submitLabel: string;
   /** Rejects to keep the dialog open and show that it failed. */
   onSubmit: (details: PlanDetails) => Promise<void>;
@@ -39,7 +37,6 @@ export function PlanDetailsDialog({
   title,
   description,
   initial,
-  nameEditable = true,
   submitLabel,
   onSubmit,
 }: PlanDetailsDialogProps) {
@@ -80,14 +77,7 @@ export function PlanDetailsDialog({
           </DialogHeader>
           <div className="grid gap-2">
             <Label htmlFor="plan-name">Name</Label>
-            <Input
-              id="plan-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={!nameEditable}
-              required
-            />
-            {!nameEditable && <p className="text-xs text-muted-foreground">A saved plan keeps its name.</p>}
+            <Input id="plan-name" value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="plan-note">Note</Label>

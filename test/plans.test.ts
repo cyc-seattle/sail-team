@@ -16,7 +16,7 @@ const run = <T>(options: { queryFn?: unknown }) => (options.queryFn as () => Pro
 const plan = (id: string) => run<FinancialPlan | null>(financialPlanQuery(id)).then((p) => p!);
 
 describe("reading Financial Plans from Directus", () => {
-  it("lists every Financial Plan, with a saved one's top-line numbers and what each started from", async () => {
+  it("lists every Financial Plan, with its top-line numbers once they're worked out, and what each started from", async () => {
     const plans = await run<Awaited<ReturnType<NonNullable<typeof financialPlansQuery.queryFn>>>>(financialPlansQuery);
     // Its gala and coach boat, fundraising and capital, are left out.
     expect(plans[0]?.topLine).toEqual({
@@ -27,7 +27,7 @@ describe("reading Financial Plans from Directus", () => {
     });
     expect(plans.map((p) => [p.name, p.status, p.parent?.name ?? null, p.topLine?.net_cents ?? null])).toEqual([
       ["Budget", "saved", null, 200_000],
-      ["Two coaches", "draft", "Budget", null],
+      ["Two coaches", "draft", "Budget", 700_000],
       ["Three coaches", "draft", "Budget", null],
     ]);
   });
@@ -35,7 +35,7 @@ describe("reading Financial Plans from Directus", () => {
   it("reads a saved one's results as they were saved, each row with the plan it's charged in", async () => {
     const { set, members, results } = await plan(ids.budget);
     expect(set).toMatchObject({ name: "Budget", status: "saved", message: "Reviewed with the board" });
-    expect(results?.live).toBe(false);
+    expect(results?.calculated_at).toBe("2027-03-10T18:00:00Z");
     expect(results?.totals.operating_net_cents).toBe(500_000);
     const youth = members.find((m) => m.id === ids.youthMember)!;
     expect(memberName(youth)).toBe("Youth Racing");
@@ -52,9 +52,9 @@ describe("reading Financial Plans from Directus", () => {
     expect(results?.warnings.map((w) => w.code)).toEqual(["position_double_booked"]);
   });
 
-  it("calculates a draft now, with every plan it holds, and charges each line to its plan", async () => {
+  it("reads a draft's results as platform last worked them out, each row with the plan it's charged in", async () => {
     const { members, results } = await plan(ids.twoCoaches);
-    expect(results?.live).toBe(true);
+    expect(results?.calculated_at).toBe("2027-04-02T23:05:00Z");
     const youth = members.find((m) => m.kind === "program_area")!;
     const operations = members.find((m) => m.kind === "operations")!;
     const offering = results!.pnl.find((p) => p.level === "offering")!;
@@ -67,7 +67,11 @@ describe("reading Financial Plans from Directus", () => {
     expect(memberName(operations)).toBe("Non-program");
   });
 
-  it("warns about a practice on a day the Operations Plan lists as closed", async () => {
+  it("has no results for a draft platform hasn't worked out yet", async () => {
+    expect((await plan(ids.threeCoaches)).results).toBeNull();
+  });
+
+  it("reads a draft's warnings, such as a practice on a day the Operations Plan lists as closed", async () => {
     const { results } = await plan(ids.twoCoaches);
     expect(results?.warnings.map((w) => w.code)).toContain("closed_date");
   });

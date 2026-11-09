@@ -87,7 +87,6 @@ export function FinancialPlanActions({
           trigger="Edit"
           title={`Edit ${set.name}`}
           initial={set}
-          nameEditable={set.status === "draft"}
           submitLabel="Save"
           onSubmit={onEdit}
         />
@@ -106,7 +105,7 @@ export function FinancialPlanActions({
         <ConfirmButton
           label="Save"
           title={`Save ${set.name}?`}
-          description="Once it's saved, its plans and numbers never change. Its note still can."
+          description="Once it's saved, its plans and numbers never change. Its name and note still can."
           onConfirm={() => onMove("saved")}
         />
       )}

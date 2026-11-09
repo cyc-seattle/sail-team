@@ -14,9 +14,8 @@ type Story = StoryObj<typeof meta>;
 
 export const ByYear: Story = {
   play: async ({ canvas }) => {
-    const names = canvas.getAllByRole("link").map((link) => link.textContent);
-    await expect(names[0]).toContain("Three coaches");
-    await expect(names[2]).toContain("Budget");
+    const names = canvas.getAllByRole("article").map((card) => card.getAttribute("aria-labelledby"));
+    await expect(names).toEqual(["plan-three", "plan-two", "plan-budget"]);
   },
 };
 

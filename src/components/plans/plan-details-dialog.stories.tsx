@@ -15,7 +15,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const EditDraft: Story = {
+export const Edit: Story = {
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Edit" }));
     const dialog = within(await within(canvasElement.ownerDocument.body).findByRole("dialog"));
@@ -26,16 +26,6 @@ export const EditDraft: Story = {
     await waitFor(() =>
       expect(args.onSubmit).toHaveBeenCalledWith({ name: "Adopted budget", message: "Reviewed with the board" }),
     );
-  },
-};
-
-/** A saved Financial Plan keeps its name, so only its note changes. */
-export const EditSaved: Story = {
-  args: { nameEditable: false },
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "Edit" }));
-    const dialog = within(await within(canvasElement.ownerDocument.body).findByRole("dialog"));
-    await expect(dialog.getByLabelText("Name")).toBeDisabled();
   },
 };
 

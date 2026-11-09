@@ -52,17 +52,17 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   Directus's sign-in, and stops instead of looping if they come straight back without one (`session.ts`).
   `access.ts` reads `/permissions/me` to decide what to show; Directus still checks every request.
 - `src/directus/financial-plans.ts` reads Financial Plans (`version_sets`): the organization's plan for a year, holding
-  a copy of the Operations Plan and of each Program Plan (`version_set_members`). A saved one shows the results
-  platform worked out when it was saved (`plan_result_*`), and the app never recalculates them. Each result row names
-  the member it's charged in (`version_set_member_id`), so one plan's full P&L, with its wages and its share of the
-  shared costs, is one filter. A draft is calculated in the browser by the planning engine this app bundles
-  (`src/directus/plans.ts`), from the same rows platform reads at save time (`src/model/plan-data.ts`): the catalog,
-  and every plan the draft holds. Its lines and P&L rows are charged to members the way platform's hook does
-  (`ownerOf` in `src/model/financial-plans.ts`). A plan's page shows its assumptions, read from its copy's own rows
-  (`src/directus/assumptions.ts`), and its lines by category, which is their account (`src/model/plan-lines.ts`). The
-  Operations Plan's page also adds each shared cost back up from every offering's share. `/plans` lists each year's
-  Financial Plans, `/plans/financial/<set>` shows one (where a Plan Writer renames a draft, changes a note, saves a
-  draft, marks a saved one active, or starts a draft from it), `/plans/financial/<set>/<plan>` one plan in it, and
+  a copy of the Operations Plan and of each Program Plan (`version_set_members`). Every one shows the results platform
+  worked out (`plan_results`, `plan_result_*`): a saved one's once, when it was saved, and a draft's about a second
+  after every change to it, wherever it's made. The app never calculates them. Each result row names the member it's
+  charged in (`version_set_member_id`), so one plan's full P&L, with its wages and its share of the shared costs, is
+  one filter. An open draft is read again every few seconds, and a plan with no results yet every two, until they
+  arrive; after 30 seconds the page says they couldn't be worked out (`src/hooks/use-financial-plan.ts`). A plan's page
+  shows its assumptions, read from its copy's own rows (`src/directus/assumptions.ts`), and its lines by category,
+  which is their account (`src/model/plan-lines.ts`). The Operations Plan's page also adds each shared cost back up
+  from every offering's share. `/plans` lists each year's Financial Plans, each with a link to the one it started
+  from, `/plans/financial/<set>` shows one (where a Plan Writer renames it, changes its note, saves a draft, marks a
+  saved one active, or starts a draft from it), `/plans/financial/<set>/<plan>` one plan in it, and
   `/plans/compare/<a>/<b>` two side by side. A club
   plan's old address, `/plans/club/<set>`, sends people to its Financial Plan.
 - `src/directus/roster.ts` reads the team rosters. A team is a program area, such as Doublehanded, and its programs

@@ -1,8 +1,9 @@
 Feature: Seeing the Financial Plans
   A Financial Plan is the organization's plan for one year. It holds one Operations Plan and a Program Plan for any
   of the organization's program areas, and the P&L they make together. Planners work on it as a whole, through their
-  AI: it starts as a draft, and when it's ready a planner saves it. A saved Financial Plan and its plans never
-  change. To change the plan after that, a planner starts a new Financial Plan from an earlier one, its parent, and
+  AI: it starts as a draft, and when it's ready a planner saves it. A draft's numbers are worked out again after every
+  change to it, wherever the change is made. A saved Financial Plan's plans and numbers never change, though its name
+  and note can. To change the plan after that, a planner starts a new Financial Plan from an earlier one, its parent, and
   the new one begins as a copy of it. A year can have several drafts at once, so planners can weigh options side by
   side, such as two drafts started from the same Financial Plan, one with two coaches and one with three. Each
   Financial Plan has a name, and a note that says what it was for, such as "Reviewed with the board".
@@ -10,7 +11,7 @@ Feature: Seeing the Financial Plans
   Plans is where planners, and anyone else who can read plans, see the Financial Plans and what each plan in them
   takes in and spends. A Program Plan's P&L includes its coaches' wages, its RIBs, and its share of the shared
   costs, such as the office, worked out with the other plans in the same Financial Plan. A planner who can change
-  plans can rename a draft, change any Financial Plan's note, save a draft, mark a saved one active, and start a new
+  plans can rename any Financial Plan, change its note, save a draft, mark a saved one active, and start a new
   draft from one here. Everything else
   about a plan is changed through their AI. Every plan and number here is made up for the run.
 
@@ -23,7 +24,7 @@ Feature: Seeing the Financial Plans
       And I've signed in
       When I open Plans
       Then under 2027 I see "Adopted budget", then "Budget"
-      And each shows its note, the day it was saved, and the one it was started from
+      And each shows its note, the day it was saved, and a link to the one it was started from
 
     Scenario: Each saved Financial Plan shows its revenue, expenses, gross, and net
       Given I'm a planner who can read plans
@@ -91,7 +92,7 @@ Feature: Seeing the Financial Plans
       Then its offering shows $1,000 of office costs
       And the page says when "Budget" was saved
 
-  Rule: A draft's P&L is calculated as I look at it
+  Rule: A draft's P&L is worked out again after every change to it, wherever the change is made
 
     Scenario: A draft shows what it would take in and spend today
       Given I'm a planner who can read plans
@@ -99,7 +100,15 @@ Feature: Seeing the Financial Plans
       And I've signed in
       When I open Youth Racing's plan in the draft
       Then its offering takes in $10,000
-      And the page says the draft's numbers are calculated now, and will change as the plan does
+      And the page says the draft's numbers are worked out again after every change
+
+    Scenario: A draft's numbers follow a change made through a planner's AI
+      Given I'm a planner who can read plans
+      And a draft Financial Plan whose Youth Racing plan has one offering of 10 sailors at $1,000 each
+      And I've signed in
+      When I open Youth Racing's plan in the draft
+      And a planner's AI raises the offering's price to $1,200
+      Then its offering takes in $12,000, without my reloading the page
 
   Rule: The P&L shows each offering's totals, per day, and per sailor-day, and remembers which
 
@@ -131,7 +140,7 @@ Feature: Seeing the Financial Plans
       When I open the draft
       Then the page warns that the practice falls on a closed day, and names the day
 
-  Rule: A planner who can change plans can name a Financial Plan, note it, save it, mark it active, and start a draft from it
+  Rule: A planner who can change plans can rename a Financial Plan, note it, save it, mark it active, and start a draft from it
 
     Scenario: Renaming a draft and noting it
       Given I'm a planner who can change plans
@@ -141,12 +150,14 @@ Feature: Seeing the Financial Plans
       And I rename it "Two coaches, more boats" and note it "For the board"
       Then the page is titled "Two coaches, more boats" and shows the note "For the board"
 
-    Scenario: A saved Financial Plan keeps its name
+    Scenario: Renaming a saved Financial Plan keeps its numbers
       Given I'm a planner who can change plans
       And a saved Financial Plan for 2027 named "Budget"
       And I've signed in
-      When I open "Budget" and edit it
-      Then I can change its note, but not its name
+      When I open "Budget"
+      And I rename it "Adopted budget" and note it "Adopted by the board"
+      Then the page is titled "Adopted budget" and shows the note "Adopted by the board"
+      And its numbers are the ones it was saved with
 
     Scenario: Starting a draft from a saved Financial Plan
       Given I'm a planner who can change plans

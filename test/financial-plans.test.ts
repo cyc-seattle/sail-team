@@ -3,7 +3,7 @@ import {
   listOf,
   memberNet,
   membersInOrder,
-  ownerOf,
+  refreshEvery,
   plansByYear,
   summaryRows,
   topLine,
@@ -81,33 +81,9 @@ describe("membersInOrder", () => {
   });
 });
 
-describe("ownerOf", () => {
-  const owners = {
-    offeringVersion: new Map([["camp", "youth-copy"]]),
-    productArea: new Map<string, string | null>([
-      ["camp-product", "youth"],
-      ["merch", null],
-    ]),
-    areaVersion: new Map([["youth", "youth-copy"]]),
-    operations: "ops-copy",
-  };
-
-  it("charges an offering to its own plan, and a product or area to its area's Program Plan", () => {
-    expect(ownerOf("offering", "camp", owners)).toBe("youth-copy");
-    expect(ownerOf("product", "camp-product", owners)).toBe("youth-copy");
-    expect(ownerOf("program_area", "youth", owners)).toBe("youth-copy");
-  });
-
-  it("charges everything else to the Operations Plan", () => {
-    expect(ownerOf("product", "merch", owners)).toBe("ops-copy");
-    expect(ownerOf("pool", "office", owners)).toBe("ops-copy");
-    expect(ownerOf("org", null, owners)).toBe("ops-copy");
-  });
-});
-
 describe("memberNet", () => {
   const results: Results = {
-    live: false,
+    calculated_at: null,
     totals: { operating_net_cents: 0, fundraising_net_cents: 0, capital_cents: 0, total_cents: 0 },
     pnl: [
       {
@@ -163,7 +139,7 @@ describe("summaryRows", () => {
     const members = [member("o", "operations", null), member("y", "program_area", "youth")];
     members[1]!.area_name = "Youth Racing";
     const results = {
-      live: false,
+      calculated_at: null,
       totals: { operating_net_cents: 0, fundraising_net_cents: 0, capital_cents: 0, total_cents: 0 },
       pnl: [],
       warnings: [],
@@ -188,5 +164,26 @@ describe("listOf", () => {
     expect(listOf(["a"])).toBe("a");
     expect(listOf(["a", "b"])).toBe("a and b");
     expect(listOf(["a", "b", "c"])).toBe("a, b, and c");
+  });
+});
+
+describe("refreshEvery", () => {
+  const draft = { status: "draft" as const };
+  const saved = { status: "saved" as const };
+  const results = { calculated_at: null } as unknown as Results;
+
+  it("reads a draft again every few seconds, since its numbers change wherever its plans are changed", () => {
+    expect(refreshEvery({ set: draft, results }, false)).toBe(5_000);
+  });
+
+  it("reads a plan whose numbers are missing again sooner, then less often once they've been missing a while", () => {
+    expect(refreshEvery({ set: draft, results: null }, false)).toBe(2_000);
+    expect(refreshEvery({ set: saved, results: null }, false)).toBe(2_000);
+    expect(refreshEvery({ set: draft, results: null }, true)).toBe(5_000);
+  });
+
+  it("stops reading a saved plan once its numbers are in, and a plan that isn't there", () => {
+    expect(refreshEvery({ set: saved, results }, false)).toBe(false);
+    expect(refreshEvery(null, false)).toBe(false);
   });
 });
