@@ -269,10 +269,11 @@ Given(
   },
 );
 
-Then("its offering shows a fee of $1,000 and 10 sailors", async ({ page }) => {
+Then("its offering shows a fee of $1,000 and 10 sailors", async ({ page, club }) => {
+  // Its row, numbered within its program, not the program's own row above it.
   const cells = page
     .getByRole("table", { name: "Offerings" })
-    .getByRole("row", { name: /Beginner camp/ })
+    .getByRole("row", { name: new RegExp(`Beginner camp ${club.run} 1`) })
     .getByRole("cell");
   await expect(cells.nth(1)).toHaveText("$1,000");
   await expect(cells.nth(3)).toHaveText("10");
@@ -428,7 +429,8 @@ When("I delete {string}", async ({ page }, name: string) => {
 });
 
 Then("Planning no longer lists {string}", async ({ page }, name: string) => {
-  await expect(planRow(page, name)).toHaveCount(0);
+  // By its address, since another run's draft may share its name.
+  await expect(page.locator(`a[href$="/plans/financial/${named.get(name)}"]`)).toHaveCount(0);
 });
 
 When("I mark it active", async ({ page }) => {
