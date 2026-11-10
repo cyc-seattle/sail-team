@@ -19,18 +19,19 @@ import { WarningsSection } from "./warnings-section";
 
 const pinned = "sticky left-0 z-10 bg-background";
 const count = (n: number) => n.toLocaleString("en-US");
+const none = <span className="text-muted-foreground">—</span>;
 
 function Num({ children }: { children: ReactNode }) {
   return <TableCell className="text-right tabular-nums">{children}</TableCell>;
 }
 
-function Amount({ cents, whole = false }: { cents: number; whole?: boolean }) {
-  return (
-    <TableCell className="text-right">
-      <Money cents={cents} whole={whole} />
-    </TableCell>
-  );
+function Amount({ cents, whole = false }: { cents: number | null; whole?: boolean }) {
+  return <TableCell className="text-right">{cents === null ? none : <Money cents={cents} whole={whole} />}</TableCell>;
 }
+
+/** A fee divided by days or hours, or nothing to show when the offering has none. */
+const per = (cents: number, by: number) => (by > 0 ? Math.round(cents / by) : null);
+const hoursOf = (n: number) => count(Math.round(n * 10) / 10);
 
 /**
  * The area's rules, then each program's settings and rules, closed until someone opens them. The planning agent reads
@@ -59,9 +60,9 @@ function AreaAssumptions({
             <h3 className="text-sm font-medium">{p.name}</h3>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
               <dt className="text-muted-foreground">Staff level</dt>
-              <dd>{p.staff_level}</dd>
+              <dd>{p.staff_level ?? none}</dd>
               <dt className="text-muted-foreground">Sailors per coach</dt>
-              <dd className="tabular-nums">{p.sailors_per_coach}</dd>
+              <dd className="tabular-nums">{p.sailors_per_coach ?? none}</dd>
             </dl>
             <RulesList rules={p.rules} label={`${p.name} rules`} />
           </section>
@@ -137,11 +138,11 @@ export function ProgramAreaReport({ area, rules, warnings, statement, programs, 
                       <OfferingName offering={o} />
                     </TableCell>
                     <Amount cents={o.fee_cents} whole />
-                    <Amount cents={Math.round(o.fee_cents / o.days)} />
+                    <Amount cents={per(o.fee_cents, o.days)} />
                     <Num>{count(o.estimated)}</Num>
                     <Num>{count(o.estimated * o.days)}</Num>
-                    <Amount cents={Math.round(o.fee_cents / o.hours)} />
-                    <Num>{count(o.estimated * o.hours)}</Num>
+                    <Amount cents={per(o.fee_cents, o.hours)} />
+                    <Num>{hoursOf(o.estimated * o.hours)}</Num>
                   </TableRow>
                 ))}
               </Fragment>

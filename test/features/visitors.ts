@@ -113,6 +113,18 @@ export async function cleanUp(email: string) {
     await asAdmin("DELETE", `/items/groups/${group.id}`);
   }
   for (const person of await asAdmin("GET", `/items/people?${byEmail}&fields=id`)) {
+    // A run that died before its own cleanup can leave a contacts row naming them, such as a child's guardian link,
+    // and platform restricts deleting a person a contacts row names.
+    for (const field of ["subject_id", "contact_id"]) {
+      const links = await asAdmin("GET", `/items/contacts?filter[${field}][_eq]=${person.id}&fields=id&limit=-1`);
+      if (links.length > 0) {
+        await asAdmin(
+          "DELETE",
+          "/items/contacts",
+          links.map((r: { id: string }) => r.id),
+        );
+      }
+    }
     await asAdmin("DELETE", `/items/people/${person.id}`);
   }
   for (const user of await asAdmin("GET", `/users?${byEmail}&fields=id`)) {

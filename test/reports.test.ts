@@ -5,6 +5,9 @@ import {
   nextSort,
   enrollment,
   numberedOfferings,
+  onWaterMinutes,
+  productsOf,
+  reportOffering,
   programFees,
   rulesOf,
   sessionGrid,
@@ -138,5 +141,86 @@ describe("rulesOf", () => {
       "Keep a RIB ashore.",
     ]);
     expect(rulesOf(null)).toEqual([]);
+  });
+});
+
+describe("onWaterMinutes", () => {
+  const practice = { kind: "practice" as const, uses_boats: true, on_water_minutes: null };
+
+  it("is the time set on the water, or the whole span, past midnight too", () => {
+    expect(onWaterMinutes({ ...practice, start_time: "09:00:00", end_time: "12:00:00", on_water_minutes: 120 })).toBe(
+      120,
+    );
+    expect(onWaterMinutes({ ...practice, start_time: "09:00:00", end_time: "12:30:00" })).toBe(210);
+    expect(onWaterMinutes({ ...practice, start_time: "23:00:00", end_time: "01:00:00" })).toBe(120);
+  });
+
+  it("is none for a travel day, one without boats, or one with no times", () => {
+    expect(onWaterMinutes({ ...practice, kind: "travel", start_time: "09:00:00", end_time: "12:00:00" })).toBe(0);
+    expect(onWaterMinutes({ ...practice, uses_boats: false, start_time: "09:00:00", end_time: "12:00:00" })).toBe(0);
+    expect(onWaterMinutes({ ...practice, start_time: null, end_time: null })).toBe(0);
+  });
+});
+
+describe("reportOffering", () => {
+  const offering = {
+    key: "camp",
+    name: "Camp, week 1",
+    season_term: null,
+    starts_on: "2027-07-05",
+    ends_on: "2027-07-09",
+    price_cents: 50_000,
+    capacity: null,
+    program: "Camp",
+    estimated: 8,
+  };
+  const day = (date: string, kind: "practice" | "travel" = "practice") => ({
+    date,
+    kind,
+    uses_boats: true,
+    start_time: "09:00:00",
+    end_time: "12:00:00",
+    on_water_minutes: null,
+  });
+
+  it("counts the dates it has an activity other than travel, and one sailor's hours on the water", () => {
+    expect(
+      reportOffering(offering, [day("2027-07-05"), day("2027-07-05"), day("2027-07-06"), day("2027-07-04", "travel")]),
+    ).toMatchObject({ days: 2, hours: 9 });
+  });
+
+  it("names its session by its name when it has none, and takes its sailors as its max when it has no capacity", () => {
+    expect(reportOffering(offering, [])).toMatchObject({ session: "Camp, week 1", max: 8, fee_cents: 50_000 });
+  });
+});
+
+describe("productsOf", () => {
+  const line = (key: string, center: string | null, cents: number, revenue = false) => ({
+    key,
+    name: key,
+    account_number: null,
+    account_name: key,
+    cost_center_key: center,
+    amount_cents: cents,
+    revenue,
+    capital: false,
+    function: null,
+  });
+
+  it("adds up each product's revenue and own costs, leaving out shares of the pools, then the organization's", () => {
+    expect(
+      productsOf(
+        [
+          line("revenue", "storage", 1_000, true),
+          line("upkeep", "storage", 300),
+          line("pool:ga:insurance", "storage", 200),
+          line("salary", null, 500),
+        ],
+        [{ key: "storage", product: "Boat storage" }],
+      ),
+    ).toEqual([
+      { name: "Boat storage", revenue_cents: 1_000, direct_cents: 300 },
+      { name: "Organization", revenue_cents: 0, direct_cents: 500 },
+    ]);
   });
 });

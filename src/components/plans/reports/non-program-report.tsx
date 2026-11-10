@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import type { Product, SharedCost } from "@/model/reports";
 import { Money } from "../money";
 import { ReportSection } from "./report-page";
 
@@ -11,22 +12,6 @@ function Amount({ cents, colored = false }: { cents: number; colored?: boolean }
       <Money cents={cents} colored={colored} whole />
     </TableCell>
   );
-}
-
-export interface Product {
-  name: string;
-  revenue_cents: number;
-  direct_cents: number;
-}
-
-export interface SharedCost {
-  number: string;
-  name: string;
-  /** The pool it's spread from: G&A, program admin, or space. */
-  pool: string;
-  total_cents: number;
-  /** The part spread over the programs' offerings. */
-  allocated_cents: number;
 }
 
 const add = <T,>(rows: T[], of: (row: T) => number) => rows.reduce((total, r) => total + of(r), 0);
@@ -100,7 +85,7 @@ export function NonProgramReport({ products, shared }: { products: Product[]; sh
                     </TableCell>
                   </TableRow>
                   {costs.map((c) => (
-                    <TableRow key={c.number}>
+                    <TableRow key={`${c.number} ${c.name}`}>
                       <TableCell className="text-muted-foreground tabular-nums">{c.number}</TableCell>
                       <TableCell className="whitespace-normal">{c.name}</TableCell>
                       <Amount cents={c.allocated_cents} />

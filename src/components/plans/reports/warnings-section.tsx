@@ -21,7 +21,10 @@ export function WarningsSection({
   if (warnings.length === 0) {
     return null;
   }
-  const sorted = [...warnings].sort((a, b) => a.date.localeCompare(b.date) || a.area.localeCompare(b.area));
+  // A warning about no one date, such as a missing rate, comes first.
+  const sorted = [...warnings].sort(
+    (a, b) => (a.date ?? "").localeCompare(b.date ?? "") || a.area.localeCompare(b.area),
+  );
   return (
     <CollapsibleSection
       title={warnings.length === 1 ? "1 warning" : `${warnings.length} warnings`}
@@ -30,10 +33,10 @@ export function WarningsSection({
       <ul aria-label="Warnings" className="grid max-w-3xl gap-2 text-sm">
         {sorted.map((w) => (
           <li key={w.key}>
-            <span className="font-medium tabular-nums">{day.format(new Date(`${w.date}T00:00:00Z`))}</span>
+            {w.date && <span className="font-medium tabular-nums">{day.format(new Date(`${w.date}T00:00:00Z`))}</span>}
             {areas && setId && (
               <>
-                {", "}
+                {w.date && ", "}
                 <Link
                   to="/plans/financial/$setId/$planId"
                   params={{ setId, planId: w.area }}
@@ -43,7 +46,7 @@ export function WarningsSection({
                 </Link>
               </>
             )}
-            {": "}
+            {(w.date || (areas && setId)) && ": "}
             {w.message}
           </li>
         ))}

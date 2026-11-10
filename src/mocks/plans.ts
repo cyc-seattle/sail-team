@@ -1,59 +1,416 @@
-// A made-up club's 2027 Financial Plans, for local work, stories, and tests. Never real club figures.
+// A made-up club's 2027 Financial Plans, for local work, stories, and tests. Never real club figures. Their results
+// come from platform's own engine, run on these rows the way platform's hook runs it, so they always add up.
+import { computePlan, type PlanData } from "@cyc-seattle/platform/planning";
 
-const org = "00000000-0000-4000-8000-0000000000a1";
-const youth = "00000000-0000-4000-8000-0000000000b1";
-const adult = "00000000-0000-4000-8000-0000000000b2";
-const tuition = "00000000-0000-4000-8000-0000000000c1";
-const office = "00000000-0000-4000-8000-0000000000c2";
-const camp = "00000000-0000-4000-8000-0000000000d1";
-const pool = "00000000-0000-4000-8000-0000000000e1";
+type Row = Record<string, unknown>;
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 
 export const ids = {
-  org,
-  youth,
-  adult,
-  youthPlan: id(101),
-  opsPlan: id(102),
-  adultPlan: id(103),
-  // Budget, saved: a copy of each plan.
+  org: id(1),
+  summer: id(11),
+  doublehanded: id(12),
+  summerPlan: id(101),
+  doublehandedPlan: id(102),
+  opsPlan: id(103),
+  // Budget, active: a copy of each plan.
   budget: id(601),
-  youthSaved: id(201),
-  adultSaved: id(202),
-  opsSaved: id(203),
-  youthMember: id(611),
-  adultMember: id(612),
+  summerBudget: id(201),
+  doublehandedBudget: id(202),
+  opsBudget: id(203),
+  summerMember: id(611),
+  doublehandedMember: id(612),
   opsMember: id(613),
-  // Two coaches and Three coaches, drafts started from Budget.
+  // Two coaches and Three coaches, drafts started from Budget, with Summer and the Operations Plan.
   twoCoaches: id(602),
-  youthTwo: id(211),
+  summerTwo: id(211),
   opsTwo: id(212),
   threeCoaches: id(603),
-  youthThree: id(221),
+  summerThree: id(221),
   opsThree: id(222),
 };
 
-const plan = (planId: string, name: string, kind: string, area: { id: string; name: string } | null) => ({
-  id: planId,
+const account = (n: number, number: string, name: string, type: string, fn: string | null) => ({
+  id: id(n),
+  number,
   name,
-  kind,
-  fiscal_year: 2027,
-  organization_id: org,
-  program_area_id: area,
-  archived: false,
+  type,
+  form_990_part: null,
+  form_990_line: null,
+  default_function: fn,
+  parent_id: null,
+  contra_account_id: null,
+  retired: false,
 });
-const youthArea = { id: youth, name: "Youth Racing" };
-const adultArea = { id: adult, name: "Adult Programs" };
-const plans = {
-  youth: plan(ids.youthPlan, "Youth Racing 2027", "program_area", youthArea),
-  adult: plan(ids.adultPlan, "Adult Programs 2027", "program_area", adultArea),
-  ops: plan(ids.opsPlan, "Operations 2027", "operations", null),
+const accounts = {
+  summer: account(21, "4100", "Summer tuition", "revenue", "program"),
+  doublehanded: account(22, "4200", "Doublehanded tuition", "revenue", "program"),
+  storage: account(23, "4300", "Boat storage", "revenue", "program"),
+  gifts: account(24, "4500", "Individual gifts", "revenue", "fundraising"),
+  wages: account(25, "5010", "Coach wages", "expense", "program"),
+  tax: account(26, "5020", "Payroll tax", "expense", "program"),
+  salaries: account(27, "5030", "Salaries", "expense", "management"),
+  ribs: account(28, "5110", "RIBs", "expense", "program"),
+  boats: account(29, "5130", "Boat upkeep", "expense", "program"),
+  cards: account(30, "5310", "Card fees", "expense", "program"),
+  insurance: account(31, "6110", "Insurance", "expense", "management"),
+  rent: account(32, "6310", "Clubhouse rent", "expense", "management"),
+  events: account(33, "7010", "Event costs", "expense", "fundraising"),
+  equipment: account(34, "1510", "Equipment", "asset", null),
 };
 
-const set = (setId: string, fields: Record<string, unknown>) => ({
+const product = (n: number, name: string, kind: string, area: string | null, revenue: string | null = null) => ({
+  id: id(n),
+  name,
+  kind,
+  revenue_account_id: revenue,
+  program_area_id: area,
+});
+const products = {
+  guppies: product(41, "Guppies", "program", ids.summer),
+  opti: product(42, "Opti Camp", "program", ids.summer),
+  jpod: product(43, "J-Pod", "program", ids.doublehanded),
+  storage: product(44, "Boat storage", "storage_lease", null, accounts.storage.id),
+};
+
+const boatClass = (n: number, name: string, sailors: number) => ({
+  id: id(n),
+  name,
+  sailors_per_boat: sailors,
+  footprint_sq_ft: null,
+});
+const boatClasses = {
+  opti: boatClass(51, "Opti", 1),
+  sailqube: boatClass(52, "Sailqube", 2),
+  c420: boatClass(53, "420", 2),
+};
+const rib = { id: id(54), name: "RIB" };
+
+const catalog = {
+  organization: { id: ids.org, name: "Example Sailing Club", fiscal_year_start_month: 1 },
+  organization_cost_accounts: (
+    [
+      ["coach_wages", accounts.wages],
+      ["salaries", accounts.salaries],
+      ["payroll_tax", accounts.tax],
+      ["ribs", accounts.ribs],
+      ["boat_maintenance", accounts.boats],
+      ["resources", accounts.ribs],
+      ["travel", accounts.wages],
+      ["cogs", accounts.boats],
+    ] as const
+  ).map(([cost_type, a], i) => ({ id: id(60 + i), organization_id: ids.org, cost_type, account_id: a.id })),
+  products: Object.values(products),
+  program_areas: [
+    { id: ids.summer, name: "Summer", revenue_account_id: accounts.summer.id },
+    { id: ids.doublehanded, name: "Doublehanded", revenue_account_id: accounts.doublehanded.id },
+  ],
+  accounts: Object.values(accounts),
+  qualifications: [],
+  qualification_covers: [],
+  boat_classes: Object.values(boatClasses),
+  resource_kinds: [rib],
+};
+
+const plans = [
+  { id: ids.summerPlan, name: "Summer 2027", kind: "program_area", program_area_id: ids.summer },
+  { id: ids.doublehandedPlan, name: "Doublehanded 2027", kind: "program_area", program_area_id: ids.doublehanded },
+  { id: ids.opsPlan, name: "Operations 2027", kind: "operations", program_area_id: null },
+].map((p) => ({ ...p, organization_id: ids.org, fiscal_year: 2027, archived: false }));
+
+/** Keys stay the same in every copy, as platform keeps them, so rows that name others by key match across copies. */
+const key = (name: string) => `key:${name}`;
+
+/** Rows of a plan copy, each with an id of its own, its copy, and its key. */
+class Copy {
+  rows: Record<string, Row[]> = {};
+  constructor(readonly version: string) {}
+  add(table: string, name: string, fields: Row): string {
+    const row = { id: `${this.version}:${name}`, version_id: this.version, key: key(name), ...fields };
+    (this.rows[table] ??= []).push(row);
+    return row.id;
+  }
+}
+
+const date = (start: string, days: number) => {
+  const d = new Date(`${start}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+
+/** The Operations Plan: the year's rates, the shared costs, boat storage, fundraising, and a coach boat. */
+function operations(version: string): Copy {
+  const c = new Copy(version);
+  c.add("plan_rates", "rates", {
+    payroll_tax_rate: 0.1,
+    lodging_per_night_cents: 15_000,
+    mileage_rate_cents: 70,
+    rib_resource_kind_id: rib.id,
+  });
+  const level = (name: string, cents: number) =>
+    c.add("plan_staff_levels", name, { name, pay_type: "hourly", hourly_rate_cents: cents, qualifications: null });
+  level("Junior Instructor", 1_900);
+  level("Level 1 Instructor", 2_200);
+  level("Level 3 Coach", 3_200);
+  const ga = c.add("plan_pools", "G&A", { name: "G&A" });
+  const admin = c.add("plan_pools", "Program admin", { name: "Program admin" });
+  const position = (name: string, salary: number, share: number, pool: string) =>
+    c.add("plan_salaried_positions", name, {
+      name,
+      annual_salary_cents: salary,
+      paid_hours_per_year: 2_080,
+      qualifications: null,
+      ga_share: share,
+      remainder_pool_id: pool,
+      form_990_line: null,
+      hourly_coaching_rate_cents: null,
+    });
+  position("Executive Director", 5_500_000, 0.6, ga);
+  position("Program Director", 4_500_000, 0.1, admin);
+  c.add("plan_resources", "RIBs", {
+    resource_kind_id: rib.id,
+    name: "RIBs",
+    quantity: 4,
+    cost_per_hour_cents: 0,
+    cost_per_day_cents: 1_000,
+    fuel_per_hour_cents: 1_500,
+    maintenance_per_hour_cents: 800,
+    excluded_from_mtdc: false,
+  });
+  for (const [boat, cents, quantity] of [
+    [boatClasses.opti, 150, 20],
+    [boatClasses.sailqube, 200, 8],
+    [boatClasses.c420, 300, 10],
+  ] as const) {
+    c.add("plan_boat_rates", boat.name, { boat_class_id: boat.id, maintenance_per_boat_hour_cents: cents, quantity });
+  }
+  c.add("plan_revenue_charges", "Card fees", {
+    name: "Card fees",
+    rate: 0.03,
+    product_kinds: ["program"],
+    account_id: accounts.cards.id,
+    excluded_from_mtdc: false,
+    note: null,
+  });
+  const bonus = c.add("plan_bonus_owners", "Program Director bonus", {
+    role_name: "Program Director",
+    bonus_rate: 0.05,
+    account_id: accounts.salaries.id,
+    basis: "after_shared_costs",
+    position_key: key("Program Director"),
+  });
+  for (const p of [products.guppies, products.opti, products.jpod]) {
+    c.add("plan_bonus_owner_products", `bonus ${p.name}`, { bonus_owner_id: bonus, product_id: p.id });
+  }
+  const line = (name: string, a: { id: string }, cents: number, type: string, center: string | null) =>
+    c.add("plan_budget_lines", name, {
+      name,
+      account_id: a.id,
+      function: null,
+      cost_center_type: type,
+      cost_center_key: center,
+      amount_cents: cents,
+      fiscal_year: 2027,
+      excluded_from_mtdc: false,
+      note: null,
+    });
+  line("Insurance", accounts.insurance, 900_000, "pool", key("G&A"));
+  line("Clubhouse rent", accounts.rent, 600_000, "pool", key("G&A"));
+  line("Spring gala gifts", accounts.gifts, 2_000_000, "org", null);
+  line("Spring gala costs", accounts.events, 300_000, "org", null);
+  line("Coach boat", accounts.equipment, 4_500_000, "org", null);
+  line("Storage dock upkeep", accounts.boats, 300_000, "offering", key("Boat storage"));
+  c.add("plan_closed_dates", "Fourth of July", { date: "2027-07-05", name: "Independence Day, observed" });
+  c.add("plan_offerings", "Boat storage", {
+    product_id: products.storage.id,
+    catalog_offering_id: null,
+    name: "Boat storage 2027",
+    season_term: null,
+    starts_on: "2027-01-01",
+    ends_on: "2027-12-31",
+    capacity: 40,
+    target_enrollment: 36,
+    fill_rate: null,
+    price_cents: 60_000,
+    cogs_rate: null,
+    note: null,
+  });
+  return c;
+}
+
+const offering = (
+  c: Copy,
+  name: string,
+  p: { id: string },
+  session: string,
+  starts_on: string,
+  ends_on: string,
+  fields: { capacity: number; target: number; price: number },
+) =>
+  c.add("plan_offerings", name, {
+    product_id: p.id,
+    catalog_offering_id: null,
+    name,
+    season_term: session,
+    starts_on,
+    ends_on,
+    capacity: fields.capacity,
+    target_enrollment: fields.target,
+    fill_rate: null,
+    price_cents: fields.price,
+    cogs_rate: null,
+    note: null,
+  });
+
+const activity = (
+  c: Copy,
+  name: string,
+  offeringId: string,
+  on: string,
+  start: string,
+  end: string,
+  block: string | null,
+) =>
+  c.add("plan_activities", name, {
+    offering_id: offeringId,
+    trip_id: null,
+    date: on,
+    start_time: start,
+    end_time: end,
+    on_water_minutes: null,
+    setup_minutes: 30,
+    putaway_minutes: 30,
+    kind: "practice",
+    uses_boats: true,
+    block_id: block,
+  });
+
+/** A block on a date, with its staff at one level, its RIBs, and its boats: the club's, and any sailors bring. */
+function block(
+  c: Copy,
+  name: string,
+  on: string,
+  staff: [level: string, count: number],
+  ribs: number,
+  boats: [boat: { id: string; name: string }, count: number, owned?: number][],
+): string {
+  const b = c.add("plan_activity_blocks", name, { date: on, name });
+  c.add("plan_block_staff", `${name} staff`, {
+    block_id: b,
+    staff_level_key: key(staff[0]),
+    position_key: null,
+    count: staff[1],
+    pay: null,
+  });
+  c.add("plan_block_resources", `${name} RIBs`, {
+    block_id: b,
+    resource_key: key("RIBs"),
+    quantity: ribs,
+    hours: null,
+  });
+  for (const [boat, count, owned] of boats) {
+    c.add("plan_block_boats", `${name} ${boat.name}`, {
+      block_id: b,
+      boat_class_id: boat.id,
+      count,
+      sailor_owned: owned ?? null,
+    });
+  }
+  return b;
+}
+
+/**
+ * Summer: Guppies and Opti Camp, eight weeks each, sharing a block each morning. Week 3 starts on a closed day, week 2
+ * has an instructor too few, and week 4 takes more Sailqubes than the club has. `instructors` is how many each
+ * block gets.
+ */
+function summer(version: string, instructors: number): Copy {
+  const c = new Copy(version);
+  c.add("plan_programs", "Guppies settings", {
+    product_id: products.guppies.id,
+    staff_level_key: key("Level 1 Instructor"),
+    sailors_per_coach: 10,
+    rules: "If there are more than 12 Guppies, add a Junior Instructor.\nGuppies sail Sailqubes.",
+  });
+  c.add("plan_programs", "Opti Camp settings", {
+    product_id: products.opti.id,
+    staff_level_key: key("Level 1 Instructor"),
+    sailors_per_coach: 8,
+    rules: "Never fewer than 2 instructors on the water.",
+  });
+  for (let week = 0; week < 8; week++) {
+    const monday = date("2027-06-21", 7 * week);
+    const session = `Week ${week + 1}`;
+    const guppies = offering(c, `Guppies ${session}`, products.guppies, session, monday, date(monday, 4), {
+      capacity: 10,
+      target: week === 0 ? 6 : 9,
+      price: 39_500,
+    });
+    const opti = offering(c, `Opti Camp ${session}`, products.opti, session, monday, date(monday, 4), {
+      capacity: 16,
+      target: 14,
+      price: 52_500,
+    });
+    for (let day = 0; day < 5; day++) {
+      const on = date(monday, day);
+      const b = block(c, `Summer ${on}`, on, ["Level 1 Instructor", week === 1 ? instructors - 1 : instructors], 2, [
+        [boatClasses.sailqube, week === 3 ? 9 : 5],
+        [boatClasses.opti, 14],
+      ]);
+      activity(c, `Guppies ${on}`, guppies, on, "09:00:00", "12:00:00", b);
+      activity(c, `Opti Camp ${on}`, opti, on, "09:00:00", "15:00:00", b);
+    }
+  }
+  return c;
+}
+
+/** Doublehanded: J-Pod's spring and fall seasons, one practice a week. Its last fall practice has no block yet. */
+function doublehanded(version: string): Copy {
+  const c = new Copy(version);
+  c.add("plan_programs", "J-Pod settings", {
+    product_id: products.jpod.id,
+    staff_level_key: key("Level 3 Coach"),
+    sailors_per_coach: 8,
+    rules: "Most sailors bring their own 420s.",
+  });
+  for (const [session, first, weeks, target] of [
+    ["Spring", "2027-03-02", 12, 12],
+    ["Fall", "2027-09-07", 10, 10],
+  ] as const) {
+    const o = offering(c, `J-Pod ${session}`, products.jpod, session, first, date(first, 7 * (weeks - 1)), {
+      capacity: 16,
+      target,
+      price: 145_000,
+    });
+    for (let week = 0; week < weeks; week++) {
+      const on = date(first, 7 * week);
+      const last = session === "Fall" && week === weeks - 1;
+      const b = last ? null : block(c, `J-Pod ${on}`, on, ["Level 3 Coach", 2], 2, [[boatClasses.c420, 3, 3]]);
+      activity(c, `J-Pod ${on}`, o, on, "16:00:00", "19:00:00", b);
+    }
+  }
+  return c;
+}
+
+const copies = {
+  [ids.summerBudget]: summer(ids.summerBudget, 3),
+  [ids.doublehandedBudget]: doublehanded(ids.doublehandedBudget),
+  [ids.opsBudget]: operations(ids.opsBudget),
+  [ids.summerTwo]: summer(ids.summerTwo, 4),
+  [ids.opsTwo]: operations(ids.opsTwo),
+  [ids.summerThree]: summer(ids.summerThree, 5),
+  [ids.opsThree]: operations(ids.opsThree),
+};
+
+const rules: Record<string, string | null> = {
+  [ids.summerBudget]: "Guppies and Opti Camp share the dock in the morning.\nNo sailing on Monday, July 5.",
+  [ids.doublehandedBudget]: null,
+  [ids.opsBudget]: "No more than 4 RIBs on the water at once.\nKeep one RIB ashore for repairs on summer weekdays.",
+};
+
+const set = (setId: string, fields: Row) => ({
   id: setId,
-  organization_id: org,
+  organization_id: ids.org,
   fiscal_year: 2027,
   saved_at: null,
   saved_by: null,
@@ -63,411 +420,189 @@ const set = (setId: string, fields: Record<string, unknown>) => ({
 });
 const budget = set(ids.budget, {
   name: "Budget",
-  status: "saved",
+  status: "active",
   message: "Reviewed with the board",
   saved_at: "2027-03-10T18:00:00Z",
 });
 const parent = { id: ids.budget, name: "Budget" };
-const twoCoaches = set(ids.twoCoaches, { name: "Two coaches", status: "draft", parent_id: parent });
+const twoCoaches = set(ids.twoCoaches, {
+  name: "Two coaches",
+  status: "draft",
+  parent_id: parent,
+  message: "A fourth instructor on every summer morning.",
+});
 const threeCoaches = set(ids.threeCoaches, { name: "Three coaches", status: "draft", parent_id: parent });
 
-const member = (
-  memberId: string,
-  setRow: Record<string, unknown>,
-  version: string,
-  planRow: Record<string, unknown>,
-) => ({
-  id: memberId,
-  version_set_id: setRow,
-  version_id: version,
-  plan_id: planRow,
-});
+const members: { id: string; set: Row; version: string; plan: string }[] = [
+  { id: ids.summerMember, set: budget, version: ids.summerBudget, plan: ids.summerPlan },
+  { id: ids.doublehandedMember, set: budget, version: ids.doublehandedBudget, plan: ids.doublehandedPlan },
+  { id: ids.opsMember, set: budget, version: ids.opsBudget, plan: ids.opsPlan },
+  { id: id(621), set: twoCoaches, version: ids.summerTwo, plan: ids.summerPlan },
+  { id: id(622), set: twoCoaches, version: ids.opsTwo, plan: ids.opsPlan },
+  { id: id(631), set: threeCoaches, version: ids.summerThree, plan: ids.summerPlan },
+  { id: id(632), set: threeCoaches, version: ids.opsThree, plan: ids.opsPlan },
+];
 
-const copy = (copyId: string, planId: string, status: string) => ({
-  id: copyId,
-  plan_id: planId,
-  status,
-  message: null,
-  saved_at: status === "saved" ? "2027-03-10T18:00:00Z" : null,
-});
+const versioned = [
+  "plan_programs",
+  "plan_offerings",
+  "plan_trips",
+  "plan_activities",
+  "plan_activity_blocks",
+  "plan_block_staff",
+  "plan_block_resources",
+  "plan_block_boats",
+  "plan_labor_lines",
+  "plan_budget_lines",
+  "plan_rates",
+  "plan_revenue_charges",
+  "plan_staff_levels",
+  "plan_salaried_positions",
+  "plan_salaried_bookings",
+  "plan_resources",
+  "plan_boat_rates",
+  "plan_pools",
+  "plan_bonus_owners",
+  "plan_bonus_owner_products",
+  "plan_closed_dates",
+] as const;
 
-/** A draft camp offering, at `price` a sailor for 10 sailors. */
-const offering = (offeringId: string, version: string, key: string, name: string, price: number) => ({
-  id: offeringId,
-  version_id: version,
-  key,
-  // Expanded when a request asks for its name, as the assumptions do.
-  product_id: { id: camp, name: "Beginner camp" },
-  catalog_offering_id: null,
-  name,
-  season_term: null,
-  starts_on: "2027-07-05",
-  ends_on: "2027-07-09",
-  capacity: 10,
-  target_enrollment: 10,
-  fill_rate: "1",
-  price_cents: price,
-  sailors_per_coach: null,
-  min_coaches: null,
-  coach_level_key: null,
-  required_qualification: null,
-  ribs_per_coach: null,
-  byob_share: null,
-  fixed_coaches: null,
-  fixed_ribs: null,
-  fixed_boats: null,
-  cogs_rate: null,
-  note: null,
-});
+const rowsOf = (versions: string[], table: string) => versions.flatMap((v) => copies[v]?.rows[table] ?? []);
 
-/** The office, in a draft's Operations Plan: a pool every offering shares. */
-const officeRows = (version: string, n: number, amount: number) => ({
-  pool: { id: id(700 + n), version_id: version, key: pool, name: "Office" },
-  line: {
-    id: id(710 + n),
-    version_id: version,
-    key: id(720 + n),
-    name: "Office rent",
-    account_id: office,
-    function: null,
-    cost_center_type: "pool",
-    cost_center_key: pool,
-    amount_cents: amount,
+/** A Financial Plan's results, as platform's hook works them out and writes them. */
+function results(setRow: Row, calculatedAt: string): Record<string, Row[]> {
+  const own = members.filter((m) => m.set === setRow);
+  const versions = own.map((m) => m.version);
+  const data = {
+    ...catalog,
     fiscal_year: 2027,
-    excluded_from_mtdc: false,
-    note: null,
-  },
-});
-/** Each draft's camp supplies: a direct cost, so the camp takes its share of the office. */
-const supplies = (version: string, n: number) => ({
-  id: id(730 + n),
-  version_id: version,
-  key: id(740 + n),
-  name: "Camp supplies",
-  account_id: office,
-  function: null,
-  cost_center_type: "offering",
-  cost_center_key: id(311),
-  amount_cents: 100_000,
-  fiscal_year: 2027,
-  excluded_from_mtdc: false,
-  note: null,
-});
-const officeTwo = officeRows(ids.opsTwo, 1, 200_000);
-const officeThree = officeRows(ids.opsThree, 2, 200_000);
+    rib_resource_kind_id: rib.id,
+    plans: plans.filter((p) => own.some((m) => m.plan === p.id)),
+    plan_versions: own.map((m) => ({ id: m.version, plan_id: m.plan })),
+    ...Object.fromEntries(versioned.map((table) => [table, rowsOf(versions, table)])),
+  } as unknown as PlanData;
+  const out = computePlan(data);
+  const memberOf = (version: string | undefined) => own.find((m) => m.version === version)?.id ?? null;
+  const operations = own.find((m) => m.plan === ids.opsPlan)?.version;
+  const areaVersion = (area: string | null | undefined) =>
+    own.find((m) => plans.find((p) => p.id === m.plan)?.program_area_id === area)?.version ?? operations;
+  const offerings = new Map((data.plan_offerings as unknown as Row[]).map((o) => [o["key"], o]));
+  const ownerOf = (type: string, subject: string | null) => {
+    if (type === "offering") {
+      return offerings.get(subject)?.["version_id"] as string | undefined;
+    }
+    if (type === "product") {
+      return areaVersion(catalog.products.find((p) => p.id === subject)?.program_area_id);
+    }
+    if (type === "program_area") {
+      return areaVersion(subject);
+    }
+    return operations;
+  };
+  const accountOf = (accountId: string) => {
+    const a = catalog.accounts.find((x) => x.id === accountId)!;
+    return { id: a.id, type: a.type, number: a.number, name: a.name };
+  };
+  const setId = setRow["id"];
+  return {
+    plan_results: [
+      {
+        version_set_id: setId,
+        calculated_at: calculatedAt,
+        operating_revenue_cents: out.organization.operating.revenue_cents,
+        operating_expense_cents: out.organization.operating.expense_cents,
+        operating_net_cents: out.organization.operating.net_cents,
+      },
+    ],
+    plan_result_lines: out.lines.map((l) => ({
+      version_set_id: setId,
+      version_set_member_id: memberOf(ownerOf(l.cost_center_type, l.cost_center_key)),
+      line: l.line_key,
+      line_name: l.line_name,
+      cost_center_key: l.cost_center_key,
+      amount_cents: l.amount_cents,
+      function: l.function,
+      account_id: accountOf(l.account_id),
+    })),
+    plan_result_pnl: out.pnl.map((p) => ({
+      version_set_id: setId,
+      version_set_member_id: memberOf(ownerOf(p.level, p.key)),
+      level: p.level,
+      subject_key: p.key,
+      name: p.key,
+      revenue_cents: p.revenue_cents,
+      expense_cents: p.expense_cents,
+      enrollment: p.enrollment,
+      days: p.days,
+      sailor_days: p.sailor_days,
+    })),
+    plan_result_warnings: out.warnings.map((w) => ({
+      version_set_id: setId,
+      version_set_member_id: memberOf(w.version_id),
+      code: w.code,
+      message: w.message,
+      category: w.category,
+      date: w.date ?? null,
+    })),
+  };
+}
+
+// Budget's results, as platform worked them out when it was saved, and Two coaches', after its latest change. Three
+// coaches' are still being worked out.
+const worked = [results(budget, "2027-03-10T18:00:00Z"), results(twoCoaches, "2027-04-02T23:05:00Z")];
+const resultTables = Object.fromEntries(
+  ["plan_results", "plan_result_lines", "plan_result_pnl", "plan_result_warnings"].map((table) => [
+    table,
+    worked.flatMap((r) => r[table] ?? []),
+  ]),
+);
+
+const versions = Object.keys(copies);
+const named = (row: { id: string; name: string }) => ({ id: row.id, name: row.name });
 
 /** Each table's rows, as Directus would return them, with relations expanded where the app asks for them. */
-export const tables: Record<string, Record<string, unknown>[]> = {
-  organizations: [{ id: org, name: "Example Sailing Club", fiscal_year_start_month: 1 }],
-  organization_cost_accounts: [],
-  program_areas: [
-    { id: youth, name: "Youth Racing", revenue_account_id: tuition },
-    { id: adult, name: "Adult Programs", revenue_account_id: tuition },
-  ],
-  accounts: [
-    {
-      id: tuition,
-      number: "4000",
-      name: "Tuition",
-      type: "revenue",
-      form_990_part: null,
-      form_990_line: null,
-      default_function: "program",
-      parent_id: null,
-      contra_account_id: null,
-      retired: false,
-    },
-    {
-      id: office,
-      number: "7000",
-      name: "Office",
-      type: "expense",
-      form_990_part: null,
-      form_990_line: null,
-      default_function: "management",
-      parent_id: null,
-      contra_account_id: null,
-      retired: false,
-    },
-  ],
-  products: [{ id: camp, name: "Beginner camp", kind: "program", revenue_account_id: null, program_area_id: youth }],
-  qualifications: [],
-  qualification_covers: [],
-  boat_classes: [],
-  resource_kinds: [],
-  plans: Object.values(plans),
+export const tables: Record<string, Row[]> = {
+  organizations: [catalog.organization],
+  organization_cost_accounts: catalog.organization_cost_accounts,
+  program_areas: catalog.program_areas,
+  accounts: catalog.accounts,
+  products: catalog.products,
+  boat_classes: catalog.boat_classes,
+  resource_kinds: catalog.resource_kinds,
+  plans,
   version_sets: [budget, twoCoaches, threeCoaches],
   // version_set_id and plan_id are expanded when a request asks for their fields.
-  version_set_members: [
-    member(ids.youthMember, budget, ids.youthSaved, plans.youth),
-    member(ids.adultMember, budget, ids.adultSaved, plans.adult),
-    member(ids.opsMember, budget, ids.opsSaved, plans.ops),
-    member(id(621), twoCoaches, ids.youthTwo, plans.youth),
-    member(id(622), twoCoaches, ids.opsTwo, plans.ops),
-    member(id(631), threeCoaches, ids.youthThree, plans.youth),
-    member(id(632), threeCoaches, ids.opsThree, plans.ops),
-  ],
-  plan_versions: [
-    copy(ids.youthSaved, ids.youthPlan, "saved"),
-    copy(ids.adultSaved, ids.adultPlan, "saved"),
-    copy(ids.opsSaved, ids.opsPlan, "saved"),
-    copy(ids.youthTwo, ids.youthPlan, "draft"),
-    copy(ids.opsTwo, ids.opsPlan, "draft"),
-    copy(ids.youthThree, ids.youthPlan, "draft"),
-    copy(ids.opsThree, ids.opsPlan, "draft"),
-  ],
-  // The same camp in each draft, at a different price.
-  plan_offerings: [
-    offering(id(301), ids.youthTwo, id(311), "Beginner camp, week 1", 100_000),
-    offering(id(302), ids.youthThree, id(311), "Beginner camp, week 1", 90_000),
-    { ...offering(id(303), ids.youthSaved, id(311), "Beginner camp, week 1", 100_000), coach_level_key: id(811) },
-  ],
-  // Budget's Operations Plan's rates. The drafts have none, so their numbers stay simple.
-  plan_rates: [
-    {
-      id: id(801),
-      version_id: ids.opsSaved,
-      key: id(802),
-      payroll_tax_rate: "0.1",
-      lodging_per_night_cents: 15_000,
-      mileage_rate_cents: 70,
-      rib_resource_kind_id: null,
-    },
-  ],
-  plan_staff_levels: [
-    {
-      id: id(810),
-      version_id: ids.opsSaved,
-      key: id(811),
-      name: "Lead coach",
-      pay_type: "hourly",
-      hourly_rate_cents: 3_000,
-      qualifications: null,
-    },
-  ],
-  plan_salaried_positions: [
-    {
-      id: id(820),
-      version_id: ids.opsSaved,
-      key: id(821),
-      name: "Executive Director",
-      annual_salary_cents: 9_000_000,
-      paid_hours_per_year: 2_080,
-      qualifications: null,
-      ga_share: "0.6",
-      remainder_pool_id: null,
-      form_990_line: null,
-    },
-  ],
-  plan_revenue_charges: [
-    {
-      id: id(830),
-      version_id: ids.opsSaved,
-      key: id(831),
-      name: "Card fees",
-      rate: "0.03",
-      product_kinds: ["program"],
-      account_id: tuition,
-      excluded_from_mtdc: false,
-      note: null,
-    },
-  ],
-  plan_pools: [officeTwo.pool, officeThree.pool],
-  plan_budget_lines: [officeTwo.line, officeThree.line, supplies(ids.youthTwo, 1), supplies(ids.youthThree, 2)],
-  // The Fourth is a closed day, and Two coaches' camp has a practice that day.
-  plan_closed_dates: [
-    { id: id(401), version_id: ids.opsTwo, key: id(411), date: "2027-07-05", name: "the Fourth of July, observed" },
-  ],
-  plan_activities: [
-    {
-      id: id(501),
-      version_id: ids.youthTwo,
-      key: id(511),
-      offering_id: id(301),
-      trip_id: null,
-      date: "2027-07-05",
-      start_time: "09:00:00",
-      end_time: "12:00:00",
-      on_water_minutes: null,
-      setup_minutes: null,
-      putaway_minutes: null,
-      kind: "practice",
-      uses_boats: false,
-      fixed_coaches: null,
-      fixed_ribs: null,
-      fixed_boats: null,
-    },
-  ],
-  // Budget's results, as platform worked them out when it was saved, and Two coaches', after its latest change. Three
-  // coaches' are still being worked out.
-  plan_results: [
-    {
-      version_set_id: budget,
-      calculated_at: "2027-03-10T18:00:00Z",
-      operating_net_cents: 500_000,
-      fundraising_net_cents: 120_000,
-      capital_cents: 300_000,
-      total_cents: 320_000,
-    },
-    {
-      version_set_id: twoCoaches,
-      calculated_at: "2027-04-02T23:05:00Z",
-      operating_net_cents: 700_000,
-      fundraising_net_cents: 0,
-      capital_cents: 0,
-      total_cents: 700_000,
-    },
-  ],
-  plan_result_pnl: [
-    {
-      version_set_id: budget,
-      version_set_member_id: ids.youthMember,
-      level: "offering",
-      subject_key: id(311),
-      name: "Beginner camp, week 1",
-      revenue_cents: 1_000_000,
-      expense_cents: 600_000,
-      net_cents: 400_000,
-      mtdc_cents: 500_000,
-      enrollment: 10,
-      days: 10,
-      sailor_days: 100,
-    },
-    {
-      version_set_id: budget,
-      version_set_member_id: ids.youthMember,
-      level: "program_area",
-      subject_key: youth,
-      name: "Youth Racing",
-      revenue_cents: 1_000_000,
-      expense_cents: 600_000,
-      net_cents: 400_000,
-      mtdc_cents: 500_000,
-      enrollment: 10,
-      days: 10,
-      sailor_days: 100,
-    },
-    {
-      version_set_id: budget,
-      version_set_member_id: ids.adultMember,
-      level: "program_area",
-      subject_key: adult,
-      name: "Adult Programs",
-      revenue_cents: 400_000,
-      expense_cents: 100_000,
-      net_cents: 300_000,
-      mtdc_cents: 100_000,
-      enrollment: 6,
-      days: 4,
-      sailor_days: 24,
-    },
-    ...(["offering", "product", "program_area"] as const).map((level) => ({
-      version_set_id: twoCoaches,
-      version_set_member_id: id(621),
-      level,
-      subject_key: { offering: id(311), product: camp, program_area: youth }[level],
-      name: { offering: "Beginner camp, week 1", product: "Beginner camp", program_area: "Youth Racing" }[level],
-      revenue_cents: 1_000_000,
-      expense_cents: 300_000,
-      net_cents: 700_000,
-      mtdc_cents: 100_000,
-      enrollment: 10,
-      days: 1,
-      sailor_days: 10,
-    })),
-  ],
-  plan_result_lines: [
-    {
-      version_set_id: budget,
-      version_set_member_id: ids.youthMember,
-      line: "offering:revenue",
-      line_name: "Tuition",
-      cost_center_name: "Beginner camp, week 1",
-      amount_cents: 1_000_000,
-      function: "program",
-      account_id: { id: tuition, type: "revenue", number: "4000", name: "Tuition" },
-    },
-    {
-      version_set_id: budget,
-      version_set_member_id: ids.youthMember,
-      line: "offering:coaches",
-      line_name: "Coach wages",
-      cost_center_name: "Beginner camp, week 1",
-      amount_cents: 300_000,
-      function: "program",
-      account_id: { id: office, type: "expense", number: "7000", name: "Office" },
-    },
-    {
-      version_set_id: budget,
-      version_set_member_id: ids.youthMember,
-      line: "pool:office",
-      line_name: "Office share: Office rent",
-      cost_center_name: "Beginner camp, week 1",
-      amount_cents: 300_000,
-      function: "management",
-      account_id: { id: office, type: "expense", number: "7000", name: "Office" },
-    },
-    {
-      version_set_id: budget,
-      version_set_member_id: ids.opsMember,
-      line: "org:insurance",
-      line_name: "Insurance",
-      cost_center_name: "Organization",
-      amount_cents: 200_000,
-      function: "management",
-      account_id: { id: office, type: "expense", number: "7000", name: "Office" },
-    },
-    // Fundraising and capital, which the top-line numbers leave out.
-    {
-      version_set_id: budget,
-      version_set_member_id: ids.opsMember,
-      line: "org:gala",
-      line_name: "Spring gala",
-      cost_center_name: "Organization",
-      amount_cents: 50_000,
-      function: "fundraising",
-      account_id: { id: tuition, type: "revenue", number: "4000", name: "Tuition" },
-    },
-    {
-      version_set_id: budget,
-      version_set_member_id: ids.opsMember,
-      line: "org:coach-boat",
-      line_name: "Coach boat",
-      cost_center_name: "Organization",
-      amount_cents: 80_000,
-      function: null,
-      account_id: { id: office, type: "asset", number: "1500", name: "Equipment" },
-    },
-    // Two coaches' camp: its tuition, its supplies, and its share of the office.
-    ...(
-      [
-        ["revenue", "Revenue", 1_000_000, "program", { id: tuition, type: "revenue", number: "4000", name: "Tuition" }],
-        ["supplies", "Camp supplies", 100_000, "management", null],
-        ["pool:office", "Office share: Office rent", 200_000, "management", null],
-      ] as const
-    ).map(([line, name, amount, fn, account]) => ({
-      version_set_id: twoCoaches,
-      version_set_member_id: id(621),
-      line,
-      line_name: name,
-      cost_center_name: "Beginner camp, week 1",
-      amount_cents: amount,
-      function: fn,
-      account_id: account ?? { id: office, type: "expense", number: "7000", name: "Office" },
-    })),
-  ],
-  plan_result_warnings: [
-    {
-      version_set_id: budget,
-      code: "position_double_booked",
-      message: "The head coach coaches two groups at once on June 6, so another coach is needed for 3 hours.",
-      subject_key: null,
-    },
-    {
-      version_set_id: twoCoaches,
-      code: "closed_date",
-      message: "Beginner camp, week 1 has an activity on 2027-07-05, a closed day: the Fourth of July, observed",
-      subject_key: id(511),
-    },
-  ],
+  version_set_members: members.map((m) => {
+    const p = plans.find((x) => x.id === m.plan)!;
+    const area = catalog.program_areas.find((a) => a.id === p.program_area_id);
+    return {
+      id: m.id,
+      version_set_id: m.set,
+      version_id: m.version,
+      plan_id: { ...p, program_area_id: area ? named(area) : null },
+    };
+  }),
+  plan_versions: members.map((m) => ({
+    id: m.version,
+    plan_id: m.plan,
+    status: m.set["status"] === "draft" ? "draft" : "saved",
+    message: null,
+    saved_at: m.set["saved_at"],
+    rules: rules[m.version] ?? null,
+  })),
+  ...Object.fromEntries(versioned.map((table) => [table, rowsOf(versions, table)])),
+  // Expanded as the app asks for them: a program's or offering's product, and a boat rate's class.
+  plan_programs: rowsOf(versions, "plan_programs").map((r) => ({
+    ...r,
+    product_id: named(catalog.products.find((p) => p.id === r["product_id"])!),
+  })),
+  plan_offerings: rowsOf(versions, "plan_offerings").map((r) => ({
+    ...r,
+    product_id: named(catalog.products.find((p) => p.id === r["product_id"])!),
+  })),
+  plan_boat_rates: rowsOf(versions, "plan_boat_rates").map((r) => ({
+    ...r,
+    boat_class_id: catalog.boat_classes.find((b) => b.id === r["boat_class_id"])!,
+  })),
+  ...resultTables,
 };

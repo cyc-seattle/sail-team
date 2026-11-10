@@ -1,7 +1,7 @@
-import { Fragment, type ReactNode } from "react";
+import type { ReactNode } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { appliesTo, formatShare, type OfferingAssumptions, type OperationsAssumptions } from "@/model/assumptions";
-import { formatDays } from "@/model/dates";
+import { appliesTo, formatShare, type Bonus, type OperationsAssumptions } from "@/model/assumptions";
 import { formatCents } from "@/model/money";
 import { cn } from "@/lib/utils";
 
@@ -36,64 +36,32 @@ function RateTable({ title, head, children }: { title: string; head: string[]; c
   );
 }
 
-/**
- * What each offering's numbers come from: its dates, price, sailors, days, and how it's coached. On a phone it
- * scrolls sideways, with the offering's name kept in view.
- */
-export function OfferingAssumptionsTable({ offerings }: { offerings: OfferingAssumptions[] }) {
-  const programs = [...new Set(offerings.map((o) => o.program))];
-  const sticky = "sticky left-0 bg-background";
+/** What a bonus is, in words: "Summer Director: 10% of net, after shared costs". */
+const bonusTerms = (b: Bonus) =>
+  `${b.role_name}: ${formatShare(b.bonus_rate)} of net, ${b.basis === "before_shared_costs" ? "before" : "after"} shared costs`;
+
+/** A position's bonuses as their shares of net, each bonus's role and basis on hover, or on a tap on a phone. */
+function BonusCell({ bonuses }: { bonuses: Bonus[] }) {
+  if (bonuses.length === 0) {
+    return <Num>{none}</Num>;
+  }
   return (
-    <Table aria-label="Each offering's assumptions">
-      <TableHeader>
-        <TableRow>
-          <TableHead className={sticky}>Offering</TableHead>
-          <TableHead>Dates</TableHead>
-          <TableHead className="text-right">Price</TableHead>
-          <TableHead className="text-right">Sailors</TableHead>
-          <TableHead className="text-right">Days</TableHead>
-          <TableHead className="text-right">Sailors per coach</TableHead>
-          <TableHead>Coach pay level</TableHead>
-          <TableHead className="text-right">RIBs per coach</TableHead>
-          <TableHead className="text-right">Bring their own boat</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {programs.map((program) => (
-          <Fragment key={program}>
-            {programs.length > 1 && (
-              <TableRow className="hover:bg-transparent">
-                <TableCell className={cn(sticky, "pt-4 font-medium")}>{program}</TableCell>
-                <TableCell colSpan={8} />
-              </TableRow>
-            )}
-            {offerings
-              .filter((o) => o.program === program)
-              .map((o) => (
-                <TableRow key={o.key}>
-                  <TableCell className={cn(sticky, programs.length > 1 && "pl-6")}>{o.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{formatDays(o.starts_on, o.ends_on)}</TableCell>
-                  <Num>{money(o.price_cents, true)}</Num>
-                  <Num>
-                    {count(o.enrollment)}
-                    {o.capacity !== null && <span className="text-muted-foreground"> of {o.capacity}</span>}
-                  </Num>
-                  <Num>{count(o.days)}</Num>
-                  <Num>
-                    {count(o.sailors_per_coach)}
-                    {o.min_coaches !== null && (
-                      <span className="text-muted-foreground">, at least {o.min_coaches}</span>
-                    )}
-                  </Num>
-                  <TableCell>{o.coach_level ?? none}</TableCell>
-                  <Num>{count(o.ribs_per_coach)}</Num>
-                  <Num>{share(o.byob_share)}</Num>
-                </TableRow>
-              ))}
-          </Fragment>
-        ))}
-      </TableBody>
-    </Table>
+    <Num>
+      <Popover>
+        <PopoverTrigger
+          openOnHover
+          delay={100}
+          className="cursor-default underline decoration-dotted underline-offset-4 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        >
+          {bonuses.map((b) => formatShare(b.bonus_rate)).join(", ")}
+        </PopoverTrigger>
+        <PopoverContent side="top" className="w-auto" aria-label="Bonus">
+          {bonuses.map((b) => (
+            <p key={b.key}>{bonusTerms(b)}</p>
+          ))}
+        </PopoverContent>
+      </Popover>
+    </Num>
   );
 }
 
@@ -108,7 +76,6 @@ export function OperationsAssumptionsView({
   assumptions: OperationsAssumptions;
   stacked?: boolean;
 }) {
-  const bonusOnPositions = a.positions.some((p) => p.bonus_rate !== undefined);
   return (
     <div className={stacked ? "grid max-w-3xl gap-10" : "grid gap-card md:grid-cols-2"}>
       {a.rates && (
@@ -137,17 +104,10 @@ export function OperationsAssumptionsView({
           ))}
         </RateTable>
       )}
-      {a.positions.length > 0 && (
+      {(a.positions.length > 0 || a.bonuses.length > 0) && (
         <RateTable
           title="Salaried staff"
-          head={[
-            "Position",
-            "Salary",
-            "Paid hours a year",
-            "Per hour",
-            "G&A share",
-            ...(bonusOnPositions ? ["Bonus, share of net"] : []),
-          ]}
+          head={["Position", "Salary", "Paid hours a year", "Per hour", "G&A share", "Bonus, share of net"]}
         >
           {a.positions.map((p) => (
             <TableRow key={p.key}>
@@ -158,7 +118,14 @@ export function OperationsAssumptionsView({
                 {p.paid_hours_per_year ? money(Math.round(p.annual_salary_cents / p.paid_hours_per_year)) : none}
               </Num>
               <Num>{share(p.ga_share)}</Num>
-              {bonusOnPositions && <Num>{share(p.bonus_rate)}</Num>}
+              <BonusCell bonuses={p.bonuses} />
+            </TableRow>
+          ))}
+          {a.bonuses.map((b) => (
+            <TableRow key={b.key}>
+              <TableCell colSpan={6} className="whitespace-normal text-muted-foreground">
+                {bonusTerms(b)}, paying no salaried position
+              </TableCell>
             </TableRow>
           ))}
         </RateTable>
@@ -192,24 +159,16 @@ export function OperationsAssumptionsView({
         </RateTable>
       )}
       {a.boatRates.length > 0 && (
-        <RateTable title="Boat upkeep" head={["Boat class", "Per boat, per hour on the water"]}>
+        <RateTable
+          title="Boat upkeep"
+          head={["Boat class", "Boats", "Sailors per boat", "Per boat, per hour on the water"]}
+        >
           {a.boatRates.map((b) => (
             <TableRow key={b.key}>
               <TableCell>{b.boat_class}</TableCell>
+              <Num>{count(b.quantity)}</Num>
+              <Num>{count(b.sailors_per_boat)}</Num>
               <Num>{money(b.maintenance_per_boat_hour_cents)}</Num>
-            </TableRow>
-          ))}
-        </RateTable>
-      )}
-      {a.bonuses.length > 0 && (
-        <RateTable title="Bonuses" head={["Role", "Share of net", "Counted"]}>
-          {a.bonuses.map((b) => (
-            <TableRow key={b.key}>
-              <TableCell>{b.role_name}</TableCell>
-              <Num>{share(b.bonus_rate)}</Num>
-              <TableCell className="text-right">
-                {b.basis === "before_shared_costs" ? "Before shared costs" : "After shared costs"}
-              </TableCell>
             </TableRow>
           ))}
         </RateTable>

@@ -37,13 +37,11 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   The router plugin regenerates `src/routeTree.gen.ts` on every build and dev run. Commit it, and never edit it.
 - `src/router.ts` makes the router. Tests make their own with a memory history.
 - `src/components/ui/` holds shadcn's components on Base UI, `src/components/` the club's own, each with a story beside
-  it. `src/components/plans/` holds the plans pages': Page Header, Summary Tiles, Money, P&L Table, Lines Table,
-  Assumptions, Unit Switch, Engine Warnings, Version Badge, the Financial Plan Card, List, View, Page, and Actions, the
-  Plan Details Dialog, the Summary Table, the Programs and Operations (Non-program) Sections, Plan View, and Compare
-  View. The Unit Switch's choice of for the year, per day, or per sailor-day is saved in localStorage
-  (`src/hooks/use-pnl-view.ts`), so every P&L on every page shows the same.
-  `src/components/plans/reports/` holds the proposed Planning reports, as wireframes on made-up data that no route
-  uses yet ([#63](https://github.com/cyc-seattle/sail-team/issues/63)).
+  it. `src/components/plans/` holds Planning's shared parts: Page Header, Money, Assumptions, Version Badge, the
+  Financial Plan Actions, and the Plan Details Dialog. `src/components/plans/reports/` holds Planning itself: the
+  Planning Page that lists every Financial Plan, and a Financial Plan's reports, each on a Report Page with its Report
+  Nav: Overview, Assumptions (Rates Report), one Program Area Report for each area, Non-program, and Fundraising and
+  Capital ([#63](https://github.com/cyc-seattle/sail-team/issues/63)).
   `src/components/home/` holds the home page's Link List. `src/components/household/` holds the household page's
   Share Contact, Member Card, School Field, and Household View, and `src/components/phone-field.tsx` the Phone Field. `src/components/shell/` holds the App Shell around every
   signed-in page: the sidebar on a laptop, and the tab bar on a phone, whose More opens the sidebar.
@@ -59,14 +57,16 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   after every change to it, wherever it's made. The app never calculates them. Each result row names the member it's
   charged in (`version_set_member_id`), so one plan's full P&L, with its wages and its share of the shared costs, is
   one filter. An open draft is read again every few seconds, and a plan with no results yet every two, until they
-  arrive; after 30 seconds the page says they couldn't be worked out (`src/hooks/use-financial-plan.ts`). A plan's page
-  shows its assumptions, read from its copy's own rows (`src/directus/assumptions.ts`), and its lines by category,
-  which is their account (`src/model/plan-lines.ts`). The Operations Plan's page also adds each shared cost back up
-  from every offering's share. `/plans` lists each year's Financial Plans, each with a link to the one it started
-  from, `/plans/financial/<set>` shows one (where a Plan Writer renames it, changes its note, saves a draft, marks a
-  saved one active, or starts a draft from it), `/plans/financial/<set>/<plan>` one plan in it, and
-  `/plans/compare/<a>/<b>` two side by side. A club
-  plan's old address, `/plans/club/<set>`, sends people to its Financial Plan.
+  arrive; after 30 seconds the page says they couldn't be worked out (`src/hooks/use-financial-plan.ts`). The reports
+  also read what planners entered in its copies (`src/directus/plan-inputs.ts`): each copy's rules, each program's
+  settings, each offering with its activities, and the Operations Plan's rates, with each bonus on the position it
+  pays. `src/model/reports.ts` makes each report from those and the results: shares of a pool (`pool:` lines) are a
+  plan's indirect costs, and everything else of its own is direct. `/plans` lists every Financial Plan, where a Plan
+  Writer saves a draft, deletes one, or marks a saved one active. `/plans/financial/<set>` is its Overview, and
+  `/plans/financial/<set>/<report>` its other reports: `rates` (Assumptions), a Program Plan's id, `non-program`, or
+  `fundraising`. Each report's header is where a Plan Writer renames it, changes its note, saves a draft, marks a
+  saved one active, or starts a draft from it. A club plan's old address, `/plans/club/<set>`, sends people to its
+  Financial Plan.
 - `src/directus/roster.ts` reads the team rosters. A team is a program area, such as Doublehanded, and its programs
   marked as a team, such as J-Pod and K-Pod, are its divisions; a program that isn't a team has no roster. It reads
   each division's current or most recent offering, its confirmed registrations, the sailors' guardians, their names
@@ -95,7 +95,8 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   The sign-in journeys sign in through Authentik's emailed link, which dev's Authentik sends to Mailpit, one at a
   time. Every other journey gives its visitor a password and signs in to Directus directly, three scenarios at a
   time. A plans scenario also makes a made-up organization (`test/features/club.ts`): its accounts, a program area and
-  product, an Operations Plan and an area's plan, and Financial Plans holding copies of them, saved the way a Plan
+  product, an Operations Plan and an area's plan with its program's settings and blocks, and Financial Plans holding
+  copies of them, saved the way a Plan
   Writer saves them, so platform works out their results. A rosters scenario makes a team, its divisions, and
   households (`test/features/squad.ts`), with the Clubspot rows
   clubspot-sync would read them from, and waits for platform's hook to move a parent on a team to the Team role. Dev's `backend:savedVersionsDeletable` lets its admin delete them afterwards; prod refuses it. Everything is deleted when

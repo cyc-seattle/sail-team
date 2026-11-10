@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, screen, userEvent, waitFor } from "storybook/test";
+import { expect, fn, screen, userEvent, waitFor } from "storybook/test";
 import { withRouter } from "../../../../.storybook/with-router";
 import { planningPlans } from "./fixtures";
 import { PlanningPage } from "./planning-page";
@@ -8,7 +8,10 @@ const meta = {
   component: PlanningPage,
   decorators: [withRouter("/plans", ["/plans", "/plans/financial/$setId"])],
   parameters: { layout: "fullscreen" },
-  args: { plans: planningPlans },
+  args: {
+    plans: planningPlans,
+    actions: { canUpdate: true, canDelete: true, onMove: fn(async () => {}), onDelete: fn(async () => {}) },
+  },
 } satisfies Meta<typeof PlanningPage>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -44,5 +47,37 @@ export const DeletingTheAgentsDraft: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Actions for 2027 allocations, Nov 9" }));
     await userEvent.click(await screen.findByRole("menuitem", { name: "Delete" }));
     await waitFor(async () => expect(await screen.findByText("Delete 2027 allocations, Nov 9?")).toBeVisible());
+  },
+};
+
+/** Saving a draft asks first, then saves it. */
+export const SavingADraft: Story = {
+  play: async ({ args, canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Actions for Two more coaches" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Save" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(args.actions.onMove).toHaveBeenCalledWith(expect.objectContaining({ id: "two-coaches" }), "saved"),
+    );
+  },
+};
+
+/** A planner who can only read plans has no actions. */
+export const ReadOnly: Story = {
+  args: { actions: { canUpdate: false, canDelete: false, onMove: fn(), onDelete: fn() } },
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByRole("button", { name: /Actions for/ })).toBeNull();
+  },
+};
+
+/** A draft whose numbers platform is still working out shows dashes until they arrive. */
+export const NumbersPending: Story = {
+  args: {
+    plans: planningPlans.map((p) =>
+      p.id === "two-coaches" ? { ...p, revenue_cents: null, expense_cents: null, net_cents: null } : p,
+    ),
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("row", { name: /Two more coaches/ })).toHaveTextContent("—");
   },
 };

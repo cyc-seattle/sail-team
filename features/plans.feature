@@ -4,82 +4,69 @@ Feature: Seeing the Financial Plans
   AI: it starts as a draft, and when it's ready a planner saves it. A draft's numbers are worked out again after every
   change to it, wherever the change is made. A saved Financial Plan's plans and numbers never change, though its name
   and note can. To change the plan after that, a planner starts a new Financial Plan from an earlier one, its parent, and
-  the new one begins as a copy of it. A year can have several drafts at once, so planners can weigh options side by
-  side, such as two drafts started from the same Financial Plan, one with two coaches and one with three. Each
-  Financial Plan has a name, and a note that says what it was for, such as "Reviewed with the board".
+  the new one begins as a copy of it. A year can have several drafts at once, so planners can weigh options, such as
+  two drafts started from the same Financial Plan, one with two coaches and one with three. Each Financial Plan has a
+  name, and a note that says what it was for, such as "Reviewed with the board".
 
-  Plans is where planners, and anyone else who can read plans, see the Financial Plans and what each plan in them
-  takes in and spends. A Program Plan's P&L includes its coaches' wages, its RIBs, and its share of the shared
-  costs, such as the office, worked out with the other plans in the same Financial Plan. A planner who can change
-  plans can rename any Financial Plan, change its note, save a draft, mark a saved one active, and start a new
-  draft from one here. Everything else
-  about a plan is changed through their AI. Every plan and number here is made up for the run.
+  A plan's activities are grouped into blocks, one date each, and each block is given its staff, RIBs and boats. Each
+  program has its settings: the staff level that leads it, and how many sailors one of them can take. Rules, in the
+  planner's own words, say what the settings can't, for the planner's AI to follow. The engine costs what the blocks
+  are given, and warns where they break a limit, such as a practice on a day the club is closed.
 
-  Rule: Plans lists each year's Financial Plans, newest first, with their names and notes
+  Planning is where planners, and anyone else who can read plans, see the Financial Plans as a set of reports: an
+  Overview, the Assumptions, one for each program area, Non-program, and Fundraising and capital. A program area's
+  report includes its coaches' wages, its RIBs, and its share of the shared costs, such as the office, worked out with
+  the other plans in the same Financial Plan. A planner who can change plans can rename any Financial Plan, change its
+  note, save a draft, delete one, mark a saved one active, and start a new draft from one here. Everything else about
+  a plan is changed through their AI. Every plan and number here is made up for the run.
 
-    Scenario: Two saved Financial Plans for a year
+  Rule: Planning lists every Financial Plan in one table, by year and status
+
+    Scenario: A saved Financial Plan and a draft started from it
       Given I'm a planner who can read plans
       And a saved Financial Plan for 2027 named "Budget", noted "Reviewed with the board"
-      And a later one started from it named "Adopted budget", noted "Adopted by the board"
+      And a draft started from it named "Two coaches"
       And I've signed in
-      When I open Planning
-      Then under 2027 I see "Adopted budget", then "Budget"
-      And each shows its note, the day it was saved, and a link to the one it was started from
+      When I open Planning for 2027
+      Then I see "Budget", marked saved, and "Two coaches", marked as a draft
+      And "Budget" shows its note and the day it was saved
+      And "Two coaches" shows it was started from "Budget"
 
-    Scenario: Each saved Financial Plan shows its revenue, expenses, gross, and net
+    Scenario: Each Financial Plan shows its revenue, expenses, and net
       Given I'm a planner who can read plans
       And a saved Financial Plan for 2027 whose camp takes in $10,000 and spends $5,000 running it
       And I've signed in
-      When I open Planning
-      Then the Financial Plan shows revenue of $10,000, expenses of $5,000, gross of $5,000, and net of $5,000
+      When I open Planning for 2027
+      Then "Budget" shows revenue of $10,000, expenses of $5,000, and net of $5,000
 
-    Scenario: A year's drafts are listed with its saved Financial Plans
-      Given I'm a planner who can read plans
-      And a saved Financial Plan for 2027 named "Budget"
-      And two drafts started from it, named "Two coaches" and "Three coaches"
-      And I've signed in
-      When I open Planning
-      Then under 2027 I see "Two coaches" and "Three coaches", each marked as a draft, and "Budget"
-
-  Rule: Two Financial Plans started from the same one can be compared side by side
-
-    Scenario: Comparing two options
-      Given I'm a planner who can read plans
-      And two drafts started from the same Financial Plan: "Two coaches", with an operating net of $4,000, and "Three coaches", with an operating net of $2,000
-      And I've signed in
-      When I compare "Two coaches" with "Three coaches"
-      Then I see each one's operating net side by side, $4,000 and $2,000
-      And I see that "Two coaches" nets $2,000 more
-
-  Rule: A Financial Plan shows a summary of each program area and Non-program, then each program's offerings
+  Rule: A Financial Plan's Overview shows each program area and Non-program, from revenue to net
 
     Scenario: A Financial Plan with an Operations Plan and two Program Plans
       Given I'm a planner who can read plans
       And a saved Financial Plan with an Operations Plan, and Program Plans for Youth Racing and Adult Sailing
       And I've signed in
       When I open that Financial Plan
-      Then the summary has a row for Youth Racing, Adult Sailing, Non-program, and the total
+      Then its Overview has a row for Youth Racing, Adult Sailing, Non-program, and the total
       And Youth Racing's row shows revenue of $10,000 and net of $5,000
-      And under Programs I see Youth Racing's camp, with its sailors
-      And I see the Financial Plan it was started from
+      And I can switch to Assumptions, Youth Racing, Adult Sailing, Non-program, and Fundraising and capital
 
-  Rule: A Program Plan shows its full P&L, with its wages and its share of the shared costs
+  Rule: A program area's report shows its revenue and expenses, with its wages and its share of the shared costs
 
     Scenario: A Program Plan in a saved Financial Plan
       Given I'm a planner who can read plans
       And a saved Financial Plan whose Youth Racing offering took in $10,000, paid $3,000 of coaches' wages, and paid $1,000 of shared costs
       And I've signed in
-      When I open Youth Racing's plan in that Financial Plan
-      Then the offering shows $10,000 in, $3,000 of coaches' wages, and $1,000 of shared costs
+      When I open Youth Racing's report in that Financial Plan
+      Then it shows $10,000 of revenue, $3,000 of coaches' wages, and $1,000 of the office
 
     Scenario: A Program Plan in a draft
       Given I'm a planner who can read plans
       And a draft Financial Plan whose Operations Plan pays coaches $30 an hour and has $1,000 of office costs
-      And its only Program Plan has an offering with 100 hours of coaching
+      And its only Program Plan has an offering with a coach on every practice, 100 hours in all
       And I've signed in
-      When I open the Program Plan in the draft
-      Then the offering pays $3,000 of coaches' wages
-      And it pays the $1,000 of office costs
+      When I open Youth Racing's report in the draft
+      Then it shows $3,000 of coaches' wages
+      And it shows the $1,000 of the office
 
   Rule: A saved Financial Plan shows the P&L it was saved with, and never recalculates it
 
@@ -88,59 +75,52 @@ Feature: Seeing the Financial Plans
       And a saved Financial Plan named "Budget" whose Youth Racing offering paid $1,000 of office costs
       And a Financial Plan started from "Budget" with $2,000 of office costs
       And I've signed in
-      When I open Youth Racing's plan in "Budget"
-      Then its offering shows $1,000 of office costs
-      And the page says when "Budget" was saved
+      When I open Youth Racing's report in "Budget"
+      Then it shows the $1,000 of the office
 
   Rule: A draft's P&L is worked out again after every change to it, wherever the change is made
-
-    Scenario: A draft shows what it would take in and spend today
-      Given I'm a planner who can read plans
-      And a draft Financial Plan whose Youth Racing plan has one offering of 10 sailors at $1,000 each
-      And I've signed in
-      When I open Youth Racing's plan in the draft
-      Then its offering takes in $10,000
-      And the page says the draft's numbers are worked out again after every change
 
     Scenario: A draft's numbers follow a change made through a planner's AI
       Given I'm a planner who can read plans
       And a draft Financial Plan whose Youth Racing plan has one offering of 10 sailors at $1,000 each
       And I've signed in
-      When I open Youth Racing's plan in the draft
+      When I open Youth Racing's report in the draft
       And a planner's AI raises the offering's price to $1,200
-      Then its offering takes in $12,000, without my reloading the page
+      Then it shows $12,000 of revenue, without my reloading the page
 
-  Rule: The P&L shows each offering's totals, per day, and per sailor-day, and remembers which
+  Rule: A program area's report shows its programs' settings and rules, and each offering's fee and sailors
 
-    Scenario: An offering's P&L, three ways
-      Given I'm a planner who can read plans
-      And a saved Financial Plan whose offering takes in $10,000 and spends $6,000 over 10 days, for 10 sailors
-      And I've signed in
-      When I open the offering's Program Plan in that Financial Plan
-      Then the offering's net is $4,000
-      And its net per day is $400
-      And its net per sailor-day is $40
-      And it's still per sailor-day when I come back to the page
-
-  Rule: A plan shows the assumptions its numbers come from
-
-    Scenario: An offering's price and sailors
+    Scenario: An offering's fee and sailors, and its program's settings
       Given I'm a planner who can read plans
       And a draft Financial Plan whose Youth Racing plan has one offering of 10 sailors at $1,000 each
+      And its program is led by a Lead coach, at 5 sailors per coach, with the rule "Sail in pairs"
       And I've signed in
-      When I open Youth Racing's plan in the draft
-      Then its assumptions show the offering's 10 sailors at $1,000 each
+      When I open Youth Racing's report in the draft
+      Then its offering shows a fee of $1,000 and 10 sailors
+      And its assumptions show the program's Lead coach, 5 sailors per coach, and the rule "Sail in pairs"
 
-  Rule: The planning engine's warnings show in words a planner understands
+  Rule: Assumptions show the rules every program follows and the rates every plan uses
+
+    Scenario: The Operations Plan's rules and a coach's pay
+      Given I'm a planner who can read plans
+      And a draft Financial Plan whose Operations Plan pays coaches $30 an hour and has $1,000 of office costs
+      And the Operations Plan's rule "No more than 4 RIBs on the water"
+      And I've signed in
+      When I open the draft's Assumptions
+      Then I see the rule "No more than 4 RIBs on the water"
+      And I see the coach's pay of $30.00 an hour
+
+  Rule: The planning engine's warnings are listed at the top of the Overview and each program area's report
 
     Scenario: A practice on a closed day is pointed out
       Given I'm a planner who can read plans
       And a draft with a practice on a closed day
       And I've signed in
       When I open the draft
-      Then the page warns that the practice falls on a closed day, and names the day
+      And I open its warnings
+      Then a warning says the practice falls on a closed day, on that day
 
-  Rule: A planner who can change plans can rename a Financial Plan, note it, save it, mark it active, and start a draft from it
+  Rule: A planner who can change plans can rename a Financial Plan, note it, save it, delete it, mark it active, and start a draft from it
 
     Scenario: Renaming a draft and noting it
       Given I'm a planner who can change plans
@@ -148,23 +128,15 @@ Feature: Seeing the Financial Plans
       And I've signed in
       When I open "Two coaches"
       And I rename it "Two coaches, more boats" and note it "For the board"
-      Then the page is titled "Two coaches, more boats" and shows the note "For the board"
-
-    Scenario: Renaming a saved Financial Plan keeps its numbers
-      Given I'm a planner who can change plans
-      And a saved Financial Plan for 2027 named "Budget"
-      And I've signed in
-      When I open "Budget"
-      And I rename it "Adopted budget" and note it "Adopted by the board"
-      Then the page is titled "Adopted budget" and shows the note "Adopted by the board"
-      And its numbers are the ones it was saved with
+      Then the page is titled "Two coaches, more boats"
+      And Planning shows "Two coaches, more boats" with the note "For the board"
 
     Scenario: Starting a draft from a saved Financial Plan
       Given I'm a planner who can change plans
       And a saved Financial Plan for 2027 named "Budget"
       And I've signed in
       When I open "Budget" and start a draft from it named "Budget, three coaches"
-      Then I'm on the draft "Budget, three coaches", started from "Budget"
+      Then I'm on the draft "Budget, three coaches"
       And it holds the same plans as "Budget"
 
     Scenario: A planner who can only read plans can't change them
@@ -173,6 +145,7 @@ Feature: Seeing the Financial Plans
       And I've signed in
       When I open "Budget"
       Then I see no way to edit it or start a draft from it
+      And Planning has no actions for "Budget"
 
     Scenario: Saving a draft
       Given I'm a planner who can change plans
@@ -180,7 +153,15 @@ Feature: Seeing the Financial Plans
       And I've signed in
       When I open "Two coaches"
       And I save it
-      Then it's marked saved, with the day it was saved
+      Then it's marked saved
+
+    Scenario: Deleting a draft from Planning
+      Given I'm a planner who can change plans
+      And a draft Financial Plan named "Two coaches"
+      And I've signed in
+      When I open Planning for 2027
+      And I delete "Two coaches"
+      Then Planning no longer lists "Two coaches"
 
     Scenario: Marking a saved Financial Plan active
       Given I'm a planner who can change plans

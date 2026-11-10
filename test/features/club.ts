@@ -10,15 +10,16 @@ export const PLAN_YEAR = 2027;
 
 type Row = Record<string, unknown>;
 
-/** The tables a plan copy holds rows in, each after the rows that point at it, so cleanup can go in this order. */
+/** The tables a plan copy holds rows in, each before the rows it points at, so cleanup can go in this order. */
 const COPY_ROWS = [
-  "plan_activity_resources",
+  "plan_block_staff",
+  "plan_block_resources",
+  "plan_block_boats",
   "plan_activities",
+  "plan_activity_blocks",
   "plan_trips",
-  "plan_offering_boat_classes",
   "plan_budget_lines",
   "plan_labor_lines",
-  "plan_activity_block_rules",
   "plan_bonus_owner_products",
   "plan_bonus_owners",
   "plan_salaried_bookings",
@@ -28,6 +29,7 @@ const COPY_ROWS = [
   "plan_rates",
   "plan_staff_levels",
   "plan_pools",
+  "plan_programs",
   "plan_offerings",
   "plan_revenue_charges",
   "plan_closed_dates",
@@ -54,7 +56,7 @@ export class Club {
   private readonly made: { collection: string; id: string }[] = [];
   private organizationId?: string;
   private accounts: Record<string, string> = {};
-  private productId?: string;
+  productId?: string;
   private readonly plans: string[] = [];
   areaPlan?: string;
   operationsPlan?: string;
@@ -201,15 +203,15 @@ export class Club {
   }
 
   /** An offering in `copy` of `sailors` at `price` cents each, with `costs` cents of its own costs. Returns it. */
-  async offering(copy: string, name: string, sailors: number, price: number, costs = 0, extra: Row = {}): Promise<Row> {
+  async offering(copy: string, name: string, sailors: number, price: number, costs = 0): Promise<Row> {
     const offering = await this.versioned("plan_offerings", copy, {
       product_id: this.productId,
       name,
       starts_on: `${this.year}-07-05`,
       ends_on: `${this.year}-07-16`,
+      capacity: sailors,
       target_enrollment: sailors,
       price_cents: price,
-      ...extra,
     });
     if (costs > 0) {
       await this.versioned("plan_budget_lines", copy, {
@@ -225,15 +227,26 @@ export class Club {
     return offering;
   }
 
-  /** A practice of `offering` on each of `dates`, from `start` to `end`. */
+  /**
+   * A practice of `offering` on each of `dates`, from `start` to `end`. Given a staff level's key, each is in a block of
+   * its own with one coach at that level; without one, it's in no block.
+   */
   async practices(
     copy: string,
     offering: string,
     dates: string[],
     start = "09:00:00",
     end = "12:00:00",
+    coach: string | null = null,
   ): Promise<void> {
     for (const date of dates) {
+      let block: string | null = null;
+      if (coach) {
+        block = (await this.versioned("plan_activity_blocks", copy, { date, name: `Practice ${date}` }))[
+          "id"
+        ] as string;
+        await this.versioned("plan_block_staff", copy, { block_id: block, staff_level_key: coach, count: 1 });
+      }
       await this.versioned("plan_activities", copy, {
         offering_id: offering,
         date,
@@ -241,8 +254,24 @@ export class Club {
         end_time: end,
         kind: "practice",
         uses_boats: false,
+        block_id: block,
       });
     }
+  }
+
+  /** The camp's program's settings in `copy`: the staff level that leads it, sailors per coach, and its rules. */
+  async program(copy: string, level: string, sailorsPerCoach: number, rules: string | null): Promise<void> {
+    await this.versioned("plan_programs", copy, {
+      product_id: this.productId,
+      staff_level_key: level,
+      sailors_per_coach: sailorsPerCoach,
+      rules,
+    });
+  }
+
+  /** A plan copy's rules, in the planner's own words. */
+  async rules(copy: string, rules: string): Promise<void> {
+    await asAdmin("PATCH", `/items/plan_versions/${copy}`, { rules });
   }
 
   /** A day the organization is closed, in an Operations Plan's copy. */
@@ -250,11 +279,11 @@ export class Club {
     await this.versioned("plan_closed_dates", operations, { date, name });
   }
 
-  /** A coach's hourly rate, in an Operations Plan's copy. Returns the level's key, for an offering to name. */
-  async coachRate(operations: string, cents: number): Promise<string> {
+  /** A coach's hourly rate, in an Operations Plan's copy. Returns the level's key, for a block or program to name. */
+  async coachRate(operations: string, cents: number, name = `Coach ${this.run}`): Promise<string> {
     return (
       await this.versioned("plan_staff_levels", operations, {
-        name: `Coach ${this.run}`,
+        name,
         pay_type: "hourly",
         hourly_rate_cents: cents,
       })
@@ -301,8 +330,10 @@ export class Club {
           `/items/version_sets?filter[organization_id][_eq]=${this.organizationId}&fields=id&limit=-1`,
         )
       : [];
-    const started = all.map((s) => s.id).filter((id) => !made.includes(id));
-    for (const set of [...started, ...made.reverse()]) {
+    const existing = all.map((s) => s.id);
+    const started = existing.filter((id) => !made.includes(id));
+    // A visitor may have deleted one the scenario made.
+    for (const set of [...started, ...made.reverse().filter((id) => existing.includes(id))]) {
       await asAdmin("DELETE", `/items/version_sets/${set}`);
     }
     if (this.plans.length > 0) {

@@ -1,8 +1,15 @@
 // Made-up numbers for the Planning report wireframes. Never real figures.
-import type { AccountAmount, OverviewRow, PlanWarning, ProgramSettings, ReportOffering } from "@/model/reports";
-import { operationsAssumptions } from "../fixtures";
-import type { Product, SharedCost } from "./non-program-report";
-import type { PlanSummary } from "./planning-page";
+import type { OperationsAssumptions } from "@/model/assumptions";
+import type { ListedPlan } from "@/model/financial-plans";
+import type {
+  AccountAmount,
+  OverviewRow,
+  PlanWarning,
+  Product,
+  ProgramSettings,
+  ReportOffering,
+  SharedCost,
+} from "@/model/reports";
 
 const area = (
   report: string,
@@ -253,11 +260,62 @@ export const capital = [
   account("1530", "Float repairs", 1_200_000),
 ];
 
-/** The Operations Plan's rates, with each salaried position's bonus on the position itself. */
-export const reportAssumptions = {
-  ...operationsAssumptions.operations!,
-  positions: operationsAssumptions.operations!.positions.map((p, i) => ({ ...p, bonus_rate: i === 0 ? null : 0.1 })),
-  bonuses: [],
+/** The Operations Plan's rates for the year, with each bonus on the salaried position it pays. */
+export const reportAssumptions: OperationsAssumptions = {
+  rates: { payroll_tax_rate: 0.1, lodging_per_night_cents: 15_000, mileage_rate_cents: 70 },
+  staffLevels: [
+    { key: "jr", name: "Junior Instructor", pay_type: "hourly", hourly_rate_cents: 1_900 },
+    { key: "l1", name: "Level 1 Instructor", pay_type: "hourly", hourly_rate_cents: 2_200 },
+    { key: "l2", name: "Level 2 Instructor", pay_type: "hourly", hourly_rate_cents: 2_600 },
+    { key: "l3", name: "Level 3 Coach", pay_type: "hourly", hourly_rate_cents: 3_200 },
+    { key: "parent", name: "Parent helper", pay_type: "volunteer", hourly_rate_cents: null },
+  ],
+  positions: [
+    {
+      key: "ed",
+      name: "Executive Director",
+      annual_salary_cents: 9_000_000,
+      paid_hours_per_year: 2_080,
+      ga_share: 0.6,
+      bonuses: [],
+    },
+    {
+      key: "pd",
+      name: "Program Director",
+      annual_salary_cents: 6_500_000,
+      paid_hours_per_year: 2_080,
+      ga_share: 0.1,
+      bonuses: [{ key: "pd-bonus", role_name: "Program Director", bonus_rate: 0.1, basis: "after_shared_costs" }],
+    },
+  ],
+  charges: [
+    { key: "card", name: "Card fees", rate: 0.03, product_kinds: ["program", "charter"] },
+    { key: "scholarships", name: "Scholarships", rate: 0.05, product_kinds: ["program"] },
+    { key: "bo", name: "B&O tax", rate: 0.015, product_kinds: null },
+  ],
+  resources: [
+    {
+      key: "rib",
+      name: "RIBs",
+      quantity: 6,
+      cost_per_hour_cents: 0,
+      cost_per_day_cents: 1_000,
+      fuel_per_hour_cents: 1_500,
+      maintenance_per_hour_cents: 800,
+    },
+  ],
+  boatRates: [
+    { key: "opti", boat_class: "Opti", maintenance_per_boat_hour_cents: 150, quantity: 30, sailors_per_boat: 1 },
+    {
+      key: "sailqube",
+      boat_class: "Sailqube",
+      maintenance_per_boat_hour_cents: 200,
+      quantity: 12,
+      sailors_per_boat: 2,
+    },
+    { key: "420", boat_class: "420", maintenance_per_boat_hour_cents: 300, quantity: 14, sailors_per_boat: 2 },
+  ],
+  bonuses: [{ key: "summer", role_name: "Summer Director", bonus_rate: 0.05, basis: "before_shared_costs" }],
 };
 
 export const summerRules =
@@ -296,8 +354,8 @@ export const warnings: PlanWarning[] = [
 ];
 
 const planSummary = (
-  fields: Partial<Omit<PlanSummary, "net_cents">> & Pick<PlanSummary, "id" | "name" | "status">,
-): PlanSummary => ({
+  fields: Partial<Omit<ListedPlan, "net_cents">> & Pick<ListedPlan, "id" | "name" | "status">,
+): ListedPlan => ({
   year: 2027,
   saved_at: null,
   parent: null,
@@ -310,7 +368,7 @@ const planSummary = (
 });
 
 /** Two years of Financial Plans: each year's active one, drafts including one from the planning agent, and older saved ones. */
-export const planningPlans: PlanSummary[] = [
+export const planningPlans: ListedPlan[] = [
   planSummary({ id: "budget", name: "Budget", status: "active", saved_at: "2027-03-10T18:00:00Z", warnings: 2 }),
   planSummary({
     id: "agent",

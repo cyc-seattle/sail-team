@@ -11,11 +11,11 @@ export function canRead(permissions: Permissions | undefined, collection: string
   return access === "partial" || access === "full";
 }
 
-/** Whether the user can create or update some of `collection`. As with `canRead`, Directus still checks every write. */
+/** Whether the user can create, update, or delete some of `collection`. As with `canRead`, Directus still checks every write. */
 export function canWrite(
   permissions: Permissions | undefined,
   collection: string,
-  action: "create" | "update",
+  action: "create" | "update" | "delete",
 ): boolean {
   const access = permissions?.[collection]?.[action]?.access;
   return access === "partial" || access === "full";
