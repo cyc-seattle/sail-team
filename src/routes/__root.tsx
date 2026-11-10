@@ -4,9 +4,10 @@ import { AppShell } from "@/components/shell/app-shell";
 import { NoticePage } from "@/components/shell/notice-page";
 import { SignInBlocked } from "@/components/shell/sign-in-blocked";
 import { Skeleton } from "@/components/ui/skeleton";
+import { appDirectus } from "@/directus/app";
 import { useSession } from "@/directus/use-session";
 import { displayName } from "@/model/display-name";
-import { pagesFor } from "@/model/nav";
+import { linksFor, pagesFor } from "@/model/nav";
 
 export const Route = createRootRoute({
   component: Root,
@@ -35,7 +36,11 @@ function Signed() {
       return <SignInBlocked signInUrl={session.signInUrl} />;
     case "signed-in":
       return (
-        <AppShell name={displayName(session.me)} pages={pagesFor(session.permissions)}>
+        <AppShell
+          name={displayName(session.me)}
+          pages={pagesFor(session.permissions)}
+          links={linksFor(session.me.role?.name, appDirectus().url)}
+        >
           <Outlet />
         </AppShell>
       );

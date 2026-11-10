@@ -1,30 +1,34 @@
 import { Link } from "@tanstack/react-router";
-import { ExternalLinkIcon, MailIcon } from "lucide-react";
+import { ChevronDownIcon, ExternalLinkIcon, LinkIcon, MailIcon } from "lucide-react";
+import { useState } from "react";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { externalLinks, type NavItem } from "@/model/nav";
+import type { ExternalLink, NavItem } from "@/model/nav";
 import { AccountMenu } from "./account-menu.tsx";
 import { PageIcon } from "./page-icon.tsx";
 
 const item = "min-h-tap data-[status=active]:bg-sidebar-accent data-[status=active]:font-semibold";
 
 /**
- * Every page this person can open, other sites the team uses, and their menu. Always open on a laptop; on a phone,
- * the tab bar's More opens it as a sheet.
+ * Every page this person can open, Links to the other sites their role sees, and their menu. Always open on a laptop;
+ * on a phone, the tab bar's More opens it as a sheet.
  */
-export function AppSidebar({ name, pages }: { name: string; pages: NavItem[] }) {
+export function AppSidebar({ name, pages, links }: { name: string; pages: NavItem[]; links: ExternalLink[] }) {
   const { setOpenMobile } = useSidebar();
+  const [linksOpen, setLinksOpen] = useState(false);
   const close = () => setOpenMobile(false);
   return (
     <Sidebar>
@@ -51,17 +55,39 @@ export function AppSidebar({ name, pages }: { name: string; pages: NavItem[] }) 
             </SidebarGroupContent>
           </SidebarGroup>
           <SidebarGroup>
-            <SidebarGroupLabel>Other sites</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {externalLinks.map((link) => (
-                  <SidebarMenuItem key={link.href}>
-                    <SidebarMenuButton className={item} render={<a href={link.href} />}>
-                      {link.href.startsWith("mailto:") ? <MailIcon aria-hidden /> : <ExternalLinkIcon aria-hidden />}
-                      <span>{link.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    className={item}
+                    aria-expanded={linksOpen}
+                    aria-controls="sidebar-links"
+                    onClick={() => setLinksOpen(!linksOpen)}
+                  >
+                    <LinkIcon aria-hidden />
+                    <span>Links</span>
+                    <ChevronDownIcon
+                      aria-hidden
+                      className={linksOpen ? "ml-auto rotate-180 transition-transform" : "ml-auto transition-transform"}
+                    />
+                  </SidebarMenuButton>
+                  {linksOpen && (
+                    <SidebarMenuSub id="sidebar-links">
+                      {links.map((link) => (
+                        <SidebarMenuSubItem key={link.href}>
+                          <SidebarMenuSubButton className="min-h-tap" href={link.href}>
+                            {link.href.startsWith("mailto:") ? (
+                              <MailIcon aria-hidden />
+                            ) : (
+                              <ExternalLinkIcon aria-hidden />
+                            )}
+                            <span>{link.label}</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  )}
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

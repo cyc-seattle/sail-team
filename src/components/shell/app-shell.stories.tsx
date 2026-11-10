@@ -1,7 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withRouter } from "../../../.storybook/with-router";
 import { expect, waitFor, within } from "storybook/test";
+import { linksFor } from "@/model/nav";
 import { AppShell } from "./app-shell";
+
+const directus = "https://directus.cycsail.team";
 
 const staff = [
   { to: "/", label: "Home" },
@@ -16,6 +19,7 @@ const meta = {
   args: {
     name: "Robin Tiller",
     pages: staff,
+    links: linksFor("Crew", directus),
     children: (
       <main className="p-card">
         <h1 className="text-2xl font-semibold tracking-tight">Rosters</h1>
@@ -35,17 +39,61 @@ export const Staff: Story = {
   },
 };
 
-/** Everyone has Support, an email link, with the other sites. On a phone, More opens it. */
-export const Support: Story = {
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    const body = within(canvasElement.ownerDocument.body);
-    const more = canvas.queryByRole("button", { name: "More" });
-    if (more) {
-      await userEvent.click(more);
-      await waitFor(async () => expect(await body.findByRole("dialog", { name: "Menu" })).toBeVisible());
-    }
-    const support = (await body.findAllByRole("link", { name: "Support" })).find((link) => link.checkVisibility());
+/** Opens Links, after More on a phone. */
+async function openLinks({ canvas, canvasElement, userEvent }: Parameters<NonNullable<Story["play"]>>[0]) {
+  const body = within(canvasElement.ownerDocument.body);
+  const more = canvas.queryByRole("button", { name: "More" });
+  if (more) {
+    await userEvent.click(more);
+    await waitFor(async () => expect(await body.findByRole("dialog", { name: "Menu" })).toBeVisible());
+  }
+  const links = (await body.findAllByRole("button", { name: "Links" })).find((button) => button.checkVisibility());
+  await userEvent.click(links!);
+  return body;
+}
+
+const linkNames = (body: ReturnType<typeof within>) =>
+  body
+    .getAllByRole("link")
+    .filter((link: HTMLElement) => link.closest("#sidebar-links") && link.checkVisibility())
+    .map((link: HTMLElement) => link.textContent);
+
+/** A family member sees the links everyone does: Google Calendar, and Support, an email link. */
+export const CommunityLinks: Story = {
+  args: {
+    name: "Lee Halyard",
+    pages: [staff[0]!],
+    links: linksFor("Community", directus),
+    children: (
+      <main className="p-card">
+        <h1 className="text-2xl font-semibold tracking-tight">Sail Team</h1>
+      </main>
+    ),
+  },
+  play: async (context) => {
+    const body = await openLinks(context);
+    await waitFor(() => expect(linkNames(body)).toEqual(["Google Calendar", "Support"]));
+    const support = body.getAllByRole("link", { name: "Support" }).find((link) => link.checkVisibility());
     await expect(support).toHaveAttribute("href", "mailto:info@cyccommunitysailing.org");
+  },
+};
+
+/** Crew also see the organization's Clubspot dashboard. */
+export const CrewLinks: Story = {
+  play: async (context) => {
+    const body = await openLinks(context);
+    await waitFor(() => expect(linkNames(body)).toEqual(["Clubspot dashboard", "Google Calendar", "Support"]));
+  },
+};
+
+/** Staff also see Directus. */
+export const StaffLinks: Story = {
+  args: { links: linksFor("Staff", directus) },
+  play: async (context) => {
+    const body = await openLinks(context);
+    await waitFor(() =>
+      expect(linkNames(body)).toEqual(["Clubspot dashboard", "Directus", "Google Calendar", "Support"]),
+    );
   },
 };
 
