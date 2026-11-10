@@ -4,13 +4,15 @@ import type { Client } from "./client.ts";
 import { decideSignIn, parseRedirectAt, signInUrl } from "./session.ts";
 
 const redirectKey = "sail-team:sign-in-redirect";
-const meFields = ["id", "first_name", "last_name", "email"] as const;
+const meFields = ["id", "first_name", "last_name", "email", { role: ["name"] }] as const;
 
 export interface Me {
   id: string;
   first_name: string | null;
   last_name: string | null;
   email: string | null;
+  /** Their Directus role. Every role can read its own name. */
+  role: { name: string } | null;
 }
 
 export type SignIn =

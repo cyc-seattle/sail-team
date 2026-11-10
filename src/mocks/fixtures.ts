@@ -7,6 +7,7 @@ export const planner: Me = {
   first_name: "Robin",
   last_name: "Tiller",
   email: "robin@example.org",
+  role: { name: "Crew" },
 };
 
 const none = { access: "none" } as const;

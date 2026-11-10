@@ -1,11 +1,12 @@
 import { expect, type Page } from "@playwright/test";
 import { createBdd } from "playwright-bdd";
 import { test } from "./fixtures";
-import { giveThroughGroup } from "./visitors";
+import { setRole } from "./squad";
+import { giveThroughGroup, makeDirectusUser } from "./visitors";
 
 // Steps for features/navigation.feature, against dev, at the sizes AGENTS.md reviews every UI change at.
 
-const { Given, Then } = createBdd(test);
+const { Given, When, Then } = createBdd(test);
 
 const sizes = { laptop: { width: 1440, height: 900 }, phone: { width: 390, height: 844 } };
 
@@ -34,6 +35,25 @@ async function menu(page: Page, label: string) {
 
 Given("I can read plans", async ({ visitor }) => {
   await giveThroughGroup(visitor, "Plan Reader");
+});
+
+Given(/^I have the (\w+) role$/, async ({ visitor }, role: string) => {
+  await makeDirectusUser(visitor);
+  if (role !== "Community") {
+    await setRole(visitor, role);
+  }
+});
+
+When("I open Links in the menu", async ({ page }) => {
+  if (screen.size === "phone") {
+    await page.getByRole("button", { name: "More" }).click();
+  }
+  await page.getByRole("navigation", { name: "Menu" }).getByRole("button", { name: "Links" }).click();
+});
+
+Then(/^Links offers only (.+)$/, async ({ page }, list: string) => {
+  const labels = list.split(/, and |, | and /).map((label) => label.replace(/^the /, ""));
+  await expect(page.locator("#sidebar-links").getByRole("link")).toHaveText(labels);
 });
 
 Given(/^I'm on a (laptop|phone)$/, async ({ page }, size: keyof typeof sizes) => {

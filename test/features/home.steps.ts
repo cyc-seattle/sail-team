@@ -22,7 +22,7 @@ Then("the home page doesn't link to Planning", async ({ page }) => {
   await expect(homeLinks(page).getByRole("link", { name: "Planning" })).toHaveCount(0);
 });
 
-Then("it links to Clubspot and Google Calendar", async ({ page }) => {
-  await expect(homeLinks(page).getByRole("link", { name: "Clubspot" })).toBeVisible();
+Then("it links to Google Calendar and Support", async ({ page }) => {
   await expect(homeLinks(page).getByRole("link", { name: "Google Calendar" })).toBeVisible();
+  await expect(homeLinks(page).getByRole("link", { name: "Support" })).toBeVisible();
 });

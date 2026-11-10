@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { parentPermissions, plannerPermissions } from "../src/mocks/fixtures.ts";
-import { externalLinks, homeLinksFor, navFor, pagesFor } from "../src/model/nav.ts";
+import { homeLinksFor, linksFor, navFor, pagesFor } from "../src/model/nav.ts";
+
+const directus = "https://directus.example.org";
+const everyone = [
+  { href: "https://calendar.google.com", label: "Google Calendar" },
+  { href: "mailto:info@cyccommunitysailing.org", label: "Support" },
+];
+const clubspot = { href: "https://theclubspot.com/dashboard/acct/nw6IMf9Bnq/", label: "Clubspot dashboard" };
+const studio = { href: directus, label: "Directus" };
 
 describe("navFor", () => {
   it("shows Planning to someone who can read plans, Rosters to a household on a team, and Household to a household", () => {
@@ -20,13 +28,27 @@ describe("navFor", () => {
   });
 });
 
+describe("linksFor", () => {
+  it.each([
+    ["Community", everyone],
+    ["Team", everyone],
+    [undefined, everyone],
+    ["Crew", [clubspot, ...everyone]],
+    ["Staff", [clubspot, studio, ...everyone]],
+    ["Admin", [clubspot, studio, ...everyone]],
+    ["Administrator", [clubspot, studio, ...everyone]],
+  ])("gives %s their role's links", (role, links) => {
+    expect(linksFor(role, directus)).toEqual(links);
+  });
+});
+
 describe("homeLinksFor", () => {
-  it("lists the sections someone can open, then other sites", () => {
-    expect(homeLinksFor(plannerPermissions)).toEqual([...navFor(plannerPermissions), ...externalLinks]);
+  it("lists the sections someone can open, then their links", () => {
+    expect(homeLinksFor(plannerPermissions, everyone)).toEqual([...navFor(plannerPermissions), ...everyone]);
   });
 
-  it("still lists other sites for someone who can open no section", () => {
-    expect(homeLinksFor({})).toEqual(externalLinks);
+  it("still lists the links for someone who can open no section", () => {
+    expect(homeLinksFor({}, everyone)).toEqual(everyone);
   });
 });
 
