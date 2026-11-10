@@ -54,8 +54,13 @@ export const teamPermissions: Permissions = {
   google_groups: read("partial", ["id", "name", "email"]),
 };
 
-/** A Plan Writer, who can start Financial Plans and change them. */
-const write = () => ({ ...read("full"), create: { access: "full" as const }, update: { access: "full" as const } });
+/** A Plan Writer, who can start Financial Plans, change them, and delete drafts. */
+const write = () => ({
+  ...read("full"),
+  create: { access: "full" as const },
+  update: { access: "full" as const },
+  delete: { access: "full" as const },
+});
 
 /** A planner who is also a parent on a team, so `mise run dev` shows both Planning and Rosters. */
 export const plannerPermissions: Permissions = {

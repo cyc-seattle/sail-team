@@ -3,9 +3,9 @@
  * platform's schemas/*.yaml: every `decimal` field in the plan and catalog tables.
  */
 export const decimalFields: Record<string, readonly string[]> = {
-  plan_offerings: ["fill_rate", "sailors_per_coach", "ribs_per_coach", "byob_share", "cogs_rate"],
-  plan_offering_boat_classes: ["share"],
-  plan_activity_resources: ["quantity", "hours"],
+  plan_offerings: ["fill_rate", "cogs_rate"],
+  plan_programs: ["sailors_per_coach"],
+  plan_block_resources: ["quantity", "hours"],
   plan_labor_lines: ["hours"],
   plan_rates: ["payroll_tax_rate"],
   plan_revenue_charges: ["rate"],

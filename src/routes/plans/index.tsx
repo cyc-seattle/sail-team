@@ -1,10 +1,9 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { FinancialPlanList } from "@/components/plans/financial-plan-list";
-import { PageHeader } from "@/components/plans/page-header";
+import { PlanningPage } from "@/components/plans/reports/planning-page";
 import { NoAccess } from "@/components/shell/no-access";
-import { canRead } from "@/directus/access";
-import { financialPlansQuery } from "@/directus/financial-plans";
+import { canRead, canWrite } from "@/directus/access";
+import { deleteFinancialPlan, financialPlansQuery, updateFinancialPlan } from "@/directus/financial-plans";
 import { useSession } from "@/directus/use-session";
 
 export const Route = createFileRoute("/plans/")({
@@ -16,15 +15,30 @@ function Planning() {
   if (session.kind !== "signed-in" || !canRead(session.permissions, "plans")) {
     return <NoAccess what="plans" />;
   }
-  return (
-    <main className="mx-auto max-w-6xl p-card">
-      <PageHeader title="Planning" />
-      <AllPlans />
-    </main>
-  );
+  return <AllPlans />;
 }
 
 function AllPlans() {
+  const session = useSession();
+  const queryClient = useQueryClient();
   const { data } = useSuspenseQuery(financialPlansQuery);
-  return <FinancialPlanList plans={data} />;
+  const permissions = session.kind === "signed-in" ? session.permissions : undefined;
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ["financial-plans"] });
+  return (
+    <PlanningPage
+      plans={data}
+      actions={{
+        canUpdate: canWrite(permissions, "version_sets", "update"),
+        canDelete: canWrite(permissions, "version_sets", "delete"),
+        onMove: async (plan, status) => {
+          await updateFinancialPlan(plan.id, { status });
+          await refresh();
+        },
+        onDelete: async (plan) => {
+          await deleteFinancialPlan(plan.id);
+          await refresh();
+        },
+      }}
+    />
+  );
 }

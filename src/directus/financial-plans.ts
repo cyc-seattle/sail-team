@@ -1,15 +1,15 @@
-import { createItem, customEndpoint, updateItem } from "@directus/sdk";
+import { createItem, customEndpoint, deleteItem, updateItem } from "@directus/sdk";
 import { queryOptions } from "@tanstack/react-query";
-import {
-  topLine,
-  type FinancialPlanSummary,
-  type ListedPlan,
-  type Member,
-  type PlanLine,
-  type Results,
-  type Totals,
+import type {
+  FinancialPlanSummary,
+  ListedPlan,
+  Member,
+  PlanLine,
+  PnlRow,
+  ResultWarning,
+  Results,
+  Totals,
 } from "@/model/financial-plans";
-import type { SavedPnlRow } from "@/model/saved-results";
 import { appDirectus } from "./app.ts";
 import { readAll } from "./plans.ts";
 
@@ -30,37 +30,36 @@ type SetRow = Omit<FinancialPlanSummary, "parent"> & { parent_id: { id: string; 
 
 const summary = ({ parent_id, ...set }: SetRow): FinancialPlanSummary => ({ ...set, parent: parent_id ?? null });
 
-const totalFields = ["calculated_at", "operating_net_cents", "fundraising_net_cents", "capital_cents", "total_cents"];
+const totalFields = ["calculated_at", "operating_revenue_cents", "operating_expense_cents", "operating_net_cents"];
 
-/** Every Financial Plan, with its top-line numbers once platform has worked them out, for the list. */
+/** Every Financial Plan, with its operating totals and warning count once platform has worked them out, for Planning. */
 export const financialPlansQuery = queryOptions({
   queryKey: ["financial-plans"],
   queryFn: async (): Promise<ListedPlan[]> => {
-    const [sets, worked, lines] = await Promise.all([
+    const [sets, totals, warnings] = await Promise.all([
       readAll<SetRow>("version_sets", undefined, setFields),
-      readAll<{ version_set_id: string }>("plan_results", undefined, ["version_set_id"]),
-      readAll<{
-        version_set_id: string;
-        amount_cents: number;
-        function: PlanLine["function"];
-        account_id: { type: string };
-      }>("plan_result_lines", undefined, ["version_set_id", "amount_cents", "function", "account_id.type"]),
+      readAll<Totals & { version_set_id: string }>("plan_results", undefined, ["version_set_id", ...totalFields]),
+      readAll<{ version_set_id: string }>("plan_result_warnings", undefined, ["version_set_id"]),
     ]);
-    const done = new Set(worked.map((r) => r.version_set_id));
-    return sets.map(summary).map((set) => {
-      const own = lines
-        .filter((l) => l.version_set_id === set.id)
-        .map((l) => ({
-          amount_cents: l.amount_cents,
-          function: l.function,
-          revenue: l.account_id.type === "revenue",
-          capital: l.account_id.type === "asset",
-        }));
-      return { ...set, topLine: done.has(set.id) ? topLine(own) : null };
+    return sets.map(summary).map((set): ListedPlan => {
+      const total = totals.find((t) => t.version_set_id === set.id);
+      return {
+        id: set.id,
+        name: set.name,
+        year: set.fiscal_year,
+        status: set.status,
+        saved_at: set.saved_at,
+        parent: set.parent,
+        note: set.message,
+        warnings: warnings.filter((w) => w.version_set_id === set.id).length,
+        revenue_cents: total?.operating_revenue_cents ?? null,
+        expense_cents: total?.operating_expense_cents ?? null,
+        net_cents: total?.operating_net_cents ?? null,
+      };
     });
   },
   // Until every plan's numbers are in, so a draft that's just been saved or started shows them when they are.
-  refetchInterval: (query) => (query.state.data?.some((p) => !p.topLine) ? 5_000 : false),
+  refetchInterval: (query) => (query.state.data?.some((p) => p.net_cents === null) ? 5_000 : false),
 });
 
 /** A Financial Plan's plans, each with the copy of it the Financial Plan holds. */
@@ -97,14 +96,12 @@ async function readResults(setId: string): Promise<Results | null> {
   const bySet = { version_set_id: { _eq: setId } };
   const [totals, pnl, lines, warnings] = await Promise.all([
     readAll<Totals & { calculated_at: string | null }>("plan_results", bySet, totalFields),
-    readAll<SavedPnlRow & { version_set_member_id: string | null }>("plan_result_pnl", bySet, [
+    readAll<Omit<PnlRow, "member"> & { version_set_member_id: string | null }>("plan_result_pnl", bySet, [
       "level",
       "subject_key",
       "name",
       "revenue_cents",
       "expense_cents",
-      "net_cents",
-      "mtdc_cents",
       "enrollment",
       "days",
       "sailor_days",
@@ -113,7 +110,7 @@ async function readResults(setId: string): Promise<Results | null> {
     readAll<{
       line: string;
       line_name: string | null;
-      cost_center_name: string;
+      cost_center_key: string | null;
       amount_cents: number;
       version_set_member_id: string | null;
       function: PlanLine["function"];
@@ -121,7 +118,7 @@ async function readResults(setId: string): Promise<Results | null> {
     }>("plan_result_lines", bySet, [
       "line",
       "line_name",
-      "cost_center_name",
+      "cost_center_key",
       "amount_cents",
       "version_set_member_id",
       "function",
@@ -129,10 +126,12 @@ async function readResults(setId: string): Promise<Results | null> {
       "account_id.number",
       "account_id.name",
     ]),
-    readAll<{ code: string; message: string; subject_key: string | null }>("plan_result_warnings", bySet, [
+    readAll<Omit<ResultWarning, "member"> & { version_set_member_id: string | null }>("plan_result_warnings", bySet, [
       "code",
       "message",
-      "subject_key",
+      "category",
+      "date",
+      "version_set_member_id",
     ]),
   ]);
   if (!totals[0]) {
@@ -149,14 +148,14 @@ async function readResults(setId: string): Promise<Results | null> {
       name: l.line_name ?? l.line,
       account_number: l.account_id.number,
       account_name: l.account_id.name,
-      cost_center_name: l.cost_center_name,
+      cost_center_key: l.cost_center_key,
       amount_cents: l.amount_cents,
       revenue: l.account_id.type === "revenue",
       capital: l.account_id.type === "asset",
       function: l.function,
       member: l.version_set_member_id,
     })),
-    warnings: warnings.map((w) => ({ code: w.code, message: w.message, ...(w.subject_key && { key: w.subject_key }) })),
+    warnings: warnings.map(({ version_set_member_id, ...w }) => ({ ...w, member: version_set_member_id })),
   };
 }
 
@@ -215,6 +214,11 @@ export async function updateFinancialPlan(
   changes: { name?: string; message?: string | null; status?: "saved" | "active" },
 ): Promise<void> {
   await appDirectus().client.request(updateItem("version_sets", id, changes));
+}
+
+/** Deletes a draft Financial Plan. Platform takes its plans out of it, and refuses to delete a saved one. */
+export async function deleteFinancialPlan(id: string): Promise<void> {
+  await appDirectus().client.request(deleteItem("version_sets", id));
 }
 
 /**

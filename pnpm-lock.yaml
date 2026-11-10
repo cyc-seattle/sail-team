@@ -12,8 +12,8 @@ importers:
         specifier: ^1.9.0
         version: 1.9.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@cyc-seattle/platform':
-        specifier: ^1.32.0
-        version: 1.32.0(@pulumi/gcp@10.2.0(typescript@5.9.3))(@pulumi/kubernetes@4.34.2(typescript@5.9.3))(@pulumi/pulumi@3.272.0(typescript@5.9.3))
+        specifier: ^1.37.0
+        version: 1.37.0(@pulumi/gcp@10.2.0(typescript@5.9.3))(@pulumi/kubernetes@4.34.2(typescript@5.9.3))(@pulumi/pulumi@3.272.0(typescript@5.9.3))
       '@directus/sdk':
         specifier: ^27.1.0
         version: 27.1.0
@@ -376,8 +376,8 @@ packages:
   '@cucumber/tag-expressions@9.1.0':
     resolution: {integrity: sha512-bvHjcRFZ+J1TqIa9eFNO1wGHqwx4V9ZKV3hYgkuK/VahHx73uiP4rKV3JVrvWSMrwrFvJG6C8aEwnCWSvbyFdQ==}
 
-  '@cyc-seattle/platform@1.32.0':
-    resolution: {integrity: sha512-+zia8EtNJVSqYBQE7GY7i/YJp2ZodNJHNKLYZb1M7FAPDcCyg2KxBZOGsUXKB1Fy/NfqMz/nK51bbNrPtrqwLQ==}
+  '@cyc-seattle/platform@1.37.0':
+    resolution: {integrity: sha512-HmXqnxl2tuzSAwv4jfcq+iBdvBqMme42QveA7Mlw2cguQL+4veM4/qDWqmzxgSuVoGSzfnVDZG5G7GIT7bCTOQ==}
     engines: {node: '>=22.18'}
     peerDependencies:
       '@pulumi/gcp': ^8 || ^10.0.0
@@ -4695,7 +4695,7 @@ snapshots:
 
   '@cucumber/tag-expressions@9.1.0': {}
 
-  '@cyc-seattle/platform@1.32.0(@pulumi/gcp@10.2.0(typescript@5.9.3))(@pulumi/kubernetes@4.34.2(typescript@5.9.3))(@pulumi/pulumi@3.272.0(typescript@5.9.3))':
+  '@cyc-seattle/platform@1.37.0(@pulumi/gcp@10.2.0(typescript@5.9.3))(@pulumi/kubernetes@4.34.2(typescript@5.9.3))(@pulumi/pulumi@3.272.0(typescript@5.9.3))':
     dependencies:
       zod: 4.6.7
     optionalDependencies:

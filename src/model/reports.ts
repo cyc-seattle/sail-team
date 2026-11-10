@@ -1,4 +1,6 @@
-// The shapes the Planning reports show. Wireframes only: nothing fills these from Directus yet (#63).
+// The shapes the Planning reports show, and how they're made from a Financial Plan's results and inputs.
+import type { PlanActivity, PlanOffering } from "@cyc-seattle/platform/planning";
+import type { Member, PlanLine, ResultWarning } from "./financial-plans.ts";
 
 /** One account's amount in a statement, such as coach wages. */
 export interface AccountAmount {
@@ -81,8 +83,8 @@ export function totalOf(rows: OverviewRow[]): OverviewRow {
 export interface ProgramSettings {
   name: string;
   /** The staff level that leads it, such as an instructor or a coach. */
-  staff_level: string;
-  sailors_per_coach: number;
+  staff_level: string | null;
+  sailors_per_coach: number | null;
   /** Free text the planning agent reads, one rule a line. */
   rules: string | null;
 }
@@ -190,12 +192,12 @@ export function enrollment(offerings: ReportOffering[], by: EnrollmentBy): Enrol
   });
 }
 
-/** One of the engine's warnings, on a date, in a program area. */
+/** One of the engine's warnings, on a date, about a program area or Non-program, when it names them. */
 export interface PlanWarning {
   key: string;
-  /** The program area's report key. */
+  /** The report key of the plan it's about: a program area's, or `non-program` for the Operations Plan or none. */
   area: string;
-  date: string;
+  date: string | null;
   message: string;
 }
 
@@ -205,3 +207,241 @@ export const rulesOf = (text: string | null) =>
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
+
+/** A report's key: a Program Plan's id, or `non-program` for the Operations Plan. */
+export const reportKey = (member: Pick<Member, "kind" | "plan_id">) =>
+  member.kind === "operations" ? "non-program" : member.plan_id;
+
+/** What a member's report is called: its program area's name, or Non-program. */
+export const reportName = (member: Member) =>
+  member.kind === "operations" ? "Non-program" : (member.area_name ?? member.plan_name);
+
+/** A Financial Plan's reports, in the order the switcher lists them: program areas A to Z between Assumptions and Non-program. */
+export function reportsOf(members: Member[]): { key: string; name: string }[] {
+  const areas = members
+    .filter((m) => m.kind === "program_area")
+    .map((m) => ({ key: reportKey(m), name: reportName(m) }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  return [
+    { key: "overview", name: "Overview" },
+    { key: "rates", name: "Assumptions" },
+    ...areas,
+    { key: "non-program", name: "Non-program" },
+    { key: "fundraising", name: "Fundraising and capital" },
+  ];
+}
+
+type Line = Pick<
+  PlanLine,
+  "key" | "name" | "account_number" | "account_name" | "amount_cents" | "revenue" | "capital" | "function"
+>;
+
+/** The lines in the operating net: neither fundraising nor capital. */
+export const operating = <T extends Line>(lines: T[]) =>
+  lines.filter((l) => !l.capital && l.function !== "fundraising");
+
+/** A share of a pool, such as G&A, which the engine spreads over every offering. */
+export const isShare = (line: Pick<PlanLine, "key">) => line.key.startsWith("pool:");
+
+/** The pool a share is from, from its name: "G&A share: Insurance" is from G&A. */
+const poolOf = (line: Pick<PlanLine, "name">) => line.name.split(" share: ")[0]!;
+
+const sum = (lines: Pick<PlanLine, "amount_cents">[]) => lines.reduce((total, l) => total + l.amount_cents, 0);
+
+/** Lines' revenue, their own costs, and their shares of the pools. */
+export function stepsOf(lines: Line[]): Steps {
+  const costs = operating(lines).filter((l) => !l.revenue);
+  return {
+    revenue_cents: sum(operating(lines).filter((l) => l.revenue)),
+    direct_cents: sum(costs.filter((l) => !isShare(l))),
+    indirect_cents: sum(costs.filter(isShare)),
+  };
+}
+
+const byNumber = (a: AccountAmount, b: AccountAmount) =>
+  (a.number ?? "\uffff").localeCompare(b.number ?? "\uffff", undefined, { numeric: true }) ||
+  a.name.localeCompare(b.name);
+
+/** Lines added up by account, in account-number order. */
+export function byAccount(lines: Line[]): AccountAmount[] {
+  const accounts = new Map<string, AccountAmount>();
+  for (const line of lines) {
+    const id = `${line.account_number ?? ""} ${line.account_name}`;
+    const account = accounts.get(id) ?? { number: line.account_number, name: line.account_name, cents: 0 };
+    accounts.set(id, { ...account, cents: account.cents + line.amount_cents });
+  }
+  return [...accounts.values()].sort(byNumber);
+}
+
+/** A plan's revenue and own costs by account, and its shares of the pools, one line a pool, such as G&A. */
+export function statementOf(lines: Line[]): {
+  revenue: AccountAmount[];
+  direct: AccountAmount[];
+  indirect: AccountAmount[];
+} {
+  const own = operating(lines);
+  const shares = own.filter((l) => !l.revenue && isShare(l));
+  const pools = [...new Set(shares.map(poolOf))].sort();
+  return {
+    revenue: byAccount(own.filter((l) => l.revenue)),
+    direct: byAccount(own.filter((l) => !l.revenue && !isShare(l))),
+    indirect: pools.map((pool) => ({ number: null, name: pool, cents: sum(shares.filter((l) => poolOf(l) === pool)) })),
+  };
+}
+
+/**
+ * The Overview's rows: each program area, with its offerings' counts, then Non-program, the Operations Plan, which
+ * has none to compare, so it stays last. Every operating line is in one row, so they add up to the plan's totals.
+ */
+export function overviewRows(
+  members: Member[],
+  lines: Pick<PlanLine, keyof Line | "member">[],
+  offerings: Record<string, ReportOffering[]>,
+): OverviewRow[] {
+  return members.map((member) => {
+    const own = member.kind === "operations" ? [] : (offerings[reportKey(member)] ?? []);
+    return {
+      report: reportKey(member),
+      name: reportName(member),
+      ...stepsOf(lines.filter((l) => l.member === member.id)),
+      offerings: own.length,
+      sailors: own.reduce((total, o) => total + o.estimated, 0),
+      days: own.reduce((total, o) => total + o.days, 0),
+      sailor_days: own.reduce((total, o) => total + o.estimated * o.days, 0),
+    };
+  });
+}
+
+/** One shared cost, such as G&A's insurance: what it costs, and how much of it the programs' offerings carry. */
+export interface SharedCost {
+  number: string | null;
+  name: string;
+  /** The pool it's spread from, such as G&A. */
+  pool: string;
+  total_cents: number;
+  /** The part spread over the programs' offerings. The rest falls on what's sold outside them. */
+  allocated_cents: number;
+}
+
+/** Each pool's lines at their full amount, added back up from every offering's share, by pool and account. */
+export function sharedCostsOf(lines: Pick<PlanLine, keyof Line | "member">[], operations: string | null): SharedCost[] {
+  const costs = new Map<string, SharedCost>();
+  for (const line of operating(lines).filter((l) => !l.revenue && isShare(l))) {
+    const cost = costs.get(line.key) ?? {
+      number: line.account_number,
+      name: line.name.split(" share: ").slice(1).join(" share: ") || line.name,
+      pool: poolOf(line),
+      total_cents: 0,
+      allocated_cents: 0,
+    };
+    costs.set(line.key, {
+      ...cost,
+      total_cents: cost.total_cents + line.amount_cents,
+      allocated_cents: cost.allocated_cents + (line.member === operations ? 0 : line.amount_cents),
+    });
+  }
+  return [...costs.values()].sort(
+    (a, b) => a.pool.localeCompare(b.pool) || byNumber({ ...a, cents: 0 }, { ...b, cents: 0 }),
+  );
+}
+
+/** Something sold outside the programs, such as boat storage, with its revenue and its own costs. */
+export interface Product {
+  name: string;
+  revenue_cents: number;
+  direct_cents: number;
+}
+
+/**
+ * What the Operations Plan sells, by product, from its offerings' lines, leaving out their shares of the pools. Its
+ * costs that are no offering's, such as a salary's rest charged to the organization, are a row of their own.
+ */
+export function productsOf(
+  lines: Pick<PlanLine, keyof Line | "cost_center_key">[],
+  offerings: { key: string; product: string }[],
+): Product[] {
+  const productOf = new Map(offerings.map((o) => [o.key, o.product]));
+  const products = new Map<string, Product>();
+  for (const line of operating(lines).filter((l) => !isShare(l))) {
+    const name = (line.cost_center_key && productOf.get(line.cost_center_key)) ?? "Organization";
+    const product = products.get(name) ?? { name, revenue_cents: 0, direct_cents: 0 };
+    products.set(name, {
+      ...product,
+      revenue_cents: product.revenue_cents + (line.revenue ? line.amount_cents : 0),
+      direct_cents: product.direct_cents + (line.revenue ? 0 : line.amount_cents),
+    });
+  }
+  return [...products.values()].sort(
+    (a, b) => Number(a.name === "Organization") - Number(b.name === "Organization") || a.name.localeCompare(b.name),
+  );
+}
+
+/** Fundraising's revenue and costs by account, and each capital purchase by name, such as a coach boat. */
+export function fundraisingAndCapital(lines: Line[]): {
+  fundraising: { revenue: AccountAmount[]; costs: AccountAmount[] };
+  capital: AccountAmount[];
+} {
+  const fundraising = lines.filter((l) => !l.capital && l.function === "fundraising");
+  return {
+    fundraising: {
+      revenue: byAccount(fundraising.filter((l) => l.revenue)),
+      costs: byAccount(fundraising.filter((l) => !l.revenue)),
+    },
+    capital: byAccount(lines.filter((l) => l.capital).map((l) => ({ ...l, account_name: l.name }))),
+  };
+}
+
+/** The engine's warnings, each with the report of the plan it's about, or Non-program's when it names none. */
+export function planWarnings(warnings: ResultWarning[], members: Member[]): PlanWarning[] {
+  return warnings.map((w, i) => {
+    const member = members.find((m) => m.id === w.member);
+    return { key: String(i), area: member ? reportKey(member) : "non-program", date: w.date, message: w.message };
+  });
+}
+
+/** An activity's minutes on the water, as the engine counts them: none for a travel day or one without boats. */
+export function onWaterMinutes(
+  activity: Pick<PlanActivity, "kind" | "uses_boats" | "start_time" | "end_time" | "on_water_minutes">,
+): number {
+  if (activity.kind === "travel" || !activity.uses_boats) {
+    return 0;
+  }
+  if (activity.on_water_minutes !== null) {
+    return activity.on_water_minutes;
+  }
+  if (!activity.start_time || !activity.end_time) {
+    return 0;
+  }
+  const minutes = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
+  const span = minutes(activity.end_time) - minutes(activity.start_time);
+  // One that ends before it starts runs past midnight.
+  return span < 0 ? span + 24 * 60 : span;
+}
+
+/**
+ * An offering as its program area's report shows it: its session, or its name when it has none, its sailors, its days,
+ * which are the dates it has an activity other than travel, and one sailor's hours on the water.
+ */
+export function reportOffering(
+  offering: Pick<
+    PlanOffering,
+    "key" | "name" | "season_term" | "starts_on" | "ends_on" | "price_cents" | "capacity"
+  > & {
+    program: string;
+    estimated: number;
+  },
+  activities: Pick<PlanActivity, "date" | "kind" | "uses_boats" | "start_time" | "end_time" | "on_water_minutes">[],
+): ReportOffering {
+  return {
+    key: offering.key,
+    program: offering.program,
+    session: offering.season_term || offering.name,
+    starts_on: offering.starts_on,
+    ends_on: offering.ends_on,
+    fee_cents: offering.price_cents ?? 0,
+    estimated: offering.estimated,
+    max: offering.capacity ?? offering.estimated,
+    days: new Set(activities.filter((a) => a.kind !== "travel").map((a) => a.date)).size,
+    hours: activities.reduce((total, a) => total + onWaterMinutes(a), 0) / 60,
+  };
+}

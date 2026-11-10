@@ -21,24 +21,17 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDate } from "@/model/dates";
+import type { ListedPlan } from "@/model/financial-plans";
 import { Money } from "../money";
 import { PageHeader } from "../page-header";
 import { VersionBadge, type VersionState } from "../version-badge";
 
-/** A Financial Plan as the Planning page lists it. */
-export interface PlanSummary {
-  id: string;
-  name: string;
-  year: number;
-  status: VersionState;
-  saved_at: string | null;
-  parent: { id: string; name: string } | null;
-  /** Its note. For a draft from the planning agent, the agent's report on what it did and what's left. */
-  note: string | null;
-  warnings: number;
-  revenue_cents: number;
-  expense_cents: number;
-  net_cents: number;
+export interface PlanningActions {
+  /** Whether the person can save, mark active, and delete Financial Plans. Directus still checks each request. */
+  canUpdate: boolean;
+  canDelete: boolean;
+  onMove: (plan: ListedPlan, status: "saved" | "active") => Promise<void>;
+  onDelete: (plan: ListedPlan) => Promise<void>;
 }
 
 const ALL = "all";
@@ -51,19 +44,65 @@ const statusItems = [
 ];
 
 /** Active first, then drafts by name, then saved ones, newest first. */
-const byStatus = (a: PlanSummary, b: PlanSummary) =>
+const byStatus = (a: ListedPlan, b: ListedPlan) =>
   statusOrder[a.status] - statusOrder[b.status] ||
   (a.status === "draft" ? a.name.localeCompare(b.name) : (b.saved_at ?? "").localeCompare(a.saved_at ?? ""));
 
+type Action = "save" | "activate" | "delete";
+
+/** What each action asks before it does what can't be undone. */
+const confirmations = (plan: ListedPlan): Record<Action, { label: string; title: string; description: string }> => ({
+  save: {
+    label: "Save",
+    title: `Save ${plan.name}?`,
+    description: "Once it's saved, its plans and numbers never change. Its name and note still can.",
+  },
+  activate: {
+    label: "Mark active",
+    title: `Mark ${plan.name} active?`,
+    description: `It becomes the plan the club runs for ${plan.year}, in place of the one active now.`,
+  },
+  delete: {
+    label: "Delete",
+    title: `Delete ${plan.name}?`,
+    description: "Its plans and numbers go with it. This can't be undone.",
+  },
+});
+
 /**
- * A plan's buttons in one menu: a draft is saved or deleted, and a saved one marked active. Deleting asks first, since
- * the draft's plans and numbers go with it.
+ * A plan's buttons in one menu: a draft is saved or deleted, and a saved one marked active. Each asks first, since none
+ * can be undone.
  */
-function PlanActions({ plan }: { plan: PlanSummary }) {
-  const [deleting, setDeleting] = useState(false);
-  if (plan.status === "active") {
+function PlanActions({ plan, actions }: { plan: ListedPlan; actions: PlanningActions }) {
+  // The action stays set while its dialog closes, so the dialog keeps its words as it fades.
+  const [pending, setPending] = useState<Action>("save");
+  const [open, setOpen] = useState(false);
+  const [state, setState] = useState<"idle" | "working" | "failed">("idle");
+  const items: Action[] =
+    plan.status === "draft"
+      ? [...(actions.canUpdate ? (["save"] as const) : []), ...(actions.canDelete ? (["delete"] as const) : [])]
+      : plan.status === "saved" && actions.canUpdate
+        ? ["activate"]
+        : [];
+  if (items.length === 0) {
     return null;
   }
+  const asks = confirmations(plan);
+  const confirm = async () => {
+    setState("working");
+    try {
+      if (pending === "delete") {
+        await actions.onDelete(plan);
+      } else {
+        await actions.onMove(plan, pending === "save" ? "saved" : "active");
+      }
+      setOpen(false);
+      setState("idle");
+    } catch {
+      setState("failed");
+    }
+  };
+  const ask = asks[pending];
   return (
     <>
       <DropdownMenu>
@@ -72,27 +111,46 @@ function PlanActions({ plan }: { plan: PlanSummary }) {
           <ChevronDownIcon aria-hidden />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {plan.status === "draft" ? (
-            <>
-              <DropdownMenuItem>Save</DropdownMenuItem>
-              <DropdownMenuItem variant="destructive" onClick={() => setDeleting(true)}>
-                Delete
-              </DropdownMenuItem>
-            </>
-          ) : (
-            <DropdownMenuItem>Mark active</DropdownMenuItem>
-          )}
+          {items.map((item) => (
+            <DropdownMenuItem
+              key={item}
+              variant={item === "delete" ? "destructive" : "default"}
+              onClick={() => {
+                setPending(item);
+                setOpen(true);
+              }}
+            >
+              {asks[item].label}
+            </DropdownMenuItem>
+          ))}
         </DropdownMenuContent>
       </DropdownMenu>
-      <Dialog open={deleting} onOpenChange={setDeleting}>
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          setState("idle");
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete {plan.name}?</DialogTitle>
-            <DialogDescription>Its plans and numbers go with it. This can&apos;t be undone.</DialogDescription>
+            <DialogTitle>{ask.title}</DialogTitle>
+            <DialogDescription>{ask.description}</DialogDescription>
           </DialogHeader>
+          {state === "failed" && (
+            <p role="alert" className="text-sm text-destructive">
+              That didn&apos;t work. Try again.
+            </p>
+          )}
           <DialogFooter>
             <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
-            <DialogClose render={<Button variant="destructive" />}>Delete</DialogClose>
+            <Button
+              variant={pending === "delete" ? "destructive" : "default"}
+              onClick={confirm}
+              disabled={state === "working"}
+            >
+              {state === "working" ? "Working…" : ask.label}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -101,7 +159,7 @@ function PlanActions({ plan }: { plan: PlanSummary }) {
 }
 
 /** When a plan was saved, what it started from, and its note, such as the planning agent's report, on hover or a tap. */
-function PlanDetails({ plan }: { plan: PlanSummary }) {
+function PlanDetails({ plan }: { plan: ListedPlan }) {
   if (!plan.saved_at && !plan.parent && !plan.note) {
     return null;
   }
@@ -161,12 +219,25 @@ function FilterSelect({
   );
 }
 
+/** An amount, or a dash while platform is still working it out. */
+function Amount({ cents, colored = false }: { cents: number | null; colored?: boolean }) {
+  return (
+    <TableCell className="text-right">
+      {cents === null ? (
+        <span className="text-muted-foreground">—</span>
+      ) : (
+        <Money cents={cents} colored={colored} whole />
+      )}
+    </TableCell>
+  );
+}
+
 /**
  * Planning's first page: every Financial Plan in one table, narrowed by year and status, opening on the newest year.
  * One line a plan: its details on hover, and its actions in a menu, where a draft, such as one the planning agent
  * wrote, is saved or deleted.
  */
-export function PlanningPage({ plans }: { plans: PlanSummary[] }) {
+export function PlanningPage({ plans, actions }: { plans: ListedPlan[]; actions: PlanningActions }) {
   const years = [...new Set(plans.map((p) => p.year))].sort((a, b) => b - a);
   const [year, setYear] = useState(String(years[0] ?? ALL));
   const [status, setStatus] = useState(ALL);
@@ -228,17 +299,11 @@ export function PlanningPage({ plans }: { plans: PlanSummary[] }) {
                 <TableCell>
                   <VersionBadge state={p.status} />
                 </TableCell>
+                <Amount cents={p.revenue_cents} />
+                <Amount cents={p.expense_cents} />
+                <Amount cents={p.net_cents} colored />
                 <TableCell className="text-right">
-                  <Money cents={p.revenue_cents} whole />
-                </TableCell>
-                <TableCell className="text-right">
-                  <Money cents={p.expense_cents} whole />
-                </TableCell>
-                <TableCell className="text-right">
-                  <Money cents={p.net_cents} colored whole />
-                </TableCell>
-                <TableCell className="text-right">
-                  <PlanActions plan={p} />
+                  <PlanActions plan={p} actions={actions} />
                 </TableCell>
               </TableRow>
             ))}

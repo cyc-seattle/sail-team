@@ -8,29 +8,6 @@ import type {
   PlanStaffLevel,
 } from "@cyc-seattle/platform/planning";
 
-/** What an offering's numbers come from, as its planner entered them, and its days, which the engine counts. */
-export interface OfferingAssumptions extends Pick<
-  PlanOffering,
-  | "key"
-  | "name"
-  | "starts_on"
-  | "ends_on"
-  | "price_cents"
-  | "capacity"
-  | "sailors_per_coach"
-  | "min_coaches"
-  | "ribs_per_coach"
-  | "byob_share"
-> {
-  /** Its program, such as J-Pod. */
-  program: string;
-  /** Its coaches' pay level, from the Operations Plan. */
-  coach_level: string | null;
-  /** The sailors it plans for: its target, or its capacity at its fill rate. */
-  enrollment: number | null;
-  days: number | null;
-}
-
 /** The rates the Operations Plan sets for the year, which every plan's numbers come from. */
 export interface OperationsAssumptions {
   rates: Pick<PlanRates, "payroll_tax_rate" | "lodging_per_night_cents" | "mileage_rate_cents"> | null;
@@ -39,8 +16,8 @@ export interface OperationsAssumptions {
     PlanSalariedPosition,
     "key" | "name" | "annual_salary_cents" | "paid_hours_per_year" | "ga_share"
   > & {
-    /** Its bonus as a share of net, when bonuses sit on the position (#63); null for none. Unset while they don't. */
-    bonus_rate?: number | null;
+    /** The bonuses that pay it, which name it in `position_key`. */
+    bonuses: Bonus[];
   })[];
   charges: Pick<PlanRevenueCharge, "key" | "name" | "rate" | "product_kinds">[];
   resources: Pick<
@@ -53,15 +30,20 @@ export interface OperationsAssumptions {
     | "fuel_per_hour_cents"
     | "maintenance_per_hour_cents"
   >[];
-  boatRates: { key: string; boat_class: string; maintenance_per_boat_hour_cents: number }[];
-  bonuses: Pick<PlanBonusOwner, "key" | "role_name" | "bonus_rate" | "basis">[];
+  /** Each boat class's upkeep, and how many the club has and sailors each takes, which the engine checks blocks against. */
+  boatRates: {
+    key: string;
+    boat_class: string;
+    maintenance_per_boat_hour_cents: number;
+    quantity: number | null;
+    sailors_per_boat: number | null;
+  }[];
+  /** Bonuses that pay no salaried position. */
+  bonuses: Bonus[];
 }
 
-/** A plan's assumptions: each of its offerings', and, for the Operations Plan, the year's rates. */
-export interface Assumptions {
-  offerings: OfferingAssumptions[];
-  operations: OperationsAssumptions | null;
-}
+/** A bonus on the net of some products, from the Operations Plan or a program area's plan. */
+export type Bonus = Pick<PlanBonusOwner, "key" | "role_name" | "bonus_rate" | "basis">;
 
 /** The sailors an offering plans for, as the engine counts them: its target, or its capacity at its fill rate. */
 export function plannedEnrollment(

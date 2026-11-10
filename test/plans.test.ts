@@ -1,11 +1,11 @@
 import { setupServer } from "msw/node";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { assumptionsQuery } from "../src/directus/assumptions.ts";
 import { financialPlanQuery, financialPlansQuery, type FinancialPlan } from "../src/directus/financial-plans.ts";
+import { planInputsQuery, type PlanInputs } from "../src/directus/plan-inputs.ts";
 import { handlers } from "../src/mocks/handlers.ts";
 import { ids } from "../src/mocks/plans.ts";
-import type { Assumptions } from "../src/model/assumptions.ts";
-import { memberName, memberNet } from "../src/model/financial-plans.ts";
+import type { ListedPlan } from "../src/model/financial-plans.ts";
+import { overviewRows, planWarnings, sharedCostsOf, statementOf, totalOf } from "../src/model/reports.ts";
 
 vi.stubGlobal("window", { location: { hostname: "example.org" } });
 const server = setupServer(...handlers("https://directus.example.org"));
@@ -14,66 +14,47 @@ afterAll(() => server.close());
 
 const run = <T>(options: { queryFn?: unknown }) => (options.queryFn as () => Promise<T>)();
 const plan = (id: string) => run<FinancialPlan | null>(financialPlanQuery(id)).then((p) => p!);
+const inputs = async (id: string) => {
+  const { set, members } = await plan(id);
+  return run<PlanInputs>(planInputsQuery(set, members));
+};
 
 describe("reading Financial Plans from Directus", () => {
-  it("lists every Financial Plan, with its top-line numbers once they're worked out, and what each started from", async () => {
-    const plans = await run<Awaited<ReturnType<NonNullable<typeof financialPlansQuery.queryFn>>>>(financialPlansQuery);
-    // Its gala and coach boat, fundraising and capital, are left out.
-    expect(plans[0]?.topLine).toEqual({
-      revenue_cents: 1_000_000,
-      expense_cents: 800_000,
-      gross_cents: 700_000,
-      net_cents: 200_000,
-    });
-    expect(plans.map((p) => [p.name, p.status, p.parent?.name ?? null, p.topLine?.net_cents ?? null])).toEqual([
-      ["Budget", "saved", null, 200_000],
-      ["Two coaches", "draft", "Budget", 700_000],
-      ["Three coaches", "draft", "Budget", null],
+  it("lists every Financial Plan with its operating totals and warnings, once they're worked out", async () => {
+    const plans = await run<ListedPlan[]>(financialPlansQuery);
+    expect(plans.map((p) => [p.name, p.status, p.parent?.name ?? null])).toEqual([
+      ["Budget", "active", null],
+      ["Two coaches", "draft", "Budget"],
+      ["Three coaches", "draft", "Budget"],
     ]);
+    const [budget, two, three] = plans;
+    expect(budget!.net_cents).toBe(budget!.revenue_cents! - budget!.expense_cents!);
+    expect(budget!.warnings).toBeGreaterThan(0);
+    expect(two!.note).toBe("A fourth instructor on every summer morning.");
+    expect(three).toMatchObject({ revenue_cents: null, expense_cents: null, net_cents: null, warnings: 0 });
   });
 
-  it("reads a saved one's results as they were saved, each row with the plan it's charged in", async () => {
+  it("reads a plan's results, each row with the plan it's charged in", async () => {
     const { set, members, results } = await plan(ids.budget);
-    expect(set).toMatchObject({ name: "Budget", status: "saved", message: "Reviewed with the board" });
+    expect(set).toMatchObject({ name: "Budget", status: "active", message: "Reviewed with the board" });
     expect(results?.calculated_at).toBe("2027-03-10T18:00:00Z");
-    expect(results?.totals.operating_net_cents).toBe(500_000);
-    const youth = members.find((m) => m.id === ids.youthMember)!;
-    expect(memberName(youth)).toBe("Youth Racing");
-    expect(memberNet(results!, youth)).toBe(400_000);
-    expect(results?.lines.find((l) => l.member === youth.id)).toMatchObject({
-      account_number: "4000",
-      account_name: "Tuition",
-    });
-    expect(results?.lines.filter((l) => l.member === youth.id).map((l) => l.name)).toEqual([
-      "Tuition",
-      "Coach wages",
-      "Office share: Office rent",
-    ]);
-    expect(results?.warnings.map((w) => w.code)).toEqual(["position_double_booked"]);
+    const summer = results!.lines.filter((l) => l.member === ids.summerMember);
+    expect(summer.find((l) => l.revenue)).toMatchObject({ account_number: "4100", account_name: "Summer tuition" });
+    expect(members.map((m) => m.kind).sort()).toEqual(["operations", "program_area", "program_area"]);
   });
 
-  it("reads a draft's results as platform last worked them out, each row with the plan it's charged in", async () => {
-    const { members, results } = await plan(ids.twoCoaches);
-    expect(results?.calculated_at).toBe("2027-04-02T23:05:00Z");
-    const youth = members.find((m) => m.kind === "program_area")!;
-    const operations = members.find((m) => m.kind === "operations")!;
-    const offering = results!.pnl.find((p) => p.level === "offering")!;
-    expect(offering).toMatchObject({ name: "Beginner camp, week 1", revenue_cents: 1_000_000, member: youth.id });
-    // The office is shared out to the camp, so its share is the Program Plan's.
-    const office = results!.lines.filter((l) => l.member === youth.id && l.name.startsWith("Office share"));
-    expect(office.reduce((sum, l) => sum + l.amount_cents, 0)).toBe(200_000);
-    expect(office.every((l) => l.cost_center_name === "Beginner camp, week 1")).toBe(true);
-    expect(results!.totals.operating_net_cents).toBe(700_000);
-    expect(memberName(operations)).toBe("Non-program");
+  it("reads each warning with its plan and date", async () => {
+    const { results } = await plan(ids.budget);
+    expect(results?.warnings).toContainEqual(
+      expect.objectContaining({ code: "closed_date", member: ids.summerMember, date: "2027-07-05" }),
+    );
+    expect(results?.warnings).toContainEqual(
+      expect.objectContaining({ code: "unallocated_activity", member: ids.doublehandedMember }),
+    );
   });
 
   it("has no results for a draft platform hasn't worked out yet", async () => {
     expect((await plan(ids.threeCoaches)).results).toBeNull();
-  });
-
-  it("reads a draft's warnings, such as a practice on a day the Operations Plan lists as closed", async () => {
-    const { results } = await plan(ids.twoCoaches);
-    expect(results?.warnings.map((w) => w.code)).toContain("closed_date");
   });
 
   it("finds no Financial Plan that isn't there", async () => {
@@ -81,23 +62,85 @@ describe("reading Financial Plans from Directus", () => {
   });
 });
 
-describe("reading a plan's assumptions from Directus", () => {
-  it("reads each offering, with its program and its coaches' pay level from the Operations Plan", async () => {
-    const { members } = await plan(ids.budget);
-    const youth = members.find((m) => m.id === ids.youthMember)!;
-    const { offerings, operations } = await run<Assumptions>(assumptionsQuery(youth, ids.opsSaved));
-    expect(offerings).toMatchObject([
-      { name: "Beginner camp, week 1", program: "Beginner camp", coach_level: "Lead coach", enrollment: 10 },
-    ]);
-    expect(operations).toBeNull();
+describe("reading a Financial Plan's inputs from Directus", () => {
+  it("reads each copy's rules, by its report", async () => {
+    const { rules } = await inputs(ids.budget);
+    expect(rules[ids.summerPlan]).toContain("share the dock");
+    expect(rules["rates"]).toContain("No more than 4 RIBs");
+    expect(rules[ids.doublehandedPlan]).toBeNull();
   });
 
-  it("reads the Operations Plan's rates, decimals as numbers", async () => {
-    const { members } = await plan(ids.budget);
-    const ops = members.find((m) => m.kind === "operations")!;
-    const { operations } = await run<Assumptions>(assumptionsQuery(ops, ids.opsSaved));
+  it("reads each program area's offerings, with their days and one sailor's hours on the water", async () => {
+    const { offerings } = await inputs(ids.budget);
+    expect(offerings[ids.summerPlan]?.find((o) => o.key === "key:Guppies Week 2")).toMatchObject({
+      program: "Guppies",
+      session: "Week 2",
+      fee_cents: 39_500,
+      estimated: 9,
+      max: 10,
+      days: 5,
+      hours: 15,
+    });
+    expect(offerings[ids.doublehandedPlan]?.map((o) => o.session)).toEqual(["Spring", "Fall"]);
+  });
+
+  it("reads each program's settings, with its staff level's name from the Operations Plan", async () => {
+    const { programs } = await inputs(ids.budget);
+    expect(programs[ids.summerPlan]).toEqual([
+      expect.objectContaining({ name: "Guppies", staff_level: "Level 1 Instructor", sailors_per_coach: 10 }),
+      expect.objectContaining({ name: "Opti Camp", staff_level: "Level 1 Instructor", sailors_per_coach: 8 }),
+    ]);
+  });
+
+  it("reads the Operations Plan's rates, with each bonus on the position it pays, and the boats the club has", async () => {
+    const { operations, products } = await inputs(ids.budget);
     expect(operations?.rates?.payroll_tax_rate).toBe(0.1);
-    expect(operations?.positions.map((p) => [p.name, p.ga_share])).toEqual([["Executive Director", 0.6]]);
-    expect(operations?.charges.map((c) => [c.name, c.rate])).toEqual([["Card fees", 0.03]]);
+    expect(operations?.positions.map((p) => [p.name, p.bonuses.map((b) => b.bonus_rate)])).toEqual([
+      ["Executive Director", []],
+      ["Program Director", [0.05]],
+    ]);
+    expect(operations?.bonuses).toEqual([]);
+    expect(operations?.boatRates.find((b) => b.boat_class === "Sailqube")).toMatchObject({
+      quantity: 8,
+      sailors_per_boat: 2,
+    });
+    expect(products).toEqual([{ key: "key:Boat storage", product: "Boat storage" }]);
+  });
+});
+
+describe("a Financial Plan's reports", () => {
+  it("has Overview rows that add up to the plan's operating totals", async () => {
+    const { members, results } = await plan(ids.budget);
+    const { offerings } = await inputs(ids.budget);
+    const rows = overviewRows(members, results!.lines, offerings);
+    const total = totalOf(rows);
+    expect(total.revenue_cents).toBe(results!.totals.operating_revenue_cents);
+    expect(total.direct_cents + total.indirect_cents).toBe(results!.totals.operating_expense_cents);
+    expect(rows.find((r) => r.report === "non-program")?.offerings).toBe(0);
+  });
+
+  it("splits a program area's shared costs out by pool", async () => {
+    const { results } = await plan(ids.budget);
+    const { indirect } = statementOf(results!.lines.filter((l) => l.member === ids.summerMember));
+    expect(indirect.map((a) => [a.number, a.name])).toEqual([
+      [null, "G&A"],
+      [null, "Program admin"],
+    ]);
+  });
+
+  it("adds each shared cost back up, with the part the programs carry", async () => {
+    const { results } = await plan(ids.budget);
+    const insurance = sharedCostsOf(results!.lines, ids.opsMember).find((c) => c.name === "Insurance")!;
+    expect(insurance).toMatchObject({ pool: "G&A", number: "6110", total_cents: 900_000 });
+    // Boat storage carries the rest.
+    expect(insurance.allocated_cents).toBeGreaterThan(0);
+    expect(insurance.allocated_cents).toBeLessThan(insurance.total_cents);
+  });
+
+  it("names each warning's report", async () => {
+    const { members, results } = await plan(ids.budget);
+    const areas = new Set(planWarnings(results!.warnings, members).map((w) => w.area));
+    expect(areas).toContain(ids.summerPlan);
+    expect(areas).toContain(ids.doublehandedPlan);
   });
 });

@@ -1,7 +1,29 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, waitFor, within } from "storybook/test";
-import { budget, twoCoaches } from "./fixtures";
+import type { FinancialPlanSummary } from "@/model/financial-plans";
 import { FinancialPlanActions } from "./financial-plan-actions";
+
+// A made-up 2027 Financial Plan and a draft started from it.
+const budget: FinancialPlanSummary = {
+  id: "budget",
+  organization_id: "org",
+  fiscal_year: 2027,
+  name: "Budget",
+  message: "Reviewed with the board",
+  status: "saved",
+  saved_at: "2027-03-10T18:00:00Z",
+  saved_by: null,
+  parent: null,
+};
+const twoCoaches: FinancialPlanSummary = {
+  ...budget,
+  id: "two",
+  name: "Two coaches",
+  message: null,
+  status: "draft",
+  saved_at: null,
+  parent: { id: "budget", name: "Budget" },
+};
 
 const meta = {
   component: FinancialPlanActions,

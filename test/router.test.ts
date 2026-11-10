@@ -18,7 +18,6 @@ describe("the router", () => {
     ["/roster", "/roster/"],
     ["/plans/financial/abc", "/plans/financial/$setId/"],
     ["/plans/financial/abc/def", "/plans/financial/$setId/$planId"],
-    ["/plans/compare/abc/def", "/plans/compare/$a/$b"],
     ["/roster/abc", "/roster/$teamId"],
     ["/plans/abc", "/plans/$planId/"],
     ["/plans/club/abc", "/plans/club/$setId/"],

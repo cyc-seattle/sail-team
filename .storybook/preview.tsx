@@ -1,5 +1,4 @@
 import type { Decorator, Preview } from "@storybook/react-vite";
-import { viewKey } from "../src/model/pnl-view";
 import "../src/styles/index.css";
 
 // Applies the toolbar's theme the way public/_app/theme.js does in the app.
@@ -14,8 +13,6 @@ const withTheme: Decorator = (Story, { globals }) => {
 
 const preview: Preview = {
   decorators: [withTheme],
-  // The Unit Switch's choice is saved in localStorage, so each story starts for the year, whatever another chose.
-  beforeEach: () => localStorage.removeItem(viewKey),
   globalTypes: {
     theme: {
       description: "Light or dark",
