@@ -144,6 +144,12 @@ policy that lets the page call only itself and Directus.
 - Directus already allows `https://<domain>` as an origin and a sign-in redirect, because the portal was there, so the
   app needs nothing from platform's Directus settings.
 
+## Words people read
+
+Write and review every word a person reads in the app, such as a label, a button, a warning, or an empty state, with the
+`ui-copy` skill from [cyc-seattle/agent-skills](https://github.com/cyc-seattle/agent-skills). A review checks any
+change to those words against it. The planning warnings come from platform's engine, so fix their wording there.
+
 ## Pull requests that change what people see
 
 The maintainer reviews a UI change from screenshots in its PR description, not by checking out the branch. Every PR
