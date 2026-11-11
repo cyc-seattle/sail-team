@@ -6,7 +6,7 @@ export interface FinancialPlanSummary {
   organization_id: string;
   fiscal_year: number;
   name: string;
-  /** Its note, such as "Reviewed with the board", or the planning agent's report on what it did. */
+  /** Its note, a one-line comment such as "Reviewed with the board". */
   message: string | null;
   /**
    * A draft's plans change; a saved one's never do, though its name and note can. The active one is the saved one the
@@ -15,12 +15,18 @@ export interface FinancialPlanSummary {
   status: "draft" | "saved" | "active";
   saved_at: string | null;
   saved_by: string | null;
+  /** The `@cyc-seattle/platform` version that worked out its results when it was saved, such as "1.38.1+engine.<hash>". */
+  platform_version: string | null;
   /** The Financial Plan it started as a copy of. */
   parent: { id: string; name: string } | null;
 }
 
 /** Whether it's saved, and so never changes: saved, or saved and active. */
 export const isSaved = (set: Pick<FinancialPlanSummary, "status">) => set.status !== "draft";
+
+/** The package version a saved plan was worked out with, without the engine's hash: "1.38.1" from "1.38.1+engine.<hash>". */
+export const platformRelease = (set: Pick<FinancialPlanSummary, "status" | "platform_version">) =>
+  isSaved(set) && set.platform_version ? set.platform_version.split("+engine.")[0]! : null;
 
 /** A Financial Plan as the Planning page lists it, with its operating totals once platform has worked them out. */
 export interface ListedPlan {
@@ -32,8 +38,10 @@ export interface ListedPlan {
   /** Who saved it, by name. Null when the person looking can't read it. */
   saved_by: string | null;
   parent: { id: string; name: string } | null;
-  /** Its note. For a draft from the planning agent, the agent's report on what it did and what's left. */
+  /** Its note, a one-line comment such as "Reviewed with the board". */
   note: string | null;
+  /** The platform package's version that worked out a saved plan's results, such as "1.38.1". Null for a draft. */
+  platform: string | null;
   warnings: number;
   /** Null until platform has worked them out. */
   revenue_cents: number | null;

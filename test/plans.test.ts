@@ -33,6 +33,7 @@ describe("reading Financial Plans from Directus", () => {
     expect(budget!.warnings).toBeGreaterThan(0);
     expect(two!.note).toBe("A fourth instructor on every summer morning.");
     expect([budget!.saved_by, two!.saved_by]).toEqual(["Morgan Keel", null]);
+    expect([budget!.platform, two!.platform]).toEqual(["1.38.1", null]);
     expect(three).toMatchObject({ revenue_cents: null, expense_cents: null, net_cents: null, warnings: 0 });
   });
 

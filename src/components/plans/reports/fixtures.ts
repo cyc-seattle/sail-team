@@ -361,6 +361,7 @@ const planSummary = (
   saved_by: null,
   parent: null,
   note: null,
+  platform: null,
   warnings: 0,
   revenue_cents: 49_900_000,
   expense_cents: 44_600_000,
@@ -376,6 +377,7 @@ export const planningPlans: ListedPlan[] = [
     status: "active",
     saved_at: "2027-03-10T18:00:00Z",
     saved_by: "Morgan Keel",
+    platform: "1.38.1",
     warnings: 2,
   }),
   planSummary({
@@ -385,7 +387,7 @@ export const planningPlans: ListedPlan[] = [
     parent: { id: "budget", name: "Budget" },
     warnings: 4,
     expense_cents: 44_100_000,
-    note: "Allocated staff, RIBs and boats for every summer week and the spring and fall seasons, and put J-Pod and K-Pod together on Wednesdays.\nLeft 4 warnings: July 12 and 19 need more Sailqubes and RIBs than CSC has, July 13 needs a second Guppies instructor that the rules allow only past 12 sailors, and J-Pod's August 2 practice has no coach free.",
+    note: "Allocated every summer week and the spring and fall seasons. 4 warnings left",
   }),
   planSummary({
     id: "two-coaches",
@@ -401,6 +403,7 @@ export const planningPlans: ListedPlan[] = [
     status: "saved",
     saved_at: "2027-02-02T18:00:00Z",
     saved_by: "Sam Halyard",
+    platform: "1.36.0",
     expense_cents: 45_500_000,
   }),
   planSummary({

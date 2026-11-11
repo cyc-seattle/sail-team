@@ -1,14 +1,15 @@
 import { createItem, customEndpoint, deleteItem, updateItem } from "@directus/sdk";
 import { queryOptions } from "@tanstack/react-query";
-import type {
-  FinancialPlanSummary,
-  ListedPlan,
-  Member,
-  PlanLine,
-  PnlRow,
-  ResultWarning,
-  Results,
-  Totals,
+import {
+  platformRelease,
+  type FinancialPlanSummary,
+  type ListedPlan,
+  type Member,
+  type PlanLine,
+  type PnlRow,
+  type ResultWarning,
+  type Results,
+  type Totals,
 } from "@/model/financial-plans";
 import { appDirectus } from "./app.ts";
 import { readAll } from "./plans.ts";
@@ -22,6 +23,7 @@ const setFields = [
   "status",
   "saved_at",
   "saved_by",
+  "platform_version",
   "parent_id.id",
   "parent_id.name",
 ];
@@ -53,6 +55,7 @@ export const financialPlansQuery = queryOptions({
         saved_by: (set.saved_by && savers.get(set.saved_by)) ?? null,
         parent: set.parent,
         note: set.message,
+        platform: platformRelease(set),
         warnings: warnings.filter((w) => w.version_set_id === set.id).length,
         revenue_cents: total?.operating_revenue_cents ?? null,
         expense_cents: total?.operating_expense_cents ?? null,

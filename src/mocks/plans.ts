@@ -416,6 +416,7 @@ const set = (setId: string, fields: Row) => ({
   fiscal_year: 2027,
   saved_at: null,
   saved_by: null,
+  platform_version: null,
   message: null,
   parent_id: null,
   ...fields,
@@ -426,6 +427,7 @@ const budget = set(ids.budget, {
   message: "Reviewed with the board",
   saved_at: "2027-03-10T18:00:00Z",
   saved_by: ids.saver,
+  platform_version: "1.38.1+engine.0a1b2c3d4e5f",
 });
 const parent = { id: ids.budget, name: "Budget" };
 const twoCoaches = set(ids.twoCoaches, {

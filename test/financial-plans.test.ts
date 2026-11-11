@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { refreshEvery, type Results } from "../src/model/financial-plans.ts";
+import { platformRelease, refreshEvery, type Results } from "../src/model/financial-plans.ts";
 
 describe("refreshEvery", () => {
   const draft = { status: "draft" as const };
@@ -19,5 +19,17 @@ describe("refreshEvery", () => {
   it("stops reading a saved plan once its numbers are in, and a plan that isn't there", () => {
     expect(refreshEvery({ set: saved, results }, false)).toBe(false);
     expect(refreshEvery(null, false)).toBe(false);
+  });
+});
+
+describe("platformRelease", () => {
+  it("gives a saved plan's package version, without the engine's hash", () => {
+    expect(platformRelease({ status: "saved", platform_version: "1.38.1+engine.0a1b2c3d4e5f" })).toBe("1.38.1");
+    expect(platformRelease({ status: "active", platform_version: "1.38.1" })).toBe("1.38.1");
+  });
+
+  it("gives nothing for a draft, or a plan with no version", () => {
+    expect(platformRelease({ status: "draft", platform_version: "1.38.1+engine.0a1b2c3d4e5f" })).toBeNull();
+    expect(platformRelease({ status: "saved", platform_version: null })).toBeNull();
   });
 });
