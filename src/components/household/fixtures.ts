@@ -10,6 +10,7 @@ const member = (fields: Partial<Member> & Pick<Member, "id" | "name">): Member =
   role: null,
   me: false,
   hasSchool: false,
+  signUps: null,
   ...fields,
 });
 
@@ -20,6 +21,7 @@ export const me = member({
   phone: "2065550110",
   role: "guardian",
   me: true,
+  signUps: [],
 });
 
 export const otherGuardian = member({
@@ -38,6 +40,17 @@ export const sailor = member({
   school: "Lakeside Middle School",
   role: "sailor",
   hasSchool: true,
+  signUps: [
+    { id: "j-pod", program: "J-Pod", startsOn: "2026-09-08", endsOn: "2026-11-20", waitlisted: false },
+    {
+      id: "winter-clinic",
+      program: "Winter Race Clinic",
+      startsOn: "2027-01-09",
+      endsOn: "2027-02-27",
+      waitlisted: true,
+    },
+    { id: "camp", program: "Summer Camp", startsOn: "2026-07-06", endsOn: "2026-07-17", waitlisted: false },
+  ],
 });
 
 export const household: Household = {

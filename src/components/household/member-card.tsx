@@ -7,6 +7,7 @@ import { memberChanges, type Member, type MemberChanges, type School } from "@/m
 import { formatPhone, toE164 } from "@/model/phone";
 import { said, type SaveState } from "./save-state.ts";
 import { SchoolField, type SchoolChoice } from "./school-field.tsx";
+import { SignUps } from "./sign-ups.tsx";
 
 export interface MemberCardProps {
   member: Member;
@@ -16,7 +17,10 @@ export interface MemberCardProps {
   onSave: (changes: MemberChanges) => Promise<void>;
 }
 
-/** One person in the household: their name, email, phone, and a sailor's school, with a form to change all but the email. */
+/**
+ * One person in the household: their name, email, phone, a sailor's school, and what they're signed up for when Directus
+ * shows it, with a form to change all but the email and sign-ups.
+ */
 export function MemberCard({ member, schools, onSave }: MemberCardProps) {
   const [editing, setEditing] = useState(false);
   const [state, setState] = useState<SaveState>("idle");
@@ -66,6 +70,7 @@ export function MemberCard({ member, schools, onSave }: MemberCardProps) {
       ) : (
         <Details member={member} />
       )}
+      {member.signUps && <SignUps signUps={member.signUps} />}
       <p role="status" className={state === "failed" ? "text-sm text-destructive" : "text-sm text-muted-foreground"}>
         {said[state]}
       </p>

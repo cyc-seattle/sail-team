@@ -7,6 +7,8 @@ import {
   type MemberChanges,
   type MemberRow,
   type School,
+  type SignUpRow,
+  signUpsShownFor,
 } from "@/model/household";
 import { seattleToday } from "@/model/roster";
 import { appDirectus } from "./app.ts";
@@ -43,9 +45,43 @@ export const householdQuery = queryOptions({
     const guardians = await readAll<GuardianRow>("contacts", ["subject_id", "contact_id"], {
       _and: [{ subject_id: { _in: household.members.map((p) => p.id) } }, { relationship_type: { _eq: "guardian" } }],
     });
-    return buildHousehold(household, household.members, guardians, me.id, seattleToday());
+    const signUps = await readSignUps(signUpsShownFor(me.id, guardians));
+    return buildHousehold(household, household.members, guardians, me.id, seattleToday(), signUps);
   },
 });
+
+/** The sign-ups of `people`, with each one's offering and program, joined here as the rosters join them. */
+async function readSignUps(people: string[]): Promise<SignUpRow[]> {
+  const registrations = await readAll<{ id: string; person_id: string; offering_id: string; status: string | null }>(
+    "registrations",
+    ["id", "person_id", "offering_id", "status"],
+    { _and: [{ person_id: { _in: people } }, { status: { _in: ["confirmed", "waitlist"] } }] },
+  );
+  if (registrations.length === 0) {
+    return [];
+  }
+  const offerings = await readAll<{ id: string; program_id: string; starts_on: string | null; ends_on: string | null }>(
+    "offerings",
+    ["id", "program_id", "starts_on", "ends_on"],
+    { id: { _in: [...new Set(registrations.map((r) => r.offering_id))] } },
+  );
+  const programs = await readAll<{ id: string; name: string | null }>("programs", ["id", "name"], {
+    id: { _in: [...new Set(offerings.map((o) => o.program_id))] },
+  });
+  const offering = new Map(offerings.map((o) => [o.id, o]));
+  const program = new Map(programs.map((p) => [p.id, p.name]));
+  return registrations.map((r) => {
+    const o = offering.get(r.offering_id);
+    return {
+      id: r.id,
+      person_id: r.person_id,
+      status: r.status,
+      starts_on: o?.starts_on ?? null,
+      ends_on: o?.ends_on ?? null,
+      program: (o && program.get(o.program_id)) ?? null,
+    };
+  });
+}
 
 export async function updateMember(personId: string, changes: MemberChanges): Promise<void> {
   await client().request(updateItem("people", personId, changes));
