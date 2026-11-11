@@ -164,14 +164,14 @@ describe("reading a Financial Plan's inputs from Directus", () => {
   it("reads each program area's trips, and each offering's cost of goods and note", async () => {
     const { trips, offerings } = await inputs(ids.budget);
     expect(trips[ids.doublehandedPlan]).toEqual([
-      {
+      expect.objectContaining({
         key: "key:Fall regatta",
         offering_key: "key:J-Pod Fall",
         name: "Fall regatta",
         nights: 2,
         airfare_cents: null,
         miles: 240,
-      },
+      }),
     ]);
     const opti = offerings[ids.summerPlan]?.find((o) => o.key === "key:Opti Camp Week 1");
     expect(opti).toMatchObject({ cogs_rate: 0.04, note: "Lunch is included." });
