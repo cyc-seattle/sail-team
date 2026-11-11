@@ -28,6 +28,8 @@ export const ids = {
   threeCoaches: id(603),
   summerThree: id(221),
   opsThree: id(222),
+  // Who saved Budget.
+  saver: id(901),
 };
 
 const account = (n: number, number: string, name: string, type: string, fn: string | null) => ({
@@ -423,6 +425,7 @@ const budget = set(ids.budget, {
   status: "active",
   message: "Reviewed with the board",
   saved_at: "2027-03-10T18:00:00Z",
+  saved_by: ids.saver,
 });
 const parent = { id: ids.budget, name: "Budget" };
 const twoCoaches = set(ids.twoCoaches, {
@@ -562,6 +565,7 @@ const named = (row: { id: string; name: string }) => ({ id: row.id, name: row.na
 
 /** Each table's rows, as Directus would return them, with relations expanded where the app asks for them. */
 export const tables: Record<string, Row[]> = {
+  directus_users: [{ id: ids.saver, first_name: "Morgan", last_name: "Keel" }],
   organizations: [catalog.organization],
   organization_cost_accounts: catalog.organization_cost_accounts,
   program_areas: catalog.program_areas,

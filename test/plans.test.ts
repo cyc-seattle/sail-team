@@ -1,3 +1,4 @@
+import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { financialPlanQuery, financialPlansQuery, type FinancialPlan } from "../src/directus/financial-plans.ts";
@@ -31,7 +32,21 @@ describe("reading Financial Plans from Directus", () => {
     expect(budget!.net_cents).toBe(budget!.revenue_cents! - budget!.expense_cents!);
     expect(budget!.warnings).toBeGreaterThan(0);
     expect(two!.note).toBe("A fourth instructor on every summer morning.");
+    expect([budget!.saved_by, two!.saved_by]).toEqual(["Morgan Keel", null]);
     expect(three).toMatchObject({ revenue_cents: null, expense_cents: null, net_cents: null, warnings: 0 });
+  });
+
+  it("lists them without who saved them when Directus won't say", async () => {
+    server.use(
+      http.get("https://directus.example.org/users", () => HttpResponse.json({ errors: [] }, { status: 403 })),
+    );
+    try {
+      const plans = await run<ListedPlan[]>(financialPlansQuery);
+      expect(plans.map((p) => p.saved_by)).toEqual([null, null, null]);
+      expect(plans[0]!.saved_at).toBe("2027-03-10T18:00:00Z");
+    } finally {
+      server.resetHandlers();
+    }
   });
 
   it("reads a plan's results, each row with the plan it's charged in", async () => {

@@ -358,6 +358,7 @@ const planSummary = (
 ): ListedPlan => ({
   year: 2027,
   saved_at: null,
+  saved_by: null,
   parent: null,
   note: null,
   warnings: 0,
@@ -369,7 +370,14 @@ const planSummary = (
 
 /** Two years of Financial Plans: each year's active one, drafts including one from the planning agent, and older saved ones. */
 export const planningPlans: ListedPlan[] = [
-  planSummary({ id: "budget", name: "Budget", status: "active", saved_at: "2027-03-10T18:00:00Z", warnings: 2 }),
+  planSummary({
+    id: "budget",
+    name: "Budget",
+    status: "active",
+    saved_at: "2027-03-10T18:00:00Z",
+    saved_by: "Morgan Keel",
+    warnings: 2,
+  }),
   planSummary({
     id: "agent",
     name: "2027 allocations, Nov 9",
@@ -392,6 +400,7 @@ export const planningPlans: ListedPlan[] = [
     name: "Board review",
     status: "saved",
     saved_at: "2027-02-02T18:00:00Z",
+    saved_by: "Sam Halyard",
     expense_cents: 45_500_000,
   }),
   planSummary({
