@@ -268,7 +268,10 @@ export function PlanningPage({ plans, actions }: { plans: ListedPlan[]; actions:
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Revenue</TableHead>
               <TableHead className="text-right">Expenses</TableHead>
-              <TableHead className="text-right">Net</TableHead>
+              <TableHead className="text-right">Operating net</TableHead>
+              <TableHead className="text-right">Fundraising net</TableHead>
+              <TableHead className="text-right">Capital</TableHead>
+              <TableHead className="text-right">Total</TableHead>
               <TableHead>
                 <span className="sr-only">Actions</span>
               </TableHead>
@@ -303,6 +306,9 @@ export function PlanningPage({ plans, actions }: { plans: ListedPlan[]; actions:
                 <Amount cents={p.revenue_cents} />
                 <Amount cents={p.expense_cents} />
                 <Amount cents={p.net_cents} colored />
+                <Amount cents={p.fundraising_net_cents} colored />
+                <Amount cents={p.capital_cents} />
+                <Amount cents={p.total_cents} colored />
                 <TableCell className="text-right">
                   <PlanActions plan={p} actions={actions} />
                 </TableCell>

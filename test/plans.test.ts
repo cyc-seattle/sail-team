@@ -30,11 +30,13 @@ describe("reading Financial Plans from Directus", () => {
     ]);
     const [budget, two, three] = plans;
     expect(budget!.net_cents).toBe(budget!.revenue_cents! - budget!.expense_cents!);
+    expect(budget!.total_cents).toBe(budget!.net_cents! + budget!.fundraising_net_cents! - budget!.capital_cents!);
+    expect(budget!.capital_cents).toBeGreaterThan(0);
     expect(budget!.warnings).toBeGreaterThan(0);
     expect(two!.note).toBe("A fourth instructor on every summer morning.");
     expect([budget!.saved_by, two!.saved_by]).toEqual(["Morgan Keel", null]);
     expect([budget!.platform, two!.platform]).toEqual(["1.38.1", null]);
-    expect(three).toMatchObject({ revenue_cents: null, expense_cents: null, net_cents: null, warnings: 0 });
+    expect(three).toMatchObject({ revenue_cents: null, net_cents: null, total_cents: null, warnings: 0 });
   });
 
   it("lists them without who saved them when Directus won't say", async () => {
@@ -142,6 +144,16 @@ describe("a Financial Plan's reports", () => {
       [null, "G&A"],
       [null, "Program admin"],
     ]);
+  });
+
+  it("opens each account to its lines, worked out the same way across offerings", async () => {
+    const { results } = await plan(ids.budget);
+    const { direct } = statementOf(results!.lines.filter((l) => l.member === ids.summerMember));
+    const wages = direct.find((a) => a.name === "Coach wages")!;
+    expect(wages.lines).toHaveLength(1);
+    expect(wages.lines![0]).toMatchObject({ name: "Coach wages", cents: wages.cents });
+    expect(wages.lines![0]!.offerings).toBeGreaterThan(1);
+    expect(wages.lines![0]!.explanation).toBeTruthy();
   });
 
   it("adds each shared cost back up, with the part the programs carry", async () => {

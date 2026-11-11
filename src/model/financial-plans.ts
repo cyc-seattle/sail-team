@@ -28,7 +28,7 @@ export const isSaved = (set: Pick<FinancialPlanSummary, "status">) => set.status
 export const platformRelease = (set: Pick<FinancialPlanSummary, "status" | "platform_version">) =>
   isSaved(set) && set.platform_version ? set.platform_version.split("+engine.")[0]! : null;
 
-/** A Financial Plan as the Planning page lists it, with its operating totals once platform has worked them out. */
+/** A Financial Plan as the Planning page lists it, with its totals once platform has worked them out. */
 export interface ListedPlan {
   id: string;
   name: string;
@@ -47,13 +47,25 @@ export interface ListedPlan {
   revenue_cents: number | null;
   expense_cents: number | null;
   net_cents: number | null;
+  fundraising_net_cents: number | null;
+  /** Spent on capital, such as a coach boat. */
+  capital_cents: number | null;
+  /** Operating net, plus fundraising net, less capital. */
+  total_cents: number | null;
 }
 
-/** The organization's operating totals in a Financial Plan, leaving out fundraising and capital. */
+/** The organization's totals in a Financial Plan: operating, fundraising, capital, and all of them together. */
 export interface Totals {
   operating_revenue_cents: number;
   operating_expense_cents: number;
   operating_net_cents: number;
+  fundraising_revenue_cents: number;
+  fundraising_expense_cents: number;
+  fundraising_net_cents: number;
+  /** Spent on capital, such as a coach boat. */
+  capital_cents: number;
+  /** Operating net, plus fundraising net, less capital. */
+  total_cents: number;
 }
 
 /** One plan in a Financial Plan, with the copy of it the Financial Plan holds. */
@@ -79,12 +91,15 @@ export interface PlanLine {
   account_name: string;
   /** What it's charged to: an offering's key, for most lines. */
   cost_center_key: string | null;
+  cost_center_type: "offering" | "product" | "program_area" | "pool" | "org";
   amount_cents: number;
   revenue: boolean;
   /** On an asset account: spent on something lasting, such as a coach boat. */
   capital: boolean;
   /** What the money is for: running programs, managing the club, or fundraising. */
   function: "program" | "management" | "fundraising" | null;
+  /** How the engine worked it out, such as "Guppies: hours × Level 1 Instructor's rate". */
+  explanation: string | null;
   member: string | null;
 }
 
@@ -105,7 +120,8 @@ export interface PnlRow {
 export interface ResultWarning {
   code: string;
   message: string;
-  category: "allocation" | "data";
+  /** Allocation: the blocks break a limit, or run on a closed day. Data: a row is missing or wrong. */
+  category: "allocation" | "data" | null;
   member: string | null;
   date: string | null;
 }

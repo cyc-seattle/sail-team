@@ -1,8 +1,9 @@
 // Made-up numbers for the Planning report wireframes. Never real figures.
 import type { OperationsAssumptions } from "@/model/assumptions";
-import type { ListedPlan } from "@/model/financial-plans";
+import type { ListedPlan, Totals } from "@/model/financial-plans";
 import type {
   AccountAmount,
+  LineAmount,
   OverviewRow,
   PlanWarning,
   Product,
@@ -54,12 +55,34 @@ export const reports = [
   { key: "fundraising", name: "Fundraising and capital" },
 ];
 
-const account = (number: string | null, name: string, cents: number): AccountAmount => ({ number, name, cents });
+const account = (number: string | null, name: string, cents: number, lines?: LineAmount[]): AccountAmount => ({
+  number,
+  name,
+  cents,
+  ...(lines && { lines }),
+});
+
+const line = (name: string, explanation: string | null, offerings: number, cents: number): LineAmount => ({
+  name,
+  explanation,
+  offerings,
+  cents,
+});
 
 export const summerStatement = {
-  revenue: [account("4140", "Summer camp tuition", 21_900_000), account("4900", "Scholarships", -400_000)],
+  revenue: [
+    account("4140", "Summer camp tuition", 21_900_000, [
+      line("Revenue", "52500¢ × 16 enrolled", 6, 5_040_000),
+      line("Revenue", "39500¢ × 9 enrolled", 7, 2_488_500),
+      line("Revenue", "61000¢ × 8 enrolled", 3, 1_464_000),
+    ]),
+    account("4900", "Scholarships", -400_000),
+  ],
   direct: [
-    account("5010", "Coach wages", 7_400_000),
+    account("5010", "Coach wages", 7_400_000, [
+      line("Coach wages", "Staff × paid hours × each one's hourly rate", 21, 6_980_000),
+      line("Program Director: coaching", "Program Director: 120 hours at the salary's hourly equivalent", 3, 420_000),
+    ]),
     account("5020", "Payroll tax", 740_000),
     account("5030", "Workers' comp", 310_000),
     account("5110", "RIB fuel", 690_000),
@@ -71,7 +94,16 @@ export const summerStatement = {
     account("5410", "Salaried coaching", 420_000),
   ],
   indirect: [
-    account(null, "G&A", 3_900_000),
+    account(null, "G&A", 3_900_000, [
+      line(
+        "G&A share: Executive Director: rest of salary",
+        "G&A: Executive Director: salary not charged to coaching or bookings",
+        21,
+        2_700_000,
+      ),
+      line("G&A share: Insurance", "G&A: Insurance", 21, 900_000),
+      line("G&A share: Payroll tax", "G&A: 0.1 × wages", 21, 300_000),
+    ]),
     account(null, "Program admin", 1_100_000),
     account(null, "Space", 600_000),
   ],
@@ -329,45 +361,79 @@ export const assumptionsRules =
 export const warnings: PlanWarning[] = [
   {
     key: "w1",
+    code: "over_capacity",
+    category: "allocation",
     area: "summer",
     date: "2027-07-12",
-    message: "14 Sailqubes allocated, 12 available (Guppies 9, Opti Camp 5).",
+    message: "Guppies Week 4: 14 sailors, but the boats can take 12",
   },
   {
     key: "w2",
+    code: "over_capacity",
+    category: "allocation",
     area: "summer",
     date: "2027-07-13",
-    message: "Guppies: 14 sailors, but the allocation takes 10 (1 Level 1 Instructor at 10 per coach).",
+    message: "Guppies Week 4: 14 sailors, but the staff can take 10",
   },
   {
     key: "w3",
+    code: "no_program_settings",
+    category: "data",
     area: "summer",
     date: "2027-07-19",
-    message: "7 RIBs allocated, 6 available.",
+    message:
+      "Race Camp Week 2's program has no staff level or sailors per coach, so its sailors aren't checked against its staff",
   },
   {
     key: "w4",
+    code: "unallocated_activity",
+    category: "allocation",
     area: "doublehanded",
     date: "2027-08-02",
-    message: "J-Pod practice has no staff.",
+    message: "J-Pod Summer's practice has no staff",
   },
 ];
 
+/** The organization's totals, from the Overview's rows, the fundraising, and the capital below. */
+export const totals: Totals = (() => {
+  const add = (of: (r: OverviewRow) => number) => overviewRows.reduce((total, r) => total + of(r), 0);
+  const revenue = add((r) => r.revenue_cents);
+  const expense = add((r) => r.direct_cents + r.indirect_cents);
+  return {
+    operating_revenue_cents: revenue,
+    operating_expense_cents: expense,
+    operating_net_cents: revenue - expense,
+    fundraising_revenue_cents: 7_700_000,
+    fundraising_expense_cents: 1_050_000,
+    fundraising_net_cents: 6_650_000,
+    capital_cents: 7_800_000,
+    total_cents: revenue - expense + 6_650_000 - 7_800_000,
+  };
+})();
+
 const planSummary = (
-  fields: Partial<Omit<ListedPlan, "net_cents">> & Pick<ListedPlan, "id" | "name" | "status">,
-): ListedPlan => ({
-  year: 2027,
-  saved_at: null,
-  saved_by: null,
-  parent: null,
-  note: null,
-  platform: null,
-  warnings: 0,
-  revenue_cents: 49_900_000,
-  expense_cents: 44_600_000,
-  ...fields,
-  net_cents: (fields.revenue_cents ?? 49_900_000) - (fields.expense_cents ?? 44_600_000),
-});
+  fields: Partial<Omit<ListedPlan, "net_cents" | "total_cents">> & Pick<ListedPlan, "id" | "name" | "status">,
+): ListedPlan => {
+  const net = (fields.revenue_cents ?? 49_900_000) - (fields.expense_cents ?? 44_600_000);
+  const fundraising = fields.fundraising_net_cents ?? 6_650_000;
+  const capital = fields.capital_cents ?? 7_800_000;
+  return {
+    year: 2027,
+    saved_at: null,
+    saved_by: null,
+    parent: null,
+    note: null,
+    platform: null,
+    warnings: 0,
+    revenue_cents: 49_900_000,
+    expense_cents: 44_600_000,
+    fundraising_net_cents: fundraising,
+    capital_cents: capital,
+    ...fields,
+    net_cents: net,
+    total_cents: net + fundraising - capital,
+  };
+};
 
 /** Two years of Financial Plans: each year's active one, drafts including one from the planning agent, and older saved ones. */
 export const planningPlans: ListedPlan[] = [

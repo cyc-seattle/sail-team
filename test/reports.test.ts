@@ -4,6 +4,7 @@ import {
   netOf,
   nextSort,
   enrollment,
+  lineAmounts,
   numberedOfferings,
   onWaterMinutes,
   productsOf,
@@ -221,6 +222,35 @@ describe("productsOf", () => {
     ).toEqual([
       { name: "Boat storage", revenue_cents: 1_000, direct_cents: 300 },
       { name: "Organization", revenue_cents: 0, direct_cents: 500 },
+    ]);
+  });
+});
+
+describe("lineAmounts", () => {
+  const line = (name: string, explanation: string | null, center: string, cents: number) => ({
+    key: name,
+    name,
+    account_number: null,
+    account_name: "Coach wages",
+    cost_center_key: center,
+    cost_center_type: "offering" as const,
+    amount_cents: cents,
+    revenue: false,
+    capital: false,
+    function: null,
+    explanation,
+  });
+
+  it("adds up lines with the same name and explanation, counting their offerings, largest first", () => {
+    expect(
+      lineAmounts([
+        line("Coach wages", "hours × rate", "week-1", 100),
+        line("Coach wages", "hours × rate", "week-2", 150),
+        line("Coaching", "salary", "week-1", 400),
+      ]),
+    ).toEqual([
+      { name: "Coaching", explanation: "salary", offerings: 1, cents: 400 },
+      { name: "Coach wages", explanation: "hours × rate", offerings: 2, cents: 250 },
     ]);
   });
 });

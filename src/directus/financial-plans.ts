@@ -32,9 +32,19 @@ type SetRow = Omit<FinancialPlanSummary, "parent"> & { parent_id: { id: string; 
 
 const summary = ({ parent_id, ...set }: SetRow): FinancialPlanSummary => ({ ...set, parent: parent_id ?? null });
 
-const totalFields = ["calculated_at", "operating_revenue_cents", "operating_expense_cents", "operating_net_cents"];
+const totalFields = [
+  "calculated_at",
+  "operating_revenue_cents",
+  "operating_expense_cents",
+  "operating_net_cents",
+  "fundraising_revenue_cents",
+  "fundraising_expense_cents",
+  "fundraising_net_cents",
+  "capital_cents",
+  "total_cents",
+];
 
-/** Every Financial Plan, with its operating totals and warning count once platform has worked them out, for Planning. */
+/** Every Financial Plan, with its totals and warning count once platform has worked them out, for Planning. */
 export const financialPlansQuery = queryOptions({
   queryKey: ["financial-plans"],
   queryFn: async (): Promise<ListedPlan[]> => {
@@ -60,6 +70,9 @@ export const financialPlansQuery = queryOptions({
         revenue_cents: total?.operating_revenue_cents ?? null,
         expense_cents: total?.operating_expense_cents ?? null,
         net_cents: total?.operating_net_cents ?? null,
+        fundraising_net_cents: total?.fundraising_net_cents ?? null,
+        capital_cents: total?.capital_cents ?? null,
+        total_cents: total?.total_cents ?? null,
       };
     });
   },
@@ -116,17 +129,21 @@ async function readResults(setId: string): Promise<Results | null> {
       line: string;
       line_name: string | null;
       cost_center_key: string | null;
+      cost_center_type: PlanLine["cost_center_type"];
       amount_cents: number;
       version_set_member_id: string | null;
       function: PlanLine["function"];
+      explanation: string | null;
       account_id: { type: string; number: string | null; name: string };
     }>("plan_result_lines", bySet, [
       "line",
       "line_name",
       "cost_center_key",
+      "cost_center_type",
       "amount_cents",
       "version_set_member_id",
       "function",
+      "explanation",
       "account_id.type",
       "account_id.number",
       "account_id.name",
@@ -154,10 +171,12 @@ async function readResults(setId: string): Promise<Results | null> {
       account_number: l.account_id.number,
       account_name: l.account_id.name,
       cost_center_key: l.cost_center_key,
+      cost_center_type: l.cost_center_type,
       amount_cents: l.amount_cents,
       revenue: l.account_id.type === "revenue",
       capital: l.account_id.type === "asset",
       function: l.function,
+      explanation: l.explanation,
       member: l.version_set_member_id,
     })),
     warnings: warnings.map(({ version_set_member_id, ...w }) => ({ ...w, member: version_set_member_id })),

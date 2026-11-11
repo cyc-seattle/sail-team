@@ -107,6 +107,13 @@ Then("{string} shows revenue of $10,000, expenses of $5,000, and net of $5,000",
   await expect(cells.nth(5)).toHaveText("$5,000");
 });
 
+Then("{string} shows no fundraising or capital, and a total of $5,000", async ({ page }, name: string) => {
+  const cells = planRow(page, name).getByRole("cell");
+  await expect(cells.nth(6)).toHaveText("$0");
+  await expect(cells.nth(7)).toHaveText("$0");
+  await expect(cells.nth(8)).toHaveText("$5,000");
+});
+
 Given("a saved Financial Plan for 2027 named {string}", async ({ club }, name: string) => {
   named.clear();
   club.ownYear();
@@ -207,6 +214,17 @@ Then("it shows $10,000 of revenue, $3,000 of coaches' wages, and $1,000 of the o
   await expect(statementRow(page, /Total revenue/)).toContainText("$10,000");
   await expect(statementRow(page, /coachWages/)).toContainText("$3,000");
   await expect(statementRow(page, /^Office/)).toContainText("$1,000");
+});
+
+// The engine's wording may change, so this checks only that a line under the account explains it with a formula.
+Then("opening the coaches' wages shows how they were worked out", async ({ page }) => {
+  const wages = statementRow(page, /coachWages/);
+  await wages.getByRole("button").click();
+  const line = page
+    .getByRole("table", { name: "Revenue and expenses" })
+    .getByRole("row")
+    .filter({ has: page.getByText("×") });
+  await expect(line.first()).toContainText("$3,000");
 });
 
 Then("it shows $3,000 of coaches' wages", async ({ page }) => {
@@ -327,12 +345,16 @@ When("I open the draft", async ({ page }) => {
   await page.goto(`${await app()}/plans/financial/${opened.set}`);
 });
 
-When("I open its warnings", async ({ page }) => {
+When("I open its warnings on a closed day", async ({ page }) => {
   await page.locator("summary", { hasText: /\d+ warnings?/ }).click();
+  await page.locator("summary", { hasText: "On a closed day" }).click();
 });
 
 Then("a warning says the practice falls on a closed day, on that day", async ({ page }) => {
-  const closed = page.getByRole("list", { name: "Warnings" }).getByRole("listitem").filter({ hasText: CLOSED_DAY });
+  const closed = page
+    .getByRole("list", { name: "On a closed day" })
+    .getByRole("listitem")
+    .filter({ hasText: CLOSED_DAY });
   await expect(closed).toContainText("Jul 5");
 });
 
