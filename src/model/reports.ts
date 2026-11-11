@@ -487,7 +487,19 @@ export interface ScheduleBlock {
   boats: string[];
 }
 
-type BlockRow = { id: string; key: string; date: string; name: string };
+type BlockRow = { id: string; key: string; date: string; name: string | null };
+
+/**
+ * A block's name, or none when it only repeats its date and names already on the page, such as "J-Pod 2027-03-02".
+ * `known` is those names: the program area's, its programs' and its offerings'.
+ */
+export function blockName(name: string, date: string, known: string[]): string | null {
+  let rest = name.split(date).join("");
+  for (const k of [...known].sort((a, b) => b.length - a.length)) {
+    rest = rest.split(k).join("");
+  }
+  return /[\p{L}\p{N}]/u.test(rest) ? name : null;
+}
 type ActivityRow = Pick<
   PlanActivity,
   | "id"

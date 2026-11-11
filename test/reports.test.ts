@@ -10,6 +10,7 @@ import {
   reportOffering,
   programFees,
   rulesOf,
+  blockName,
   scheduleOf,
   sessionGrid,
   sortRows,
@@ -270,5 +271,14 @@ describe("scheduleOf", () => {
       equipment: ["RIBs: 1, 2.5 hours each"],
     });
     expect(schedule[0]?.activities[0]).toMatchObject({ offering_key: "J-Pod Spring", on_water_minutes: 120 });
+  });
+});
+
+describe("blockName", () => {
+  it("is none when it only repeats its date and names already on the page", () => {
+    const known = ["Doublehanded", "J-Pod", "J-Pod Spring"];
+    expect(blockName("J-Pod 2027-03-02", "2027-03-02", known)).toBeNull();
+    expect(blockName("J-Pod Spring", "2027-03-02", known)).toBeNull();
+    expect(blockName("J-Pod and K-Pod together", "2027-03-02", known)).toBe("J-Pod and K-Pod together");
   });
 });

@@ -28,7 +28,9 @@ import {
 import { isSaved, type FinancialPlanSummary, type Member } from "@/model/financial-plans";
 import { engineRows } from "@/model/plan-data";
 import {
+  blockName,
   reportKey,
+  reportName,
   reportOffering,
   scheduleOf,
   type BlockParts,
@@ -378,6 +380,11 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
       const areas = members.filter((m) => m.kind === "program_area");
       const ofVersion = <T extends { version_id: string }>(rows: T[], m: Member) =>
         rows.filter((r) => r.version_id === m.version_id);
+      const knownNames = (m: Member) => [
+        reportName(m),
+        ...ofVersion(programs, m).map((p) => p.product_id.name),
+        ...ofVersion(offerings, m).flatMap((o) => [o.name, o.product_id.name]),
+      ];
       return {
         rules: Object.fromEntries(copies.map((c) => [keyOf.get(c.id) ?? c.id, c.rules])),
         offerings: byReport(
@@ -426,7 +433,12 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         schedule: Object.fromEntries(
           areas.map((m) => [
             reportKey(m),
-            scheduleOf(ofVersion(blocks.blocks, m), ofVersion(activities, m), parts, (id) => offeringKey.get(id) ?? ""),
+            scheduleOf(
+              ofVersion(blocks.blocks, m).map((b) => ({ ...b, name: blockName(b.name, b.date, knownNames(m)) })),
+              ofVersion(activities, m),
+              parts,
+              (id) => offeringKey.get(id) ?? "",
+            ),
           ]),
         ),
         fixedCosts: byReport(fixedCosts.filter((l) => !ofOperations(l))),

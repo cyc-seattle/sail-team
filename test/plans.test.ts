@@ -174,8 +174,10 @@ describe("reading a Financial Plan's inputs from Directus", () => {
       },
     ]);
     const summer = schedule[ids.summerPlan]!;
+    // "Summer 2027-06-21" only repeats the area and the date.
     expect(summer[0]).toMatchObject({
       date: "2027-06-21",
+      name: null,
       staff: ["Level 1 Instructor: 3"],
       equipment: ["RIBs: 2"],
       boats: ["Sailqube: 5", "Opti: 14"],
