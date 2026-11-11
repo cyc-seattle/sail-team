@@ -8,8 +8,6 @@ import type {
   Product,
   ProgramSettings,
   ReportOffering,
-  ScheduleBlock,
-  ScheduledActivity,
   Trip,
   SharedCost,
 } from "@/model/reports";
@@ -566,52 +564,6 @@ export const planningPlans: ListedPlan[] = [
     revenue_cents: 45_200_000,
     expense_cents: 42_900_000,
   }),
-];
-
-const practice = (
-  key: string,
-  offering_key: string,
-  start_time: string,
-  end_time: string,
-  on_water_minutes: number,
-  kind: ScheduledActivity["kind"] = "practice",
-): ScheduledActivity => ({
-  key,
-  offering_key,
-  kind,
-  start_time,
-  end_time,
-  setup_minutes: 30,
-  putaway_minutes: 30,
-  on_water_minutes,
-});
-
-/** Summer's first week, each morning's camps sharing a block, and an afternoon clinic in no block yet. */
-export const summerSchedule: ScheduleBlock[] = [
-  ...[0, 1, 2].map((day) => {
-    const date = `2027-06-2${1 + day}`;
-    return {
-      key: `block-${date}`,
-      date,
-      name: "Summer mornings",
-      activities: [
-        practice(`guppies-${date}`, "Guppies-0", "09:00:00", "12:00:00", 180),
-        practice(`opti-${date}`, "Opti Camp-0", "09:00:00", "15:00:00", 360),
-      ],
-      staff: ["Level 1 Instructor: 3", "Junior Instructor: 1"],
-      equipment: ["RIBs: 2"],
-      boats: ["Sailqube: 5", "Opti: 14"],
-    };
-  }),
-  {
-    key: "clinic",
-    date: "2027-06-23",
-    name: null,
-    activities: [practice("clinic", "Race Camp-1", "13:00:00", "16:00:00", 150, "clinic")],
-    staff: [],
-    equipment: [],
-    boats: [],
-  },
 ];
 
 export const doublehandedTrips: Trip[] = [

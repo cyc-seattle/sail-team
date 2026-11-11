@@ -161,8 +161,8 @@ describe("reading a Financial Plan's inputs from Directus", () => {
     expect(operations?.closedDays.map((d) => d.date)).toEqual(["2027-07-05"]);
   });
 
-  it("reads each program area's trips, and its activities by date in their blocks", async () => {
-    const { trips, schedule, offerings } = await inputs(ids.budget);
+  it("reads each program area's trips, and each offering's cost of goods and note", async () => {
+    const { trips, offerings } = await inputs(ids.budget);
     expect(trips[ids.doublehandedPlan]).toEqual([
       {
         key: "key:Fall regatta",
@@ -173,22 +173,6 @@ describe("reading a Financial Plan's inputs from Directus", () => {
         miles: 240,
       },
     ]);
-    const summer = schedule[ids.summerPlan]!;
-    // "Summer 2027-06-21" only repeats the area and the date.
-    expect(summer[0]).toMatchObject({
-      date: "2027-06-21",
-      name: null,
-      staff: ["Level 1 Instructor: 3"],
-      equipment: ["RIBs: 2"],
-      boats: ["Sailqube: 5", "Opti: 14"],
-    });
-    expect(summer[0]?.activities.map((a) => [a.offering_key, a.setup_minutes, a.on_water_minutes])).toEqual([
-      ["key:Guppies Week 1", 30, 180],
-      ["key:Opti Camp Week 1", 30, 360],
-    ]);
-    // J-Pod's last fall practice has no block yet, so it stands alone.
-    expect(schedule[ids.doublehandedPlan]?.at(-1)).toMatchObject({ name: null, staff: [] });
-    expect(schedule[ids.doublehandedPlan]?.[0]?.boats).toEqual(["420: 3, plus 3 sailors' own"]);
     const opti = offerings[ids.summerPlan]?.find((o) => o.key === "key:Opti Camp Week 1");
     expect(opti).toMatchObject({ cogs_rate: 0.04, note: "Lunch is included." });
   });

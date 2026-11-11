@@ -7,7 +7,6 @@ import {
   type PlanWarning,
   type ProgramSettings,
   type ReportOffering,
-  type ScheduleBlock,
   type Trip,
 } from "@/model/reports";
 import { cn } from "@/lib/utils";
@@ -16,7 +15,6 @@ import { Money } from "../money";
 import { CollapsibleSection } from "./collapsible-section";
 import { OfferingName } from "./offering-name";
 import { ReportSection } from "./report-page";
-import { ScheduleTable } from "./schedule-table";
 import { RulesList } from "./rules-list";
 import { SessionGrid } from "./session-grid";
 import { StatementTable } from "./statement-table";
@@ -105,7 +103,6 @@ export interface ProgramAreaReportProps {
   programs: ProgramSettings[];
   offerings: ReportOffering[];
   trips: Trip[];
-  schedule: ScheduleBlock[];
   /** The area plan's own fixed costs and staff time outside its programs. */
   fixedCosts: FixedCost[];
   staffTime: StaffTime[];
@@ -123,7 +120,6 @@ export function ProgramAreaReport({
   programs,
   offerings,
   trips,
-  schedule,
   fixedCosts,
   staffTime,
 }: ProgramAreaReportProps) {
@@ -215,12 +211,6 @@ export function ProgramAreaReport({
               ))}
             </TableBody>
           </Table>
-        </CollapsibleSection>
-      )}
-
-      {schedule.length > 0 && (
-        <CollapsibleSection title="Schedule">
-          <ScheduleTable blocks={schedule} labels={labels} />
         </CollapsibleSection>
       )}
     </>

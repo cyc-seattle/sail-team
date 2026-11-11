@@ -10,8 +10,6 @@ import {
   reportOffering,
   programFees,
   rulesOf,
-  blockName,
-  scheduleOf,
   sessionGrid,
   sortRows,
   type OverviewRow,
@@ -228,57 +226,5 @@ describe("productsOf", () => {
       { name: "Boat storage", revenue_cents: 1_000, direct_cents: 300 },
       { name: "Organization", revenue_cents: 0, direct_cents: 500 },
     ]);
-  });
-});
-
-describe("scheduleOf", () => {
-  const activity = (key: string, date: string, start: string, block: string | null) => ({
-    id: key,
-    key,
-    offering_id: "o",
-    block_id: block,
-    date,
-    kind: "practice" as const,
-    uses_boats: true,
-    start_time: start,
-    end_time: "18:00:00",
-    on_water_minutes: null,
-    setup_minutes: 15,
-    putaway_minutes: null,
-  });
-  const parts = {
-    staff: [
-      { block_id: "b", staff_level: null, position: "Head Coach", count: 1, pay: "hourly" },
-      { block_id: "b", staff_level: "Level 3 Coach", position: null, count: 2, pay: null },
-    ],
-    resources: [{ block_id: "b", resource: "RIBs", quantity: 1, hours: 2.5 }],
-    boats: [],
-  };
-
-  it("lists each block by date, with what it shares, and an activity in no block on its own", () => {
-    const schedule = scheduleOf(
-      [{ id: "b", key: "b", date: "2027-03-02", name: "Tuesday practice" }],
-      [activity("late", "2027-03-02", "17:00:00", null), activity("a", "2027-03-02", "16:00:00", "b")],
-      parts,
-      () => "J-Pod Spring",
-    );
-    expect(schedule.map((b) => [b.name, b.activities.map((a) => a.key)])).toEqual([
-      ["Tuesday practice", ["a"]],
-      [null, ["late"]],
-    ]);
-    expect(schedule[0]).toMatchObject({
-      staff: ["Head Coach, by the hour: 1", "Level 3 Coach: 2"],
-      equipment: ["RIBs: 1, 2.5 hours each"],
-    });
-    expect(schedule[0]?.activities[0]).toMatchObject({ offering_key: "J-Pod Spring", on_water_minutes: 120 });
-  });
-});
-
-describe("blockName", () => {
-  it("is none when it only repeats its date and names already on the page", () => {
-    const known = ["Doublehanded", "J-Pod", "J-Pod Spring"];
-    expect(blockName("J-Pod 2027-03-02", "2027-03-02", known)).toBeNull();
-    expect(blockName("J-Pod Spring", "2027-03-02", known)).toBeNull();
-    expect(blockName("J-Pod and K-Pod together", "2027-03-02", known)).toBe("J-Pod and K-Pod together");
   });
 });

@@ -664,10 +664,6 @@ export const tables: Record<string, Row[]> = {
     ...r,
     boat_class_id: catalog.boat_classes.find((b) => b.id === r["boat_class_id"])!,
   })),
-  plan_block_boats: rowsOf(versions, "plan_block_boats").map((r) => ({
-    ...r,
-    boat_class_id: catalog.boat_classes.find((b) => b.id === r["boat_class_id"])!,
-  })),
   plan_rates: rowsOf(versions, "plan_rates").map((r) => ({
     ...r,
     rib_resource_kind_id: catalog.resource_kinds.find((k) => k.id === r["rib_resource_kind_id"]) ?? null,

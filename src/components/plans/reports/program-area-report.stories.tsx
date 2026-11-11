@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent } from "storybook/test";
 import {
   doublehandedOfferings,
   doublehandedPrograms,
@@ -10,7 +10,6 @@ import {
   summerRules,
   doublehandedTrips,
   summerFixedCosts,
-  summerSchedule,
   summerStaffTime,
   summerStatement,
   warnings,
@@ -27,7 +26,6 @@ const meta = {
     programs: doublehandedPrograms,
     offerings: doublehandedOfferings,
     trips: doublehandedTrips,
-    schedule: [],
     fixedCosts: [],
     staffTime: [],
   },
@@ -62,21 +60,8 @@ export const Summer: Story = {
     programs: summerPrograms,
     offerings: summerOfferings,
     trips: [],
-    schedule: summerSchedule,
     fixedCosts: summerFixedCosts,
     staffTime: summerStaffTime,
-  },
-};
-
-/** Each block's activities share its staff, coach boats and boats; an activity in no block stands alone. */
-export const SummerSchedule: Story = {
-  args: Summer.args!,
-  play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByText("Schedule", { selector: "h2" }));
-    const schedule = canvas.getByRole("table", { name: "Schedule" });
-    await expect(schedule).toHaveTextContent("Level 1 Instructor: 3");
-    await expect(within(schedule).getAllByRole("row", { name: /Opti Camp 1/ })[0]).toHaveTextContent("9:00 AM–3:00 PM");
-    await expect(within(schedule).getByRole("row", { name: /Race Camp 1, Clinic/ })).toHaveTextContent("2.5 hours");
   },
 };
 
