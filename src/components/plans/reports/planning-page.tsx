@@ -175,7 +175,7 @@ function PlanDetails({ plan }: { plan: ListedPlan }) {
       </PopoverTrigger>
       <PopoverContent align="start" aria-label={`About ${plan.name}`} className="w-80">
         <p className="text-xs text-muted-foreground">
-          {plan.saved_at ? `Saved ${formatDate(plan.saved_at)}` : null}
+          {plan.saved_at ? `Saved ${formatDate(plan.saved_at)}${plan.saved_by ? ` by ${plan.saved_by}` : ""}` : null}
           {plan.saved_at && plan.parent ? ". " : null}
           {plan.parent && (
             <>

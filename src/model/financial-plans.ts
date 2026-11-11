@@ -29,6 +29,8 @@ export interface ListedPlan {
   year: number;
   status: FinancialPlanSummary["status"];
   saved_at: string | null;
+  /** Who saved it, by name. Null when the person looking can't read it. */
+  saved_by: string | null;
   parent: { id: string; name: string } | null;
   /** Its note. For a draft from the planning agent, the agent's report on what it did and what's left. */
   note: string | null;

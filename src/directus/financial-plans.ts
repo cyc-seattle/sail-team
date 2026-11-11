@@ -41,6 +41,7 @@ export const financialPlansQuery = queryOptions({
       readAll<Totals & { version_set_id: string }>("plan_results", undefined, ["version_set_id", ...totalFields]),
       readAll<{ version_set_id: string }>("plan_result_warnings", undefined, ["version_set_id"]),
     ]);
+    const savers = await userNames(sets.map((set) => set.saved_by));
     return sets.map(summary).map((set): ListedPlan => {
       const total = totals.find((t) => t.version_set_id === set.id);
       return {
@@ -49,6 +50,7 @@ export const financialPlansQuery = queryOptions({
         year: set.fiscal_year,
         status: set.status,
         saved_at: set.saved_at,
+        saved_by: (set.saved_by && savers.get(set.saved_by)) ?? null,
         parent: set.parent,
         note: set.message,
         warnings: warnings.filter((w) => w.version_set_id === set.id).length,
@@ -159,28 +161,36 @@ async function readResults(setId: string): Promise<Results | null> {
   };
 }
 
-/** Who saved it, by name, if the person looking can see that. */
-async function savedByName(user: string | null): Promise<string | null> {
-  if (!user) {
-    return null;
+/**
+ * The names of these users, by id, in one request. Platform lets a Plan Reader or Writer read only a user's name
+ * (cyc-seattle/platform#138); anyone else gets none, and the plans show without them.
+ */
+async function userNames(users: (string | null)[]): Promise<Map<string, string>> {
+  const ids = [...new Set(users.filter((user): user is string => !!user))];
+  if (ids.length === 0) {
+    return new Map();
   }
   try {
-    const { first_name, last_name } = await appDirectus().client.request(
-      customEndpoint<{ first_name: string | null; last_name: string | null }>({
-        path: `/users/${encodeURIComponent(user)}`,
+    const rows = await appDirectus().client.request(
+      customEndpoint<{ id: string; first_name: string | null; last_name: string | null }[]>({
+        path: "/users",
         method: "GET",
-        params: { fields: ["first_name", "last_name"] },
+        params: { limit: -1, filter: { id: { _in: ids } }, fields: ["id", "first_name", "last_name"] },
       }),
     );
-    return [first_name, last_name].filter(Boolean).join(" ") || null;
+    return new Map(
+      rows.flatMap(({ id, first_name, last_name }) => {
+        const name = [first_name, last_name].filter(Boolean).join(" ");
+        return name ? [[id, name] as const] : [];
+      }),
+    );
   } catch {
-    return null;
+    return new Map();
   }
 }
 
 export interface FinancialPlan {
   set: FinancialPlanSummary;
-  savedBy: string | null;
   members: Member[];
   /** Null until platform has worked them out. */
   results: Results | null;
@@ -200,8 +210,8 @@ export const financialPlanQuery = (setId: string) =>
       }
       const set = summary(row);
       const members = await readMembers(setId);
-      const [results, savedBy] = await Promise.all([readResults(setId), savedByName(set.saved_by)]);
-      return { set, savedBy, members, results };
+      const results = await readResults(setId);
+      return { set, members, results };
     },
   });
 

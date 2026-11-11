@@ -62,6 +62,13 @@ function shape(row: Row, fields: string | null): Row {
 export function handlers(directusUrl: string, session: MockSession = { me: planner, permissions: plannerPermissions }) {
   return [
     http.get(`${directusUrl}/users/me`, () => (session.me ? HttpResponse.json({ data: session.me }) : forbidden())),
+    // Other users' names, which platform lets a planner read.
+    http.get(`${directusUrl}/users`, ({ request }) => {
+      const query = new URL(request.url).searchParams;
+      const filter = query.get("filter");
+      const rows = tables["directus_users"]!.filter((r) => !filter || matches(r, JSON.parse(filter), session.me?.id));
+      return HttpResponse.json({ data: rows.map((r) => shape(r, query.get("fields"))) });
+    }),
     http.get(`${directusUrl}/permissions/me`, () =>
       session.me ? HttpResponse.json({ data: session.permissions }) : forbidden(),
     ),
