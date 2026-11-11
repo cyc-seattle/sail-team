@@ -97,6 +97,23 @@ export const StaffLinks: Story = {
   },
 };
 
+/** Admins also see where to sign in as someone. */
+export const AdminLinks: Story = {
+  args: { links: linksFor("Admin", directus) },
+  play: async (context) => {
+    const body = await openLinks(context);
+    await waitFor(() =>
+      expect(linkNames(body)).toEqual([
+        "Clubspot dashboard",
+        "Directus",
+        "Sign in as someone",
+        "Google Calendar",
+        "Support",
+      ]),
+    );
+  },
+};
+
 /** A parent on a team, who can open Rosters but not Planning. */
 export const TeamParent: Story = { args: { name: "Lee Halyard", pages: [staff[0]!, staff[2]!] } };
 
