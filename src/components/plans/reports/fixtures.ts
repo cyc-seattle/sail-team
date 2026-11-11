@@ -8,6 +8,9 @@ import type {
   Product,
   ProgramSettings,
   ReportOffering,
+  ScheduleBlock,
+  ScheduledActivity,
+  Trip,
   SharedCost,
 } from "@/model/reports";
 
@@ -110,6 +113,8 @@ const camp = (program: string, n: number, fee: number, estimated: number, max: n
   max,
   days: 5,
   hours,
+  cogs_rate: program === "Race Camp" ? 0.08 : null,
+  note: program === "Race Camp" && n === 4 ? "Doubles as the regional qualifier." : null,
 });
 
 // Listed out of order on purpose: the report sorts them by start date.
@@ -136,6 +141,8 @@ const season = (
   max: 16,
   days: 22,
   hours: 66,
+  cogs_rate: null,
+  note: session === "Summer" ? "Only if enough sailors sign up by May." : null,
 });
 
 // Spring and fall interleaved, as the old pages listed them.
@@ -171,6 +178,8 @@ const offering = (
   max,
   days,
   hours,
+  cogs_rate: null,
+  note: null,
 });
 
 /** Every program area's offerings, for the Overview's fees and enrollment. */
@@ -544,4 +553,69 @@ export const planningPlans: ListedPlan[] = [
     revenue_cents: 45_200_000,
     expense_cents: 42_900_000,
   }),
+];
+
+const practice = (
+  key: string,
+  offering_key: string,
+  start_time: string,
+  end_time: string,
+  on_water_minutes: number,
+  kind: ScheduledActivity["kind"] = "practice",
+): ScheduledActivity => ({
+  key,
+  offering_key,
+  kind,
+  start_time,
+  end_time,
+  setup_minutes: 30,
+  putaway_minutes: 30,
+  on_water_minutes,
+});
+
+/** Summer's first week, each morning's camps sharing a block, and an afternoon clinic in no block yet. */
+export const summerSchedule: ScheduleBlock[] = [
+  ...[0, 1, 2].map((day) => {
+    const date = `2027-06-2${1 + day}`;
+    return {
+      key: `block-${date}`,
+      date,
+      name: "Summer mornings",
+      activities: [
+        practice(`guppies-${date}`, "Guppies-0", "09:00:00", "12:00:00", 180),
+        practice(`opti-${date}`, "Opti Camp-0", "09:00:00", "15:00:00", 360),
+      ],
+      staff: ["Level 1 Instructor: 3", "Junior Instructor: 1"],
+      equipment: ["RIBs: 2"],
+      boats: ["Sailqube: 5", "Opti: 14"],
+    };
+  }),
+  {
+    key: "clinic",
+    date: "2027-06-23",
+    name: null,
+    activities: [practice("clinic", "Race Camp-1", "13:00:00", "16:00:00", 150, "clinic")],
+    staff: [],
+    equipment: [],
+    boats: [],
+  },
+];
+
+export const doublehandedTrips: Trip[] = [
+  {
+    key: "fall-regatta",
+    offering_key: "J-Pod-Fall",
+    name: "Fall regatta",
+    nights: 2,
+    airfare_cents: null,
+    miles: 240,
+  },
+  {
+    key: "nationals",
+    offering_key: "K-Pod-Summer",
+    name: "Nationals",
+    nights: 5,
+    airfare_cents: 45_000,
+    miles: null,
+  },
 ];

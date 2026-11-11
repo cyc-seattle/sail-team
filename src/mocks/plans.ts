@@ -288,7 +288,7 @@ const offering = (
   session: string,
   starts_on: string,
   ends_on: string,
-  fields: { capacity: number; target: number; price: number },
+  fields: { capacity: number; target: number; price: number; cogs?: number; note?: string },
 ) =>
   c.add("plan_offerings", name, {
     product_id: p.id,
@@ -301,8 +301,8 @@ const offering = (
     target_enrollment: fields.target,
     fill_rate: null,
     price_cents: fields.price,
-    cogs_rate: null,
-    note: null,
+    cogs_rate: fields.cogs ?? null,
+    note: fields.note ?? null,
   });
 
 const activity = (
@@ -395,6 +395,8 @@ function summer(version: string, instructors: number): Copy {
       capacity: 16,
       target: 14,
       price: 52_500,
+      cogs: 0.04,
+      ...(week === 0 && { note: "Lunch is included." }),
     });
     for (let day = 0; day < 5; day++) {
       const on = date(monday, day);
@@ -427,6 +429,15 @@ function doublehanded(version: string): Copy {
       target,
       price: 145_000,
     });
+    if (session === "Fall") {
+      c.add("plan_trips", "Fall regatta", {
+        offering_id: o,
+        name: "Fall regatta",
+        nights: 2,
+        airfare_cents: null,
+        miles: 240,
+      });
+    }
     for (let week = 0; week < weeks; week++) {
       const on = date(first, 7 * week);
       const last = session === "Fall" && week === weeks - 1;
@@ -650,6 +661,10 @@ export const tables: Record<string, Row[]> = {
     product_id: named(catalog.products.find((p) => p.id === r["product_id"])!),
   })),
   plan_boat_rates: rowsOf(versions, "plan_boat_rates").map((r) => ({
+    ...r,
+    boat_class_id: catalog.boat_classes.find((b) => b.id === r["boat_class_id"])!,
+  })),
+  plan_block_boats: rowsOf(versions, "plan_block_boats").map((r) => ({
     ...r,
     boat_class_id: catalog.boat_classes.find((b) => b.id === r["boat_class_id"])!,
   })),

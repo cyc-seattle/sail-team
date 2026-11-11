@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from "react";
-import type { FixedCost, StaffTime } from "@/model/assumptions";
+import { formatShare, type FixedCost, type StaffTime } from "@/model/assumptions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   numberedOfferings,
@@ -7,6 +7,8 @@ import {
   type PlanWarning,
   type ProgramSettings,
   type ReportOffering,
+  type ScheduleBlock,
+  type Trip,
 } from "@/model/reports";
 import { cn } from "@/lib/utils";
 import { FixedCosts, StaffTimeTable } from "../assumptions";
@@ -14,6 +16,7 @@ import { Money } from "../money";
 import { CollapsibleSection } from "./collapsible-section";
 import { OfferingName } from "./offering-name";
 import { ReportSection } from "./report-page";
+import { ScheduleTable } from "./schedule-table";
 import { RulesList } from "./rules-list";
 import { SessionGrid } from "./session-grid";
 import { StatementTable } from "./statement-table";
@@ -88,7 +91,7 @@ function AreaAssumptions({
   );
 }
 
-const offeringHead = ["Fee", "Fee per day", "Sailors", "Sailor-days", "Fee per hour", "Sailor-hours"];
+const offeringHead = ["Fee", "Fee per day", "Sailors", "Sailor-days", "Fee per hour", "Sailor-hours", "Cost of goods"];
 
 export interface ProgramAreaReportProps {
   /** The program area's name, such as Summer. */
@@ -99,6 +102,8 @@ export interface ProgramAreaReportProps {
   statement: { revenue: AccountAmount[]; direct: AccountAmount[]; indirect: AccountAmount[] };
   programs: ProgramSettings[];
   offerings: ReportOffering[];
+  trips: Trip[];
+  schedule: ScheduleBlock[];
   /** The area plan's own fixed costs and staff time outside its programs. */
   fixedCosts: FixedCost[];
   staffTime: StaffTime[];
@@ -115,10 +120,13 @@ export function ProgramAreaReport({
   statement,
   programs,
   offerings,
+  trips,
+  schedule,
   fixedCosts,
   staffTime,
 }: ProgramAreaReportProps) {
   const groups = numberedOfferings(offerings);
+  const labels = new Map(groups.flatMap((g) => g.offerings.map((o) => [o.key, o.label])));
   return (
     <>
       <div className="grid gap-2">
@@ -164,6 +172,7 @@ export function ProgramAreaReport({
                   <TableRow key={o.key}>
                     <TableCell className={cn(pinned, "pl-6")}>
                       <OfferingName offering={o} />
+                      {o.note && <p className="max-w-64 whitespace-normal text-muted-foreground">{o.note}</p>}
                     </TableCell>
                     <Amount cents={o.fee_cents} whole />
                     <Amount cents={per(o.fee_cents, o.days)} />
@@ -171,6 +180,7 @@ export function ProgramAreaReport({
                     <Num>{count(o.estimated * o.days)}</Num>
                     <Amount cents={per(o.fee_cents, o.hours)} />
                     <Num>{hoursOf(o.estimated * o.hours)}</Num>
+                    <Num>{o.cogs_rate === null ? none : formatShare(o.cogs_rate)}</Num>
                   </TableRow>
                 ))}
               </Fragment>
@@ -178,6 +188,39 @@ export function ProgramAreaReport({
           </TableBody>
         </Table>
       </ReportSection>
+
+      {trips.length > 0 && (
+        <CollapsibleSection title="Trips">
+          <Table aria-label="Trips">
+            <TableHeader>
+              <TableRow>
+                <TableHead className={pinned}>Trip</TableHead>
+                <TableHead>Offering</TableHead>
+                <TableHead className="text-right">Nights</TableHead>
+                <TableHead className="text-right">Airfare per coach</TableHead>
+                <TableHead className="text-right">Miles</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {trips.map((t) => (
+                <TableRow key={t.key}>
+                  <TableCell className={pinned}>{t.name}</TableCell>
+                  <TableCell>{labels.get(t.offering_key) ?? none}</TableCell>
+                  <Num>{t.nights === null ? none : count(t.nights)}</Num>
+                  <Amount cents={t.airfare_cents} whole />
+                  <Num>{t.miles === null ? none : count(t.miles)}</Num>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CollapsibleSection>
+      )}
+
+      {schedule.length > 0 && (
+        <CollapsibleSection title="Schedule">
+          <ScheduleTable blocks={schedule} labels={labels} />
+        </CollapsibleSection>
+      )}
     </>
   );
 }

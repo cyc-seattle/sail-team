@@ -105,6 +105,9 @@ export interface ReportOffering {
   days: number;
   /** Hours on the water for one sailor, across the whole offering. */
   hours: number;
+  /** The share of its revenue that goes to the cost of what it sells. */
+  cogs_rate: number | null;
+  note: string | null;
 }
 
 /** An offering with its number within its program, such as Guppies 3, counted by start date. */
@@ -425,7 +428,7 @@ export function onWaterMinutes(
 export function reportOffering(
   offering: Pick<
     PlanOffering,
-    "key" | "name" | "season_term" | "starts_on" | "ends_on" | "price_cents" | "capacity"
+    "key" | "name" | "season_term" | "starts_on" | "ends_on" | "price_cents" | "capacity" | "cogs_rate" | "note"
   > & {
     program: string;
     estimated: number;
@@ -443,5 +446,127 @@ export function reportOffering(
     max: offering.capacity ?? offering.estimated,
     days: new Set(activities.filter((a) => a.kind !== "travel").map((a) => a.date)).size,
     hours: activities.reduce((total, a) => total + onWaterMinutes(a), 0) / 60,
+    cogs_rate: offering.cogs_rate,
+    note: offering.note,
   };
+}
+
+/** A regatta trip, with what each coach's travel costs. */
+export interface Trip {
+  key: string;
+  offering_key: string;
+  name: string;
+  nights: number | null;
+  airfare_cents: number | null;
+  miles: number | null;
+}
+
+/** One activity on a program area's schedule. */
+export interface ScheduledActivity {
+  key: string;
+  offering_key: string;
+  kind: PlanActivity["kind"];
+  start_time: string | null;
+  end_time: string | null;
+  setup_minutes: number | null;
+  putaway_minutes: number | null;
+  on_water_minutes: number;
+}
+
+/**
+ * A block on a date: activities that share their staff, coach boats and boats, each listed as "Name: count". An
+ * activity in no block has one of its own, with no name and nothing shared.
+ */
+export interface ScheduleBlock {
+  key: string;
+  date: string;
+  name: string | null;
+  activities: ScheduledActivity[];
+  staff: string[];
+  equipment: string[];
+  boats: string[];
+}
+
+type BlockRow = { id: string; key: string; date: string; name: string };
+type ActivityRow = Pick<
+  PlanActivity,
+  | "id"
+  | "key"
+  | "offering_id"
+  | "block_id"
+  | "date"
+  | "kind"
+  | "uses_boats"
+  | "start_time"
+  | "end_time"
+  | "on_water_minutes"
+  | "setup_minutes"
+  | "putaway_minutes"
+>;
+
+/** What one block shares, with the names of the levels, positions, equipment and boat classes it uses. */
+export interface BlockParts {
+  staff: { block_id: string; staff_level: string | null; position: string | null; count: number; pay: string | null }[];
+  resources: { block_id: string; resource: string; quantity: number; hours: number | null }[];
+  boats: { block_id: string; boat_class: string; count: number; sailor_owned: number | null }[];
+}
+
+const amount = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 2 });
+
+/** A program area's activities by date and start time, each in its block, with the offering keys they belong to. */
+export function scheduleOf(
+  blocks: BlockRow[],
+  activities: ActivityRow[],
+  parts: BlockParts,
+  offeringKey: (offeringId: string) => string,
+): ScheduleBlock[] {
+  const scheduled = (a: ActivityRow): ScheduledActivity => ({
+    key: a.key,
+    offering_key: offeringKey(a.offering_id),
+    kind: a.kind,
+    start_time: a.start_time,
+    end_time: a.end_time,
+    setup_minutes: a.setup_minutes,
+    putaway_minutes: a.putaway_minutes,
+    on_water_minutes: onWaterMinutes(a),
+  });
+  const byStart = (a: ScheduledActivity, b: ScheduledActivity) =>
+    (a.start_time ?? "").localeCompare(b.start_time ?? "") || a.offering_key.localeCompare(b.offering_key);
+  const own = (rows: { block_id: string }[], id: string) => rows.filter((r) => r.block_id === id);
+  const shared: ScheduleBlock[] = blocks.map((b) => ({
+    key: b.key,
+    date: b.date,
+    name: b.name,
+    activities: activities
+      .filter((a) => a.block_id === b.id)
+      .map(scheduled)
+      .sort(byStart),
+    staff: (own(parts.staff, b.id) as BlockParts["staff"]).map(
+      (s) =>
+        `${s.position ?? s.staff_level ?? "Staff"}${s.position && s.pay === "hourly" ? ", by the hour" : ""}: ${amount(s.count)}`,
+    ),
+    equipment: (own(parts.resources, b.id) as BlockParts["resources"]).map(
+      (r) => `${r.resource}: ${amount(r.quantity)}${r.hours === null ? "" : `, ${amount(r.hours)} hours each`}`,
+    ),
+    boats: (own(parts.boats, b.id) as BlockParts["boats"]).map(
+      (x) =>
+        `${x.boat_class}: ${amount(x.count)}${x.sailor_owned ? `, plus ${amount(x.sailor_owned)} sailors' own` : ""}`,
+    ),
+  }));
+  const blockIds = new Set(blocks.map((b) => b.id));
+  const alone: ScheduleBlock[] = activities
+    .filter((a) => !a.block_id || !blockIds.has(a.block_id))
+    .map((a) => ({
+      key: a.key,
+      date: a.date,
+      name: null,
+      activities: [scheduled(a)],
+      staff: [],
+      equipment: [],
+      boats: [],
+    }));
+  const first = (b: ScheduleBlock) => b.activities[0]?.start_time ?? "";
+  return [...shared, ...alone].sort(
+    (a, b) => a.date.localeCompare(b.date) || first(a).localeCompare(first(b)) || a.key.localeCompare(b.key),
+  );
 }
