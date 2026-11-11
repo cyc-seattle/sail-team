@@ -158,7 +158,7 @@ function PlanActions({ plan, actions }: { plan: ListedPlan; actions: PlanningAct
   );
 }
 
-/** When a plan was saved, what it started from, and its note, such as the planning agent's report, on hover or a tap. */
+/** When and by whom a plan was saved, what it started from, the platform version that worked it out, and its note, on hover or a tap. */
 function PlanDetails({ plan }: { plan: ListedPlan }) {
   if (!plan.saved_at && !plan.parent && !plan.note) {
     return null;
@@ -186,6 +186,7 @@ function PlanDetails({ plan }: { plan: ListedPlan }) {
             </>
           )}
         </p>
+        {plan.platform && <p className="text-xs text-muted-foreground">Platform {plan.platform}</p>}
         {plan.note && <p>{plan.note}</p>}
       </PopoverContent>
     </Popover>

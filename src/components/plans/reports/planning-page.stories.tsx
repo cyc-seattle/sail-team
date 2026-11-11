@@ -33,11 +33,20 @@ export const Drafts: Story = {
   },
 };
 
-/** A draft's details, such as the planning agent's report, show on hover or a tap. */
+/** A draft's details, such as the planning agent's note, show on hover or a tap. */
 export const AgentsReport: Story = {
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "About 2027 allocations, Nov 9" }));
-    await waitFor(async () => expect(await screen.findByText(/Allocated staff, RIBs and boats/)).toBeVisible());
+    await waitFor(async () => expect(await screen.findByText(/Allocated every summer week/)).toBeVisible());
+  },
+};
+
+/** A saved plan's details say when and by whom it was saved, and which platform version worked it out. */
+export const SavedPlansDetails: Story = {
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "About Budget" }));
+    await waitFor(async () => expect(await screen.findByText("Platform 1.38.1")).toBeVisible());
+    await expect(screen.getByText(/Saved .* by Morgan Keel/)).toBeVisible();
   },
 };
 

@@ -13,6 +13,7 @@ const budget: FinancialPlanSummary = {
   status: "saved",
   saved_at: "2027-03-10T18:00:00Z",
   saved_by: null,
+  platform_version: null,
   parent: null,
 };
 const twoCoaches: FinancialPlanSummary = {
