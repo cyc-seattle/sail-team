@@ -30,14 +30,16 @@ const calendarDay = new Intl.DateTimeFormat("en-US", {
   timeZone: "UTC",
 });
 
+/** A day, given as `YYYY-MM-DD`: `Jun 1, 2026`. */
+export const formatDay = (date: string) => calendarDay.format(new Date(`${date}T00:00:00Z`));
+
 /** A span of days, given as `YYYY-MM-DD`: `Jun 1, 2026 to Aug 14, 2026`. Either end may be missing. */
 export function formatDays(from: string | null, to: string | null): string {
-  const show = (date: string) => calendarDay.format(new Date(`${date}T00:00:00Z`));
   if (from && to) {
-    return `${show(from)} to ${show(to)}`;
+    return `${formatDay(from)} to ${formatDay(to)}`;
   }
   if (from) {
-    return `From ${show(from)}`;
+    return `From ${formatDay(from)}`;
   }
-  return to ? `Until ${show(to)}` : "";
+  return to ? `Until ${formatDay(to)}` : "";
 }

@@ -8,6 +8,8 @@ import {
   summerOfferings,
   summerPrograms,
   summerRules,
+  summerFixedCosts,
+  summerStaffTime,
   summerStatement,
   warnings,
 } from "./fixtures";
@@ -22,6 +24,8 @@ const meta = {
     statement: doublehandedStatement,
     programs: doublehandedPrograms,
     offerings: doublehandedOfferings,
+    fixedCosts: [],
+    staffTime: [],
   },
 } satisfies Meta<typeof ProgramAreaReport>;
 export default meta;
@@ -53,5 +57,7 @@ export const Summer: Story = {
     statement: summerStatement,
     programs: summerPrograms,
     offerings: summerOfferings,
+    fixedCosts: summerFixedCosts,
+    staffTime: summerStaffTime,
   },
 };

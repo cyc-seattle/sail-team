@@ -115,12 +115,55 @@ describe("reading a Financial Plan's inputs from Directus", () => {
       ["Executive Director", []],
       ["Program Director", [0.05]],
     ]);
-    expect(operations?.bonuses).toEqual([]);
+    expect(operations?.bonuses).toEqual([
+      {
+        key: "key:Program Director bonus",
+        role_name: "Program Director",
+        bonus_rate: 0.05,
+        basis: "after_shared_costs",
+        products: ["Guppies", "J-Pod", "Opti Camp"],
+        account: "5030 Salaries",
+        position: "Program Director",
+      },
+    ]);
     expect(operations?.boatRates.find((b) => b.boat_class === "Sailqube")).toMatchObject({
       quantity: 8,
       sailors_per_boat: 2,
     });
     expect(products).toEqual([{ key: "key:Boat storage", product: "Boat storage" }]);
+  });
+
+  it("reads the Operations Plan's other inputs, naming the accounts, pools and positions their rows point at", async () => {
+    const { operations } = await inputs(ids.budget);
+    expect(operations?.rates?.rib_kind).toBe("RIB");
+    expect(operations?.positions.find((p) => p.name === "Program Director")).toMatchObject({
+      hourly_coaching_rate_cents: 3_000,
+      remainder_pool: "Program admin",
+    });
+    expect(operations?.charges[0]).toMatchObject({ account: "5310 Card fees", excluded_from_mtdc: false });
+    expect(operations?.fixedCosts.find((c) => c.name === "Audit")).toMatchObject({
+      account: "6110 Insurance",
+      charged_to: "G&A",
+      excluded_from_mtdc: true,
+    });
+    expect(operations?.fixedCosts.find((c) => c.name === "Spring gala costs")?.charged_to).toBe("Example Sailing Club");
+    expect(operations?.fixedCosts.find((c) => c.name === "Storage dock upkeep")?.charged_to).toBe("Boat storage 2027");
+    expect(operations?.staffTime).toEqual([
+      expect.objectContaining({ name: "Winter boat repairs", staff_level: "Level 1 Instructor", hours: 120 }),
+    ]);
+    expect(operations?.salariedHours).toEqual([
+      { key: "key:Program Director on Guppies", position: "Program Director", booked_to: "Guppies", hours: 200 },
+    ]);
+    expect(operations?.closedDays.map((d) => d.date)).toEqual(["2027-07-05"]);
+  });
+
+  it("reads each program area's own fixed costs and staff time, by its report", async () => {
+    const { fixedCosts, staffTime } = await inputs(ids.budget);
+    expect(fixedCosts[ids.summerPlan]).toEqual([
+      expect.objectContaining({ name: "Tent rental", charged_to: "Summer", excluded_from_mtdc: true }),
+    ]);
+    expect(staffTime[ids.summerPlan]?.map((l) => [l.name, l.charged_to])).toEqual([["Camp setup", "Summer"]]);
+    expect(fixedCosts[ids.doublehandedPlan]).toBeUndefined();
   });
 });
 

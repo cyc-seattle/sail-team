@@ -1,5 +1,8 @@
 import type {
   PlanBonusOwner,
+  PlanBudgetLine,
+  PlanClosedDate,
+  PlanLaborLine,
   PlanOffering,
   PlanRates,
   PlanResource,
@@ -10,16 +13,27 @@ import type {
 
 /** The rates the Operations Plan sets for the year, which every plan's numbers come from. */
 export interface OperationsAssumptions {
-  rates: Pick<PlanRates, "payroll_tax_rate" | "lodging_per_night_cents" | "mileage_rate_cents"> | null;
+  rates:
+    | (Pick<PlanRates, "payroll_tax_rate" | "lodging_per_night_cents" | "mileage_rate_cents"> & {
+        /** The kind of equipment whose rates price coach boat (RIB) hours. */
+        rib_kind: string | null;
+      })
+    | null;
   staffLevels: Pick<PlanStaffLevel, "key" | "name" | "pay_type" | "hourly_rate_cents">[];
   positions: (Pick<
     PlanSalariedPosition,
     "key" | "name" | "annual_salary_cents" | "paid_hours_per_year" | "ga_share"
   > & {
+    /** What it's paid an hour to coach an offering that pays it by the hour. */
+    hourly_coaching_rate_cents: number | null;
+    /** The pool that takes the salary its hours don't charge to programs. */
+    remainder_pool: string | null;
     /** The bonuses that pay it, which name it in `position_key`. */
     bonuses: Bonus[];
   })[];
-  charges: Pick<PlanRevenueCharge, "key" | "name" | "rate" | "product_kinds">[];
+  charges: (Pick<PlanRevenueCharge, "key" | "name" | "rate" | "product_kinds" | "excluded_from_mtdc" | "note"> & {
+    account: string;
+  })[];
   resources: Pick<
     PlanResource,
     | "key"
@@ -29,6 +43,7 @@ export interface OperationsAssumptions {
     | "cost_per_day_cents"
     | "fuel_per_hour_cents"
     | "maintenance_per_hour_cents"
+    | "excluded_from_mtdc"
   >[];
   /** Each boat class's upkeep, and how many the club has and sailors each takes, which the engine checks blocks against. */
   boatRates: {
@@ -38,12 +53,48 @@ export interface OperationsAssumptions {
     quantity: number | null;
     sailors_per_boat: number | null;
   }[];
-  /** Bonuses that pay no salaried position. */
+  /** Every plan's bonuses. */
   bonuses: Bonus[];
+  fixedCosts: FixedCost[];
+  staffTime: StaffTime[];
+  salariedHours: SalariedHours[];
+  closedDays: Pick<PlanClosedDate, "key" | "date" | "name">[];
 }
 
 /** A bonus on the net of some products, from the Operations Plan or a program area's plan. */
-export type Bonus = Pick<PlanBonusOwner, "key" | "role_name" | "bonus_rate" | "basis">;
+export type Bonus = Pick<PlanBonusOwner, "key" | "role_name" | "bonus_rate" | "basis"> & {
+  /** The products whose net it's a share of. */
+  products: string[];
+  account: string;
+  /** The salaried position it pays, if any. */
+  position: string | null;
+};
+
+/** A fixed cost or G&A line, with what it's charged to: a pool, an offering, a product, a program area, or CSC. */
+export type FixedCost = Pick<PlanBudgetLine, "key" | "name" | "amount_cents" | "excluded_from_mtdc" | "note"> & {
+  account: string;
+  charged_to: string;
+};
+
+/** Hourly staff time outside the programs, such as boat repairs. */
+export type StaffTime = Pick<PlanLaborLine, "key" | "name" | "hours" | "note"> & {
+  staff_level: string | null;
+  account: string;
+  charged_to: string;
+};
+
+/** Hours of a salaried position booked to a program or a program area. */
+export interface SalariedHours {
+  key: string;
+  position: string;
+  /** The program or program area. */
+  booked_to: string;
+  hours: number;
+}
+
+/** An account as people know it: its number and name. */
+export const accountName = (a: { number: string | null; name: string }) =>
+  a.number ? `${a.number} ${a.name}` : a.name;
 
 /** The sailors an offering plans for, as the engine counts them: its target, or its capacity at its fill rate. */
 export function plannedEnrollment(
