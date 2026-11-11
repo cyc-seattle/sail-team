@@ -62,7 +62,9 @@ type CostRow<T> = T & {
   account_id: Account;
 };
 
-type BudgetRow = CostRow<Pick<PlanBudgetLine, "key" | "name" | "amount_cents" | "excluded_from_mtdc" | "note">>;
+type BudgetRow = CostRow<Pick<PlanBudgetLine, "key" | "name" | "amount_cents" | "excluded_from_mtdc" | "note">> & {
+  account_id: { type: string };
+};
 type LaborRow = CostRow<Pick<PlanLaborLine, "key" | "name" | "staff_level_key" | "hours" | "note">>;
 
 type BonusRow = Pick<PlanBonusOwner, "id" | "key" | "role_name" | "bonus_rate" | "basis" | "position_key"> & {
@@ -292,6 +294,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
             "excluded_from_mtdc",
             "note",
             ...accountFields,
+            "account_id.type",
           ]),
           rowsOf<LaborRow>("plan_labor_lines", versions, [
             "version_id",
@@ -335,6 +338,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         note: l.note,
         account: accountName(l.account_id),
         charged_to: chargedTo(l),
+        revenue: l.account_id.type === "revenue",
       }));
       const staffTime = byName(labor).map((l): StaffTime & { version_id: string } => ({
         version_id: l.version_id,

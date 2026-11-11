@@ -45,6 +45,8 @@ export const CostsAndDays: Story = {
     const costs = canvas.getByRole("table", { name: "Fixed costs and G&A" });
     await expect(within(costs).getByRole("row", { name: /Audit/ })).toHaveTextContent("Yes");
     await expect(costs).toHaveTextContent("Program admin");
+    await expect(costs).not.toHaveTextContent("Spring gala gifts");
+    await expect(canvas.getByRole("table", { name: "Other revenue" })).toHaveTextContent("Spring gala gifts");
     await expect(canvas.getByRole("row", { name: /Winter boat repairs/ })).toHaveTextContent("120");
     await expect(canvas.getByRole("row", { name: /Labor Day/ })).toHaveTextContent("Sep 6, 2027");
     const hours = canvas.getByRole("table", { name: "Salaried hours on programs" });

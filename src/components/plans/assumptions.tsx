@@ -255,7 +255,7 @@ export function OperationsAssumptionsView({
           ))}
         </RateTable>
       )}
-      {a.fixedCosts.length > 0 && <FixedCosts title="Fixed costs and G&A" costs={a.fixedCosts} />}
+      <BudgetLines costsTitle="Fixed costs and G&A" lines={a.fixedCosts} />
       {a.staffTime.length > 0 && <StaffTimeTable lines={a.staffTime} />}
       {a.closedDays.length > 0 && (
         <RateTable title="Closed days" head={["Date", "Closed for"]} text={["Closed for"]}>
@@ -271,26 +271,43 @@ export function OperationsAssumptionsView({
   );
 }
 
-/** Fixed costs, each under what it's charged to, such as G&A, in the order they first appear. */
-export function FixedCosts({ title, costs }: { title: string; costs: FixedCost[] }) {
-  const groups = [...new Set(costs.map((c) => c.charged_to))];
+/**
+ * A plan's budget lines: its fixed costs, then any revenue, each under what it's charged to, such as G&A, in the order
+ * they first appear. Leaving MTDC out applies only to a cost.
+ */
+export function BudgetLines({ costsTitle, lines }: { costsTitle: string; lines: FixedCost[] }) {
   return (
-    <RateTable title={title} head={["Cost", "Account", "Amount", mtdc, "Note"]} text={["Account", mtdc, "Note"]}>
+    <>
+      <BudgetTable title={costsTitle} lines={lines.filter((l) => !l.revenue)} first="Cost" />
+      <BudgetTable title="Other revenue" lines={lines.filter((l) => l.revenue)} first="Revenue" />
+    </>
+  );
+}
+
+function BudgetTable({ title, lines, first }: { title: string; lines: FixedCost[]; first: string }) {
+  if (lines.length === 0) {
+    return null;
+  }
+  const cost = first === "Cost";
+  const head = [first, "Account", "Amount", ...(cost ? [mtdc] : []), "Note"];
+  const groups = [...new Set(lines.map((c) => c.charged_to))];
+  return (
+    <RateTable title={title} head={head} text={["Account", mtdc, "Note"]}>
       {groups.map((group) => (
         <Fragment key={group}>
           <TableRow className="hover:bg-transparent">
-            <TableCell colSpan={5} className="pt-4 font-medium">
+            <TableCell colSpan={head.length} className="pt-4 font-medium">
               {group}
             </TableCell>
           </TableRow>
-          {costs
+          {lines
             .filter((c) => c.charged_to === group)
             .map((c) => (
               <TableRow key={c.key}>
                 <TableCell className="pl-6">{c.name}</TableCell>
                 <TableCell>{c.account}</TableCell>
                 <Num>{money(c.amount_cents, true)}</Num>
-                <TableCell>{leftOut(c.excluded_from_mtdc)}</TableCell>
+                {cost && <TableCell>{leftOut(c.excluded_from_mtdc)}</TableCell>}
                 <Note>{c.note}</Note>
               </TableRow>
             ))}

@@ -146,7 +146,11 @@ describe("reading a Financial Plan's inputs from Directus", () => {
       charged_to: "G&A",
       excluded_from_mtdc: true,
     });
-    expect(operations?.fixedCosts.find((c) => c.name === "Spring gala costs")?.charged_to).toBe("Example Sailing Club");
+    expect(operations?.fixedCosts.find((c) => c.name === "Spring gala costs")).toMatchObject({
+      charged_to: "Example Sailing Club",
+      revenue: false,
+    });
+    expect(operations?.fixedCosts.find((c) => c.name === "Spring gala gifts")?.revenue).toBe(true);
     expect(operations?.fixedCosts.find((c) => c.name === "Storage dock upkeep")?.charged_to).toBe("Boat storage 2027");
     expect(operations?.staffTime).toEqual([
       expect.objectContaining({ name: "Winter boat repairs", staff_level: "Level 1 Instructor", hours: 120 }),

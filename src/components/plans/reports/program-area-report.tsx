@@ -11,7 +11,7 @@ import {
   type Trip,
 } from "@/model/reports";
 import { cn } from "@/lib/utils";
-import { FixedCosts, StaffTimeTable } from "../assumptions";
+import { BudgetLines, StaffTimeTable } from "../assumptions";
 import { Money } from "../money";
 import { CollapsibleSection } from "./collapsible-section";
 import { OfferingName } from "./offering-name";
@@ -78,7 +78,9 @@ function AreaAssumptions({
         ))}
         {fixedCosts.length > 0 && (
           <div className="border-t pt-4">
-            <FixedCosts title="Fixed costs" costs={fixedCosts} />
+            <div className="grid gap-6">
+              <BudgetLines costsTitle="Fixed costs" lines={fixedCosts} />
+            </div>
           </div>
         )}
         {staffTime.length > 0 && (

@@ -70,10 +70,14 @@ export type Bonus = Pick<PlanBonusOwner, "key" | "role_name" | "bonus_rate" | "b
   position: string | null;
 };
 
-/** A fixed cost or G&A line, with what it's charged to: a pool, an offering, a product, a program area, or CSC. */
+/**
+ * A budget line, with what it's charged to: a pool, an offering, a product, a program area, or CSC. Most are fixed
+ * costs or G&A; one on a revenue account, such as a gala's gifts, is revenue.
+ */
 export type FixedCost = Pick<PlanBudgetLine, "key" | "name" | "amount_cents" | "excluded_from_mtdc" | "note"> & {
   account: string;
   charged_to: string;
+  revenue: boolean;
 };
 
 /** Hourly staff time outside the programs, such as boat repairs. */

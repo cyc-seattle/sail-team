@@ -286,7 +286,17 @@ const fixedCost = (
   amount_cents: number,
   charged_to: string,
   more: Partial<FixedCost> = {},
-): FixedCost => ({ key, name, account, amount_cents, charged_to, excluded_from_mtdc: false, note: null, ...more });
+): FixedCost => ({
+  key,
+  name,
+  account,
+  amount_cents,
+  charged_to,
+  excluded_from_mtdc: false,
+  note: null,
+  revenue: false,
+  ...more,
+});
 
 /** Summer's own fixed costs and staff time, on its report's assumptions. */
 export const summerFixedCosts: FixedCost[] = [
@@ -417,6 +427,9 @@ export const reportAssumptions: OperationsAssumptions = {
     fixedCost("audit", "Audit", "6410 Audit", 450_000, "G&A", { excluded_from_mtdc: true }),
     fixedCost("software", "Registration software", "6420 Software", 240_000, "Program admin"),
     fixedCost("gala", "Spring gala costs", "7010 Event costs", 300_000, "Example Sailing Club"),
+    fixedCost("gifts", "Spring gala gifts", "4500 Individual gifts", 2_000_000, "Example Sailing Club", {
+      revenue: true,
+    }),
     fixedCost("dock", "Storage dock upkeep", "5130 Boat upkeep", 300_000, "Boat storage 2027"),
   ],
   staffTime: [
