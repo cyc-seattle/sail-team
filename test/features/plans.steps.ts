@@ -313,10 +313,11 @@ Then("I see the coach's pay of $30.00 an hour", async ({ page, club }) => {
   ).toContainText("$30.00");
 });
 
-// Warnings.
+// Warnings. A warning is found by the closed day's name, which the test sets, so platform can reword the rest.
+const CLOSED_DAY = "the Fourth of July, observed";
 Given("a draft with a practice on a closed day", async ({ club }) => {
   const { operations, youth } = await plansWithCopies(club);
-  await club.closed(operations, campDays(club)[0]!, "the Fourth of July, observed");
+  await club.closed(operations, campDays(club)[0]!, CLOSED_DAY);
   const camp = await club.offering(youth, OFFERING, 10, 100_000);
   await club.practices(youth, camp["id"] as string, [campDays(club)[0]!]);
   opened.set = await club.financialPlan("Two coaches", [operations, youth]);
@@ -331,10 +332,7 @@ When("I open its warnings", async ({ page }) => {
 });
 
 Then("a warning says the practice falls on a closed day, on that day", async ({ page }) => {
-  const closed = page
-    .getByRole("list", { name: "Warnings" })
-    .getByRole("listitem")
-    .filter({ hasText: /closed day/ });
+  const closed = page.getByRole("list", { name: "Warnings" }).getByRole("listitem").filter({ hasText: CLOSED_DAY });
   await expect(closed).toContainText("Jul 5");
 });
 
