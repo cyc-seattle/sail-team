@@ -1,4 +1,5 @@
 import { toE164 } from "./phone.ts";
+import { monthsBefore } from "./roster.ts";
 
 /** A person in a household as Directus returns them. A field the person can't read is missing. */
 export interface MemberRow {
@@ -27,6 +28,25 @@ export interface GuardianRow {
   contact_id: string;
 }
 
+/** A sign-up as Directus returns it, with its offering's dates and its program's name. */
+export interface SignUpRow {
+  id: string;
+  person_id: string;
+  status: string | null;
+  starts_on: string | null;
+  ends_on: string | null;
+  program: string | null;
+}
+
+/** Something a person is signed up for: a program, with its offering's dates. */
+export interface SignUp {
+  id: string;
+  program: string;
+  startsOn: string | null;
+  endsOn: string | null;
+  waitlisted: boolean;
+}
+
 /** Guardians are the people Clubspot links as a sailor's guardian, and sailors the people they're guardians of. Anyone else has no role. */
 export type Role = "guardian" | "sailor" | null;
 
@@ -46,6 +66,8 @@ export interface Member {
   me: boolean;
   /** Only sailors have a school. */
   hasSchool: boolean;
+  /** What they're signed up for, or null when Directus doesn't show it: everyone's but the signed-in person's and their children's. */
+  signUps: SignUp[] | null;
 }
 
 export interface Household {
@@ -76,6 +98,46 @@ function isAdult(row: MemberRow, role: Role, today: string): boolean {
   return row.date_of_birth ? grownUp(row.date_of_birth, today) : role === "guardian";
 }
 
+// A sign-up shows until a year after its offering ends.
+const RECENT_MONTHS = 12;
+
+/** Whose sign-ups Directus shows the signed-in person: their own, and those of the children they're guardian of. */
+export function signUpsShownFor(meId: string, guardians: GuardianRow[]): string[] {
+  return [meId, ...guardians.filter((g) => g.contact_id === meId).map((g) => g.subject_id)];
+}
+
+/**
+ * Each person's confirmed and waitlisted sign-ups, current and upcoming first, soonest to end first, then those that
+ * ended in the last year, latest first.
+ */
+export function signUpsByPerson(rows: SignUpRow[], today: string): Map<string, SignUp[]> {
+  const since = monthsBefore(today, RECENT_MONTHS);
+  const ended = (r: SignUpRow) => r.ends_on !== null && r.ends_on < today;
+  const kept = rows
+    .filter((r) => (r.status === "confirmed" || r.status === "waitlist") && (r.ends_on ?? today) >= since)
+    .sort((a, b) =>
+      ended(a) !== ended(b)
+        ? Number(ended(a)) - Number(ended(b))
+        : ended(a)
+          ? b.ends_on!.localeCompare(a.ends_on!)
+          : (a.ends_on ?? "9999").localeCompare(b.ends_on ?? "9999") ||
+            (a.starts_on ?? "").localeCompare(b.starts_on ?? ""),
+    );
+  const byPerson = new Map<string, SignUp[]>();
+  for (const r of kept) {
+    const signUps = byPerson.get(r.person_id) ?? [];
+    signUps.push({
+      id: r.id,
+      program: r.program ?? "Unnamed program",
+      startsOn: r.starts_on,
+      endsOn: r.ends_on,
+      waitlisted: r.status === "waitlist",
+    });
+    byPerson.set(r.person_id, signUps);
+  }
+  return byPerson;
+}
+
 /** The household's members, guardians first, then sailors, then anyone else, each by name. */
 export function buildHousehold(
   household: { id: string; share_contact: boolean | null },
@@ -83,11 +145,14 @@ export function buildHousehold(
   guardians: GuardianRow[],
   meId: string,
   today: string,
+  signUps: SignUpRow[] = [],
 ): Household {
   const ids = new Set(people.map((p) => p.id));
   const links = guardians.filter((g) => ids.has(g.subject_id) && ids.has(g.contact_id));
   const guardiansOf = new Set(links.map((g) => g.contact_id));
   const sailors = new Set(links.map((g) => g.subject_id));
+  const shown = new Set(signUpsShownFor(meId, links));
+  const signUpsOf = signUpsByPerson(signUps, today);
   const members = people.map((p): Member => {
     // Someone who is both, such as an adult sailor who is also a guardian, shows as a guardian.
     const role: Role = guardiansOf.has(p.id) ? "guardian" : sailors.has(p.id) ? "sailor" : null;
@@ -102,6 +167,7 @@ export function buildHousehold(
       role,
       me: p.id === meId,
       hasSchool: role === "sailor",
+      signUps: shown.has(p.id) ? (signUpsOf.get(p.id) ?? []) : null,
     };
   });
   members.sort((a, b) => order[String(a.role)]! - order[String(b.role)]! || a.name.localeCompare(b.name));

@@ -13,6 +13,12 @@ const jFall = "00000000-0000-4000-8000-000000000711";
 const campSummer = "00000000-0000-4000-8000-000000000712";
 const kFall = "00000000-0000-4000-8000-000000000713";
 const optiFall = "00000000-0000-4000-8000-000000000714";
+// Sign-ups that aren't on a team, so Household has more to show than the rosters do.
+const clinic = "00000000-0000-4000-8000-000000000705";
+const keelboat = "00000000-0000-4000-8000-000000000706";
+const clinicWinter = "00000000-0000-4000-8000-000000000715";
+const campLongAgo = "00000000-0000-4000-8000-000000000716";
+const keelboatSpring = "00000000-0000-4000-8000-000000000717";
 
 export const rosterIds = {
   doublehanded: doublehanded.id,
@@ -91,12 +97,17 @@ export const rosterTables: Record<string, Record<string, unknown>[]> = {
     program(kPod, "K-Pod", true, doublehanded),
     program(optiTeam, "Opti Race Team", true, singlehanded, "opti-team@example.org"),
     program(camp, "Summer Camp", false, summer),
+    program(clinic, "Winter Race Clinic", false, singlehanded),
+    program(keelboat, "Adult Keelboat Basics", false, summer),
   ],
   offerings: [
     { id: jFall, program_id: jPod, starts_on: day(-30), ends_on: day(40) },
     { id: kFall, program_id: kPod, starts_on: day(-30), ends_on: day(40) },
     { id: optiFall, program_id: optiTeam, starts_on: day(-30), ends_on: day(40) },
     { id: campSummer, program_id: camp, starts_on: day(-120), ends_on: day(-110) },
+    { id: clinicWinter, program_id: clinic, starts_on: day(60), ends_on: day(110) },
+    { id: campLongAgo, program_id: camp, starts_on: day(-490), ends_on: day(-480) },
+    { id: keelboatSpring, program_id: keelboat, starts_on: day(150), ends_on: day(180) },
   ],
   registrations: [
     { id: "r1", person_id: rosterIds.child, offering_id: jFall, status: "confirmed" },
@@ -104,6 +115,11 @@ export const rosterTables: Record<string, Record<string, unknown>[]> = {
     { id: "r3", person_id: rosterIds.adultSailor, offering_id: kFall, status: "confirmed" },
     { id: "r4", person_id: rosterIds.child, offering_id: campSummer, status: "confirmed" },
     { id: "r5", person_id: rosterIds.teammate, offering_id: optiFall, status: "confirmed" },
+    { id: "r6", person_id: rosterIds.child, offering_id: clinicWinter, status: "waitlist" },
+    { id: "r7", person_id: rosterIds.child, offering_id: campLongAgo, status: "confirmed" },
+    { id: "r8", person_id: rosterIds.child, offering_id: kFall, status: "cancelled" },
+    { id: "r9", person_id: rosterIds.me, offering_id: keelboatSpring, status: "confirmed" },
+    { id: "r20", person_id: rosterIds.coParent, offering_id: keelboatSpring, status: "confirmed" },
     ...more.map(([, , , pod], i) => ({
       id: `r${10 + i}`,
       person_id: moreId(i),

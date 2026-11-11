@@ -10,6 +10,7 @@ import {
   type Household,
   type MemberRow,
   type School,
+  type SignUpRow,
 } from "../src/model/household.ts";
 
 describe("memberName", () => {
@@ -71,6 +72,54 @@ describe("buildHousehold", () => {
 
   it("counts someone with no date of birth as an adult only if they're someone's guardian", () => {
     expect(buildHousehold({ id: "h", share_contact: true }, people, guardians, "uncle", today).editable).toBe(false);
+  });
+});
+
+describe("sign-ups", () => {
+  const people: MemberRow[] = [{ id: "me" }, { id: "co" }, { id: "kid" }];
+  const guardians = [
+    { subject_id: "kid", contact_id: "me" },
+    { subject_id: "kid", contact_id: "co" },
+  ];
+  const signUp = (id: string, person: string, starts: string | null, ends: string | null, status = "confirmed") => ({
+    id,
+    person_id: person,
+    status,
+    starts_on: starts,
+    ends_on: ends,
+    program: id,
+  });
+  const rows: SignUpRow[] = [
+    signUp("Summer Camp", "kid", "2026-07-06", "2026-07-17"),
+    signUp("Spring Camp", "kid", "2026-04-06", "2026-04-10"),
+    signUp("Winter Clinic", "kid", "2027-01-09", "2027-02-27", "waitlist"),
+    signUp("J-Pod", "kid", "2026-09-08", "2026-11-20"),
+    signUp("Open Sailing", "kid", "2026-06-01", null),
+    signUp("Camp Long Ago", "kid", "2025-07-06", "2025-07-17"),
+    signUp("K-Pod", "kid", "2026-09-08", "2026-11-20", "cancelled"),
+    signUp("Keelboat", "me", "2027-04-01", "2027-05-01"),
+  ];
+  const household = buildHousehold({ id: "h", share_contact: true }, people, guardians, "me", today, rows);
+  const of = (id: string) => household.members.find((m) => m.id === id)!.signUps;
+
+  it("lists current and upcoming ones by when they end, then those that ended in the last year, latest first", () => {
+    expect(of("kid")?.map((s) => [s.program, s.waitlisted])).toEqual([
+      ["J-Pod", false],
+      ["Winter Clinic", true],
+      ["Open Sailing", false],
+      ["Summer Camp", false],
+      ["Spring Camp", false],
+    ]);
+  });
+
+  it("shows sign-ups only for the signed-in person and their children, as Directus does", () => {
+    expect(of("me")?.map((s) => s.program)).toEqual(["Keelboat"]);
+    expect(of("co")).toBeNull();
+    expect(
+      buildHousehold({ id: "h", share_contact: true }, people, guardians, "kid", today, rows).members.find(
+        (m) => m.id === "me",
+      )?.signUps,
+    ).toBeNull();
   });
 });
 
@@ -138,6 +187,22 @@ describe("reading the household from Directus", () => {
       ["Robin Tiller", "guardian", true],
       ["Sam Tiller", "guardian", false],
       ["Addie Tiller", "sailor", false],
+    ]);
+  });
+
+  it("reads the signed-in person's and their children's sign-ups, with each program's name", async () => {
+    const household = await run(householdQuery);
+    expect(household?.members.map((m) => [m.name, m.signUps?.map((s) => [s.program, s.waitlisted])])).toEqual([
+      ["Robin Tiller", [["Adult Keelboat Basics", false]]],
+      ["Sam Tiller", undefined],
+      [
+        "Addie Tiller",
+        [
+          ["J-Pod", false],
+          ["Winter Race Clinic", true],
+          ["Summer Camp", false],
+        ],
+      ],
     ]);
   });
 
