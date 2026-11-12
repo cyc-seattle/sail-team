@@ -58,6 +58,7 @@ Feature: Seeing the Financial Plans
       And I've signed in
       When I open Youth Racing's report in that Financial Plan
       Then it shows $10,000 of revenue, $3,000 of coaches' wages, and $1,000 of the office
+      And opening the coaches' wages shows how they were worked out
 
     Scenario: A Program Plan in a draft
       Given I'm a planner who can read plans
@@ -117,7 +118,7 @@ Feature: Seeing the Financial Plans
       And a draft with a practice on a closed day
       And I've signed in
       When I open the draft
-      And I open its warnings
+      And I open its warnings on a closed day
       Then a warning says the practice falls on a closed day, on that day
 
   Rule: A planner who can change plans can rename a Financial Plan, note it, save it, delete it, mark it active, and start a draft from it

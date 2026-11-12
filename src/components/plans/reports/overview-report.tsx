@@ -19,6 +19,7 @@ import {
   type Sort,
   type SortKey,
 } from "@/model/reports";
+import type { Totals } from "@/model/financial-plans";
 import { cn } from "@/lib/utils";
 import { Money } from "../money";
 import { ReportSection } from "./report-page";
@@ -111,13 +112,16 @@ export interface OverviewReportProps {
   /** Each program area's offerings, by its report's key. */
   offerings: Record<string, ReportOffering[]>;
   warnings: PlanWarning[];
+  /** The organization's totals, as platform worked them out. */
+  totals: Totals;
 }
 
 /**
- * A Financial Plan's year by program area: the engine's warnings, closed at first, then revenue to net, sortable,
- * each program's fees, and enrollment by session or by program. Program areas keep the first table's order all the way down.
+ * A Financial Plan's year by program area: the engine's warnings, closed at first, then revenue to net, sortable, the
+ * year's operating net with fundraising and capital, each program's fees, and enrollment by session or by program.
+ * Program areas keep the first table's order all the way down.
  */
-export function OverviewReport({ setId, rows, offerings, warnings }: OverviewReportProps) {
+export function OverviewReport({ setId, rows, offerings, warnings, totals }: OverviewReportProps) {
   const [sort, setSort] = useState<Sort>(defaultSort);
   const [by, setBy] = useState<EnrollmentBy>("session");
   const sorted = sortRows(rows, sort);
@@ -188,6 +192,49 @@ export function OverviewReport({ setId, rows, offerings, warnings }: OverviewRep
               <Amount cents={grossOf(total)} colored />
               <Amount cents={total.indirect_cents} />
               <Amount cents={netOf(total)} colored />
+            </TableRow>
+          </TableFooter>
+        </Table>
+      </ReportSection>
+
+      <ReportSection id="year" title="Year">
+        <Table aria-label="Year" className="max-w-md">
+          <TableBody>
+            <TableRow>
+              <TableCell className={pinned}>Operating net</TableCell>
+              <Amount cents={totals.operating_net_cents} colored />
+            </TableRow>
+            <TableRow>
+              <TableCell className={pinned}>
+                <Link
+                  to="/plans/financial/$setId/$planId"
+                  params={{ setId, planId: "fundraising" }}
+                  className="text-link underline"
+                >
+                  Fundraising net
+                </Link>
+              </TableCell>
+              <Amount cents={totals.fundraising_net_cents} colored />
+            </TableRow>
+            <TableRow>
+              <TableCell className={pinned}>
+                <Link
+                  to="/plans/financial/$setId/$planId"
+                  params={{ setId, planId: "fundraising" }}
+                  hash="capital"
+                  className="text-link underline"
+                >
+                  Capital
+                </Link>
+              </TableCell>
+              {/* Taken away, so the column adds up to the total. */}
+              <Amount cents={-totals.capital_cents} colored />
+            </TableRow>
+          </TableBody>
+          <TableFooter className="bg-transparent">
+            <TableRow>
+              <TableCell className={pinned}>Total</TableCell>
+              <Amount cents={totals.total_cents} colored />
             </TableRow>
           </TableFooter>
         </Table>

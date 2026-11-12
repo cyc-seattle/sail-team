@@ -22,6 +22,7 @@ import {
   summerFixedCosts,
   summerStaffTime,
   summerStatement,
+  totals,
   warnings,
 } from "./fixtures";
 import { FundraisingCapitalReport } from "./fundraising-capital-report";
@@ -45,7 +46,15 @@ type Story = StoryObj<typeof meta>;
 
 export const Overview: Story = {
   args: {
-    children: <OverviewReport setId="budget" rows={overviewRows} offerings={areaOfferings} warnings={warnings} />,
+    children: (
+      <OverviewReport
+        setId="budget"
+        rows={overviewRows}
+        offerings={areaOfferings}
+        warnings={warnings}
+        totals={totals}
+      />
+    ),
   },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("heading", { level: 1, name: "Budget" })).toBeVisible();

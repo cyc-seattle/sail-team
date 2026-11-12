@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent } from "storybook/test";
 import { withRouter } from "../../../../.storybook/with-router";
-import { areaOfferings, overviewRows, warnings } from "./fixtures";
+import { areaOfferings, overviewRows, totals, warnings } from "./fixtures";
 import { OverviewReport } from "./overview-report";
 
 const meta = {
@@ -9,7 +9,7 @@ const meta = {
   decorators: [
     withRouter("/plans/financial/budget", ["/plans/financial/$setId", "/plans/financial/$setId/$planId", "/plans"]),
   ],
-  args: { setId: "budget", rows: overviewRows, offerings: areaOfferings, warnings },
+  args: { setId: "budget", rows: overviewRows, offerings: areaOfferings, warnings, totals },
 } satisfies Meta<typeof OverviewReport>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -33,6 +33,16 @@ export const ByNet: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Net" }));
     await expect(canvas.getByRole("columnheader", { name: "Net" })).toHaveAttribute("aria-sort", "ascending");
     await expect(table.querySelector("tbody tr")).toHaveTextContent("High Performance");
+  },
+};
+
+/** The year's operating net, with fundraising, less capital, adds up to its total. */
+export const Year: Story = {
+  play: async ({ canvas }) => {
+    const table = canvas.getByRole("table", { name: "Year" });
+    await expect(table).toHaveTextContent("Fundraising net");
+    await expect(table).toHaveTextContent("Capital");
+    await expect(table.querySelector("tfoot")).toHaveTextContent("Total");
   },
 };
 

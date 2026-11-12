@@ -21,7 +21,7 @@ const inputs = async (id: string) => {
 };
 
 describe("reading Financial Plans from Directus", () => {
-  it("lists every Financial Plan with its operating totals and warnings, once they're worked out", async () => {
+  it("lists every Financial Plan with its totals and warnings, once they're worked out", async () => {
     const plans = await run<ListedPlan[]>(financialPlansQuery);
     expect(plans.map((p) => [p.name, p.status, p.parent?.name ?? null])).toEqual([
       ["Budget", "active", null],
@@ -30,6 +30,11 @@ describe("reading Financial Plans from Directus", () => {
     ]);
     const [budget, two, three] = plans;
     expect(budget!.net_cents).toBe(budget!.revenue_cents! - budget!.expense_cents!);
+    // Fundraising is in them; capital isn't.
+    const { results } = await plan(ids.budget);
+    const t = results!.totals;
+    expect(budget!.net_cents).toBe(t.operating_net_cents + t.fundraising_net_cents);
+    expect(t.fundraising_revenue_cents).toBeGreaterThan(0);
     expect(budget!.warnings).toBeGreaterThan(0);
     expect(two!.note).toBe("A fourth instructor on every summer morning.");
     expect([budget!.saved_by, two!.saved_by]).toEqual(["Morgan Keel", null]);
@@ -205,6 +210,16 @@ describe("a Financial Plan's reports", () => {
       [null, "G&A"],
       [null, "Program admin"],
     ]);
+  });
+
+  it("opens each account to its lines, worked out the same way across offerings", async () => {
+    const { results } = await plan(ids.budget);
+    const { direct } = statementOf(results!.lines.filter((l) => l.member === ids.summerMember));
+    const wages = direct.find((a) => a.name === "Coach wages")!;
+    const coaching = wages.lines!.find((l) => l.name === "Coach wages")!;
+    expect(coaching.offerings).toBeGreaterThan(1);
+    expect(coaching.explanation).toBeTruthy();
+    expect(wages.lines!.reduce((total, l) => total + l.cents, 0)).toBe(wages.cents);
   });
 
   it("adds each shared cost back up, with the part the programs carry", async () => {

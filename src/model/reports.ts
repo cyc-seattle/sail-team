@@ -2,12 +2,24 @@
 import type { PlanActivity, PlanOffering } from "@cyc-seattle/platform/planning";
 import type { Member, PlanLine, ResultWarning } from "./financial-plans.ts";
 
+/** Lines that are worked out the same way, added up, such as every offering's coach wages. */
+export interface LineAmount {
+  name: string;
+  /** How the engine worked them out, such as "0.1 × wages". */
+  explanation: string | null;
+  /** How many offerings they're on. */
+  offerings: number;
+  cents: number;
+}
+
 /** One account's amount in a statement, such as coach wages. */
 export interface AccountAmount {
   /** Its number in the chart of accounts. None for a share of a pool, such as G&A. */
   number: string | null;
   name: string;
   cents: number;
+  /** The lines it adds up, largest first. */
+  lines?: LineAmount[];
 }
 
 /** Revenue, direct costs, and indirect costs: the steps from revenue to net. */
@@ -198,6 +210,9 @@ export function enrollment(offerings: ReportOffering[], by: EnrollmentBy): Enrol
 /** One of the engine's warnings, on a date, about a program area or Non-program, when it names them. */
 export interface PlanWarning {
   key: string;
+  /** Its kind, such as `over_capacity`. */
+  code: string;
+  category: ResultWarning["category"];
   /** The report key of the plan it's about: a program area's, or `non-program` for the Operations Plan or none. */
   area: string;
   date: string | null;
@@ -237,7 +252,8 @@ export function reportsOf(members: Member[]): { key: string; name: string }[] {
 type Line = Pick<
   PlanLine,
   "key" | "name" | "account_number" | "account_name" | "amount_cents" | "revenue" | "capital" | "function"
->;
+> &
+  Partial<Pick<PlanLine, "explanation" | "cost_center_key" | "cost_center_type">>;
 
 /** The lines in the operating net: neither fundraising nor capital. */
 export const operating = <T extends Line>(lines: T[]) =>
@@ -265,15 +281,34 @@ const byNumber = (a: AccountAmount, b: AccountAmount) =>
   (a.number ?? "\uffff").localeCompare(b.number ?? "\uffff", undefined, { numeric: true }) ||
   a.name.localeCompare(b.name);
 
-/** Lines added up by account, in account-number order. */
+/** Lines with the same name and explanation, added up, largest first. */
+export function lineAmounts(lines: Line[]): LineAmount[] {
+  const groups = new Map<string, Line[]>();
+  for (const line of lines) {
+    const id = `${line.name}\n${line.explanation ?? ""}`;
+    groups.set(id, [...(groups.get(id) ?? []), line]);
+  }
+  return [...groups.values()]
+    .map((own) => ({
+      name: own[0]!.name,
+      explanation: own[0]!.explanation ?? null,
+      offerings: new Set(own.filter((l) => l.cost_center_type === "offering").map((l) => l.cost_center_key)).size,
+      cents: sum(own),
+    }))
+    .sort((a, b) => b.cents - a.cents || a.name.localeCompare(b.name));
+}
+
+/** Lines added up by account, in account-number order, each with the lines it adds up. */
 export function byAccount(lines: Line[]): AccountAmount[] {
-  const accounts = new Map<string, AccountAmount>();
+  const accounts = new Map<string, { number: string | null; name: string; lines: Line[] }>();
   for (const line of lines) {
     const id = `${line.account_number ?? ""} ${line.account_name}`;
-    const account = accounts.get(id) ?? { number: line.account_number, name: line.account_name, cents: 0 };
-    accounts.set(id, { ...account, cents: account.cents + line.amount_cents });
+    const account = accounts.get(id) ?? { number: line.account_number, name: line.account_name, lines: [] };
+    accounts.set(id, { ...account, lines: [...account.lines, line] });
   }
-  return [...accounts.values()].sort(byNumber);
+  return [...accounts.values()]
+    .map((a) => ({ number: a.number, name: a.name, cents: sum(a.lines), lines: lineAmounts(a.lines) }))
+    .sort(byNumber);
 }
 
 /** A plan's revenue and own costs by account, and its shares of the pools, one line a pool, such as G&A. */
@@ -288,7 +323,10 @@ export function statementOf(lines: Line[]): {
   return {
     revenue: byAccount(own.filter((l) => l.revenue)),
     direct: byAccount(own.filter((l) => !l.revenue && !isShare(l))),
-    indirect: pools.map((pool) => ({ number: null, name: pool, cents: sum(shares.filter((l) => poolOf(l) === pool)) })),
+    indirect: pools.map((pool) => {
+      const own = shares.filter((l) => poolOf(l) === pool);
+      return { number: null, name: pool, cents: sum(own), lines: lineAmounts(own) };
+    }),
   };
 }
 
@@ -298,7 +336,7 @@ export function statementOf(lines: Line[]): {
  */
 export function overviewRows(
   members: Member[],
-  lines: Pick<PlanLine, keyof Line | "member">[],
+  lines: (Line & Pick<PlanLine, "member">)[],
   offerings: Record<string, ReportOffering[]>,
 ): OverviewRow[] {
   return members.map((member) => {
@@ -327,7 +365,7 @@ export interface SharedCost {
 }
 
 /** Each pool's lines at their full amount, added back up from every offering's share, by pool and account. */
-export function sharedCostsOf(lines: Pick<PlanLine, keyof Line | "member">[], operations: string | null): SharedCost[] {
+export function sharedCostsOf(lines: (Line & Pick<PlanLine, "member">)[], operations: string | null): SharedCost[] {
   const costs = new Map<string, SharedCost>();
   for (const line of operating(lines).filter((l) => !l.revenue && isShare(l))) {
     const cost = costs.get(line.key) ?? {
@@ -360,7 +398,7 @@ export interface Product {
  * costs that are no offering's, such as a salary's rest charged to the organization, are a row of their own.
  */
 export function productsOf(
-  lines: Pick<PlanLine, keyof Line | "cost_center_key">[],
+  lines: (Line & Pick<PlanLine, "cost_center_key">)[],
   offerings: { key: string; product: string }[],
 ): Product[] {
   const productOf = new Map(offerings.map((o) => [o.key, o.product]));
@@ -398,7 +436,14 @@ export function fundraisingAndCapital(lines: Line[]): {
 export function planWarnings(warnings: ResultWarning[], members: Member[]): PlanWarning[] {
   return warnings.map((w, i) => {
     const member = members.find((m) => m.id === w.member);
-    return { key: String(i), area: member ? reportKey(member) : "non-program", date: w.date, message: w.message };
+    return {
+      key: String(i),
+      code: w.code,
+      category: w.category,
+      area: member ? reportKey(member) : "non-program",
+      date: w.date,
+      message: w.message,
+    };
   });
 }
 
