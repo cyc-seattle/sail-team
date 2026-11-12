@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withRouter } from "../../../.storybook/with-router";
-import { expect, waitFor, within } from "storybook/test";
+import { expect, fn, waitFor, within } from "storybook/test";
 import { linksFor } from "@/model/nav";
 import { AppShell } from "./app-shell";
 
@@ -20,6 +20,7 @@ const meta = {
     name: "Robin Tiller",
     pages: staff,
     links: linksFor("Crew", directus),
+    onSignOut: fn(),
     children: (
       <main className="p-card">
         <h1 className="text-2xl font-semibold tracking-tight">Rosters</h1>
@@ -138,5 +139,17 @@ export const AccountMenuOpen: Story = {
     }
     await userEvent.click(await body.findByRole("button", { name: "Robin Tiller" }));
     await waitFor(async () => expect(await body.findByText("Signed in as Robin Tiller")).toBeVisible());
+    await expect(body.getByRole("menuitem", { name: "Sign out" })).toBeVisible();
+  },
+};
+
+/** Sign out, from the person's menu. */
+export const SignOut: Story = {
+  play: async (context) => {
+    await AccountMenuOpen.play!(context);
+    const body = within(context.canvasElement.ownerDocument.body);
+    await context.userEvent.click(body.getByRole("menuitem", { name: "Sign out" }));
+    await expect(context.args.onSignOut).toHaveBeenCalledOnce();
+    await waitFor(() => expect(body.queryByRole("menu")).toBeNull());
   },
 };

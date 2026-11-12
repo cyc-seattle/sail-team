@@ -36,6 +36,14 @@ export function signInUrl(directusUrl: string, page: string): string {
   return `${directusUrl}/auth/login/authentik?redirect=${encodeURIComponent(page)}`;
 }
 
+/**
+ * Authentik's sign-out at `login.<hostname>`, which ends its session, and any impersonation with it. It finishes on
+ * Authentik's home page, which platform sends on to the app.
+ */
+export function signOutUrl(hostname: string): string {
+  return `https://login.${hostname}/flows/-/default/invalidation/`;
+}
+
 /** A stored redirect time, or `null` when there's none or it isn't a number. */
 export function parseRedirectAt(stored: string | null): number | null {
   if (stored === null || stored.trim() === "") {

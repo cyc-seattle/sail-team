@@ -12,11 +12,17 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** A program area's own warnings, by date. */
+/** A program area's own warnings, by schedule and data, then by kind, the most common first, each kind by date. */
 export const ProgramArea: Story = {
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByText("3 warnings", { selector: "h2" }));
-    await expect(canvas.getByRole("list", { name: "Warnings" })).toBeVisible();
+    const schedule = canvas.getByRole("region", { name: "Schedule" });
+    await expect(schedule).toHaveTextContent("Too many sailors (2)");
+    await expect(canvas.getByRole("region", { name: "Data" })).toHaveTextContent(
+      "Program with no staff level or sailors per coach (1)",
+    );
+    await userEvent.click(canvas.getByText("Too many sailors"));
+    await expect(canvas.getByRole("list", { name: "Too many sailors" }).querySelectorAll("li")).toHaveLength(2);
   },
 };
 
@@ -25,6 +31,7 @@ export const Overview: Story = {
   args: { warnings, setId: "budget", areas: { summer: "Summer", doublehanded: "Doublehanded" } },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByText("4 warnings", { selector: "h2" }));
+    await userEvent.click(canvas.getByText("Activity with no staff"));
     await expect(canvas.getByRole("link", { name: "Doublehanded" })).toBeVisible();
   },
 };
