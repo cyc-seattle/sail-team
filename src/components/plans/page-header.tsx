@@ -23,7 +23,7 @@ export function PageHeader({ title, badge, back, actions }: PageHeaderProps) {
         </Link>
       )}
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex min-h-8 items-center gap-2">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           {badge}
         </div>
