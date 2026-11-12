@@ -23,12 +23,26 @@ const pinned = "sticky left-0 z-10 bg-background";
 const pressable =
   "cursor-pointer rounded-sm outline-none sm:px-1 hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-pressed:font-semibold aria-pressed:text-foreground";
 
-/** Each program's color, from the chart colors in turn. */
-const colorOf = (programs: string[]) => (program: string) =>
-  ({ "--program": `var(--chart-${(programs.indexOf(program) % 6) + 1})` }) as CSSProperties;
+/** The program colors there are; an eleventh program and on takes one again, striped. */
+const PROGRAM_COLORS = 10;
+
+/** Each program's color, as `--program`, with `--stripes` and a dashed `--edge` once the colors come round again. */
+const colorOf = (programs: string[]) => (program: string) => {
+  const i = Math.max(programs.indexOf(program), 0);
+  return {
+    "--program": `var(--program-${(i % PROGRAM_COLORS) + 1})`,
+    ...(i >= PROGRAM_COLORS && {
+      "--stripes": "repeating-linear-gradient(45deg, transparent 0 3px, var(--background) 3px 5px)",
+      "--edge": "dashed",
+    }),
+  } as CSSProperties;
+};
+
+/** A fill in a program's color. */
+const fill = "bg-(--program) bg-(image:--stripes)";
 
 function Swatch({ style }: { style: CSSProperties }) {
-  return <span aria-hidden style={style} className="inline-block size-2.5 shrink-0 rounded-[3px] bg-(--program)" />;
+  return <span aria-hidden style={style} className={cn("inline-block size-2.5 shrink-0 rounded-[3px]", fill)} />;
 }
 
 /** A program's name with its color, cut short on a phone. */
@@ -176,10 +190,7 @@ export function ScheduleCalendar({ blocks, offerings, warnings, closedDays, else
                     <TableCell key={w} className={cn("px-0.5 py-1 sm:px-1", w === week && "bg-muted")}>
                       <div
                         style={color(program)}
-                        className={cn(
-                          "relative h-5 min-w-4 rounded-sm",
-                          own.length > 0 ? "bg-(--program)" : "bg-muted",
-                        )}
+                        className={cn("relative h-5 min-w-4 rounded-sm", own.length > 0 ? fill : "bg-muted")}
                       >
                         <span className="sr-only">
                           {own.length > 0 ? (odd ? "Runs, with a day that differs" : "Runs") : "No"}
@@ -239,7 +250,7 @@ export function ScheduleCalendar({ blocks, offerings, warnings, closedDays, else
                           {sailors ? (
                             <span
                               style={color(program)}
-                              className="block rounded-sm border-l-2 border-(--program) bg-card px-1 text-xs tabular-nums sm:border-l-4 sm:px-2 sm:text-sm"
+                              className="block rounded-sm border-l-2 border-(--program) bg-card [border-left-style:var(--edge,solid)] px-1 text-xs tabular-nums sm:border-l-4 sm:px-2 sm:text-sm"
                             >
                               {sailors.estimated}
                               <span className="text-muted-foreground">
