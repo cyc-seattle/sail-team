@@ -74,7 +74,8 @@ export const financialPlansQuery = queryOptions({
     });
   },
   // Until every plan's numbers are in, so a draft that's just been saved or started shows them when they are.
-  refetchInterval: (query) => (query.state.data?.some((p) => p.net_cents === null) ? 5_000 : false),
+  refetchInterval: (query) =>
+    query.state.status !== "error" && query.state.data?.some((p) => p.net_cents === null) ? 5_000 : false,
 });
 
 /** A Financial Plan's plans, each with the copy of it the Financial Plan holds. */

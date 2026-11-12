@@ -443,5 +443,5 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
       };
     },
     // A draft's inputs change wherever its plans are changed, as its numbers do.
-    refetchInterval: isSaved(set) ? false : 5_000,
+    refetchInterval: (query) => (isSaved(set) || query.state.status === "error" ? false : 5_000),
   });

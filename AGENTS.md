@@ -50,6 +50,9 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
 - `src/directus/` talks to Directus. `client.ts` makes a client that sends the browser's Directus session cookie, and
   `app.ts` is the app's own, at `directus.<the app's hostname>`. `sign-in.ts` sends a visitor with no session to
   Directus's sign-in, and stops instead of looping if they come straight back without one (`session.ts`).
+  Directus's session lasts a day from the last sign-in or renewal, so `keep-session.ts` renews it hourly while the app
+  is open, and when a request is refused for want of one, renews it and tries again, or sends the person back through
+  sign-in to the same page.
   Sign out, in the person's menu, ends the Directus session, then Authentik's (`signOutUrl`), which also ends an
   admin's impersonation.
   `access.ts` reads `/permissions/me` to decide what to show; Directus still checks every request.
