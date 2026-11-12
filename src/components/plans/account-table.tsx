@@ -54,7 +54,16 @@ function Values({ columns, values }: { columns: AccountColumn[]; values: ReactNo
   ));
 }
 
-function AccountRows({ row, columns }: { row: AccountTableRow; columns: AccountColumn[] }) {
+function AccountRows({
+  row,
+  columns,
+  indent,
+}: {
+  row: AccountTableRow;
+  columns: AccountColumn[];
+  /** Whether a name sits clear of the chevrons on rows that open. */
+  indent: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const lines = row.lines ?? [];
   const opens = lines.length > 1;
@@ -77,7 +86,7 @@ function AccountRows({ row, columns }: { row: AccountTableRow; columns: AccountC
               {row.name}
             </button>
           ) : (
-            <span className="flex items-center gap-1 pl-5">
+            <span className={cn("flex items-center gap-1", indent && "pl-5")}>
               {row.name}
               <NoteInfo note={row.note} />
             </span>
@@ -118,6 +127,7 @@ export function AccountTable({
   groups: AccountTableGroup[];
 }) {
   const width = columns.length + 2;
+  const indent = groups.some((g) => g.rows.some((r) => (r.lines?.length ?? 0) > 1));
   return (
     <Table aria-label={label}>
       <TableHeader>
@@ -142,7 +152,7 @@ export function AccountTable({
               </TableRow>
             )}
             {group.rows.map((row) => (
-              <AccountRows key={row.key} row={row} columns={columns} />
+              <AccountRows key={row.key} row={row} columns={columns} indent={indent} />
             ))}
             {group.footers?.map((f) => (
               <TableRow

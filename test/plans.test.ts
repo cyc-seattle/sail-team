@@ -137,7 +137,7 @@ describe("reading a Financial Plan's inputs from Directus", () => {
         bonus_rate: 0.05,
         basis: "after_shared_costs",
         products: ["Guppies", "J-Pod", "Opti Camp"],
-        account: "5030 Salaries",
+        account: { number: "5030", name: "Salaries" },
         position: "Program Director",
       },
     ]);
@@ -155,9 +155,12 @@ describe("reading a Financial Plan's inputs from Directus", () => {
       hourly_coaching_rate_cents: 3_000,
       remainder_pool: "Program admin",
     });
-    expect(operations?.charges[0]).toMatchObject({ account: "5310 Card fees", excluded_from_mtdc: false });
+    expect(operations?.charges[0]).toMatchObject({
+      account: { number: "5310", name: "Card fees" },
+      excluded_from_mtdc: false,
+    });
     expect(operations?.fixedCosts.find((c) => c.name === "Audit")).toMatchObject({
-      account: "6110 Insurance",
+      account: { number: "6110", name: "Insurance" },
       charged_to: "G&A",
       excluded_from_mtdc: true,
     });

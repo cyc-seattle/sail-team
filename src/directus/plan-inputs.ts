@@ -18,7 +18,6 @@ import type {
 } from "@cyc-seattle/platform/planning";
 import { queryOptions } from "@tanstack/react-query";
 import {
-  accountName,
   plannedEnrollment,
   type Bonus,
   type FixedCost,
@@ -137,7 +136,7 @@ async function operationsAssumptions(
         .filter((p) => p.bonus_owner_id === b.id)
         .map((p) => p.product_id.name)
         .sort((x, y) => x.localeCompare(y)),
-      account: accountName(b.account_id),
+      account: { number: b.account_id.number, name: b.account_id.name },
       // A bonus naming a position that isn't there pays no one.
       position: (b.position_key && positionName.get(b.position_key)) ?? null,
     }))
@@ -160,7 +159,10 @@ async function operationsAssumptions(
       remainder_pool: remainder_pool_id?.name ?? null,
       bonuses: paying(p.name),
     })),
-    charges: byName(charges).map(({ account_id, ...c }) => ({ ...c, account: accountName(account_id) })),
+    charges: byName(charges).map(({ account_id, ...c }) => ({
+      ...c,
+      account: { number: account_id.number, name: account_id.name },
+    })),
     resources: byName(resources),
     boatRates: boatRates
       .map(({ boat_class_id, ...b }) => ({
@@ -336,7 +338,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         amount_cents: l.amount_cents,
         excluded_from_mtdc: l.excluded_from_mtdc,
         note: l.note,
-        account: accountName(l.account_id),
+        account: { number: l.account_id.number, name: l.account_id.name },
         charged_to: chargedTo(l),
         revenue: l.account_id.type === "revenue",
       }));
@@ -347,7 +349,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         hours: l.hours,
         note: l.note,
         staff_level: levelName.get(l.staff_level_key) ?? null,
-        account: accountName(l.account_id),
+        account: { number: l.account_id.number, name: l.account_id.name },
         charged_to: chargedTo(l),
       }));
       const ofOperations = (l: { version_id: string }) => l.version_id === ops?.version_id;
