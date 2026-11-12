@@ -1,6 +1,6 @@
 // The shapes the Planning reports show, and how they're made from a Financial Plan's results and inputs.
 import type { PlanActivity, PlanOffering } from "@cyc-seattle/platform/planning";
-import type { Member, PlanLine, ResultWarning } from "./financial-plans.ts";
+import type { Member, PlanLine, ResultWarning, Results } from "./financial-plans.ts";
 
 /** Lines that are worked out the same way, added up, such as every offering's coach wages. */
 export interface LineAmount {
@@ -386,25 +386,33 @@ export interface SharedCost {
   /** The pool it's spread from, such as G&A. */
   pool: string;
   total_cents: number;
-  /** The part spread over the programs' offerings. The rest falls on what's sold outside them. */
+  /** The part spread over the programs' offerings. Non-program's net covers the rest, or adds to it with a loss. */
   allocated_cents: number;
 }
 
-/** Each pool's lines at their full amount, added back up from every offering's share, by pool and account. */
+const covered = " covered by non-program: ";
+
+/**
+ * Each pool's lines at their full amount, added back up from every offering's share and the part non-program's net
+ * covers (an `offset:` line, cyc-seattle/platform#242), by pool and account.
+ */
 export function sharedCostsOf(lines: (Line & Pick<PlanLine, "member">)[], operations: string | null): SharedCost[] {
   const costs = new Map<string, SharedCost>();
-  for (const line of operating(lines).filter((l) => !l.revenue && isShare(l))) {
-    const cost = costs.get(line.key) ?? {
+  for (const line of operating(lines).filter((l) => !l.revenue && (isShare(l) || l.key.startsWith("offset:")))) {
+    const offset = line.key.startsWith("offset:");
+    const key = offset ? `pool:${line.key.slice("offset:".length)}` : line.key;
+    const [pool, ...name] = line.name.split(offset ? covered : " share: ");
+    const cost = costs.get(key) ?? {
       number: line.account_number,
-      name: line.name.split(" share: ").slice(1).join(" share: ") || line.name,
-      pool: poolOf(line),
+      name: name.join(offset ? covered : " share: ") || line.name,
+      pool: pool!,
       total_cents: 0,
       allocated_cents: 0,
     };
-    costs.set(line.key, {
+    costs.set(key, {
       ...cost,
       total_cents: cost.total_cents + line.amount_cents,
-      allocated_cents: cost.allocated_cents + (line.member === operations ? 0 : line.amount_cents),
+      allocated_cents: cost.allocated_cents + (offset || line.member === operations ? 0 : line.amount_cents),
     });
   }
   return [...costs.values()].sort(
@@ -443,18 +451,68 @@ export function productsOf(
   );
 }
 
-/** Fundraising's revenue and costs by account, and each capital purchase by name, such as a coach boat. */
-export function fundraisingAndCapital(lines: Line[]): {
-  fundraising: { revenue: AccountAmount[]; costs: AccountAmount[] };
-  capital: AccountAmount[];
-} {
+/** Fundraising's revenue and costs by account. */
+export function fundraisingOf(lines: Line[]): { revenue: AccountAmount[]; costs: AccountAmount[] } {
   const fundraising = lines.filter((l) => !l.capital && l.function === "fundraising");
   return {
-    fundraising: {
-      revenue: byAccount(fundraising.filter((l) => l.revenue)),
-      costs: byAccount(fundraising.filter((l) => !l.revenue)),
-    },
-    capital: byAccount(lines.filter((l) => l.capital).map((l) => ({ ...l, account_name: l.name }))),
+    revenue: byAccount(fundraising.filter((l) => l.revenue)),
+    costs: byAccount(fundraising.filter((l) => !l.revenue)),
+  };
+}
+
+/** A planned capital purchase, such as a coach boat, in the ranked list. */
+export interface CapitalItem {
+  key: string;
+  /** Its place in the list, 1 the most needed. Null for capital entered as a budget line, which has no rank. */
+  rank: number | null;
+  name: string;
+  account_number: string | null;
+  account_name: string;
+  amount_cents: number;
+  /** Its amount and every amount above it. */
+  running_cents: number;
+  /** Whether the year's money covers it, with everything above it. */
+  funded: boolean;
+  note: string | null;
+  link: string | null;
+}
+
+/**
+ * The capital list, most needed first, then capital entered as a budget line, and what the year's operations and
+ * fundraising leave to pay for it. Results from before capital was ranked list every capital line with no rank.
+ */
+export function capitalList(
+  results: Pick<Results, "lines" | "capital" | "totals">,
+  notes: Record<string, { note: string | null; link: string | null }>,
+): { items: CapitalItem[]; available_cents: number } {
+  const available = results.totals.operating_net_cents + results.totals.fundraising_net_cents;
+  const lines = results.lines.filter((l) => l.capital);
+  const lineOf = (key: string) => lines.find((l) => l.key === `capital:${key}` || l.key === `budget:${key}`);
+  const ranked = results.capital.length
+    ? results.capital.map((c) => ({ ...c, line: lineOf(c.key) }))
+    : lines.map((l, i) => ({
+        rank: i + 1,
+        key: l.key,
+        name: l.name,
+        amount_cents: l.amount_cents,
+        running_cents: lines.slice(0, i + 1).reduce((t, x) => t + x.amount_cents, 0),
+        funded: false,
+        line: l,
+      }));
+  return {
+    available_cents: available,
+    items: ranked.map(({ line, ...c }) => ({
+      key: c.key,
+      rank: line?.key.startsWith("capital:") ? c.rank : null,
+      name: c.name,
+      account_number: line?.account_number ?? null,
+      account_name: line?.account_name ?? "",
+      amount_cents: c.amount_cents,
+      running_cents: c.running_cents,
+      funded: c.running_cents <= available,
+      note: notes[c.key]?.note ?? null,
+      link: notes[c.key]?.link ?? null,
+    })),
   };
 }
 

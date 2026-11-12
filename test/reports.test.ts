@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  capitalList,
   defaultSort,
   netOf,
   nextSort,
@@ -298,6 +299,63 @@ describe("lineAmounts", () => {
     ).toEqual([
       { name: "Coaching", explanation: "salary", offerings: 1, cents: 400 },
       { name: "Coach wages", explanation: "hours × rate", offerings: 2, cents: 250 },
+    ]);
+  });
+});
+
+describe("capitalList", () => {
+  const line = (key: string, name: string, cents: number) => ({
+    key,
+    name,
+    account_number: "1510",
+    account_name: "Equipment",
+    cost_center_key: null,
+    cost_center_type: "org" as const,
+    amount_cents: cents,
+    revenue: false,
+    capital: true,
+    function: null,
+    explanation: null,
+    member: null,
+  });
+  const totals = {
+    operating_revenue_cents: 0,
+    operating_expense_cents: 0,
+    operating_net_cents: 4_000,
+    fundraising_revenue_cents: 0,
+    fundraising_expense_cents: 0,
+    fundraising_net_cents: 2_000,
+    capital_cents: 0,
+    total_cents: 0,
+  };
+
+  it("lists the ranked items, then capital entered as a budget line with no rank, and what the money covers", () => {
+    const { items, available_cents } = capitalList(
+      {
+        totals,
+        lines: [line("capital:boat", "Coach boat", 5_000), line("budget:trailer", "Trailer", 3_000)],
+        capital: [
+          { rank: 1, key: "boat", name: "Coach boat", amount_cents: 5_000, running_cents: 5_000, funded: true },
+          { rank: 2, key: "trailer", name: "Trailer", amount_cents: 3_000, running_cents: 8_000, funded: false },
+        ],
+      },
+      { boat: { note: "Replaces the oldest RIB", link: null } },
+    );
+    expect(available_cents).toBe(6_000);
+    expect(items.map((i) => [i.rank, i.name, i.account_number, i.running_cents, i.funded, i.note])).toEqual([
+      [1, "Coach boat", "1510", 5_000, true, "Replaces the oldest RIB"],
+      [null, "Trailer", "1510", 8_000, false, null],
+    ]);
+  });
+
+  it("lists results from before capital was ranked with no rank, in their order", () => {
+    const { items } = capitalList(
+      { totals, lines: [line("budget:boat", "Coach boat", 5_000), line("budget:sails", "Sails", 2_000)], capital: [] },
+      {},
+    );
+    expect(items.map((i) => [i.rank, i.name, i.running_cents, i.funded])).toEqual([
+      [null, "Coach boat", 5_000, true],
+      [null, "Sails", 7_000, false],
     ]);
   });
 });
