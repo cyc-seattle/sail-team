@@ -9,6 +9,7 @@ import {
   doublehandedPrograms,
   doublehandedRules,
   doublehandedStatement,
+  functions,
   fundraising,
   overviewRows,
   products,
@@ -54,6 +55,7 @@ export const Overview: Story = {
         offerings={areaOfferings}
         warnings={warnings}
         totals={totals}
+        functions={functions}
         timeline={[]}
       />
     ),

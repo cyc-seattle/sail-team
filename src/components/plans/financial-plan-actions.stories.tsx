@@ -15,6 +15,7 @@ const budget: FinancialPlanSummary = {
   saved_by: null,
   platform_version: null,
   parent: null,
+  archived_at: null,
 };
 const twoCoaches: FinancialPlanSummary = {
   ...budget,
@@ -45,27 +46,39 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** A draft can be saved, after a warning that it then never changes. */
+/** A draft can be frozen, after a warning that it then never changes. */
 export const Draft: Story = {
   play: async ({ args, canvas, canvasElement, userEvent }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "Save" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Freeze" }));
     const dialog = within(await within(canvasElement.ownerDocument.body).findByRole("dialog"));
     await waitFor(() => expect(dialog.getByText(/never change/)).toBeVisible());
-    await userEvent.click(dialog.getByRole("button", { name: "Save" }));
+    await userEvent.click(dialog.getByRole("button", { name: "Freeze" }));
     await waitFor(() => expect(args.onMove).toHaveBeenCalledWith("saved"));
   },
 };
 
-export const Saved: Story = {
+export const Frozen: Story = {
   args: { set: budget },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: "Mark active" })).toBeVisible();
-    await expect(canvas.queryByRole("button", { name: "Save" })).toBeNull();
+    await expect(canvas.queryByRole("button", { name: "Freeze" })).toBeNull();
   },
 };
 
-/** A saved plan's name and note can change, though its numbers can't. */
-export const RenameSaved: Story = {
+/** Duplicating a plan starts a draft copy of it. */
+export const Duplicate: Story = {
+  args: { set: budget },
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Duplicate" }));
+    const dialog = within(await within(canvasElement.ownerDocument.body).findByRole("dialog"));
+    await expect(dialog.getByLabelText("Name")).toHaveValue("Budget copy");
+    await userEvent.click(dialog.getByRole("button", { name: "Duplicate" }));
+    await waitFor(() => expect(args.onStart).toHaveBeenCalledWith({ name: "Budget copy", message: null }));
+  },
+};
+
+/** A frozen plan's name and note can change, though its numbers can't. */
+export const RenameFrozen: Story = {
   args: { set: budget },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Edit" }));

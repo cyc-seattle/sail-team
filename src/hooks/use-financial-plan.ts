@@ -11,7 +11,7 @@ export function useFinancialPlan(setId: string) {
   const [stuck, setStuck] = useState(false);
   const { data } = useSuspenseQuery({
     ...financialPlanQuery(setId),
-    refetchInterval: (q) => refreshEvery(q.state.data, stuck),
+    refetchInterval: (q) => (q.state.status === "error" ? false : refreshEvery(q.state.data, stuck)),
   });
   const missing = !!data && !data.results;
   useEffect(() => {

@@ -25,6 +25,7 @@ const setFields = [
   "saved_at",
   "saved_by",
   "platform_version",
+  "archived_at",
   "parent_id.id",
   "parent_id.name",
 ];
@@ -65,6 +66,7 @@ export const financialPlansQuery = queryOptions({
         saved_at: set.saved_at,
         saved_by: (set.saved_by && savers.get(set.saved_by)) ?? null,
         parent: set.parent,
+        archived: set.archived_at !== null,
         note: set.message,
         platform: platformRelease(set),
         warnings: warnings.filter((w) => w.version_set_id === set.id).length,
@@ -75,7 +77,8 @@ export const financialPlansQuery = queryOptions({
     });
   },
   // Until every plan's numbers are in, so a draft that's just been saved or started shows them when they are.
-  refetchInterval: (query) => (query.state.data?.some((p) => p.net_cents === null) ? 5_000 : false),
+  refetchInterval: (query) =>
+    query.state.status !== "error" && query.state.data?.some((p) => p.net_cents === null) ? 5_000 : false,
 });
 
 /** A Financial Plan's plans, each with the copy of it the Financial Plan holds. */
@@ -245,12 +248,12 @@ export const financialPlanQuery = (setId: string) =>
   });
 
 /**
- * Renames a Financial Plan, changes its note, or moves it on: a draft to saved, a saved one to active. Platform
- * refuses any move back.
+ * Renames a Financial Plan, changes its note, archives it or brings it back, or moves it on: a draft to saved, a saved
+ * one to active. Platform refuses any move back, and archiving the active one.
  */
 export async function updateFinancialPlan(
   id: string,
-  changes: { name?: string; message?: string | null; status?: "saved" | "active" },
+  changes: { name?: string; message?: string | null; status?: "saved" | "active"; archived_at?: string | null },
 ): Promise<void> {
   await appDirectus().client.request(updateItem("version_sets", id, changes));
 }

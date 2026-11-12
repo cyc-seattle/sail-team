@@ -157,27 +157,42 @@ export function sessionGrid(offerings: ReportOffering[]): {
   return { sessions, rows };
 }
 
-/** What a sailor pays in one program, on average: for an offering, for a day, and for an hour on the water. */
-export interface ProgramFee {
-  program: string;
+export type EnrollmentBy = "session" | "program";
+
+/** The groups offerings fall in: programs A to Z, or sessions in the order they first start. */
+function groupsOf(offerings: ReportOffering[], by: EnrollmentBy): { name: string; offerings: ReportOffering[] }[] {
+  const sorted = byStart(offerings);
+  const names = [...new Set(sorted.map((o) => o[by]))];
+  if (by === "program") {
+    names.sort((a, b) => a.localeCompare(b));
+  }
+  return names.map((name) => ({ name, offerings: sorted.filter((o) => o[by] === name) }));
+}
+
+/** What a sailor pays in a program or a session, on average: for an offering, for a day, and for an hour on the water. */
+export interface Fee {
+  name: string;
   per_offering_cents: number;
   per_day_cents: number;
   per_hour_cents: number;
 }
 
-/** Each program's average fees, weighted by the sailors expected in each offering, programs in the order they start. */
-export function programFees(offerings: ReportOffering[]): ProgramFee[] {
-  return numberedOfferings(offerings).map(({ program, offerings: own }) => {
-    const sum = (of: (o: ReportOffering) => number) => own.reduce((total, o) => total + of(o), 0);
-    const paid = sum((o) => o.fee_cents * o.estimated);
-    const per = (by: number) => (by > 0 ? Math.round(paid / by) : 0);
-    return {
-      program,
-      per_offering_cents: per(sum((o) => o.estimated)),
-      per_day_cents: per(sum((o) => o.estimated * o.days)),
-      per_hour_cents: per(sum((o) => o.estimated * o.hours)),
-    };
-  });
+/** Offerings' average fees, weighted by the sailors expected in each. */
+export function feeOf(name: string, offerings: ReportOffering[]): Fee {
+  const sum = (of: (o: ReportOffering) => number) => offerings.reduce((total, o) => total + of(o), 0);
+  const paid = sum((o) => o.fee_cents * o.estimated);
+  const per = (by: number) => (by > 0 ? Math.round(paid / by) : 0);
+  return {
+    name,
+    per_offering_cents: per(sum((o) => o.estimated)),
+    per_day_cents: per(sum((o) => o.estimated * o.days)),
+    per_hour_cents: per(sum((o) => o.estimated * o.hours)),
+  };
+}
+
+/** Each program's or session's average fees: programs A to Z, sessions in the order they start. */
+export function fees(offerings: ReportOffering[], by: EnrollmentBy): Fee[] {
+  return groupsOf(offerings, by).map((group) => feeOf(group.name, group.offerings));
 }
 
 /** One row of enrollment: a session, or a program. */
@@ -189,22 +204,33 @@ export interface EnrollmentRow {
   sailor_days: number;
 }
 
-export type EnrollmentBy = "session" | "program";
-
-/** Offerings added up by session or by program, in the order each first starts. */
+/** Offerings added up by program, A to Z, or by session, in the order each first starts. */
 export function enrollment(offerings: ReportOffering[], by: EnrollmentBy): EnrollmentRow[] {
-  const sorted = byStart(offerings);
-  const names = [...new Set(sorted.map((o) => o[by]))];
-  return names.map((name) => {
-    const own = sorted.filter((o) => o[by] === name);
-    return {
-      name,
-      offerings: own.length,
-      sailors: own.reduce((total, o) => total + o.estimated, 0),
-      max: own.reduce((total, o) => total + o.max, 0),
-      sailor_days: own.reduce((total, o) => total + o.estimated * o.days, 0),
-    };
-  });
+  return groupsOf(offerings, by).map(({ name, offerings: own }) => ({
+    name,
+    offerings: own.length,
+    sailors: own.reduce((total, o) => total + o.estimated, 0),
+    max: own.reduce((total, o) => total + o.max, 0),
+    sailor_days: own.reduce((total, o) => total + o.estimated * o.days, 0),
+  }));
+}
+
+/** The year's expenses by what they're for, as Form 990 splits them. Capital isn't an expense. */
+export interface FunctionalExpenses {
+  program_cents: number;
+  management_cents: number;
+  fundraising_cents: number;
+}
+
+/**
+ * Every expense line added up by its function. A share of G&A keeps G&A's function wherever it's charged, and a line
+ * with none counts as management, as the engine defaults it.
+ */
+export function functionalExpenses(lines: Line[]): FunctionalExpenses {
+  const expenses = lines.filter((l) => !l.revenue && !l.capital);
+  const of = (fn: NonNullable<PlanLine["function"]>) =>
+    sum(expenses.filter((l) => (l.function ?? "management") === fn));
+  return { program_cents: of("program"), management_cents: of("management"), fundraising_cents: of("fundraising") };
 }
 
 /** One of the engine's warnings, on a date, about a program area or Non-program, when it names them. */

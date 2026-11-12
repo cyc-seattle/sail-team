@@ -71,7 +71,7 @@ function ConfirmButton({
   );
 }
 
-/** A Financial Plan's buttons: edit its name and note, start a draft from it, and save it or mark it active. */
+/** A Financial Plan's buttons: edit its name and note, duplicate it as a new draft, and freeze it or mark it active. */
 export function FinancialPlanActions({
   set,
   canUpdate,
@@ -93,19 +93,19 @@ export function FinancialPlanActions({
       )}
       {canCreate && (
         <PlanDetailsDialog
-          trigger="Start a draft from this"
-          title={`Start a draft from ${set.name}`}
-          description={`The new draft starts as a copy of ${set.name}, for ${set.fiscal_year}. ${set.name} doesn't change.`}
+          trigger="Duplicate"
+          title={`Duplicate ${set.name}`}
+          description={`The copy is a draft, for ${set.fiscal_year}. ${set.name} doesn't change.`}
           initial={{ name: `${set.name} copy`, message: null }}
-          submitLabel="Start the draft"
+          submitLabel="Duplicate"
           onSubmit={onStart}
         />
       )}
       {canUpdate && set.status === "draft" && (
         <ConfirmButton
-          label="Save"
-          title={`Save ${set.name}?`}
-          description="Once it's saved, its plans and numbers never change. Its name and note still can."
+          label="Freeze"
+          title={`Freeze ${set.name}?`}
+          description="Once it's frozen, its plans and numbers never change. Its name and note still can."
           onConfirm={() => onMove("saved")}
         />
       )}
@@ -113,7 +113,7 @@ export function FinancialPlanActions({
         <ConfirmButton
           label="Mark active"
           title={`Mark ${set.name} active?`}
-          description={`It becomes the plan the club runs for ${set.fiscal_year}, in place of the one active now.`}
+          description={`It becomes the active plan for ${set.fiscal_year}, in place of the one active now.`}
           onConfirm={() => onMove("active")}
         />
       )}

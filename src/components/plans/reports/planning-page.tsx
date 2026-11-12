@@ -27,63 +27,83 @@ import { PageHeader } from "../page-header";
 import { VersionBadge, type VersionState } from "../version-badge";
 
 export interface PlanningActions {
-  /** Whether the person can save, mark active, and delete Financial Plans. Directus still checks each request. */
+  /** Whether the person can freeze, mark active, archive, and delete Financial Plans. Directus still checks each request. */
   canUpdate: boolean;
   canDelete: boolean;
   onMove: (plan: ListedPlan, status: "saved" | "active") => Promise<void>;
+  onArchive: (plan: ListedPlan, archived: boolean) => Promise<void>;
   onDelete: (plan: ListedPlan) => Promise<void>;
 }
 
 const ALL = "all";
+const ARCHIVED = "archived";
 const statusOrder: Record<VersionState, number> = { active: 0, draft: 1, saved: 2 };
+// Archived plans show only when asked for.
 const statusItems = [
   { value: ALL, label: "Every status" },
   { value: "active", label: "Active" },
   { value: "draft", label: "Draft" },
-  { value: "saved", label: "Saved" },
+  { value: "saved", label: "Frozen" },
+  { value: ARCHIVED, label: "Archived" },
 ];
+const statusMatches = (plan: ListedPlan, status: string) =>
+  status === ARCHIVED ? plan.archived : !plan.archived && (status === ALL || plan.status === status);
 
-/** Active first, then drafts by name, then saved ones, newest first. */
+/** Active first, then drafts by name, then frozen ones, newest first. */
 const byStatus = (a: ListedPlan, b: ListedPlan) =>
   statusOrder[a.status] - statusOrder[b.status] ||
   (a.status === "draft" ? a.name.localeCompare(b.name) : (b.saved_at ?? "").localeCompare(a.saved_at ?? ""));
 
-type Action = "save" | "activate" | "delete";
+type Confirmed = "save" | "activate" | "delete";
+type Action = Confirmed | "archive" | "unarchive";
+
+const labels: Record<Action, string> = {
+  save: "Freeze",
+  activate: "Mark active",
+  archive: "Archive",
+  unarchive: "Unarchive",
+  delete: "Delete",
+};
 
 /** What each action asks before it does what can't be undone. */
-const confirmations = (plan: ListedPlan): Record<Action, { label: string; title: string; description: string }> => ({
+const confirmations = (plan: ListedPlan): Record<Confirmed, { label: string; title: string; description: string }> => ({
   save: {
-    label: "Save",
-    title: `Save ${plan.name}?`,
-    description: "Once it's saved, its plans and numbers never change. Its name and note still can.",
+    label: labels.save,
+    title: `Freeze ${plan.name}?`,
+    description: "Once it's frozen, its plans and numbers never change. Its name and note still can.",
   },
   activate: {
-    label: "Mark active",
+    label: labels.activate,
     title: `Mark ${plan.name} active?`,
-    description: `It becomes the plan the club runs for ${plan.year}, in place of the one active now.`,
+    description: `It becomes the active plan for ${plan.year}, in place of the one active now.`,
   },
   delete: {
-    label: "Delete",
+    label: labels.delete,
     title: `Delete ${plan.name}?`,
     description: "Its plans and numbers go with it. This can't be undone.",
   },
 });
 
+/** What can be done to a plan: a draft is frozen, archived or deleted, a frozen one marked active or archived. */
+function actionsFor(plan: ListedPlan, { canUpdate, canDelete }: PlanningActions): Action[] {
+  if (plan.archived) {
+    return canUpdate ? ["unarchive"] : [];
+  }
+  const updates: Action[] =
+    plan.status === "draft" ? ["save", "archive"] : plan.status === "saved" ? ["activate", "archive"] : [];
+  return [...(canUpdate ? updates : []), ...(canDelete && plan.status === "draft" ? (["delete"] as const) : [])];
+}
+
 /**
- * A plan's buttons in one menu: a draft is saved or deleted, and a saved one marked active. Each asks first, since none
- * can be undone.
+ * A plan's buttons in one menu. Each that can't be undone asks first; archiving can be, so it doesn't.
  */
 function PlanActions({ plan, actions }: { plan: ListedPlan; actions: PlanningActions }) {
   // The action stays set while its dialog closes, so the dialog keeps its words as it fades.
-  const [pending, setPending] = useState<Action>("save");
+  const [pending, setPending] = useState<Confirmed>("save");
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<"idle" | "working" | "failed">("idle");
-  const items: Action[] =
-    plan.status === "draft"
-      ? [...(actions.canUpdate ? (["save"] as const) : []), ...(actions.canDelete ? (["delete"] as const) : [])]
-      : plan.status === "saved" && actions.canUpdate
-        ? ["activate"]
-        : [];
+  const [archiveFailed, setArchiveFailed] = useState(false);
+  const items = actionsFor(plan, actions);
   if (items.length === 0) {
     return null;
   }
@@ -105,6 +125,11 @@ function PlanActions({ plan, actions }: { plan: ListedPlan; actions: PlanningAct
   const ask = asks[pending];
   return (
     <>
+      {archiveFailed && (
+        <span role="alert" className="mr-2 text-sm text-destructive">
+          That didn&apos;t work. Try again.
+        </span>
+      )}
       <DropdownMenu>
         <DropdownMenuTrigger render={<Button variant="outline" size="sm" aria-label={`Actions for ${plan.name}`} />}>
           Actions
@@ -116,11 +141,16 @@ function PlanActions({ plan, actions }: { plan: ListedPlan; actions: PlanningAct
               key={item}
               variant={item === "delete" ? "destructive" : "default"}
               onClick={() => {
+                if (item === "archive" || item === "unarchive") {
+                  setArchiveFailed(false);
+                  actions.onArchive(plan, item === "archive").catch(() => setArchiveFailed(true));
+                  return;
+                }
                 setPending(item);
                 setOpen(true);
               }}
             >
-              {asks[item].label}
+              {labels[item]}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
@@ -158,7 +188,7 @@ function PlanActions({ plan, actions }: { plan: ListedPlan; actions: PlanningAct
   );
 }
 
-/** When and by whom a plan was saved, what it started from, the platform version that worked it out, and its note, on hover or a tap. */
+/** When and by whom a plan was frozen, what it started from, the platform version that worked it out, and its note, on hover or a tap. */
 function PlanDetails({ plan }: { plan: ListedPlan }) {
   if (!plan.saved_at && !plan.parent && !plan.note) {
     return null;
@@ -175,7 +205,7 @@ function PlanDetails({ plan }: { plan: ListedPlan }) {
       </PopoverTrigger>
       <PopoverContent align="start" aria-label={`About ${plan.name}`} className="w-80">
         <p className="text-xs text-muted-foreground">
-          {plan.saved_at ? `Saved ${formatDate(plan.saved_at)}${plan.saved_by ? ` by ${plan.saved_by}` : ""}` : null}
+          {plan.saved_at ? `Frozen ${formatDate(plan.saved_at)}${plan.saved_by ? ` by ${plan.saved_by}` : ""}` : null}
           {plan.saved_at && plan.parent ? ". " : null}
           {plan.parent && (
             <>
@@ -236,14 +266,14 @@ function Amount({ cents, colored = false }: { cents: number | null; colored?: bo
 /**
  * Planning's first page: every Financial Plan in one table, narrowed by year and status, opening on the newest year.
  * One line a plan: its details on hover, and its actions in a menu, where a draft, such as one the planning agent
- * wrote, is saved or deleted.
+ * wrote, is frozen, archived or deleted. Archived plans show only when the status filter asks for them.
  */
 export function PlanningPage({ plans, actions }: { plans: ListedPlan[]; actions: PlanningActions }) {
   const years = [...new Set(plans.map((p) => p.year))].sort((a, b) => b - a);
   const [year, setYear] = useState(String(years[0] ?? ALL));
   const [status, setStatus] = useState(ALL);
   const shown = plans
-    .filter((p) => (year === ALL || String(p.year) === year) && (status === ALL || p.status === status))
+    .filter((p) => (year === ALL || String(p.year) === year) && statusMatches(p, status))
     .sort((a, b) => b.year - a.year || byStatus(a, b));
   return (
     <main className="mx-auto grid max-w-6xl gap-6 p-card">
@@ -263,9 +293,9 @@ export function PlanningPage({ plans, actions }: { plans: ListedPlan[]; actions:
         <Table aria-label="Financial Plans">
           <TableHeader>
             <TableRow>
-              <TableHead className="sticky left-0 z-10 bg-background">Plan</TableHead>
               <TableHead>Year</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Plan</TableHead>
               <TableHead className="text-right">Revenue</TableHead>
               <TableHead className="text-right">Expenses</TableHead>
               <TableHead className="text-right">Net</TableHead>
@@ -277,7 +307,11 @@ export function PlanningPage({ plans, actions }: { plans: ListedPlan[]; actions:
           <TableBody>
             {shown.map((p) => (
               <TableRow key={p.id}>
-                <TableCell className="sticky left-0 z-10 bg-background">
+                <TableCell className="tabular-nums">{p.year}</TableCell>
+                <TableCell>
+                  <VersionBadge state={p.status} />
+                </TableCell>
+                <TableCell>
                   <span className="flex items-center gap-1">
                     <Link
                       to="/plans/financial/$setId"
@@ -295,10 +329,6 @@ export function PlanningPage({ plans, actions }: { plans: ListedPlan[]; actions:
                       </span>
                     )}
                   </span>
-                </TableCell>
-                <TableCell className="tabular-nums">{p.year}</TableCell>
-                <TableCell>
-                  <VersionBadge state={p.status} />
                 </TableCell>
                 <Amount cents={p.revenue_cents} />
                 <Amount cents={p.expense_cents} />
