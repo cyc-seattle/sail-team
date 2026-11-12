@@ -18,6 +18,8 @@ import {
   summerOfferings,
   summerPrograms,
   summerRules,
+  summerFixedCosts,
+  summerStaffTime,
   summerStatement,
   warnings,
 } from "./fixtures";
@@ -61,6 +63,8 @@ export const Summer: Story = {
         statement={summerStatement}
         programs={summerPrograms}
         offerings={summerOfferings}
+        fixedCosts={summerFixedCosts}
+        staffTime={summerStaffTime}
       />
     ),
   },
@@ -72,6 +76,8 @@ export const SummerAssumptionsOpen: Story = {
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByText("Assumptions", { selector: "h2" }));
     await expect(canvas.getByRole("list", { name: "Guppies rules" })).toBeVisible();
+    await expect(canvas.getByRole("table", { name: "Fixed costs" })).toHaveTextContent("Tent rental");
+    await expect(canvas.getByRole("row", { name: /Camp setup/ })).toHaveTextContent("40");
   },
 };
 
@@ -86,6 +92,8 @@ export const Doublehanded: Story = {
         statement={doublehandedStatement}
         programs={doublehandedPrograms}
         offerings={doublehandedOfferings}
+        fixedCosts={[]}
+        staffTime={[]}
       />
     ),
   },

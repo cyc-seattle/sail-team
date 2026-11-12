@@ -1,4 +1,5 @@
 import { Fragment, type ReactNode } from "react";
+import type { FixedCost, StaffTime } from "@/model/assumptions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   numberedOfferings,
@@ -8,6 +9,7 @@ import {
   type ReportOffering,
 } from "@/model/reports";
 import { cn } from "@/lib/utils";
+import { BudgetLines, StaffTimeTable } from "../assumptions";
 import { Money } from "../money";
 import { CollapsibleSection } from "./collapsible-section";
 import { OfferingName } from "./offering-name";
@@ -41,10 +43,14 @@ function AreaAssumptions({
   area,
   rules,
   programs,
+  fixedCosts,
+  staffTime,
 }: {
   area: string;
   rules: string | null;
   programs: ProgramSettings[];
+  fixedCosts: FixedCost[];
+  staffTime: StaffTime[];
 }) {
   return (
     <CollapsibleSection title="Assumptions">
@@ -67,6 +73,18 @@ function AreaAssumptions({
             <RulesList rules={p.rules} label={`${p.name} rules`} />
           </section>
         ))}
+        {fixedCosts.length > 0 && (
+          <div className="border-t pt-4">
+            <div className="grid gap-6">
+              <BudgetLines costsTitle="Fixed costs" lines={fixedCosts} />
+            </div>
+          </div>
+        )}
+        {staffTime.length > 0 && (
+          <div className="border-t pt-4">
+            <StaffTimeTable lines={staffTime} />
+          </div>
+        )}
       </div>
     </CollapsibleSection>
   );
@@ -83,19 +101,31 @@ export interface ProgramAreaReportProps {
   statement: { revenue: AccountAmount[]; direct: AccountAmount[]; indirect: AccountAmount[] };
   programs: ProgramSettings[];
   offerings: ReportOffering[];
+  /** The area plan's own fixed costs and staff time outside its programs. */
+  fixedCosts: FixedCost[];
+  staffTime: StaffTime[];
 }
 
 /**
  * One program area: its warnings and its assumptions, both closed at first, its revenue and expenses by account, then its sailors by
  * session and each offering's fee and size, by program and start date, the figures used to compare with other centers.
  */
-export function ProgramAreaReport({ area, rules, warnings, statement, programs, offerings }: ProgramAreaReportProps) {
+export function ProgramAreaReport({
+  area,
+  rules,
+  warnings,
+  statement,
+  programs,
+  offerings,
+  fixedCosts,
+  staffTime,
+}: ProgramAreaReportProps) {
   const groups = numberedOfferings(offerings);
   return (
     <>
       <div className="grid gap-2">
         <WarningsSection warnings={warnings} />
-        <AreaAssumptions area={area} rules={rules} programs={programs} />
+        <AreaAssumptions area={area} rules={rules} programs={programs} fixedCosts={fixedCosts} staffTime={staffTime} />
       </div>
 
       <ReportSection id="revenue-and-expenses" title="Revenue and expenses">

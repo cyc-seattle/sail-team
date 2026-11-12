@@ -1,6 +1,9 @@
 import type {
   PlanActivity,
   PlanBonusOwner,
+  PlanBudgetLine,
+  PlanClosedDate,
+  PlanLaborLine,
   PlanOffering,
   PlanProgram,
   PlanRates,
@@ -10,7 +13,14 @@ import type {
   PlanStaffLevel,
 } from "@cyc-seattle/platform/planning";
 import { queryOptions } from "@tanstack/react-query";
-import { plannedEnrollment, type Bonus, type OperationsAssumptions } from "@/model/assumptions";
+import {
+  accountName,
+  plannedEnrollment,
+  type Bonus,
+  type FixedCost,
+  type OperationsAssumptions,
+  type StaffTime,
+} from "@/model/assumptions";
 import { isSaved, type FinancialPlanSummary, type Member } from "@/model/financial-plans";
 import { engineRows } from "@/model/plan-data";
 import { reportKey, reportOffering, type ProgramSettings, type ReportOffering } from "@/model/reports";
@@ -26,45 +36,119 @@ async function rowsOf<T>(table: string, versions: string[], fields = ["*"]): Pro
 
 const byName = <T extends { name: string }>(rows: T[]) => [...rows].sort((a, b) => a.name.localeCompare(b.name));
 
-type BonusRow = Pick<PlanBonusOwner, "key" | "role_name" | "bonus_rate" | "basis" | "position_key">;
-const asBonus = ({ key, role_name, bonus_rate, basis }: BonusRow): Bonus => ({
-  key,
-  role_name,
-  bonus_rate,
-  basis: basis ?? null,
-});
+type Account = { number: string | null; name: string };
+const accountFields = ["account_id.number", "account_id.name"];
+
+/** What a cost or labor line is charged to, by name: a pool, an offering, a product, a program area, or CSC. */
+type ChargedTo = (row: { cost_center_type: string; cost_center_key: string | null }) => string;
+
+type CostRow<T> = T & {
+  version_id: string;
+  cost_center_type: string;
+  cost_center_key: string | null;
+  account_id: Account;
+};
+
+type BudgetRow = CostRow<Pick<PlanBudgetLine, "key" | "name" | "amount_cents" | "excluded_from_mtdc" | "note">> & {
+  account_id: { type: string };
+};
+type LaborRow = CostRow<Pick<PlanLaborLine, "key" | "name" | "staff_level_key" | "hours" | "note">>;
+
+type BonusRow = Pick<PlanBonusOwner, "id" | "key" | "role_name" | "bonus_rate" | "basis" | "position_key"> & {
+  account_id: Account;
+};
 
 /** The Operations Plan's rates for the year, with every plan's bonuses on the positions they pay. */
-async function operationsAssumptions(version: string, versions: string[]): Promise<OperationsAssumptions> {
-  const [rates, staffLevels, positions, charges, resources, boatRates, bonuses] = await Promise.all([
-    rowsOf<PlanRates>("plan_rates", [version]),
-    rowsOf<PlanStaffLevel>("plan_staff_levels", [version]),
-    rowsOf<PlanSalariedPosition>("plan_salaried_positions", [version]),
-    rowsOf<PlanRevenueCharge>("plan_revenue_charges", [version]),
-    rowsOf<PlanResource>("plan_resources", [version]),
-    rowsOf<{
-      key: string;
-      boat_class_id: { name: string; sailors_per_boat: number | null };
-      maintenance_per_boat_hour_cents: number;
-      quantity: number | null;
-    }>(
-      "plan_boat_rates",
-      [version],
-      ["key", "boat_class_id.name", "boat_class_id.sailors_per_boat", "maintenance_per_boat_hour_cents", "quantity"],
-    ),
-    rowsOf<BonusRow>("plan_bonus_owners", versions, ["key", "role_name", "bonus_rate", "basis", "position_key"]),
-  ]);
-  const paying = (key: string | null) =>
-    bonuses
-      .filter((b) => (b.position_key ?? null) === key)
-      .map(asBonus)
-      .sort((a, b) => a.role_name.localeCompare(b.role_name));
-  const positionKeys = new Set(positions.map((p) => p.key));
+async function operationsAssumptions(
+  version: string,
+  versions: string[],
+): Promise<Omit<OperationsAssumptions, "fixedCosts" | "staffTime">> {
+  const [rates, staffLevels, positions, charges, resources, boatRates, bonuses, bonusProducts, bookings, closed] =
+    await Promise.all([
+      rowsOf<PlanRates & { rib_resource_kind_id: { name: string } | null }>(
+        "plan_rates",
+        [version],
+        ["*", "rib_resource_kind_id.name"],
+      ),
+      rowsOf<PlanStaffLevel>("plan_staff_levels", [version]),
+      rowsOf<PlanSalariedPosition & { remainder_pool_id: { name: string } | null }>(
+        "plan_salaried_positions",
+        [version],
+        ["*", "remainder_pool_id.name"],
+      ),
+      rowsOf<PlanRevenueCharge & { account_id: Account }>("plan_revenue_charges", [version], ["*", ...accountFields]),
+      rowsOf<PlanResource>("plan_resources", [version]),
+      rowsOf<{
+        key: string;
+        boat_class_id: { name: string; sailors_per_boat: number | null };
+        maintenance_per_boat_hour_cents: number;
+        quantity: number | null;
+      }>(
+        "plan_boat_rates",
+        [version],
+        ["key", "boat_class_id.name", "boat_class_id.sailors_per_boat", "maintenance_per_boat_hour_cents", "quantity"],
+      ),
+      rowsOf<BonusRow>("plan_bonus_owners", versions, [
+        "id",
+        "key",
+        "role_name",
+        "bonus_rate",
+        "basis",
+        "position_key",
+        ...accountFields,
+      ]),
+      rowsOf<{ bonus_owner_id: string; product_id: { name: string } }>("plan_bonus_owner_products", versions, [
+        "bonus_owner_id",
+        "product_id.name",
+      ]),
+      rowsOf<{
+        key: string;
+        position_id: { name: string };
+        product_id: { name: string } | null;
+        program_area_id: { name: string } | null;
+        hours: number;
+      }>(
+        "plan_salaried_bookings",
+        [version],
+        ["key", "position_id.name", "product_id.name", "program_area_id.name", "hours"],
+      ),
+      rowsOf<PlanClosedDate>("plan_closed_dates", [version], ["key", "date", "name"]),
+    ]);
+  const positionName = new Map(positions.map((p) => [p.key, p.name]));
+  const all: Bonus[] = bonuses
+    .map((b) => ({
+      key: b.key,
+      role_name: b.role_name,
+      bonus_rate: b.bonus_rate,
+      basis: b.basis ?? null,
+      products: bonusProducts
+        .filter((p) => p.bonus_owner_id === b.id)
+        .map((p) => p.product_id.name)
+        .sort((x, y) => x.localeCompare(y)),
+      account: accountName(b.account_id),
+      // A bonus naming a position that isn't there pays no one.
+      position: (b.position_key && positionName.get(b.position_key)) ?? null,
+    }))
+    .sort((a, b) => a.role_name.localeCompare(b.role_name));
+  const paying = (name: string) => all.filter((b) => b.position === name);
+  const rate = rates[0];
   return {
-    rates: rates[0] ?? null,
+    rates: rate
+      ? {
+          payroll_tax_rate: rate.payroll_tax_rate,
+          lodging_per_night_cents: rate.lodging_per_night_cents,
+          mileage_rate_cents: rate.mileage_rate_cents,
+          rib_kind: rate.rib_resource_kind_id?.name ?? null,
+        }
+      : null,
     staffLevels: byName(staffLevels),
-    positions: byName(positions).map((p) => ({ ...p, bonuses: paying(p.key) })),
-    charges: byName(charges),
+    positions: byName(positions).map(({ remainder_pool_id, ...p }) => ({
+      ...p,
+      hourly_coaching_rate_cents: p.hourly_coaching_rate_cents ?? null,
+      remainder_pool: remainder_pool_id?.name ?? null,
+      bonuses: paying(p.name),
+    })),
+    charges: byName(charges).map(({ account_id, ...c }) => ({ ...c, account: accountName(account_id) })),
     resources: byName(resources),
     boatRates: boatRates
       .map(({ boat_class_id, ...b }) => ({
@@ -73,12 +157,28 @@ async function operationsAssumptions(version: string, versions: string[]): Promi
         sailors_per_boat: boat_class_id.sailors_per_boat,
       }))
       .sort((a, b) => a.boat_class.localeCompare(b.boat_class)),
-    // A bonus naming a position that isn't there pays no one, so it's listed with the rest that pay no position.
-    bonuses: bonuses
-      .filter((b) => !b.position_key || !positionKeys.has(b.position_key))
-      .map(asBonus)
-      .sort((a, b) => a.role_name.localeCompare(b.role_name)),
+    bonuses: all,
+    salariedHours: bookings
+      .map((b) => ({
+        key: b.key,
+        position: b.position_id.name,
+        booked_to: b.product_id?.name ?? b.program_area_id?.name ?? "",
+        hours: b.hours,
+      }))
+      .sort((a, b) => a.position.localeCompare(b.position) || a.booked_to.localeCompare(b.booked_to)),
+    closedDays: [...closed].sort((a, b) => a.date.localeCompare(b.date)),
   };
+}
+
+/** The names of what a cost can be charged to besides a pool or an offering, from the catalog. */
+async function costCenterNames() {
+  const [products, areas, organizations] = await Promise.all([
+    readAll<{ id: string; name: string }>("products", undefined, ["id", "name"]),
+    readAll<{ id: string; name: string }>("program_areas", undefined, ["id", "name"]),
+    readAll<{ name: string }>("organizations", undefined, ["name"]),
+  ]);
+  const named = (rows: { id: string; name: string }[]) => new Map(rows.map((r) => [r.id, r.name]));
+  return { products: named(products), areas: named(areas), organization: organizations[0]?.name ?? "" };
 }
 
 /** What a Financial Plan's reports show besides its results: what planners entered in its plan copies. */
@@ -92,6 +192,9 @@ export interface PlanInputs {
   /** Each program area's programs' settings, by its report's key. */
   programs: Record<string, ProgramSettings[]>;
   operations: OperationsAssumptions | null;
+  /** Each program area's own fixed costs and staff time, by its report's key. */
+  fixedCosts: Record<string, FixedCost[]>;
+  staffTime: Record<string, StaffTime[]>;
 }
 
 /** A Financial Plan's inputs, read from the copies it holds, which never change once it's saved. */
@@ -101,7 +204,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
     queryFn: async (): Promise<PlanInputs> => {
       const versions = members.map((m) => m.version_id);
       const ops = members.find((m) => m.kind === "operations");
-      const [copies, offerings, activities, programs, operations] = await Promise.all([
+      const [copies, offerings, activities, programs, operations, budget, labor, pools, catalog] = await Promise.all([
         versions.length
           ? readAll<{ id: string; rules: string | null }>("plan_versions", { id: { _in: versions } }, ["id", "rules"])
           : [],
@@ -123,6 +226,31 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
           "rules",
         ]),
         ops ? operationsAssumptions(ops.version_id, versions) : null,
+        rowsOf<BudgetRow>("plan_budget_lines", versions, [
+          "version_id",
+          "key",
+          "name",
+          "cost_center_type",
+          "cost_center_key",
+          "amount_cents",
+          "excluded_from_mtdc",
+          "note",
+          ...accountFields,
+          "account_id.type",
+        ]),
+        rowsOf<LaborRow>("plan_labor_lines", versions, [
+          "version_id",
+          "key",
+          "name",
+          "cost_center_type",
+          "cost_center_key",
+          "staff_level_key",
+          "hours",
+          "note",
+          ...accountFields,
+        ]),
+        rowsOf<{ key: string; name: string }>("plan_pools", versions, ["key", "name"]),
+        costCenterNames(),
       ]);
       const levelName = new Map(operations?.staffLevels.map((l) => [l.key, l.name]));
       const keyOf = new Map(members.map((m) => [m.version_id, m.kind === "operations" ? "rates" : reportKey(m)]));
@@ -133,6 +261,37 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         }
         return out;
       };
+      const named = (rows: { key: string; name: string }[]) => new Map(rows.map((r) => [r.key, r.name]));
+      const centers: Record<string, Map<string, string>> = {
+        pool: named(pools),
+        offering: named(offerings),
+        product: catalog.products,
+        program_area: catalog.areas,
+      };
+      const chargedTo: ChargedTo = ({ cost_center_type: type, cost_center_key: key }) =>
+        type === "org" ? catalog.organization : ((key && centers[type]?.get(key)) ?? key ?? "");
+      const fixedCosts = byName(budget).map((l): FixedCost & { version_id: string } => ({
+        version_id: l.version_id,
+        key: l.key,
+        name: l.name,
+        amount_cents: l.amount_cents,
+        excluded_from_mtdc: l.excluded_from_mtdc,
+        note: l.note,
+        account: accountName(l.account_id),
+        charged_to: chargedTo(l),
+        revenue: l.account_id.type === "revenue",
+      }));
+      const staffTime = byName(labor).map((l): StaffTime & { version_id: string } => ({
+        version_id: l.version_id,
+        key: l.key,
+        name: l.name,
+        hours: l.hours,
+        note: l.note,
+        staff_level: levelName.get(l.staff_level_key) ?? null,
+        account: accountName(l.account_id),
+        charged_to: chargedTo(l),
+      }));
+      const ofOperations = (l: { version_id: string }) => l.version_id === ops?.version_id;
       return {
         rules: Object.fromEntries(copies.map((c) => [keyOf.get(c.id) ?? c.id, c.rules])),
         offerings: byReport(
@@ -160,7 +319,13 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
             })),
           ),
         ),
-        operations,
+        operations: operations && {
+          ...operations,
+          fixedCosts: fixedCosts.filter(ofOperations),
+          staffTime: staffTime.filter(ofOperations),
+        },
+        fixedCosts: byReport(fixedCosts.filter((l) => !ofOperations(l))),
+        staffTime: byReport(staffTime.filter((l) => !ofOperations(l))),
       };
     },
     // A draft's inputs change wherever its plans are changed, as its numbers do.
