@@ -299,7 +299,10 @@ When("I open the week of Jul 12", async ({ page }) => {
 });
 
 When("I open its practices", async ({ page }) => {
-  await page.getByRole("table", { name: "Week of Jul 12" }).getByRole("button", { name: "Practice" }).click();
+  await page
+    .getByRole("table", { name: "Week of Jul 12" })
+    .getByRole("button", { name: "Practice, the whole week" })
+    .click();
 });
 
 Then("they have 1 Lead coach, except Jul 16, which has no staff, coach boats or boats yet", async ({ page }) => {

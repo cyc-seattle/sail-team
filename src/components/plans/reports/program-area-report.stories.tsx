@@ -80,7 +80,7 @@ export const SummerSchedule: Story = {
     await expect(canvas.getByRole("region", { name: "Race Camp · Wednesday, June 30" })).toHaveTextContent(
       "1:00 PM–4:00 PM",
     );
-    await userEvent.click(canvas.getByRole("button", { name: "Morning dock" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Morning dock, the whole week" }));
     await expect(canvas.getByRole("list", { name: "How it differs" })).toHaveTextContent(
       "Mon 28: 2 Level 1 Instructors",
     );

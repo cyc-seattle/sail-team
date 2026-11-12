@@ -231,6 +231,7 @@ export function ScheduleCalendar({ blocks, offerings, warnings, closedDays, else
                     <TableCell className={cn(pinned, "py-1 pr-1 pl-0 sm:px-2")}>
                       <button
                         type="button"
+                        aria-label={`${p.title}, the whole week`}
                         aria-pressed={chosen?.pattern === p.key && chosen.date === null}
                         className={cn(pressable, "max-w-28 truncate text-left sm:max-w-none")}
                         onClick={() => setChosen({ pattern: p.key, date: null })}
