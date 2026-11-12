@@ -29,7 +29,7 @@ When(/^I open Planning(?: without signing in)?$/, async ({ page }) => {
   await page.goto(`${await app()}/plans`);
 });
 
-Then("I'm on the club's sign-in page", async ({ page }) => {
+Then("I'm on the sign-in page", async ({ page }) => {
   const { domain } = await devPlatform();
   await expect(page).toHaveURL(new RegExp(`^https://login\\.${escaped(domain)}/if/flow/`));
   await expect(page.locator('input[name="uidField"]')).toBeVisible();
@@ -37,6 +37,11 @@ Then("I'm on the club's sign-in page", async ({ page }) => {
 
 When("I sign in", async ({ page, visitor }) => {
   await signIn(page, visitor);
+});
+
+When("I sign out", async ({ page, visitor }) => {
+  await page.getByRole("button", { name: visitor.name }).click();
+  await page.getByRole("menuitem", { name: "Sign out" }).click();
 });
 
 When("I've signed in", async ({ page, visitor }) => {

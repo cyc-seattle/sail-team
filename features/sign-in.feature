@@ -5,7 +5,7 @@ Feature: Signing in to sail-team
 
   Scenario: Someone who isn't signed in is sent to sign in
     When I open Planning without signing in
-    Then I'm on the club's sign-in page
+    Then I'm on the sign-in page
 
   Scenario: Signing in brings me back to the page I opened
     Given I'm a planner who can read plans
@@ -20,3 +20,10 @@ Feature: Signing in to sail-team
     And I sign in
     Then the page says I don't have access to plans
     And it shows no plans
+
+  Scenario: Signing out means signing in again
+    Given I'm a planner who can read plans
+    When I open Planning
+    And I sign in
+    And I sign out
+    Then I'm on the sign-in page

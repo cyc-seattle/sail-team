@@ -99,7 +99,15 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
   const operations = members.find((m) => m.kind === "operations");
   if (report === "overview") {
     const rows = overviewRows(members, results.lines, inputs.offerings);
-    return <OverviewReport setId={set.id} rows={rows} offerings={inputs.offerings} warnings={warnings} />;
+    return (
+      <OverviewReport
+        setId={set.id}
+        rows={rows}
+        offerings={inputs.offerings}
+        warnings={warnings}
+        totals={results.totals}
+      />
+    );
   }
   if (report === "rates") {
     return inputs.operations ? (

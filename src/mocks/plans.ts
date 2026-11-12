@@ -638,6 +638,11 @@ function results(setRow: Row, calculatedAt: string): Record<string, Row[]> {
         operating_revenue_cents: out.organization.operating.revenue_cents,
         operating_expense_cents: out.organization.operating.expense_cents,
         operating_net_cents: out.organization.operating.net_cents,
+        fundraising_revenue_cents: out.organization.fundraising.revenue_cents,
+        fundraising_expense_cents: out.organization.fundraising.expense_cents,
+        fundraising_net_cents: out.organization.fundraising.net_cents,
+        capital_cents: out.organization.capital_cents,
+        total_cents: out.organization.total_cents,
       },
     ],
     plan_result_lines: out.lines.map((l) => ({
@@ -646,8 +651,10 @@ function results(setRow: Row, calculatedAt: string): Record<string, Row[]> {
       line: l.line_key,
       line_name: l.line_name,
       cost_center_key: l.cost_center_key,
+      cost_center_type: l.cost_center_type,
       amount_cents: l.amount_cents,
       function: l.function,
+      explanation: l.explanation,
       account_id: accountOf(l.account_id),
     })),
     plan_result_pnl: out.pnl.map((p) => ({

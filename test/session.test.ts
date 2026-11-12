@@ -7,6 +7,7 @@ import {
   redirectGuardMs,
   returnUrl,
   signInUrl,
+  signOutUrl,
 } from "../src/directus/session.ts";
 
 const url = "https://directus.example.org/auth/login/authentik?redirect=https%3A%2F%2Fexample.org%2Fplans";
@@ -52,6 +53,10 @@ describe("the sign-in addresses", () => {
 
   it("sends the browser back to the page it came from", () => {
     expect(signInUrl("https://directus.example.org", "https://example.org/plans")).toBe(url);
+  });
+
+  it("signs out through Authentik beside the app", () => {
+    expect(signOutUrl("dev.cycsail.team")).toBe("https://login.dev.cycsail.team/flows/-/default/invalidation/");
   });
 });
 

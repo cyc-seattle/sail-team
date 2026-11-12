@@ -2,7 +2,7 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import type { AccountAmount } from "@/model/reports";
 import { Money } from "../money";
 import { ReportSection } from "./report-page";
-import { StatementTable } from "./statement-table";
+import { AccountRows, StatementTable } from "./statement-table";
 
 /** Fundraising's revenue and costs, and the capital purchases it pays for, both kept apart from the operating net. */
 export function FundraisingCapitalReport({
@@ -36,13 +36,7 @@ export function FundraisingCapitalReport({
           </TableHeader>
           <TableBody>
             {capital.map((c) => (
-              <TableRow key={`${c.number} ${c.name}`}>
-                <TableCell className="text-muted-foreground tabular-nums">{c.number}</TableCell>
-                <TableCell className="whitespace-normal">{c.name}</TableCell>
-                <TableCell className="text-right">
-                  <Money cents={c.cents} whole />
-                </TableCell>
-              </TableRow>
+              <AccountRows key={`${c.number} ${c.name}`} account={c} />
             ))}
           </TableBody>
           <TableFooter className="bg-transparent">

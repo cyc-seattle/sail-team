@@ -209,6 +209,17 @@ Then("it shows $10,000 of revenue, $3,000 of coaches' wages, and $1,000 of the o
   await expect(statementRow(page, /^Office/)).toContainText("$1,000");
 });
 
+// The engine's wording may change, so this checks only that a line under the account explains it with a formula.
+Then("opening the coaches' wages shows how they were worked out", async ({ page }) => {
+  const wages = statementRow(page, /coachWages/);
+  await wages.getByRole("button").click();
+  const line = page
+    .getByRole("table", { name: "Revenue and expenses" })
+    .getByRole("row")
+    .filter({ has: page.getByText("×") });
+  await expect(line.first()).toContainText("$3,000");
+});
+
 Then("it shows $3,000 of coaches' wages", async ({ page }) => {
   await expect(statementRow(page, /coachWages/)).toContainText("$3,000");
 });
@@ -363,12 +374,16 @@ When("I open the draft", async ({ page }) => {
   await page.goto(`${await app()}/plans/financial/${opened.set}`);
 });
 
-When("I open its warnings", async ({ page }) => {
+When("I open its warnings on a closed day", async ({ page }) => {
   await page.locator("summary", { hasText: /\d+ warnings?/ }).click();
+  await page.locator("summary", { hasText: "On a closed day" }).click();
 });
 
 Then("a warning says the practice falls on a closed day, on that day", async ({ page }) => {
-  const closed = page.getByRole("list", { name: "Warnings" }).getByRole("listitem").filter({ hasText: CLOSED_DAY });
+  const closed = page
+    .getByRole("list", { name: "On a closed day" })
+    .getByRole("listitem")
+    .filter({ hasText: CLOSED_DAY });
   await expect(closed).toContainText("Jul 5");
 });
 
