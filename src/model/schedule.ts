@@ -362,3 +362,9 @@ export function programsByWeek(
   }
   return new Map([...weeks.entries()].map(([w, own]) => [w, own.size]));
 }
+
+/** How many days of a week have a block. */
+export const daysIn = (blocks: ScheduleBlock[], week: string) => daysOf(blocks, week).length;
+
+/** A week a step before or after: `-1` is the week before. */
+export const weekStep = (week: string, step: number) => addDays(week, 7 * step);
