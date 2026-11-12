@@ -32,3 +32,20 @@ export const Default: Story = {
 
 /** Someone who can't open any of this app's sections still sees the other sites. */
 export const OnlyOtherSites: Story = { args: { links: everyone } };
+
+/** An admin also gets Authentik's users page, to sign in as someone and see what they see. */
+export const Admin: Story = {
+  args: {
+    links: [
+      { to: "/plans", label: "Planning" },
+      { to: "/roster", label: "Rosters" },
+      ...linksFor("Admin", "https://directus.example.org"),
+    ],
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole("link", { name: "Sign in as someone" })).toHaveAttribute(
+      "href",
+      "https://login.example.org/if/admin/#/identity/users",
+    );
+  },
+};

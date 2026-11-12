@@ -29,9 +29,16 @@ function links(directusUrl: string): (ExternalLink & { from?: string })[] {
   return [
     { href: "https://theclubspot.com/dashboard/acct/nw6IMf9Bnq/", label: "Clubspot dashboard", from: "Crew" },
     { href: directusUrl, label: "Directus", from: "Staff" },
+    // Authentik's users page, where an admin impersonates someone (platform's docs/access.md).
+    { href: `${loginUrlFor(directusUrl)}/if/admin/#/identity/users`, label: "Sign in as someone", from: "Admin" },
     { href: "https://calendar.google.com", label: "Google Calendar" },
     { href: "mailto:info@cyccommunitysailing.org", label: "Support" },
   ];
+}
+
+/** Authentik, beside Directus: `https://directus.cycsail.team` → `https://login.cycsail.team`. */
+function loginUrlFor(directusUrl: string): string {
+  return directusUrl.replace("://directus.", "://login.");
 }
 
 /** The links this person's role sees. Directus still decides what Clubspot and Directus show them. */

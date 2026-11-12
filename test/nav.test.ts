@@ -9,6 +9,7 @@ const everyone = [
 ];
 const clubspot = { href: "https://theclubspot.com/dashboard/acct/nw6IMf9Bnq/", label: "Clubspot dashboard" };
 const studio = { href: directus, label: "Directus" };
+const impersonate = { href: "https://login.example.org/if/admin/#/identity/users", label: "Sign in as someone" };
 
 describe("navFor", () => {
   it("shows Planning to someone who can read plans, Rosters to a household on a team, and Household to a household", () => {
@@ -35,8 +36,8 @@ describe("linksFor", () => {
     [undefined, everyone],
     ["Crew", [clubspot, ...everyone]],
     ["Staff", [clubspot, studio, ...everyone]],
-    ["Admin", [clubspot, studio, ...everyone]],
-    ["Administrator", [clubspot, studio, ...everyone]],
+    ["Admin", [clubspot, studio, impersonate, ...everyone]],
+    ["Administrator", [clubspot, studio, impersonate, ...everyone]],
   ])("gives %s their role's links", (role, links) => {
     expect(linksFor(role, directus)).toEqual(links);
   });
