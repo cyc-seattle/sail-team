@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent } from "storybook/test";
 import { withRouter } from "../../../../.storybook/with-router";
-import { areaOfferings, overviewRows, summerOfferings, summerSchedule, totals, warnings } from "./fixtures";
+import { areaOfferings, overviewRows, totals, warnings } from "./fixtures";
 import { OverviewReport } from "./overview-report";
 
 const meta = {
@@ -15,7 +15,6 @@ const meta = {
     offerings: areaOfferings,
     warnings,
     totals,
-    timeline: [{ key: "summer", name: "Summer", blocks: summerSchedule, offerings: summerOfferings }],
   },
 } satisfies Meta<typeof OverviewReport>;
 export default meta;
@@ -66,14 +65,3 @@ export const EnrollmentByProgram: Story = {
 
 /** A plan with nothing to warn about has no warnings card. */
 export const NoWarnings: Story = { args: { warnings: [] } };
-
-/** The schedule's weeks across every program area, closed until someone opens it. */
-export const Schedule: Story = {
-  play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByText("Schedule", { selector: "h2" }));
-    await userEvent.click(canvas.getByRole("button", { name: "Week of Jul 12" }));
-    await expect(canvas.getByRole("table", { name: "Week of Jul 12 across program areas" })).toHaveTextContent(
-      "Summer",
-    );
-  },
-};

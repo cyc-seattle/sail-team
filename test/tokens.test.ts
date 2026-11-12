@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { AREA_FAMILIES, PROGRAM_HUE_STEPS } from "../src/model/colors.ts";
 
 const css = readFileSync(resolve(import.meta.dirname, "../src/styles/tokens.css"), "utf8");
 
@@ -69,22 +70,27 @@ describe.each(Object.entries(themes))("the %s theme", (_, theme) => {
     expect(contrast(theme[fg]!, theme[bg]!)).toBeGreaterThanOrEqual(4.5);
   });
 
-  const programs = Array.from({ length: 10 }, (_, i) => `program-${i + 1}`);
+  const areas = Array.from({ length: AREA_FAMILIES }, (_, i) => `area-${i + 1}`);
+  const shades = (area: string) => {
+    const [l, c, h] = theme[area]!.slice(6, -1).split(" ").map(Number) as [number, number, number];
+    return PROGRAM_HUE_STEPS.map((step) => `oklch(${l} ${c} ${(h + step + 360) % 360})`);
+  };
 
-  // A mark that tells programs apart needs 3:1 against what it sits on (WCAG 1.4.11).
-  it.each(programs)("gives %s at least 3:1 on the page and on a card", (name) => {
-    expect(contrast(theme[name]!, theme["background"]!)).toBeGreaterThanOrEqual(3);
-    expect(contrast(theme[name]!, theme["card"]!)).toBeGreaterThanOrEqual(3);
+  // A bar that tells programs apart needs 3:1 against what it sits on (WCAG 1.4.11), and the words on it 4.5:1.
+  it.each(areas)("gives each program shade of %s 3:1 on the page and a card, and 4.5:1 under its words", (area) => {
+    for (const shade of shades(area)) {
+      expect(contrast(shade, theme["background"]!), shade).toBeGreaterThanOrEqual(3);
+      expect(contrast(shade, theme["card"]!), shade).toBeGreaterThanOrEqual(3);
+      expect(contrast(theme["program-foreground"]!, shade), shade).toBeGreaterThanOrEqual(4.5);
+    }
   });
 
-  it("keeps every program color apart from the others", () => {
-    const lab = (name: string) => {
-      const [l, c, h] = theme[name]!.slice(6, -1).split(" ").map(Number) as [number, number, number];
-      return [l, c * Math.cos((h * Math.PI) / 180), c * Math.sin((h * Math.PI) / 180)];
-    };
-    for (const [i, x] of programs.entries()) {
-      for (const y of programs.slice(i + 1)) {
-        expect(Math.hypot(...lab(x).map((v, k) => v - lab(y)[k]!)), `${x} and ${y}`).toBeGreaterThan(0.06);
+  it("keeps every area's family at least 45° of hue from the others", () => {
+    const hue = (area: string) => Number(theme[area]!.slice(6, -1).split(" ")[2]);
+    for (const [i, x] of areas.entries()) {
+      for (const y of areas.slice(i + 1)) {
+        const apart = Math.abs(((hue(x) - hue(y) + 540) % 360) - 180);
+        expect(apart, `${x} and ${y}`).toBeGreaterThanOrEqual(45);
       }
     }
   });

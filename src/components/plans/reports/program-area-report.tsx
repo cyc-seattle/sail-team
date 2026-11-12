@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { Fragment, type ReactNode } from "react";
 import { formatShare, type FixedCost, type StaffTime } from "@/model/assumptions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -15,7 +16,6 @@ import { Money } from "../money";
 import { CollapsibleSection } from "./collapsible-section";
 import { OfferingName } from "./offering-name";
 import { ReportSection } from "./report-page";
-import { ScheduleCalendar, type ScheduleCalendarProps } from "./schedule-calendar";
 import { RulesList } from "./rules-list";
 import { SessionGrid } from "./session-grid";
 import { StatementTable } from "./statement-table";
@@ -103,7 +103,9 @@ export interface ProgramAreaReportProps {
   statement: { revenue: AccountAmount[]; direct: AccountAmount[]; indirect: AccountAmount[] };
   programs: ProgramSettings[];
   offerings: ReportOffering[];
-  schedule: Omit<ScheduleCalendarProps, "offerings" | "warnings">;
+  /** The Financial Plan's id and this area's report key, for its link to the Calendar. */
+  setId: string;
+  areaKey: string;
   trips: Trip[];
   /** The area plan's own fixed costs and staff time outside its programs. */
   fixedCosts: FixedCost[];
@@ -121,7 +123,8 @@ export function ProgramAreaReport({
   statement,
   programs,
   offerings,
-  schedule,
+  setId,
+  areaKey,
   trips,
   fixedCosts,
   staffTime,
@@ -150,7 +153,20 @@ export function ProgramAreaReport({
         <SessionGrid offerings={offerings} />
       </ReportSection>
 
-      <ReportSection id="offerings" title="Offerings">
+      <ReportSection
+        id="offerings"
+        title="Offerings"
+        actions={
+          <Link
+            to="/plans/financial/$setId/$planId"
+            params={{ setId, planId: "calendar" }}
+            search={{ area: areaKey }}
+            className="text-sm text-link underline-offset-4 hover:underline"
+          >
+            See on the calendar
+          </Link>
+        }
+      >
         <Table aria-label="Offerings">
           <TableHeader>
             <TableRow>
@@ -214,12 +230,6 @@ export function ProgramAreaReport({
               ))}
             </TableBody>
           </Table>
-        </CollapsibleSection>
-      )}
-
-      {schedule.blocks.length > 0 && (
-        <CollapsibleSection title="Schedule">
-          <ScheduleCalendar {...schedule} offerings={offerings} warnings={warnings} />
         </CollapsibleSection>
       )}
     </>

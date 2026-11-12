@@ -74,17 +74,38 @@ const offering = (program: string, session: string, starts_on: string): ReportOf
 });
 
 describe("numberedOfferings", () => {
-  it("numbers each program's offerings by start date, programs in the order they start", () => {
+  it("names each program's offerings by session, by start date, programs in the order they start", () => {
     const groups = numberedOfferings([
       offering("K-Pod", "Fall", "2027-09-08"),
       offering("J-Pod", "Fall", "2027-09-07"),
       offering("K-Pod", "Spring", "2027-03-02"),
       offering("J-Pod", "Spring", "2027-03-01"),
     ]);
-    expect(groups.map((g) => [g.program, g.offerings.map((o) => `${o.label} ${o.session}`)])).toEqual([
-      ["J-Pod", ["J-Pod 1 Spring", "J-Pod 2 Fall"]],
-      ["K-Pod", ["K-Pod 1 Spring", "K-Pod 2 Fall"]],
+    expect(groups.map((g) => [g.program, g.offerings.map((o) => o.label)])).toEqual([
+      ["J-Pod", ["J-Pod Spring", "J-Pod Fall"]],
+      ["K-Pod", ["K-Pod Spring", "K-Pod Fall"]],
     ]);
+  });
+
+  it("names offerings in one session by what their own names add, without the year", () => {
+    const groups = numberedOfferings([
+      { ...offering("Adult LTS", "Summer", "2027-07-01"), name: "Adult LTS Weekend Jul 2027" },
+      { ...offering("Adult LTS", "Summer", "2027-07-01"), key: "weekday", name: "Adult LTS Weekday Jul 2027" },
+      { ...offering("Guppies", "Summer", "2027-07-12"), name: "Guppies week of 2027-07-12" },
+      { ...offering("Guppies", "Summer", "2027-07-05"), name: "Guppies week of 2027-07-05" },
+    ]);
+    expect(groups.map((g) => g.offerings.map((o) => o.label))).toEqual([
+      ["Adult LTS Weekday Jul", "Adult LTS Weekend Jul"],
+      ["Guppies week of Jul 5", "Guppies week of Jul 12"],
+    ]);
+  });
+
+  it("names offerings in one session by the day they start when their own names don't tell them apart", () => {
+    const groups = numberedOfferings([
+      offering("Guppies", "Summer", "2027-07-12"),
+      offering("Guppies", "Summer", "2027-07-05"),
+    ]);
+    expect(groups[0]?.offerings.map((o) => o.label)).toEqual(["Guppies Jul 5", "Guppies Jul 12"]);
   });
 });
 
@@ -97,8 +118,8 @@ describe("sessionGrid", () => {
     ]);
     expect(sessions).toEqual(["Week 1", "Week 2"]);
     expect(rows.map((r) => [r.program, r.cells.map((c) => c?.label ?? null)])).toEqual([
-      ["Guppies", ["Guppies 1", "Guppies 2"]],
-      ["Race Camp", [null, "Race Camp 1"]],
+      ["Guppies", ["Guppies Week 1", "Guppies Week 2"]],
+      ["Race Camp", [null, "Race Camp Week 2"]],
     ]);
   });
 });

@@ -40,8 +40,8 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   it. `src/components/plans/` holds Planning's shared parts: Page Header, Money, Assumptions, Version Badge, the
   Financial Plan Actions, and the Plan Details Dialog. `src/components/plans/reports/` holds Planning itself: the
   Planning Page that lists every Financial Plan, and a Financial Plan's reports, each on a Report Page with its Report
-  Nav: Overview, Assumptions (Rates Report), one Program Area Report for each area, Non-program, and Fundraising and
-  Capital ([#63](https://github.com/cyc-seattle/sail-team/issues/63)).
+  Nav: Overview, Calendar (Plan Calendar), Assumptions (Rates Report), one Program Area Report for each area,
+  Non-program, and Fundraising and Capital ([#63](https://github.com/cyc-seattle/sail-team/issues/63)).
   `src/components/home/` holds the home page's Link List. `src/components/household/` holds the household page's
   Share Contact, Member Card, School Field, and Household View, and `src/components/phone-field.tsx` the Phone Field. `src/components/shell/` holds the App Shell around every
   signed-in page: the sidebar on a laptop, and the tab bar on a phone, whose More opens the sidebar.
@@ -65,8 +65,9 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   pays. `src/model/reports.ts` makes each report from those and the results: shares of a pool (`pool:` lines) are a
   plan's indirect costs, and everything else of its own is direct. `/plans` lists every Financial Plan, where a Plan
   Writer saves a draft, deletes one, or marks a saved one active. `/plans/financial/<set>` is its Overview, and
-  `/plans/financial/<set>/<report>` its other reports: `rates` (Assumptions), a Program Plan's id, `non-program`, or
-  `fundraising`. Each report's header is where a Plan Writer renames it, changes its note, saves a draft, marks a
+  `/plans/financial/<set>/<report>` its other reports: `calendar`, `rates` (Assumptions), a Program Plan's id,
+  `non-program`, or `fundraising`. The Calendar keeps the one program area it shows and its day in the address
+  (`?area=<report>&day=<date>`), and each area's report links to it with its own area. Each report's header is where a Plan Writer renames it, changes its note, saves a draft, marks a
   saved one active, or starts a draft from it. A club plan's old address, `/plans/club/<set>`, sends people to its
   Financial Plan.
 - `src/directus/roster.ts` reads the team rosters. A team is a program area, such as Doublehanded, and its programs

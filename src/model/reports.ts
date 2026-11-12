@@ -107,6 +107,8 @@ export interface ReportOffering {
   program: string;
   /** When it runs, as staff name it: Week 3 of summer, or Spring. */
   session: string;
+  /** Its own name, such as "Adult Learn to Sail Weekday Jul 2026". */
+  name?: string;
   starts_on: string;
   ends_on: string;
   /** What one sailor pays for the whole offering. */
@@ -122,23 +124,56 @@ export interface ReportOffering {
   note: string | null;
 }
 
-/** An offering with its number within its program, such as Guppies 3, counted by start date. */
+/** An offering with its name, its program and session, such as "J-Pod Spring" or "Guppies Week 3". */
 export type NumberedOffering = ReportOffering & { label: string };
 
 const byStart = (offerings: ReportOffering[]) =>
-  [...offerings].sort((a, b) => a.starts_on.localeCompare(b.starts_on) || a.key.localeCompare(b.key));
+  [...offerings].sort(
+    (a, b) =>
+      a.starts_on.localeCompare(b.starts_on) ||
+      (a.name ?? "").localeCompare(b.name ?? "") ||
+      a.key.localeCompare(b.key),
+  );
+
+const shortDay = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+const formatShort = (date: string) => shortDay.format(new Date(`${date}T00:00:00Z`));
+
+/** What an offering's own name says beyond its program and year: "Adult Learn to Sail Weekday Jul 2026" → "Weekday Jul". */
+function ownPart(o: ReportOffering): string | null {
+  const rest = (o.name ?? "")
+    .split(o.program)
+    .join("")
+    .replace(/\d{4}-\d{2}-\d{2}/g, (d) => formatShort(d))
+    .replace(/\b\d{4}\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return rest || null;
+}
 
 /**
- * Offerings grouped by program, each program's by start date and numbered from 1. Programs come in the order their
- * first offering starts.
+ * Offerings grouped by program, each program's by start date and named the way that tells them apart: by session, as the
+ * Overview names them ("J-Pod Spring"), or where a program has several in one session, by what their own names add
+ * ("Adult Learn to Sail Weekday Jul", "Guppies week of Jul 13"), or else by the day they start. Programs come in the order
+ * their first offering starts.
  */
 export function numberedOfferings(offerings: ReportOffering[]): { program: string; offerings: NumberedOffering[] }[] {
   const sorted = byStart(offerings);
   const programs = [...new Set(sorted.map((o) => o.program))];
-  return programs.map((program) => ({
-    program,
-    offerings: sorted.filter((o) => o.program === program).map((o, i) => ({ ...o, label: `${program} ${i + 1}` })),
-  }));
+  return programs.map((program) => {
+    const own = sorted.filter((o) => o.program === program);
+    const unique = (name: (o: ReportOffering) => string | null) => {
+      const names = own.map(name);
+      return names.every((n) => n !== null) && new Set(names).size === names.length;
+    };
+    const nameOf = unique((o) => o.session)
+      ? (o: ReportOffering) => o.session
+      : unique(ownPart)
+        ? (o: ReportOffering) => ownPart(o)!
+        : unique((o) => o.starts_on)
+          ? (o: ReportOffering) => formatShort(o.starts_on)
+          : (o: ReportOffering) => ownPart(o) ?? `${o.session} ${formatShort(o.starts_on)}`;
+    return { program, offerings: own.map((o) => ({ ...o, label: `${program} ${nameOf(o)}` })) };
+  });
 }
 
 /**
@@ -242,6 +277,7 @@ export function reportsOf(members: Member[]): { key: string; name: string }[] {
     .sort((a, b) => a.name.localeCompare(b.name));
   return [
     { key: "overview", name: "Overview" },
+    { key: "calendar", name: "Calendar" },
     { key: "rates", name: "Assumptions" },
     ...areas,
     { key: "non-program", name: "Non-program" },
@@ -484,6 +520,7 @@ export function reportOffering(
     key: offering.key,
     program: offering.program,
     session: offering.season_term || offering.name,
+    name: offering.name,
     starts_on: offering.starts_on,
     ends_on: offering.ends_on,
     fee_cents: offering.price_cents ?? 0,

@@ -58,17 +58,17 @@
   --chart-5: oklch(0.735 0.117 236.2);
   --chart-6: oklch(0.621 0.17 47.5);
 
-  /* Each program's color on a schedule: ten that stay apart, each 3:1 on the page and on a card. */
-  --program-1: oklch(0.64 0.16 252);
-  --program-2: oklch(0.65 0.14 72);
-  --program-3: oklch(0.625 0.16 144);
-  --program-4: oklch(0.66 0.16 324);
-  --program-5: oklch(0.66 0.16 36);
-  --program-6: oklch(0.63 0.11 180);
-  --program-7: oklch(0.655 0.16 288);
-  --program-8: oklch(0.635 0.13 108);
-  --program-9: oklch(0.66 0.16 0);
-  --program-10: oklch(0.63 0.11 216);
+  /*
+   * Each program area's color family on the calendar. Its programs take shades of it a step of hue apart
+   * (src/model/colors.ts), each 3:1 on the page and on a card, under text in program-foreground at 4.5:1.
+   */
+  --program-foreground: oklch(1 0 0);
+  --area-1: oklch(0.52 0.14 252);
+  --area-2: oklch(0.52 0.13 150);
+  --area-3: oklch(0.54 0.15 40);
+  --area-4: oklch(0.52 0.15 310);
+  --area-5: oklch(0.52 0.1 195);
+  --area-6: oklch(0.54 0.12 95);
 
   --radius: 0.625rem;
   --card-spacing: 1rem;
@@ -102,14 +102,11 @@
   /* The bar stays the club's navy. Links lighten it, so they read on a dark page. */
   --link: oklch(0.8 0.08 279.6);
 
-  --program-1: oklch(0.545 0.16 252);
-  --program-2: oklch(0.755 0.16 72);
-  --program-3: oklch(0.51 0.16 144);
-  --program-4: oklch(0.54 0.16 324);
-  --program-5: oklch(0.54 0.16 36);
-  --program-6: oklch(0.8 0.11 180);
-  --program-7: oklch(0.535 0.16 288);
-  --program-8: oklch(0.75 0.16 108);
-  --program-9: oklch(0.54 0.16 0);
-  --program-10: oklch(0.8 0.14 216);
+  --program-foreground: oklch(0.2 0 0);
+  --area-1: oklch(0.78 0.11 252);
+  --area-2: oklch(0.78 0.12 150);
+  --area-3: oklch(0.78 0.12 40);
+  --area-4: oklch(0.78 0.11 310);
+  --area-5: oklch(0.78 0.1 195);
+  --area-6: oklch(0.78 0.12 95);
 }

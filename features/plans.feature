@@ -111,19 +111,18 @@ Feature: Seeing the Financial Plans
       Then I see the rule "No more than 4 RIBs on the water"
       And I see the coach's pay of $30.00 an hour
 
-  Rule: A program area's schedule shows its weeks, then a week's activity blocks, then one block in full
+  Rule: The Calendar shows each program area's offerings over the year, then a day's activity blocks at their times
 
-    Scenario: A week's practices, and a day that differs
+    Scenario: A day's practice that differs from the others
       Given I'm a planner who can read plans
       And a draft Financial Plan whose Youth Racing plan has one offering of 10 sailors at $1,000 each
       And it practices each weekday morning for two weeks with a Lead coach, but the last day has no coach yet
       And I've signed in
       When I open Youth Racing's report in the draft
-      And I open its schedule
-      Then each week shows the offering's 10 sailors
-      When I open the week of Jul 12
-      And I open its practices
-      Then they have 1 Lead coach, except Jul 16, which has no staff, coach boats or boats yet
+      And I see it on the calendar
+      Then the calendar shows the offering's 10 sailors across both weeks
+      When I open the practice on Jul 16
+      Then it has no staff, coach boats or boats yet, where the other days have 1 Lead coach
 
   Rule: The planning engine's warnings are listed at the top of the Overview and each program area's report
 
