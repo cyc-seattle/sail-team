@@ -280,6 +280,45 @@ Given(
   },
 );
 
+Given(
+  "it practices each weekday morning for two weeks with a Lead coach, but the last day has no coach yet",
+  async ({ club }) => {
+    const level = await club.coachRate(draft!.operations, 3_000, "Lead coach");
+    const days = campDays(club);
+    await club.practices(draft!.youth, draft!.offering, days.slice(0, -1), "09:00:00", "12:00:00", level);
+    await club.practices(draft!.youth, draft!.offering, days.slice(-1), "09:00:00", "12:00:00");
+  },
+);
+
+When("I open its schedule", async ({ page }) => {
+  await page.locator("summary", { hasText: "Schedule" }).click();
+});
+
+When("I open the week of Jul 12", async ({ page }) => {
+  await page.getByRole("button", { name: "Jul 12" }).click();
+});
+
+When("I open its practices", async ({ page }) => {
+  await page
+    .getByRole("table", { name: "Week of Jul 12" })
+    .getByRole("button", { name: "Practice, the whole week" })
+    .click();
+});
+
+Then("they have 1 Lead coach, except Jul 16, which has no staff, coach boats or boats yet", async ({ page }) => {
+  const block = page.getByRole("region", { name: /^Practice ·/ });
+  await expect(block).toContainText("1 Lead coach");
+  await expect(block.getByRole("list", { name: "How it differs" })).toContainText(
+    "16: no staff, coach boats or boats yet",
+  );
+});
+
+Then("each week shows the offering's 10 sailors", async ({ page }) => {
+  const weeks = page.getByRole("table", { name: "Weeks" });
+  // The second week's Jul 16 differs, which its cell also says.
+  await expect(weeks.getByRole("cell", { name: /^10 \/ 10/ })).toHaveCount(2);
+});
+
 Then("its offering shows a fee of $1,000 and 10 sailors", async ({ page, club }) => {
   // Its row, numbered within its program, not the program's own row above it.
   const cells = page

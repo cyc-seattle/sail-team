@@ -10,6 +10,7 @@ import {
   summerRules,
   doublehandedTrips,
   summerFixedCosts,
+  summerScheduleProps,
   summerStaffTime,
   summerStatement,
   warnings,
@@ -25,6 +26,7 @@ const meta = {
     statement: doublehandedStatement,
     programs: doublehandedPrograms,
     offerings: doublehandedOfferings,
+    schedule: { blocks: [], closedDays: [], elsewhere: [] },
     trips: doublehandedTrips,
     fixedCosts: [],
     staffTime: [],
@@ -59,9 +61,29 @@ export const Summer: Story = {
     statement: summerStatement,
     programs: summerPrograms,
     offerings: summerOfferings,
+    schedule: summerScheduleProps,
     trips: [],
     fixedCosts: summerFixedCosts,
     staffTime: summerStaffTime,
+  },
+};
+
+/** The weeks with each program's sailors, then a week's blocks by day, then one block in full. */
+export const SummerSchedule: Story = {
+  args: Summer.args!,
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByText("Schedule", { selector: "h2" }));
+    await expect(canvas.getByRole("table", { name: "Weeks" })).toHaveTextContent("9 / 10");
+    await userEvent.click(canvas.getByRole("button", { name: "Jun 28" }));
+    await expect(canvas.getByRole("table", { name: "Week of Jun 28" })).toHaveTextContent("Morning dock");
+    await userEvent.click(canvas.getByRole("button", { name: "Race Camp, Wednesday, June 30" }));
+    await expect(canvas.getByRole("region", { name: "Race Camp · Wednesday, June 30" })).toHaveTextContent(
+      "1:00 PM–4:00 PM",
+    );
+    await userEvent.click(canvas.getByRole("button", { name: "Morning dock, the whole week" }));
+    await expect(canvas.getByRole("list", { name: "How it differs" })).toHaveTextContent(
+      "Mon 28: 2 Level 1 Instructors",
+    );
   },
 };
 
