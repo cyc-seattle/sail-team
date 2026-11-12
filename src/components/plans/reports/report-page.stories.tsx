@@ -54,6 +54,7 @@ export const Overview: Story = {
         offerings={areaOfferings}
         warnings={warnings}
         totals={totals}
+        timeline={[]}
       />
     ),
   },

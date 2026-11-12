@@ -53,7 +53,7 @@ export function YearTimeline({ setId, areas }: { setId: string; areas: TimelineA
     return <p className="text-sm text-muted-foreground">No activities yet</p>;
   }
   const months = weeks.map((w, i) => (i === 0 || monthOf(w) !== monthOf(weeks[i - 1]!) ? monthOf(w) : null));
-  const columns = { gridTemplateColumns: `minmax(6rem, 10rem) repeat(${weeks.length}, minmax(0.375rem, 1fr))` };
+  const columns = { gridTemplateColumns: `minmax(5rem, 10rem) repeat(${weeks.length}, minmax(0.25rem, 1fr))` };
   const programBlocks = (a: TimelineArea, program: string) => {
     const keys = new Set(a.offerings.filter((o) => o.program === program).map((o) => o.key));
     return a.blocks

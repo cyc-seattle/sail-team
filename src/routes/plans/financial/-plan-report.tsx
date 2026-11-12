@@ -106,6 +106,15 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
         offerings={inputs.offerings}
         warnings={warnings}
         totals={results.totals}
+        timeline={members
+          .filter((m) => m.kind === "program_area")
+          .map((m) => ({
+            key: reportKey(m),
+            name: reportName(m),
+            blocks: inputs.schedule[reportKey(m)] ?? [],
+            offerings: inputs.offerings[reportKey(m)] ?? [],
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name))}
       />
     );
   }

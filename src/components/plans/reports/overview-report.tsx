@@ -22,7 +22,9 @@ import {
 import type { Totals } from "@/model/financial-plans";
 import { cn } from "@/lib/utils";
 import { Money } from "../money";
+import { CollapsibleSection } from "./collapsible-section";
 import { ReportSection } from "./report-page";
+import { YearTimeline, type TimelineArea } from "./year-timeline";
 import { SegmentedControl } from "./segmented-control";
 import { WarningsSection } from "./warnings-section";
 
@@ -114,14 +116,16 @@ export interface OverviewReportProps {
   warnings: PlanWarning[];
   /** The organization's totals, as platform worked them out. */
   totals: Totals;
+  /** Each program area's schedule, for the year at a glance. */
+  timeline: TimelineArea[];
 }
 
 /**
  * A Financial Plan's year by program area: the engine's warnings, closed at first, then revenue to net, sortable, the
- * year's operating net with fundraising and capital, each program's fees, and enrollment by session or by program.
- * Program areas keep the first table's order all the way down.
+ * year's operating net with fundraising and capital, each program's fees, enrollment by session or by program, and
+ * the schedule's weeks across every area, closed at first. Program areas keep the first table's order all the way down.
  */
-export function OverviewReport({ setId, rows, offerings, warnings, totals }: OverviewReportProps) {
+export function OverviewReport({ setId, rows, offerings, warnings, totals, timeline }: OverviewReportProps) {
   const [sort, setSort] = useState<Sort>(defaultSort);
   const [by, setBy] = useState<EnrollmentBy>("session");
   const sorted = sortRows(rows, sort);
@@ -314,6 +318,12 @@ export function OverviewReport({ setId, rows, offerings, warnings, totals }: Ove
           </TableFooter>
         </Table>
       </ReportSection>
+
+      {timeline.some((a) => a.blocks.length > 0) && (
+        <CollapsibleSection title="Schedule">
+          <YearTimeline setId={setId} areas={timeline.filter((a) => a.blocks.length > 0)} />
+        </CollapsibleSection>
+      )}
     </>
   );
 }
