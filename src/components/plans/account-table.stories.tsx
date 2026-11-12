@@ -48,7 +48,7 @@ export const FixedCosts: Story = {
   },
 };
 
-/** An account with two or more lines opens to them; one with a single line doesn't. */
+/** An account opens to its lines, each with how it was worked out; one without lines doesn't open. */
 export const Lines: Story = {
   args: {
     label: "Costs",
@@ -70,9 +70,7 @@ export const Lines: Story = {
             key: "events",
             number: "7010",
             name: "Event costs",
-            note: "Gala venue",
             values: amount(900_000),
-            lines: [{ key: "a", name: "Gala venue", values: amount(900_000) }],
           },
         ],
       },

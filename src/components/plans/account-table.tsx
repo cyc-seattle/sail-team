@@ -27,7 +27,7 @@ export interface AccountTableRow {
   name: string;
   note?: string | null;
   values: ReactNode[];
-  /** The lines it adds up. It opens to them when there are two or more. */
+  /** The lines it adds up, which it opens to. */
   lines?: AccountLine[];
 }
 
@@ -66,7 +66,7 @@ function AccountRows({
 }) {
   const [open, setOpen] = useState(false);
   const lines = row.lines ?? [];
-  const opens = lines.length > 1;
+  const opens = lines.length > 0;
   return (
     <>
       <TableRow>
@@ -111,7 +111,7 @@ function AccountRows({
 
 /**
  * Amounts by account, the way every financial table shows them: the account's number, then its name with any note
- * behind an info icon, then its values. An account that adds up two or more lines opens to them. Groups, such as
+ * behind an info icon, then its values. An account with lines opens to them. Groups, such as
  * Revenue and Direct costs, each have a heading and may end in a total.
  */
 export function AccountTable({
@@ -127,7 +127,7 @@ export function AccountTable({
   groups: AccountTableGroup[];
 }) {
   const width = columns.length + 2;
-  const indent = groups.some((g) => g.rows.some((r) => (r.lines?.length ?? 0) > 1));
+  const indent = groups.some((g) => g.rows.some((r) => (r.lines?.length ?? 0) > 0));
   return (
     <Table aria-label={label}>
       <TableHeader>
