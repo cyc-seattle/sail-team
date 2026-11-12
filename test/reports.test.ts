@@ -273,6 +273,7 @@ describe("capitalList", () => {
     capital: true,
     function: null,
     explanation: null,
+    member: null,
   });
   const totals = {
     operating_revenue_cents: 0,

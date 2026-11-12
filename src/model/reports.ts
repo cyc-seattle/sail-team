@@ -360,25 +360,33 @@ export interface SharedCost {
   /** The pool it's spread from, such as G&A. */
   pool: string;
   total_cents: number;
-  /** The part spread over the programs' offerings. The rest falls on what's sold outside them. */
+  /** The part spread over the programs' offerings. Non-program's net covers the rest, or adds to it with a loss. */
   allocated_cents: number;
 }
 
-/** Each pool's lines at their full amount, added back up from every offering's share, by pool and account. */
+const covered = " covered by non-program: ";
+
+/**
+ * Each pool's lines at their full amount, added back up from every offering's share and the part non-program's net
+ * covers (an `offset:` line, cyc-seattle/platform#242), by pool and account.
+ */
 export function sharedCostsOf(lines: (Line & Pick<PlanLine, "member">)[], operations: string | null): SharedCost[] {
   const costs = new Map<string, SharedCost>();
-  for (const line of operating(lines).filter((l) => !l.revenue && isShare(l))) {
-    const cost = costs.get(line.key) ?? {
+  for (const line of operating(lines).filter((l) => !l.revenue && (isShare(l) || l.key.startsWith("offset:")))) {
+    const offset = line.key.startsWith("offset:");
+    const key = offset ? `pool:${line.key.slice("offset:".length)}` : line.key;
+    const [pool, ...name] = line.name.split(offset ? covered : " share: ");
+    const cost = costs.get(key) ?? {
       number: line.account_number,
-      name: line.name.split(" share: ").slice(1).join(" share: ") || line.name,
-      pool: poolOf(line),
+      name: name.join(offset ? covered : " share: ") || line.name,
+      pool: pool!,
       total_cents: 0,
       allocated_cents: 0,
     };
-    costs.set(line.key, {
+    costs.set(key, {
       ...cost,
       total_cents: cost.total_cents + line.amount_cents,
-      allocated_cents: cost.allocated_cents + (line.member === operations ? 0 : line.amount_cents),
+      allocated_cents: cost.allocated_cents + (offset || line.member === operations ? 0 : line.amount_cents),
     });
   }
   return [...costs.values()].sort(

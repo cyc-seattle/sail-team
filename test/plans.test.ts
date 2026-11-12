@@ -262,7 +262,7 @@ describe("a Financial Plan's reports", () => {
     const { results } = await plan(ids.budget);
     const insurance = sharedCostsOf(results!.lines, ids.opsMember).find((c) => c.name === "Insurance")!;
     expect(insurance).toMatchObject({ pool: "G&A", number: "6110", total_cents: 900_000 });
-    // Boat storage carries the rest.
+    // Non-program's net covers the rest.
     expect(insurance.allocated_cents).toBeGreaterThan(0);
     expect(insurance.allocated_cents).toBeLessThan(insurance.total_cents);
   });
