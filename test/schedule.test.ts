@@ -120,6 +120,25 @@ describe("scheduleOf", () => {
   });
 });
 
+describe("scheduleOf's parts", () => {
+  it("lists a block's parts the same way whatever order they come in", () => {
+    const row = { id: "a", key: "a", offering_id: "o", date: "2027-07-05", kind: "practice" as const };
+    const at = { uses_boats: true, start_time: null, end_time: null, on_water_minutes: null, setup_minutes: null };
+    const boats = [
+      { block_id: "x", boat_class: "Qube", count: 1, sailor_owned: null },
+      { block_id: "x", boat_class: "Harpoon", count: 2, sailor_owned: null },
+    ];
+    const partsOf = (order: typeof boats) =>
+      scheduleOf(
+        [{ id: "x", key: "x", date: "2027-07-05", name: null }],
+        [{ ...row, ...at, block_id: "x", putaway_minutes: null }],
+        { staff: [], resources: [], boats: order },
+        () => "o",
+      )[0]?.parts;
+    expect(partsOf(boats)).toEqual(partsOf([...boats].reverse()));
+  });
+});
+
 describe("weekdaysOf", () => {
   it("names the days of the week", () => {
     expect(weekdaysOf(["2027-06-21", "2027-06-22", "2027-06-23", "2027-06-24", "2027-06-25"])).toBe("Weekdays");

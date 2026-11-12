@@ -94,6 +94,7 @@ export function scheduleOf(
   });
   const byStart = (a: ScheduledActivity, b: ScheduledActivity) =>
     (a.start_time ?? "").localeCompare(b.start_time ?? "") || a.offering_key.localeCompare(b.offering_key);
+  // Each kind sorted, so blocks with the same parts list them alike, whatever order Directus returns them in.
   const partsOf = (id: string) => [
     ...parts.staff
       .filter((s) => s.block_id === id)
@@ -101,16 +102,19 @@ export function scheduleOf(
         s.position
           ? `${counted(s.count, s.position)}${s.pay === "hourly" ? ", by the hour" : ""}`
           : counted(s.count, s.staff_level ?? "staff"),
-      ),
+      )
+      .sort(),
     ...parts.resources
       .filter((r) => r.block_id === id)
-      .map((r) => `${counted(r.quantity, r.resource)}${r.hours === null ? "" : `, ${amount(r.hours)} hours each`}`),
+      .map((r) => `${counted(r.quantity, r.resource)}${r.hours === null ? "" : `, ${amount(r.hours)} hours each`}`)
+      .sort(),
     ...parts.boats
       .filter((b) => b.block_id === id)
       .map(
         (b) =>
           `${counted(b.count, b.boat_class)}${b.sailor_owned ? `, plus ${amount(b.sailor_owned)} sailors' own` : ""}`,
-      ),
+      )
+      .sort(),
   ];
   const shared: ScheduleBlock[] = blocks.map((b) => ({
     key: b.key,
