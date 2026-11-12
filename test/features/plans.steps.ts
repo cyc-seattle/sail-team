@@ -316,10 +316,10 @@ Then("it has no staff, coach boats or boats yet, where the other days have 1 Lea
 });
 
 Then("its offering shows a fee of $1,000 and 10 sailors", async ({ page, club }) => {
-  // Its row, numbered within its program, not the program's own row above it.
+  // Its row, named for its program and its session (with no season, its own name), not the program's own row above it.
   const cells = page
     .getByRole("table", { name: "Offerings" })
-    .getByRole("row", { name: new RegExp(`Beginner camp ${club.run} 1`) })
+    .getByRole("row", { name: `Beginner camp ${club.run} ${OFFERING}` })
     .getByRole("cell");
   await expect(cells.nth(1)).toHaveText("$1,000");
   await expect(cells.nth(3)).toHaveText("10");
