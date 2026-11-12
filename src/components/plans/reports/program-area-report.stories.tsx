@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, userEvent } from "storybook/test";
+import { expect, userEvent, within } from "storybook/test";
 import {
   doublehandedOfferings,
   doublehandedPrograms,
@@ -9,6 +9,7 @@ import {
   summerPrograms,
   summerRules,
   summerFixedCosts,
+  summerScheduleProps,
   summerStaffTime,
   summerStatement,
   warnings,
@@ -24,6 +25,7 @@ const meta = {
     statement: doublehandedStatement,
     programs: doublehandedPrograms,
     offerings: doublehandedOfferings,
+    schedule: { blocks: [], closedDays: [], elsewhere: [] },
     fixedCosts: [],
     staffTime: [],
   },
@@ -57,7 +59,28 @@ export const Summer: Story = {
     statement: summerStatement,
     programs: summerPrograms,
     offerings: summerOfferings,
+    schedule: summerScheduleProps,
     fixedCosts: summerFixedCosts,
     staffTime: summerStaffTime,
+  },
+};
+
+/** Repeating blocks are written once, with the days that differ; a week shows each program's sailors each day. */
+export const SummerSchedule: Story = {
+  args: Summer.args!,
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByText("Schedule", { selector: "h2" }));
+    const dock = within(canvas.getByRole("region", { name: "Every week" })).getByRole("article", {
+      name: "Morning dock",
+    });
+    await expect(dock).toHaveTextContent("Weekdays, Jun 21 to Aug 20");
+    await expect(within(dock).getByRole("list", { name: "Morning dock: days that differ" })).toHaveTextContent(
+      "Jul 12 to 16: 11 Sailqubes",
+    );
+    await userEvent.click(canvas.getByRole("button", { name: "Jul 12" }));
+    await expect(canvas.getByRole("table", { name: "Week of Jul 12" })).toHaveTextContent("9 / 10");
+    await userEvent.click(canvas.getByRole("button", { name: "Wed 14" }));
+    await expect(canvas.getByRole("heading", { name: "Wednesday, July 14" })).toBeVisible();
+    await expect(canvas.getByRole("article", { name: "Race Camp" })).toHaveTextContent("1:00 PM–4:00 PM");
   },
 };

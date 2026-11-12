@@ -14,6 +14,7 @@ import { Money } from "../money";
 import { CollapsibleSection } from "./collapsible-section";
 import { OfferingName } from "./offering-name";
 import { ReportSection } from "./report-page";
+import { ScheduleCalendar, type ScheduleCalendarProps } from "./schedule-calendar";
 import { RulesList } from "./rules-list";
 import { SessionGrid } from "./session-grid";
 import { StatementTable } from "./statement-table";
@@ -101,6 +102,7 @@ export interface ProgramAreaReportProps {
   statement: { revenue: AccountAmount[]; direct: AccountAmount[]; indirect: AccountAmount[] };
   programs: ProgramSettings[];
   offerings: ReportOffering[];
+  schedule: Omit<ScheduleCalendarProps, "offerings" | "warnings">;
   /** The area plan's own fixed costs and staff time outside its programs. */
   fixedCosts: FixedCost[];
   staffTime: StaffTime[];
@@ -117,6 +119,7 @@ export function ProgramAreaReport({
   statement,
   programs,
   offerings,
+  schedule,
   fixedCosts,
   staffTime,
 }: ProgramAreaReportProps) {
@@ -180,6 +183,12 @@ export function ProgramAreaReport({
           </TableBody>
         </Table>
       </ReportSection>
+
+      {schedule.blocks.length > 0 && (
+        <CollapsibleSection title="Schedule">
+          <ScheduleCalendar {...schedule} offerings={offerings} warnings={warnings} />
+        </CollapsibleSection>
+      )}
     </>
   );
 }

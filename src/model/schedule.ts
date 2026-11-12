@@ -62,15 +62,17 @@ const singular = (name: string) => name.replace(/([^s])s$/, "$1");
 export const counted = (n: number, name: string) => `${amount(n)} ${n === 1 ? singular(name) : plural(name)}`;
 
 /**
- * A block's name, or none when it only repeats its date and names already on the page, such as "J-Pod 2027-03-02".
- * `known` is those names: the program area's, its programs' and its offerings'.
+ * A block's name without its date, or none when the rest only repeats names already on the page: "Morning dock
+ * 2027-06-21" is "Morning dock", and "J-Pod 2027-03-02" is none. `known` is those names: the program area's, its
+ * programs' and its offerings'.
  */
 export function blockName(name: string, date: string, known: string[]): string | null {
-  let rest = name.split(date).join("");
+  const own = name.split(date).join("").replace(/\s+/g, " ").trim();
+  let rest = own;
   for (const k of [...known].sort((a, b) => b.length - a.length)) {
     rest = rest.split(k).join("");
   }
-  return /[\p{L}\p{N}]/u.test(rest) ? name : null;
+  return /[\p{L}\p{N}]/u.test(rest) ? own : null;
 }
 
 /** A program area's activities by date and start time, each in its block, with the offering keys they belong to. */
@@ -188,8 +190,8 @@ export interface PatternProgram {
 }
 
 /**
- * Blocks that repeat: the same programs at the same times. It's written once, with the staff, coach boats and boats
- * most of its days share, and the days that differ.
+ * Blocks that repeat: those with the same name, or with no name, the same programs at the same times. It's written
+ * once, with the staff, coach boats and boats most of its days share, and the days that differ.
  */
 export interface Pattern {
   key: string;
@@ -234,7 +236,7 @@ function differences(parts: string[], usual: string[]): string {
 export function patternsOf(blocks: ScheduleBlock[], offerings: Map<string, NumberedOffering>): Pattern[] {
   const programOf = (a: ScheduledActivity) => offerings.get(a.offering_key)?.program ?? a.offering_key;
   const signature = (b: ScheduleBlock) =>
-    b.activities.map((a) => `${programOf(a)}|${a.start_time}|${a.end_time}`).join(";");
+    b.name ?? b.activities.map((a) => `${programOf(a)}|${a.start_time}|${a.end_time}`).join(";");
   const groups = new Map<string, ScheduleBlock[]>();
   for (const b of blocks) {
     const s = signature(b);
@@ -254,18 +256,16 @@ export function patternsOf(blocks: ScheduleBlock[], offerings: Map<string, Numbe
       const d = differences(b.parts, usual);
       byDifference.set(d, [...(byDifference.get(d) ?? []), b.date]);
     }
-    const programs = [...new Set(own[0]!.activities.map(programOf))];
-    const names = new Set(own.map((b) => b.name));
-    const name = names.size === 1 ? [...names][0] : null;
+    const programs = [...new Set(own.flatMap((b) => b.activities.map(programOf)))];
     return {
       key,
-      title: name ?? programs.join(" and "),
+      title: own[0]!.name ?? programs.join(" and "),
       weekdays: weekdaysOf(dates),
       first: dates[0]!,
       last: dates.at(-1)!,
       days: new Set(dates).size,
       programs: programs.map((program) => {
-        const activity = own[0]!.activities.find((a) => programOf(a) === program)!;
+        const activity = own.flatMap((b) => b.activities).find((a) => programOf(a) === program)!;
         const numbers = [
           ...new Set(
             own.flatMap((b) =>
@@ -334,9 +334,10 @@ export function sailorsOn(
   return out;
 }
 
-/** A day as a column's heading: "Tue 13". */
-export const columnDay = (date: string) =>
-  `${day(date).toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" })} ${day(date).getUTCDate()}`;
+/** A day's parts, for a column's two-line heading: "Jul" or "Tue" over "13". */
+export const monthOf = (date: string) => day(date).toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
+export const weekdayOf = (date: string) => day(date).toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+export const dayOf = (date: string) => String(day(date).getUTCDate());
 
 /** A day in full, for its details: "Tuesday, July 13". */
 export const longDay = (date: string) =>
@@ -348,4 +349,19 @@ export function weekName(week: string, days: string[]): string {
   return a === b
     ? formatShortDay(a)
     : `${formatShortDay(a)} to ${a.slice(0, 7) === b.slice(0, 7) ? day(b).getUTCDate() : formatShortDay(b)}`;
+}
+
+/** How many programs run in each week, by the week's Monday. */
+export function programsByWeek(
+  blocks: ScheduleBlock[],
+  offerings: { key: string; program: string }[],
+): Map<string, number> {
+  const programOf = new Map(offerings.map((o) => [o.key, o.program]));
+  const weeks = new Map<string, Set<string>>();
+  for (const b of blocks) {
+    const own = weeks.get(weekOf(b.date)) ?? new Set<string>();
+    b.activities.forEach((a) => own.add(programOf.get(a.offering_key) ?? a.offering_key));
+    weeks.set(weekOf(b.date), own);
+  }
+  return new Map([...weeks.entries()].map(([w, own]) => [w, own.size]));
 }

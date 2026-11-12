@@ -6,7 +6,15 @@ import { planInputsQuery, type PlanInputs } from "../src/directus/plan-inputs.ts
 import { handlers } from "../src/mocks/handlers.ts";
 import { ids } from "../src/mocks/plans.ts";
 import type { ListedPlan } from "../src/model/financial-plans.ts";
-import { overviewRows, planWarnings, sharedCostsOf, statementOf, totalOf } from "../src/model/reports.ts";
+import {
+  numberedOfferings,
+  overviewRows,
+  planWarnings,
+  sharedCostsOf,
+  statementOf,
+  totalOf,
+} from "../src/model/reports.ts";
+import { patternsOf } from "../src/model/schedule.ts";
 
 vi.stubGlobal("window", { location: { hostname: "example.org" } });
 const server = setupServer(...handlers("https://directus.example.org"));
@@ -102,10 +110,12 @@ describe("reading a Financial Plan's inputs from Directus", () => {
 
   it("reads each program's settings, with its staff level's name from the Operations Plan", async () => {
     const { programs } = await inputs(ids.budget);
-    expect(programs[ids.summerPlan]).toEqual([
+    expect(programs[ids.summerPlan]).toContainEqual(
       expect.objectContaining({ name: "Guppies", staff_level: "Level 1 Instructor", sailors_per_coach: 10 }),
-      expect.objectContaining({ name: "Opti Camp", staff_level: "Level 1 Instructor", sailors_per_coach: 8 }),
-    ]);
+    );
+    expect(programs[ids.summerPlan]).toContainEqual(
+      expect.objectContaining({ name: "420 Camp", staff_level: "Level 3 Coach", sailors_per_coach: 8 }),
+    );
   });
 
   it("reads the Operations Plan's rates, with each bonus on the position it pays, and the boats the club has", async () => {
@@ -127,7 +137,7 @@ describe("reading a Financial Plan's inputs from Directus", () => {
       },
     ]);
     expect(operations?.boatRates.find((b) => b.boat_class === "Sailqube")).toMatchObject({
-      quantity: 8,
+      quantity: 12,
       sailors_per_boat: 2,
     });
     expect(products).toEqual([{ key: "key:Boat storage", product: "Boat storage" }]);
@@ -159,6 +169,29 @@ describe("reading a Financial Plan's inputs from Directus", () => {
       { key: "key:Program Director on Guppies", position: "Program Director", booked_to: "Guppies", hours: 200 },
     ]);
     expect(operations?.closedDays.map((d) => d.date)).toEqual(["2027-07-05"]);
+  });
+
+  it("reads each program area's blocks, with what each shares, and the names that say more than a date", async () => {
+    const { schedule, offerings } = await inputs(ids.budget);
+    const summer = schedule[ids.summerPlan]!;
+    const dock = summer.find((b) => b.date === "2027-06-21" && b.name === "Morning dock");
+    expect(dock?.parts).toEqual(["3 Level 1 Instructors", "2 RIBs", "6 Sailqubes"]);
+    expect(dock?.activities.map((a) => [a.offering_key, a.setup_minutes, a.on_water_minutes])).toEqual([
+      ["key:Guppies Week 1", 30, 180],
+      ["key:Sea Otters Week 1", 30, 180],
+    ]);
+    // "J-Pod 2027-03-02" only repeats the program and the date.
+    expect(schedule[ids.doublehandedPlan]?.[0]).toMatchObject({
+      name: null,
+      parts: ["2 Level 3 Coaches", "2 RIBs", "3 420s, plus 3 sailors' own"],
+    });
+    const numbered = new Map(
+      numberedOfferings(offerings[ids.summerPlan]!).flatMap((g) => g.offerings.map((o) => [o.key, o])),
+    );
+    expect(patternsOf(summer, numbered).find((p) => p.title === "Morning dock")?.exceptions).toEqual([
+      "Jun 28 to Jul 2: 2 Level 1 Instructors",
+      "Jul 12 to 16: 9 Sailqubes",
+    ]);
   });
 
   it("reads each program area's own fixed costs and staff time, by its report", async () => {

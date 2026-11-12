@@ -73,6 +73,11 @@ const products = {
   opti: product(42, "Opti Camp", "program", ids.summer),
   jpod: product(43, "J-Pod", "program", ids.doublehanded),
   storage: product(44, "Boat storage", "storage_lease", null, accounts.storage.id),
+  otters: product(45, "Sea Otters", "program", ids.summer),
+  sailqube: product(46, "Sailqube Camp", "program", ids.summer),
+  c420: product(47, "420 Camp", "program", ids.summer),
+  keelboat: product(48, "Keelboat Camp", "program", ids.summer),
+  adventure: product(49, "Adventure Camp", "program", ids.summer),
 };
 
 const boatClass = (n: number, name: string, sailors: number) => ({
@@ -85,6 +90,7 @@ const boatClasses = {
   opti: boatClass(51, "Opti", 1),
   sailqube: boatClass(52, "Sailqube", 2),
   c420: boatClass(53, "420", 2),
+  keelboat: boatClass(55, "Keelboat", 4),
 };
 const rib = { id: id(54), name: "RIB" };
 
@@ -221,7 +227,7 @@ function operations(version: string): Copy {
   c.add("plan_resources", "RIBs", {
     resource_kind_id: rib.id,
     name: "RIBs",
-    quantity: 4,
+    quantity: 8,
     cost_per_hour_cents: 0,
     cost_per_day_cents: 1_000,
     fuel_per_hour_cents: 1_500,
@@ -230,7 +236,8 @@ function operations(version: string): Copy {
   });
   for (const [boat, cents, quantity] of [
     [boatClasses.opti, 150, 20],
-    [boatClasses.sailqube, 200, 8],
+    [boatClasses.sailqube, 200, 12],
+    [boatClasses.keelboat, 900, 2],
     [boatClasses.c420, 300, 10],
   ] as const) {
     c.add("plan_boat_rates", boat.name, { boat_class_id: boat.id, maintenance_per_boat_hour_cents: cents, quantity });
@@ -363,47 +370,109 @@ function block(
 }
 
 /**
- * Summer: Guppies and Opti Camp, eight weeks each, sharing a block each morning. Week 3 starts on a closed day, week 2
- * has an instructor too few, and week 4 takes more Sailqubes than the club has. `instructors` is how many each
- * block gets.
+ * Summer: seven camps in four blocks each weekday for nine weeks. Week 3 starts on a closed day, week 2 has an
+ * instructor too few on the dock, and week 4 takes more Sailqubes than the club has. `instructors` is how many the
+ * morning dock gets.
  */
 function summer(version: string, instructors: number): Copy {
   const c = new Copy(version);
-  c.add("plan_programs", "Guppies settings", {
-    product_id: products.guppies.id,
-    staff_level_key: key("Level 1 Instructor"),
-    sailors_per_coach: 10,
-    rules: "If there are more than 12 Guppies, add a Junior Instructor.\nGuppies sail Sailqubes.",
-  });
-  c.add("plan_programs", "Opti Camp settings", {
-    product_id: products.opti.id,
-    staff_level_key: key("Level 1 Instructor"),
-    sailors_per_coach: 8,
-    rules: "Never fewer than 2 instructors on the water.",
-  });
+  const settings = (p: { id: string; name: string }, level: string, perCoach: number, rules: string | null) =>
+    c.add("plan_programs", `${p.name} settings`, {
+      product_id: p.id,
+      staff_level_key: key(level),
+      sailors_per_coach: perCoach,
+      rules,
+    });
+  settings(
+    products.guppies,
+    "Level 1 Instructor",
+    10,
+    "If there are more than 12 Guppies, add a Junior Instructor.\nGuppies sail Sailqubes.",
+  );
+  settings(products.otters, "Level 1 Instructor", 10, null);
+  settings(products.opti, "Level 1 Instructor", 8, "Never fewer than 2 instructors on the water.");
+  settings(products.sailqube, "Level 1 Instructor", 8, null);
+  settings(products.c420, "Level 3 Coach", 8, null);
+  settings(products.keelboat, "Level 3 Coach", 6, null);
+  settings(products.adventure, "Level 1 Instructor", 8, null);
   budgetLine(c, "Tent rental", accounts.boats, 180_000, "program_area", ids.summer, { excluded_from_mtdc: true });
   laborLine(c, "Camp setup", "Level 1 Instructor", 40, "program_area", ids.summer, accounts.wages);
-  for (let week = 0; week < 8; week++) {
-    const monday = date("2027-06-21", 7 * week);
-    const session = `Week ${week + 1}`;
-    const guppies = offering(c, `Guppies ${session}`, products.guppies, session, monday, date(monday, 4), {
-      capacity: 10,
-      target: week === 0 ? 6 : 9,
-      price: 39_500,
-    });
-    const opti = offering(c, `Opti Camp ${session}`, products.opti, session, monday, date(monday, 4), {
-      capacity: 16,
-      target: 14,
-      price: 52_500,
-    });
+  // Each camp: its product, the weeks it runs, its sailors, its fee, and its time of day.
+  const camps = [
+    { p: products.guppies, weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9], max: 10, target: 9, price: 39_500, end: "12:00:00" },
+    { p: products.otters, weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9], max: 12, target: 10, price: 39_500, end: "12:00:00" },
+    { p: products.opti, weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9], max: 16, target: 14, price: 52_500, end: "15:00:00" },
+    { p: products.sailqube, weeks: [1, 2, 3, 4, 5, 6, 7, 8], max: 12, target: 10, price: 52_500, end: "15:00:00" },
+    { p: products.c420, weeks: [2, 3, 4, 5, 6, 7, 8], max: 12, target: 9, price: 61_000, end: "15:00:00" },
+    { p: products.keelboat, weeks: [2, 4, 6, 8], max: 8, target: 6, price: 65_000, end: "15:00:00" },
+    { p: products.adventure, weeks: [1, 3, 5, 7, 9], max: 16, target: 12, price: 48_000, end: "15:00:00" },
+  ];
+  // The camps that share each block, and what the block has.
+  const blocks: {
+    name: string;
+    camps: string[];
+    staff: [string, number];
+    ribs: number;
+    boats: (week: number) => [{ id: string; name: string }, number][];
+  }[] = [
+    {
+      name: "Morning dock",
+      camps: ["Guppies", "Sea Otters"],
+      staff: ["Level 1 Instructor", instructors],
+      ribs: 2,
+      boats: (week) => [[boatClasses.sailqube, week === 4 ? 9 : 6]],
+    },
+    {
+      name: "Day camps",
+      camps: ["Opti Camp", "Sailqube Camp"],
+      staff: ["Level 1 Instructor", 4],
+      ribs: 2,
+      boats: () => [
+        [boatClasses.opti, 14],
+        [boatClasses.sailqube, 5],
+      ],
+    },
+    {
+      name: "Big boats",
+      camps: ["420 Camp", "Keelboat Camp"],
+      staff: ["Level 3 Coach", 2],
+      ribs: 2,
+      boats: () => [
+        [boatClasses.c420, 6],
+        [boatClasses.keelboat, 2],
+      ],
+    },
+    { name: "Adventure", camps: ["Adventure Camp"], staff: ["Level 1 Instructor", 2], ribs: 1, boats: () => [] },
+  ];
+  for (let week = 1; week <= 9; week++) {
+    const monday = date("2027-06-21", 7 * (week - 1));
+    const session = `Week ${week}`;
+    const running = camps
+      .filter((camp) => camp.weeks.includes(week))
+      .map((camp) => ({
+        ...camp,
+        id: offering(c, `${camp.p.name} ${session}`, camp.p, session, monday, date(monday, 4), {
+          capacity: camp.max,
+          target: week === 1 && camp.p === products.guppies ? 6 : camp.target,
+          price: camp.price,
+          ...(camp.p === products.opti && { cogs: 0.04 }),
+          ...(camp.p === products.opti && week === 1 && { note: "Lunch is included." }),
+        }),
+      }));
     for (let day = 0; day < 5; day++) {
       const on = date(monday, day);
-      const b = block(c, `Summer ${on}`, on, ["Level 1 Instructor", week === 1 ? instructors - 1 : instructors], 2, [
-        [boatClasses.sailqube, week === 3 ? 9 : 5],
-        [boatClasses.opti, 14],
-      ]);
-      activity(c, `Guppies ${on}`, guppies, on, "09:00:00", "12:00:00", b);
-      activity(c, `Opti Camp ${on}`, opti, on, "09:00:00", "15:00:00", b);
+      for (const shared of blocks) {
+        const own = running.filter((camp) => shared.camps.includes(camp.p.name));
+        if (own.length === 0) {
+          continue;
+        }
+        const staff: [string, number] =
+          shared.name === "Morning dock" && week === 2 ? [shared.staff[0], shared.staff[1] - 1] : shared.staff;
+        const b = block(c, `${shared.name} ${on}`, on, staff, shared.ribs, shared.boats(week));
+        for (const camp of own) {
+          activity(c, `${camp.p.name} ${on}`, camp.id, on, "09:00:00", camp.end, b);
+        }
+      }
     }
   }
   return c;
@@ -650,6 +719,10 @@ export const tables: Record<string, Row[]> = {
     product_id: named(catalog.products.find((p) => p.id === r["product_id"])!),
   })),
   plan_boat_rates: rowsOf(versions, "plan_boat_rates").map((r) => ({
+    ...r,
+    boat_class_id: catalog.boat_classes.find((b) => b.id === r["boat_class_id"])!,
+  })),
+  plan_block_boats: rowsOf(versions, "plan_block_boats").map((r) => ({
     ...r,
     boat_class_id: catalog.boat_classes.find((b) => b.id === r["boat_class_id"])!,
   })),

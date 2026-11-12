@@ -27,6 +27,7 @@ import {
   sharedCostsOf,
   statementOf,
 } from "@/model/reports";
+import { programsByWeek } from "@/model/schedule";
 
 /** One report of a Financial Plan, by its key: `overview`, `rates`, a Program Plan's id, `non-program` or `fundraising`. */
 export function PlanReport({ setId, report }: { setId: string; report: string }) {
@@ -130,6 +131,16 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
       statement={statementOf(results.lines.filter((l) => l.member === member.id))}
       programs={inputs.programs[report] ?? []}
       offerings={inputs.offerings[report] ?? []}
+      schedule={{
+        blocks: inputs.schedule[report] ?? [],
+        closedDays: inputs.operations?.closedDays ?? [],
+        elsewhere: members
+          .filter((m) => m.kind === "program_area" && m.id !== member.id)
+          .map((m) => ({
+            area: reportName(m),
+            weeks: programsByWeek(inputs.schedule[reportKey(m)] ?? [], inputs.offerings[reportKey(m)] ?? []),
+          })),
+      }}
       fixedCosts={inputs.fixedCosts[report] ?? []}
       staffTime={inputs.staffTime[report] ?? []}
     />

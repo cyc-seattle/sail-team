@@ -1,5 +1,6 @@
 // Made-up numbers for the Planning report wireframes. Never real figures.
 import type { Bonus, FixedCost, OperationsAssumptions, StaffTime } from "@/model/assumptions";
+import type { ScheduleBlock, ScheduledActivity } from "@/model/schedule";
 import type { ListedPlan } from "@/model/financial-plans";
 import type {
   AccountAmount,
@@ -558,3 +559,65 @@ export const planningPlans: ListedPlan[] = [
     expense_cents: 42_900_000,
   }),
 ];
+
+const scheduled = (key: string, offering_key: string, start_time: string, end_time: string): ScheduledActivity => ({
+  key,
+  offering_key,
+  kind: "practice",
+  start_time,
+  end_time,
+  setup_minutes: 30,
+  putaway_minutes: 30,
+  on_water_minutes: 150,
+});
+
+/**
+ * Summer's nine weeks: Guppies and Opti Camp share the dock each weekday morning, short an instructor in week 2 and
+ * over on Sailqubes in week 4, and Race Camp has a Wednesday clinic in its weeks.
+ */
+export const summerSchedule: ScheduleBlock[] = summerOfferings
+  .filter((o) => o.program === "Guppies")
+  .flatMap((guppies) => {
+    const n = Number(guppies.key.split("-")[1]);
+    const days = [0, 1, 2, 3, 4].map((d) => {
+      const date = new Date(`${guppies.starts_on}T00:00:00Z`);
+      date.setUTCDate(date.getUTCDate() + d);
+      return date.toISOString().slice(0, 10);
+    });
+    return days.flatMap((date, d) => {
+      const dock: ScheduleBlock = {
+        key: `dock-${date}`,
+        date,
+        name: "Morning dock",
+        activities: [
+          scheduled(`guppies-${date}`, guppies.key, "09:00:00", "12:00:00"),
+          scheduled(`opti-${date}`, `Opti Camp-${n}`, "09:00:00", "15:00:00"),
+        ],
+        parts: [
+          n === 1 ? "2 Level 1 Instructors" : "3 Level 1 Instructors",
+          "2 RIBs",
+          n === 3 ? "11 Sailqubes" : "5 Sailqubes",
+          "14 Optis",
+        ],
+      };
+      const clinic: ScheduleBlock[] =
+        d === 2 && [1, 4, 7].includes(n)
+          ? [
+              {
+                key: `clinic-${date}`,
+                date,
+                name: null,
+                activities: [scheduled(`race-${date}`, `Race Camp-${n}`, "13:00:00", "16:00:00")],
+                parts: ["1 Program Director, by the hour", "1 RIB", "6 420s, plus 4 sailors' own"],
+              },
+            ]
+          : [];
+      return [dock, ...clinic];
+    });
+  });
+
+export const summerScheduleProps = {
+  blocks: summerSchedule,
+  closedDays: [{ date: "2027-07-05", name: "Independence Day, observed" }],
+  elsewhere: [{ area: "Doublehanded", weeks: new Map([["2027-07-12", 2]]) }],
+};
