@@ -742,10 +742,15 @@ export const tables: Record<string, Row[]> = {
     ...r,
     product_id: named(catalog.products.find((p) => p.id === r["product_id"])!),
   })),
-  plan_offerings: rowsOf(versions, "plan_offerings").map((r) => ({
-    ...r,
-    product_id: named(catalog.products.find((p) => p.id === r["product_id"])!),
-  })),
+  // A program's own row, with the color a Catalog Writer gave Guppies; the rest take one from the palette.
+  plan_offerings: rowsOf(versions, "plan_offerings").map((r) => {
+    const product = catalog.products.find((p) => p.id === r["product_id"])!;
+    const programs =
+      product.kind === "program"
+        ? [{ id: `program-${product.id}`, color: product.id === products.guppies.id ? "#0274c7" : null }]
+        : [];
+    return { ...r, product_id: { ...named(product), programs } };
+  }),
   plan_boat_rates: rowsOf(versions, "plan_boat_rates").map((r) => ({
     ...r,
     boat_class_id: catalog.boat_classes.find((b) => b.id === r["boat_class_id"])!,

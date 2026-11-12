@@ -109,6 +109,9 @@ export interface ReportOffering {
   session: string;
   /** Its own name, such as "Adult Learn to Sail Weekday Jul 2026". */
   name?: string;
+  /** Its program's id and the color the catalog gives it, for the program's color on the Calendar. */
+  program_id?: string | null;
+  program_color?: string | null;
   starts_on: string;
   ends_on: string;
   /** What one sailor pays for the whole offering. */
@@ -538,6 +541,8 @@ export function reportOffering(
     "key" | "name" | "season_term" | "starts_on" | "ends_on" | "price_cents" | "capacity" | "cogs_rate" | "note"
   > & {
     program: string;
+    program_id?: string | null;
+    program_color?: string | null;
     estimated: number;
   },
   activities: Pick<PlanActivity, "date" | "kind" | "uses_boats" | "start_time" | "end_time" | "on_water_minutes">[],
@@ -547,6 +552,8 @@ export function reportOffering(
     program: offering.program,
     session: offering.season_term || offering.name,
     name: offering.name,
+    program_id: offering.program_id ?? null,
+    program_color: offering.program_color ?? null,
     starts_on: offering.starts_on,
     ends_on: offering.ends_on,
     fee_cents: offering.price_cents ?? 0,

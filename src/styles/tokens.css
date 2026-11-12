@@ -58,17 +58,8 @@
   --chart-5: oklch(0.735 0.117 236.2);
   --chart-6: oklch(0.621 0.17 47.5);
 
-  /*
-   * Each program area's color family on the calendar. Its programs take shades of it a step of hue apart
-   * (src/model/colors.ts), each 3:1 on the page and on a card, under text in program-foreground at 4.5:1.
-   */
+  /* Words on a program's color (programColor in @cyc-seattle/platform), whose palette keeps them at 4.5:1. */
   --program-foreground: oklch(1 0 0);
-  --area-1: oklch(0.52 0.14 252);
-  --area-2: oklch(0.52 0.13 150);
-  --area-3: oklch(0.54 0.15 40);
-  --area-4: oklch(0.52 0.15 310);
-  --area-5: oklch(0.52 0.1 195);
-  --area-6: oklch(0.54 0.12 95);
 
   --radius: 0.625rem;
   --card-spacing: 1rem;
@@ -101,12 +92,4 @@
 
   /* The bar stays the club's navy. Links lighten it, so they read on a dark page. */
   --link: oklch(0.8 0.08 279.6);
-
-  --program-foreground: oklch(0.2 0 0);
-  --area-1: oklch(0.78 0.11 252);
-  --area-2: oklch(0.78 0.12 150);
-  --area-3: oklch(0.78 0.12 40);
-  --area-4: oklch(0.78 0.11 310);
-  --area-5: oklch(0.78 0.1 195);
-  --area-6: oklch(0.78 0.12 95);
 }

@@ -1,6 +1,6 @@
+import { programColor } from "@cyc-seattle/platform/planning";
 import { useState, type CSSProperties } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { programColor } from "@/model/colors";
 import { numberedOfferings, type NumberedOffering, type ReportOffering } from "@/model/reports";
 import {
   dayOf,
@@ -79,9 +79,12 @@ export function PlanCalendar({ areas, closedDays, area, day, onAreaChange, onDay
     }
     return [
       { key: a.key, name: a.name, heading: true, spans: [] },
-      ...groups.flatMap(({ program, offerings: own }, n) => {
-        // Keyed by area too: two areas can run programs of the same name.
-        const style = { "--program": programColor(sorted.indexOf(a), n) } as CSSProperties;
+      ...groups.flatMap(({ program, offerings: own }) => {
+        // Keyed by area too: two areas can run programs of the same name. A program the catalog doesn't know falls back to
+        // its name, so it still keeps one color.
+        const style = {
+          "--program": programColor({ id: own[0]?.program_id ?? program, color: own[0]?.program_color ?? null }),
+        } as CSSProperties;
         colors.set(`${a.key} ${program}`, style);
         own.forEach((o) => offerings.set(o.key, o));
         const spans = own.flatMap((o) =>
