@@ -299,7 +299,7 @@ export function ScheduleCalendar({ blocks, offerings, warnings, closedDays, else
                   </p>
                   <ul className="grid gap-0.5 text-sm">
                     {b.activities.map((a) => (
-                      <li key={a.key} className="flex flex-wrap items-center gap-x-2">
+                      <li key={a.key} className="flex flex-wrap items-center gap-x-1.5">
                         <Swatch style={color(programOf(a.offering_key))} />
                         <span>{numbered.get(a.offering_key)?.label ?? a.offering_key}</span>
                         {[
