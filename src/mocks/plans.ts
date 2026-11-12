@@ -125,7 +125,7 @@ const plans = [
   { id: ids.summerPlan, name: "Summer 2027", kind: "program_area", program_area_id: ids.summer },
   { id: ids.doublehandedPlan, name: "Doublehanded 2027", kind: "program_area", program_area_id: ids.doublehanded },
   { id: ids.opsPlan, name: "Operations 2027", kind: "operations", program_area_id: null },
-].map((p) => ({ ...p, organization_id: ids.org, fiscal_year: 2027, archived: false }));
+].map((p) => ({ ...p, organization_id: ids.org, fiscal_year: 2027 }));
 
 /** Keys stay the same in every copy, as platform keeps them, so rows that name others by key match across copies. */
 const key = (name: string) => `key:${name}`;
@@ -199,7 +199,7 @@ function operations(version: string): Copy {
     rib_resource_kind_id: rib.id,
   });
   const level = (name: string, cents: number) =>
-    c.add("plan_staff_levels", name, { name, pay_type: "hourly", hourly_rate_cents: cents, qualifications: null });
+    c.add("plan_staff_levels", name, { name, pay_type: "hourly", hourly_rate_cents: cents });
   level("Junior Instructor", 1_900);
   level("Level 1 Instructor", 2_200);
   level("Level 3 Coach", 3_200);
@@ -210,10 +210,8 @@ function operations(version: string): Copy {
       name,
       annual_salary_cents: salary,
       paid_hours_per_year: 2_080,
-      qualifications: null,
       ga_share: share,
       remainder_pool_id: pool,
-      form_990_line: null,
       hourly_coaching_rate_cents: coaching,
     });
   position("Executive Director", 5_500_000, 0.6, ga);
@@ -268,13 +266,30 @@ function operations(version: string): Copy {
   line("Clubhouse rent", accounts.rent, 600_000, "pool", key("G&A"));
   line("Spring gala gifts", accounts.gifts, 2_000_000, "org", null);
   line("Spring gala costs", accounts.events, 300_000, "org", null);
-  line("Coach boat", accounts.equipment, 4_500_000, "org", null);
+  const capital = (name: string, cents: number, sort: number, more: Row = {}) =>
+    c.add("plan_capital_items", name, {
+      name,
+      amount_cents: cents,
+      account_id: accounts.equipment.id,
+      sort,
+      note: null,
+      link: null,
+      ...more,
+    });
+  capital("Coach boat", 3_500_000, 1, {
+    note: "Replaces the oldest RIB, which failed its survey.",
+    link: "https://example.org/coach-boat-quote",
+  });
+  capital("Six Optis", 2_100_000, 2);
+  capital("Float repairs", 1_200_000, 3);
+  capital("Sail locker", 500_000, 4);
+  // Capital entered the old way, as a budget line, which has no rank.
+  line("Trailer", accounts.equipment, 500_000, "org", null);
   line("Storage dock upkeep", accounts.boats, 300_000, "offering", key("Boat storage"));
   laborLine(c, "Winter boat repairs", "Level 1 Instructor", 120, "pool", key("Program admin"), accounts.boats);
   c.add("plan_closed_dates", "Fourth of July", { date: "2027-07-05", name: "Independence Day, observed" });
   c.add("plan_offerings", "Boat storage", {
     product_id: products.storage.id,
-    catalog_offering_id: null,
     name: "Boat storage 2027",
     season_term: null,
     starts_on: "2027-01-01",
@@ -300,7 +315,6 @@ const offering = (
 ) =>
   c.add("plan_offerings", name, {
     product_id: p.id,
-    catalog_offering_id: null,
     name,
     season_term: session,
     starts_on,
@@ -602,6 +616,7 @@ const versioned = [
   "plan_bonus_owners",
   "plan_bonus_owner_products",
   "plan_closed_dates",
+  "plan_capital_items",
 ] as const;
 
 const rowsOf = (versions: string[], table: string) => versions.flatMap((v) => copies[v]?.rows[table] ?? []);
@@ -680,6 +695,15 @@ function results(setRow: Row, calculatedAt: string): Record<string, Row[]> {
       days: p.days,
       sailor_days: p.sailor_days,
     })),
+    plan_result_capital: out.capital.map((item) => ({
+      version_set_id: setId,
+      rank: item.rank,
+      item_key: item.key,
+      name: item.name,
+      amount_cents: item.amount_cents,
+      running_cents: item.running_cents,
+      funded: item.funded,
+    })),
     plan_result_warnings: out.warnings.map((w) => ({
       version_set_id: setId,
       version_set_member_id: memberOf(w.version_id),
@@ -695,10 +719,9 @@ function results(setRow: Row, calculatedAt: string): Record<string, Row[]> {
 // coaches' are still being worked out.
 const worked = [results(budget, "2027-03-10T18:00:00Z"), results(twoCoaches, "2027-04-02T23:05:00Z")];
 const resultTables = Object.fromEntries(
-  ["plan_results", "plan_result_lines", "plan_result_pnl", "plan_result_warnings"].map((table) => [
-    table,
-    worked.flatMap((r) => r[table] ?? []),
-  ]),
+  ["plan_results", "plan_result_lines", "plan_result_pnl", "plan_result_warnings", "plan_result_capital"].map(
+    (table) => [table, worked.flatMap((r) => r[table] ?? [])],
+  ),
 );
 resultTables["plan_results"]!.push({ ...worked[0]!["plan_results"]![0]!, version_set_id: ids.firstPass });
 

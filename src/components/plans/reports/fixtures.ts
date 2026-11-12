@@ -4,6 +4,7 @@ import type { ScheduleBlock, ScheduledActivity } from "@/model/schedule";
 import type { ListedPlan, Totals } from "@/model/financial-plans";
 import type {
   AccountAmount,
+  CapitalItem,
   FunctionalExpenses,
   LineAmount,
   OverviewRow,
@@ -295,11 +296,40 @@ export const fundraising = {
   costs: [account("7010", "Event costs", 900_000), account("7020", "Donor mailings", 150_000)],
 };
 
-export const capital = [
-  account("1510", "Coach boat", 4_500_000),
-  account("1520", "Six Optis", 2_100_000),
-  account("1530", "Float repairs", 1_200_000),
-];
+const item = (
+  rank: number | null,
+  name: string,
+  amount_cents: number,
+  running_cents: number,
+  extra: Partial<CapitalItem> = {},
+): CapitalItem => ({
+  key: `capital-${name}`,
+  rank,
+  name,
+  account_number: "1510",
+  account_name: "Equipment",
+  amount_cents,
+  running_cents,
+  funded: running_cents <= 6_000_000,
+  note: null,
+  link: null,
+  ...extra,
+});
+
+/** Four ranked purchases, where the money runs out after the second, and one entered as a budget line. */
+export const capital: { items: CapitalItem[]; available_cents: number } = {
+  available_cents: 6_000_000,
+  items: [
+    item(1, "Coach boat", 3_500_000, 3_500_000, {
+      note: "Replaces the oldest RIB, which failed its survey.",
+      link: "https://example.org/quote",
+    }),
+    item(2, "Six Optis", 2_100_000, 5_600_000),
+    item(3, "Float repairs", 1_200_000, 6_800_000, { account_number: "1520", account_name: "Buildings" }),
+    item(4, "Sail locker", 500_000, 7_300_000),
+    item(null, "Trailer", 500_000, 7_800_000),
+  ],
+};
 
 const programDirectorBonus: Bonus = {
   key: "pd-bonus",

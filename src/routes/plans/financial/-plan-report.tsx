@@ -18,8 +18,9 @@ import { planInputsQuery, type PlanInputs } from "@/directus/plan-inputs";
 import { useSession } from "@/directus/use-session";
 import { useFinancialPlan } from "@/hooks/use-financial-plan";
 import {
-  fundraisingAndCapital,
+  capitalList,
   functionalExpenses,
+  fundraisingOf,
   overviewRows,
   planWarnings,
   productsOf,
@@ -134,7 +135,12 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
     );
   }
   if (report === "fundraising") {
-    return <FundraisingCapitalReport {...fundraisingAndCapital(results.lines)} />;
+    return (
+      <FundraisingCapitalReport
+        fundraising={fundraisingOf(results.lines)}
+        capital={capitalList(results, inputs.capital)}
+      />
+    );
   }
   if (report === "non-program") {
     return (

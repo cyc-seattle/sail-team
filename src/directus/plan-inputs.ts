@@ -239,6 +239,8 @@ export interface PlanInputs {
   /** Each program area's own fixed costs and staff time, by its report's key. */
   fixedCosts: Record<string, FixedCost[]>;
   staffTime: Record<string, StaffTime[]>;
+  /** Each capital item's note and link, by its key. */
+  capital: Record<string, { note: string | null; link: string | null }>;
 }
 
 /** A Financial Plan's inputs, read from the copies it holds, which never change once it's saved. */
@@ -248,75 +250,92 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
     queryFn: async (): Promise<PlanInputs> => {
       const versions = members.map((m) => m.version_id);
       const ops = members.find((m) => m.kind === "operations");
-      const [copies, offerings, activities, programs, operations, budget, labor, pools, catalog, trips, blocks] =
-        await Promise.all([
-          versions.length
-            ? readAll<{ id: string; rules: string | null }>("plan_versions", { id: { _in: versions } }, ["id", "rules"])
-            : [],
-          rowsOf<PlanOffering & { product_id: { name: string; programs: { id: string; color: string | null }[] } }>(
-            "plan_offerings",
-            versions,
-            ["*", "product_id.name", "product_id.programs.id", "product_id.programs.color"],
-          ),
-          rowsOf<PlanActivity>("plan_activities", versions, [
-            "id",
-            "key",
-            "version_id",
-            "block_id",
-            "setup_minutes",
-            "putaway_minutes",
-            "offering_id",
-            "date",
-            "kind",
-            "uses_boats",
-            "start_time",
-            "end_time",
-            "on_water_minutes",
-          ]),
-          rowsOf<PlanProgram & { product_id: { name: string } }>("plan_programs", versions, [
-            "version_id",
-            "product_id.name",
-            "staff_level_key",
-            "sailors_per_coach",
-            "rules",
-          ]),
-          ops ? operationsAssumptions(ops.version_id, versions) : null,
-          rowsOf<BudgetRow>("plan_budget_lines", versions, [
-            "version_id",
-            "key",
-            "name",
-            "cost_center_type",
-            "cost_center_key",
-            "amount_cents",
-            "excluded_from_mtdc",
-            "note",
-            ...accountFields,
-            "account_id.type",
-          ]),
-          rowsOf<LaborRow>("plan_labor_lines", versions, [
-            "version_id",
-            "key",
-            "name",
-            "cost_center_type",
-            "cost_center_key",
-            "staff_level_key",
-            "hours",
-            "note",
-            ...accountFields,
-          ]),
-          rowsOf<{ key: string; name: string }>("plan_pools", versions, ["key", "name"]),
-          costCenterNames(),
-          rowsOf<PlanTrip>("plan_trips", versions, [
-            "key",
-            "version_id",
-            "offering_id",
-            "name",
-            "nights",
-            "airfare_cents",
-            "miles",
-          ]),
-          blockRows(versions),
-        ]);
+      const [
+        copies,
+        offerings,
+        activities,
+        programs,
+        operations,
+        budget,
+        labor,
+        pools,
+        catalog,
+        trips,
+        blocks,
+        capitalItems,
+      ] = await Promise.all([
+        versions.length
+          ? readAll<{ id: string; rules: string | null }>("plan_versions", { id: { _in: versions } }, ["id", "rules"])
+          : [],
+        rowsOf<PlanOffering & { product_id: { name: string; programs: { id: string; color: string | null }[] } }>(
+          "plan_offerings",
+          versions,
+          ["*", "product_id.name", "product_id.programs.id", "product_id.programs.color"],
+        ),
+        rowsOf<PlanActivity>("plan_activities", versions, [
+          "id",
+          "key",
+          "version_id",
+          "block_id",
+          "setup_minutes",
+          "putaway_minutes",
+          "offering_id",
+          "date",
+          "kind",
+          "uses_boats",
+          "start_time",
+          "end_time",
+          "on_water_minutes",
+        ]),
+        rowsOf<PlanProgram & { product_id: { name: string } }>("plan_programs", versions, [
+          "version_id",
+          "product_id.name",
+          "staff_level_key",
+          "sailors_per_coach",
+          "rules",
+        ]),
+        ops ? operationsAssumptions(ops.version_id, versions) : null,
+        rowsOf<BudgetRow>("plan_budget_lines", versions, [
+          "version_id",
+          "key",
+          "name",
+          "cost_center_type",
+          "cost_center_key",
+          "amount_cents",
+          "excluded_from_mtdc",
+          "note",
+          ...accountFields,
+          "account_id.type",
+        ]),
+        rowsOf<LaborRow>("plan_labor_lines", versions, [
+          "version_id",
+          "key",
+          "name",
+          "cost_center_type",
+          "cost_center_key",
+          "staff_level_key",
+          "hours",
+          "note",
+          ...accountFields,
+        ]),
+        rowsOf<{ key: string; name: string }>("plan_pools", versions, ["key", "name"]),
+        costCenterNames(),
+        rowsOf<PlanTrip>("plan_trips", versions, [
+          "key",
+          "version_id",
+          "offering_id",
+          "name",
+          "nights",
+          "airfare_cents",
+          "miles",
+        ]),
+        blockRows(versions),
+        rowsOf<{ key: string; note: string | null; link: string | null }>(
+          "plan_capital_items",
+          ops ? [ops.version_id] : [],
+          ["key", "note", "link"],
+        ),
+      ]);
       const levelName = new Map(operations?.staffLevels.map((l) => [l.key, l.name]));
       const keyOf = new Map(members.map((m) => [m.version_id, m.kind === "operations" ? "rates" : reportKey(m)]));
       const byReport = <T>(rows: (T & { version_id: string })[]) => {
@@ -452,6 +471,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         ),
         fixedCosts: byReport(fixedCosts.filter((l) => !ofOperations(l))),
         staffTime: byReport(staffTime.filter((l) => !ofOperations(l))),
+        capital: Object.fromEntries(capitalItems.map((c) => [c.key, { note: c.note, link: c.link }])),
       };
     },
     // A draft's inputs change wherever its plans are changed, as its numbers do.

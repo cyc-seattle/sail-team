@@ -125,12 +125,27 @@ export interface ResultWarning {
 }
 
 /** A Financial Plan's P&L, as platform last worked it out: for a draft, after its latest change; for a saved one, once. */
+/** One planned capital purchase, in the order platform ranks them, with how far the year's money goes. */
+export interface CapitalResult {
+  rank: number;
+  /** The capital item's key, or for capital entered as a budget line, that line's. */
+  key: string;
+  name: string;
+  amount_cents: number;
+  /** Its amount and every amount ranked above it. */
+  running_cents: number;
+  /** Whether the operating net plus the fundraising net covers its running total. */
+  funded: boolean;
+}
+
 export interface Results {
   calculated_at: string | null;
   totals: Totals;
   pnl: PnlRow[];
   lines: PlanLine[];
   warnings: ResultWarning[];
+  /** None in results worked out before capital was ranked. */
+  capital: CapitalResult[];
 }
 
 /** How long a Financial Plan's numbers may be missing before the page says they couldn't be worked out. */
