@@ -26,6 +26,7 @@ export const ids = {
   summerTwo: id(211),
   opsTwo: id(212),
   threeCoaches: id(603),
+  firstPass: id(604),
   summerThree: id(221),
   opsThree: id(222),
   // Who saved Budget.
@@ -540,6 +541,7 @@ const set = (setId: string, fields: Row) => ({
   platform_version: null,
   message: null,
   parent_id: null,
+  archived_at: null,
   ...fields,
 });
 const budget = set(ids.budget, {
@@ -558,6 +560,15 @@ const twoCoaches = set(ids.twoCoaches, {
   message: "A fourth instructor on every summer morning.",
 });
 const threeCoaches = set(ids.threeCoaches, { name: "Three coaches", status: "draft", parent_id: parent });
+// Frozen before Budget, then archived. It holds no plans, so only Planning's list shows it.
+const firstPass = set(ids.firstPass, {
+  name: "First pass",
+  status: "saved",
+  saved_at: "2027-02-14T18:00:00Z",
+  saved_by: ids.saver,
+  platform_version: "1.37.0+engine.0a1b2c3d4e5f",
+  archived_at: "2027-03-10T18:05:00Z",
+});
 
 const members: { id: string; set: Row; version: string; plan: string }[] = [
   { id: ids.summerMember, set: budget, version: ids.summerBudget, plan: ids.summerPlan },
@@ -689,6 +700,7 @@ const resultTables = Object.fromEntries(
     worked.flatMap((r) => r[table] ?? []),
   ]),
 );
+resultTables["plan_results"]!.push({ ...worked[0]!["plan_results"]![0]!, version_set_id: ids.firstPass });
 
 const versions = Object.keys(copies);
 const named = (row: { id: string; name: string }) => ({ id: row.id, name: row.name });
@@ -704,7 +716,7 @@ export const tables: Record<string, Row[]> = {
   boat_classes: catalog.boat_classes,
   resource_kinds: catalog.resource_kinds,
   plans,
-  version_sets: [budget, twoCoaches, threeCoaches],
+  version_sets: [budget, twoCoaches, threeCoaches, firstPass],
   // version_set_id and plan_id are expanded when a request asks for their fields.
   version_set_members: members.map((m) => {
     const p = plans.find((x) => x.id === m.plan)!;
