@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent } from "storybook/test";
 import type { ReportOffering } from "@/model/reports";
 import type { ScheduleBlock } from "@/model/schedule";
 import { summerOfferings, summerScheduleProps, warnings } from "./fixtures";
@@ -14,11 +14,10 @@ type Story = StoryObj<typeof meta>;
 
 export const Summer: Story = {
   play: async ({ canvas }) => {
-    const cards = within(canvas.getByRole("region", { name: "Activity blocks" }));
-    await expect(cards.getByRole("article", { name: "Morning dock" })).toHaveTextContent("Guppies 1–9");
-    await userEvent.click(canvas.getByRole("button", { name: "Jul 12" }));
     await expect(canvas.getByRole("table", { name: "Weeks" })).toHaveTextContent("9 / 10");
-    await expect(canvas.getByRole("table", { name: "Week of Jul 12" })).toHaveTextContent("Morning dock");
+    await userEvent.click(canvas.getByRole("button", { name: "Jul 12" }));
+    await userEvent.click(canvas.getByRole("button", { name: /^Morning dock, Tuesday, July 13/ }));
+    await expect(canvas.getByRole("list", { name: "How it differs" })).toHaveTextContent("11 Sailqubes");
   },
 };
 
@@ -65,4 +64,8 @@ const manyBlocks: ScheduleBlock[] = ["2027-06-21", "2027-06-22", "2027-06-23"].m
 
 export const TwelvePrograms: Story = {
   args: { blocks: manyBlocks, offerings: many, warnings: [], closedDays: [], elsewhere: [] },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Jun 21" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Camp morning, Monday, June 21" }));
+  },
 };

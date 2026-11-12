@@ -283,17 +283,19 @@ When("I open its schedule", async ({ page }) => {
   await page.locator("summary", { hasText: "Schedule" }).click();
 });
 
-const practices = (page: Page) =>
-  page.getByRole("region", { name: "Activity blocks" }).getByRole("article", { name: "Practice" });
-
-Then("it shows weekday practices from Jul 5 to Jul 16 with 1 Lead coach", async ({ page }) => {
-  await expect(practices(page)).toContainText("Weekdays, Jul 5 to Jul 16");
-  await expect(practices(page)).toContainText("1 Lead coach");
+When("I open the week of Jul 12", async ({ page }) => {
+  await page.getByRole("button", { name: "Jul 12" }).click();
 });
 
-Then("it says Jul 16 has no staff, coach boats or boats yet", async ({ page }) => {
-  await expect(practices(page).getByRole("list", { name: "Practice: days that differ" })).toContainText(
-    "Jul 16: no staff, coach boats or boats yet",
+When("I open its practices", async ({ page }) => {
+  await page.getByRole("table", { name: "Week of Jul 12" }).getByRole("button", { name: "Practice" }).click();
+});
+
+Then("they have 1 Lead coach, except Jul 16, which has no staff, coach boats or boats yet", async ({ page }) => {
+  const block = page.getByRole("region", { name: /^Practice ·/ });
+  await expect(block).toContainText("1 Lead coach");
+  await expect(block.getByRole("list", { name: "How it differs" })).toContainText(
+    "16: no staff, coach boats or boats yet",
   );
 });
 

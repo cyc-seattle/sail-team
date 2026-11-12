@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { NumberedOffering } from "../src/model/reports.ts";
 import {
   blockName,
-  busiestWeek,
   counted,
   daysOf,
   patternsOf,
@@ -167,9 +166,8 @@ describe("patternsOf", () => {
 describe("weeks and days", () => {
   const blocks = [...week1, ...week2];
 
-  it("lists every week from the first block's to the last's, and opens on the busiest", () => {
+  it("lists every week from the first block's to the last's", () => {
     expect(weeksOf(blocks)).toEqual(["2027-06-21", "2027-06-28"]);
-    expect(busiestWeek(blocks)).toBe("2027-06-21");
     expect(daysOf(blocks, "2027-06-28")).toEqual(["2027-06-28", "2027-06-29", "2027-06-30"]);
     expect(weekName("2027-06-28", daysOf(blocks, "2027-06-28"))).toBe("Jun 28 to 30");
   });

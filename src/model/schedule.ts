@@ -225,7 +225,7 @@ function numberRuns(ns: number[]): string {
 }
 
 /** The parts a block has that most of its pattern's don't, or what it lacks when it has nothing new. */
-function differences(parts: string[], usual: string[]): string {
+export function differences(parts: string[], usual: string[]): string {
   if (parts.length === 0) {
     return "no staff, coach boats or boats yet";
   }
@@ -304,15 +304,6 @@ export function weeksOf(blocks: ScheduleBlock[]): string[] {
     weeks.push(w);
   }
   return weeks;
-}
-
-/** The week with the most activities, which a schedule opens on. */
-export function busiestWeek(blocks: ScheduleBlock[]): string | null {
-  const counts = new Map<string, number>();
-  for (const b of blocks) {
-    counts.set(weekOf(b.date), (counts.get(weekOf(b.date)) ?? 0) + b.activities.length);
-  }
-  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] ?? null;
 }
 
 /** The dates of a week that have a block, in order. */

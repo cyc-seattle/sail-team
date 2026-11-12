@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent } from "storybook/test";
 import {
   doublehandedOfferings,
   doublehandedPrograms,
@@ -65,23 +65,21 @@ export const Summer: Story = {
   },
 };
 
-/** Repeating blocks are written once, with the days that differ; a week shows each program's sailors each day. */
+/** The weeks with each program's sailors, then a week's blocks by day, then one block in full. */
 export const SummerSchedule: Story = {
   args: Summer.args!,
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByText("Schedule", { selector: "h2" }));
-    const dock = within(canvas.getByRole("region", { name: "Activity blocks" })).getByRole("article", {
-      name: "Morning dock",
-    });
-    await expect(dock).toHaveTextContent("Weekdays, Jun 21 to Aug 20");
-    await expect(within(dock).getByRole("list", { name: "Morning dock: days that differ" })).toHaveTextContent(
-      "Jul 12 to 16: 11 Sailqubes",
-    );
-    await userEvent.click(canvas.getByRole("button", { name: "Jul 12" }));
     await expect(canvas.getByRole("table", { name: "Weeks" })).toHaveTextContent("9 / 10");
-    await expect(canvas.getByRole("table", { name: "Week of Jul 12" })).toHaveTextContent("Morning dock");
-    await userEvent.click(canvas.getByRole("button", { name: "Wed 14" }));
-    await expect(canvas.getByRole("heading", { name: "Wednesday, July 14" })).toBeVisible();
-    await expect(canvas.getByRole("article", { name: "Race Camp" })).toHaveTextContent("1:00 PM–4:00 PM");
+    await userEvent.click(canvas.getByRole("button", { name: "Jun 28" }));
+    await expect(canvas.getByRole("table", { name: "Week of Jun 28" })).toHaveTextContent("Morning dock");
+    await userEvent.click(canvas.getByRole("button", { name: "Race Camp, Wednesday, June 30" }));
+    await expect(canvas.getByRole("region", { name: "Race Camp · Wednesday, June 30" })).toHaveTextContent(
+      "1:00 PM–4:00 PM",
+    );
+    await userEvent.click(canvas.getByRole("button", { name: "Morning dock" }));
+    await expect(canvas.getByRole("list", { name: "How it differs" })).toHaveTextContent(
+      "Mon 28: 2 Level 1 Instructors",
+    );
   },
 };
