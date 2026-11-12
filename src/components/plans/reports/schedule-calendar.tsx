@@ -308,10 +308,10 @@ export function ScheduleCalendar({ blocks, offerings, warnings, closedDays, else
                           a.putaway_minutes ? `${a.putaway_minutes} min put-away` : null,
                         ]
                           .filter(Boolean)
-                          .map((t, i) => (
+                          .map((t, i, all) => (
                             <span key={t} className="whitespace-nowrap text-muted-foreground">
-                              {i > 0 && ", "}
                               {t}
+                              {i < all.length - 1 && ","}
                             </span>
                           ))}
                       </li>
