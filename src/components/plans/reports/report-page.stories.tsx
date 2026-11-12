@@ -18,6 +18,7 @@ import {
   summerOfferings,
   summerPrograms,
   summerRules,
+  doublehandedTrips,
   summerFixedCosts,
   summerScheduleProps,
   summerStaffTime,
@@ -65,6 +66,7 @@ export const Summer: Story = {
         programs={summerPrograms}
         offerings={summerOfferings}
         schedule={summerScheduleProps}
+        trips={[]}
         fixedCosts={summerFixedCosts}
         staffTime={summerStaffTime}
       />
@@ -95,6 +97,7 @@ export const Doublehanded: Story = {
         programs={doublehandedPrograms}
         offerings={doublehandedOfferings}
         schedule={{ blocks: [], closedDays: [], elsewhere: [] }}
+        trips={doublehandedTrips}
         fixedCosts={[]}
         staffTime={[]}
       />

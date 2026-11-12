@@ -9,6 +9,7 @@ import type {
   Product,
   ProgramSettings,
   ReportOffering,
+  Trip,
   SharedCost,
 } from "@/model/reports";
 
@@ -111,6 +112,8 @@ const camp = (program: string, n: number, fee: number, estimated: number, max: n
   max,
   days: 5,
   hours,
+  cogs_rate: program === "Race Camp" ? 0.08 : null,
+  note: program === "Race Camp" && n === 4 ? "Doubles as the regional qualifier." : null,
 });
 
 // Listed out of order on purpose: the report sorts them by start date.
@@ -137,6 +140,8 @@ const season = (
   max: 16,
   days: 22,
   hours: 66,
+  cogs_rate: null,
+  note: session === "Summer" ? "Only if enough sailors sign up by May." : null,
 });
 
 // Spring and fall interleaved, as the old pages listed them.
@@ -172,6 +177,8 @@ const offering = (
   max,
   days,
   hours,
+  cogs_rate: null,
+  note: null,
 });
 
 /** Every program area's offerings, for the Overview's fees and enrollment. */
@@ -621,3 +628,21 @@ export const summerScheduleProps = {
   closedDays: [{ date: "2027-07-05", name: "Independence Day, observed" }],
   elsewhere: [{ area: "Doublehanded", weeks: new Map([["2027-07-12", 2]]) }],
 };
+export const doublehandedTrips: Trip[] = [
+  {
+    key: "fall-regatta",
+    offering_key: "J-Pod-Fall",
+    name: "Fall regatta",
+    nights: 2,
+    airfare_cents: null,
+    miles: 240,
+  },
+  {
+    key: "nationals",
+    offering_key: "K-Pod-Summer",
+    name: "Nationals",
+    nights: 5,
+    airfare_cents: 45_000,
+    miles: null,
+  },
+];

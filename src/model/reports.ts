@@ -105,6 +105,9 @@ export interface ReportOffering {
   days: number;
   /** Hours on the water for one sailor, across the whole offering. */
   hours: number;
+  /** The share of its revenue that goes to the cost of what it sells. */
+  cogs_rate: number | null;
+  note: string | null;
 }
 
 /** An offering with its number within its program, such as Guppies 3, counted by start date. */
@@ -425,7 +428,7 @@ export function onWaterMinutes(
 export function reportOffering(
   offering: Pick<
     PlanOffering,
-    "key" | "name" | "season_term" | "starts_on" | "ends_on" | "price_cents" | "capacity"
+    "key" | "name" | "season_term" | "starts_on" | "ends_on" | "price_cents" | "capacity" | "cogs_rate" | "note"
   > & {
     program: string;
     estimated: number;
@@ -443,5 +446,17 @@ export function reportOffering(
     max: offering.capacity ?? offering.estimated,
     days: new Set(activities.filter((a) => a.kind !== "travel").map((a) => a.date)).size,
     hours: activities.reduce((total, a) => total + onWaterMinutes(a), 0) / 60,
+    cogs_rate: offering.cogs_rate,
+    note: offering.note,
   };
+}
+
+/** A regatta trip, with what each coach's travel costs. */
+export interface Trip {
+  key: string;
+  offering_key: string;
+  name: string;
+  nights: number | null;
+  airfare_cents: number | null;
+  miles: number | null;
 }

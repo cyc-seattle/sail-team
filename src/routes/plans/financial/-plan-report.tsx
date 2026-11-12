@@ -141,6 +141,7 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
             weeks: programsByWeek(inputs.schedule[reportKey(m)] ?? [], inputs.offerings[reportKey(m)] ?? []),
           })),
       }}
+      trips={inputs.trips[report] ?? []}
       fixedCosts={inputs.fixedCosts[report] ?? []}
       staffTime={inputs.staffTime[report] ?? []}
     />

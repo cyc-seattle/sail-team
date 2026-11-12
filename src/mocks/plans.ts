@@ -295,7 +295,7 @@ const offering = (
   session: string,
   starts_on: string,
   ends_on: string,
-  fields: { capacity: number; target: number; price: number },
+  fields: { capacity: number; target: number; price: number; cogs?: number; note?: string },
 ) =>
   c.add("plan_offerings", name, {
     product_id: p.id,
@@ -308,8 +308,8 @@ const offering = (
     target_enrollment: fields.target,
     fill_rate: null,
     price_cents: fields.price,
-    cogs_rate: null,
-    note: null,
+    cogs_rate: fields.cogs ?? null,
+    note: fields.note ?? null,
   });
 
 const activity = (
@@ -496,6 +496,15 @@ function doublehanded(version: string): Copy {
       target,
       price: 145_000,
     });
+    if (session === "Fall") {
+      c.add("plan_trips", "Fall regatta", {
+        offering_id: o,
+        name: "Fall regatta",
+        nights: 2,
+        airfare_cents: null,
+        miles: 240,
+      });
+    }
     for (let week = 0; week < weeks; week++) {
       const on = date(first, 7 * week);
       const last = session === "Fall" && week === weeks - 1;

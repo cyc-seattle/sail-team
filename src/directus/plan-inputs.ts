@@ -14,6 +14,7 @@ import type {
   PlanRevenueCharge,
   PlanSalariedPosition,
   PlanStaffLevel,
+  PlanTrip,
 } from "@cyc-seattle/platform/planning";
 import { queryOptions } from "@tanstack/react-query";
 import {
@@ -26,7 +27,14 @@ import {
 } from "@/model/assumptions";
 import { isSaved, type FinancialPlanSummary, type Member } from "@/model/financial-plans";
 import { engineRows } from "@/model/plan-data";
-import { reportKey, reportName, reportOffering, type ProgramSettings, type ReportOffering } from "@/model/reports";
+import {
+  reportKey,
+  reportName,
+  reportOffering,
+  type ProgramSettings,
+  type ReportOffering,
+  type Trip,
+} from "@/model/reports";
 import { blockName, scheduleOf, type BlockParts, type ScheduleBlock } from "@/model/schedule";
 import { readAll } from "./plans.ts";
 
@@ -224,6 +232,8 @@ export interface PlanInputs {
   operations: OperationsAssumptions | null;
   /** Each program area's blocks by date, by its report's key. */
   schedule: Record<string, ScheduleBlock[]>;
+  /** Each program area's regatta trips, by its report's key. */
+  trips: Record<string, Trip[]>;
   /** Each program area's own fixed costs and staff time, by its report's key. */
   fixedCosts: Record<string, FixedCost[]>;
   staffTime: Record<string, StaffTime[]>;
@@ -236,7 +246,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
     queryFn: async (): Promise<PlanInputs> => {
       const versions = members.map((m) => m.version_id);
       const ops = members.find((m) => m.kind === "operations");
-      const [copies, offerings, activities, programs, operations, budget, labor, pools, catalog, blocks] =
+      const [copies, offerings, activities, programs, operations, budget, labor, pools, catalog, trips, blocks] =
         await Promise.all([
           versions.length
             ? readAll<{ id: string; rules: string | null }>("plan_versions", { id: { _in: versions } }, ["id", "rules"])
@@ -290,6 +300,15 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
           ]),
           rowsOf<{ key: string; name: string }>("plan_pools", versions, ["key", "name"]),
           costCenterNames(),
+          rowsOf<PlanTrip>("plan_trips", versions, [
+            "key",
+            "version_id",
+            "offering_id",
+            "name",
+            "nights",
+            "airfare_cents",
+            "miles",
+          ]),
           blockRows(versions),
         ]);
       const levelName = new Map(operations?.staffLevels.map((l) => [l.key, l.name]));
@@ -407,6 +426,17 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
                 (id) => offeringKey.get(id) ?? "",
               ),
             ]),
+        ),
+        trips: byReport(
+          trips.map((t) => ({
+            version_id: t.version_id,
+            key: t.key,
+            offering_key: offeringKey.get(t.offering_id) ?? "",
+            name: t.name,
+            nights: t.nights,
+            airfare_cents: t.airfare_cents,
+            miles: t.miles,
+          })),
         ),
         fixedCosts: byReport(fixedCosts.filter((l) => !ofOperations(l))),
         staffTime: byReport(staffTime.filter((l) => !ofOperations(l))),

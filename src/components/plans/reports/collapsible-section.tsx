@@ -12,7 +12,7 @@ export function CollapsibleSection({
   children: ReactNode;
 }) {
   return (
-    <details className="group">
+    <details className="group min-w-0">
       <summary className="flex min-h-tap cursor-pointer list-none items-center gap-1 [&::-webkit-details-marker]:hidden">
         <ChevronRightIcon aria-hidden className="size-4 transition-transform group-open:rotate-90" />
         {icon}
