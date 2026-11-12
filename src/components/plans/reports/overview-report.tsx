@@ -190,7 +190,7 @@ function NonProgram({ setId, row }: { setId: string; row: OverviewRow }) {
 }
 
 /**
- * A Financial Plan's year: the engine's warnings, all shown, then each program area from revenue to net, sortable,
+ * A Financial Plan's year: the engine's warnings, closed at first, then each program area from revenue to net, sortable,
  * Non-program on its own, the year's expenses by function and its total, then each program's fees and enrollment, both
  * by program or by session, as the switch at the top says, and the schedule's weeks across every area, closed at
  * first. Fees and enrollment list program areas A to Z.

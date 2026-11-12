@@ -126,13 +126,14 @@ Feature: Seeing the Financial Plans
       And I open its practices
       Then they have 1 Lead coach, except Jul 16, which has no staff, coach boats or boats yet
 
-  Rule: The planning engine's warnings are all listed at the top of the Overview and each program area's report
+  Rule: The planning engine's warnings are listed at the top of the Overview and each program area's report, all shown once opened
 
     Scenario: A practice on a closed day is pointed out
       Given I'm a planner who can read plans
       And a draft with a practice on a closed day
       And I've signed in
       When I open the draft
+      And I open its warnings
       Then a warning says the practice falls on a closed day, on that day
 
   Rule: A planner who can change plans can rename a Financial Plan, note it, freeze it, delete it, mark it active, archive it, and duplicate it

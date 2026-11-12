@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect } from "storybook/test";
+import { expect, userEvent } from "storybook/test";
 import { withRouter } from "../../../../.storybook/with-router";
 import { warnings } from "./fixtures";
 import { WarningsSection } from "./warnings-section";
@@ -12,10 +12,10 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** A program area's own warnings, all shown: by schedule and data, then by kind, the most common first, each kind by date. */
+/** A program area's own warnings, closed at first, then all shown: by schedule and data, then by kind, the most common first, each kind by date. */
 export const ProgramArea: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText("3 warnings", { selector: "h2" })).toBeVisible();
+    await userEvent.click(canvas.getByText("3 warnings", { selector: "h2" }));
     const schedule = canvas.getByRole("region", { name: "Schedule" });
     await expect(schedule).toHaveTextContent("Too many sailors (2)");
     await expect(canvas.getByRole("region", { name: "Data" })).toHaveTextContent(
@@ -29,6 +29,7 @@ export const ProgramArea: Story = {
 export const Overview: Story = {
   args: { warnings, setId: "budget", areas: { summer: "Summer", doublehanded: "Doublehanded" } },
   play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByText("4 warnings", { selector: "h2" }));
     await expect(canvas.getByRole("link", { name: "Doublehanded" })).toBeVisible();
   },
 };

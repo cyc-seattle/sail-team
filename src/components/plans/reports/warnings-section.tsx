@@ -2,12 +2,13 @@ import { Link } from "@tanstack/react-router";
 import { TriangleAlertIcon } from "lucide-react";
 import type { PlanWarning } from "@/model/reports";
 import { warningsByKind } from "@/model/warnings";
+import { CollapsibleSection } from "./collapsible-section";
 
 const day = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
 
 /**
- * The engine's warnings, all shown, with their count in the title: by category and kind, each kind with its count,
- * then a list by date. Given the program areas' names, each warning also names its area and links to its page.
+ * The engine's warnings, closed at first with their count in the title. Opened, they're all shown: by category and
+ * kind, each kind with its count, then a list by date. Given the program areas' names, each warning also names its area and links to its page.
  */
 export function WarningsSection({
   warnings,
@@ -22,11 +23,10 @@ export function WarningsSection({
     return null;
   }
   return (
-    <section aria-labelledby="warnings" className="grid gap-4">
-      <h2 id="warnings" className="flex items-center gap-2 text-lg font-medium">
-        <TriangleAlertIcon aria-hidden className="size-4 text-warning" />
-        {warnings.length === 1 ? "1 warning" : `${warnings.length} warnings`}
-      </h2>
+    <CollapsibleSection
+      title={warnings.length === 1 ? "1 warning" : `${warnings.length} warnings`}
+      icon={<TriangleAlertIcon aria-hidden className="size-4 text-warning" />}
+    >
       <div className="grid max-w-3xl gap-4">
         {warningsByKind(warnings).map((category) => (
           <section key={category.name} aria-label={category.name}>
@@ -68,6 +68,6 @@ export function WarningsSection({
           </section>
         ))}
       </div>
-    </section>
+    </CollapsibleSection>
   );
 }

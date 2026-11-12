@@ -378,6 +378,10 @@ Given("a draft with a practice on a closed day", async ({ club }) => {
   opened.set = await club.financialPlan("Two coaches", [operations, youth]);
 });
 
+When("I open its warnings", async ({ page }) => {
+  await page.locator("summary", { hasText: /\d+ warnings?/ }).click();
+});
+
 When("I open the draft", async ({ page }) => {
   await page.goto(`${await app()}/plans/financial/${opened.set}`);
 });
