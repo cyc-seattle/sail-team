@@ -19,6 +19,8 @@ export interface FinancialPlanSummary {
   platform_version: string | null;
   /** The Financial Plan it started as a copy of. */
   parent: { id: string; name: string } | null;
+  /** When it was archived, which hides it from Planning's list. Never the active one. */
+  archived_at: string | null;
 }
 
 /** Whether it's saved, and so never changes: saved, or saved and active. */
@@ -38,6 +40,7 @@ export interface ListedPlan {
   /** Who saved it, by name. Null when the person looking can't read it. */
   saved_by: string | null;
   parent: { id: string; name: string } | null;
+  archived: boolean;
   /** Its note, a one-line comment such as "Reviewed with the board". */
   note: string | null;
   /** The platform package's version that worked out a saved plan's results, such as "1.38.1". Null for a draft. */

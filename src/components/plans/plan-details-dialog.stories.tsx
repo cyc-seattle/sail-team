@@ -29,16 +29,16 @@ export const Edit: Story = {
   },
 };
 
-export const StartDraft: Story = {
+export const Duplicate: Story = {
   args: {
-    trigger: "Start a draft from this",
-    title: "Start a draft from Budget",
-    description: "The new draft starts as a copy of Budget, for the same year. Budget doesn't change.",
+    trigger: "Duplicate",
+    title: "Duplicate Budget",
+    description: "The copy is a draft, for 2027. Budget doesn't change.",
     initial: { name: "Budget copy", message: null },
-    submitLabel: "Start the draft",
+    submitLabel: "Duplicate",
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "Start a draft from this" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Duplicate" }));
     const dialog = within(await within(canvasElement.ownerDocument.body).findByRole("dialog"));
     await expect(dialog.getByLabelText("Name")).toHaveValue("Budget copy");
   },

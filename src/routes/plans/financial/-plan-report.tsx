@@ -18,6 +18,7 @@ import { useSession } from "@/directus/use-session";
 import { useFinancialPlan } from "@/hooks/use-financial-plan";
 import {
   fundraisingAndCapital,
+  functionalExpenses,
   overviewRows,
   planWarnings,
   productsOf,
@@ -106,6 +107,7 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
         offerings={inputs.offerings}
         warnings={warnings}
         totals={results.totals}
+        functions={functionalExpenses(results.lines)}
         timeline={members
           .filter((m) => m.kind === "program_area")
           .map((m) => ({
@@ -165,7 +167,7 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
   );
 }
 
-/** The plan's buttons: edit its name and note, start a draft from it, and save it or mark it active. */
+/** The plan's buttons: edit its name and note, duplicate it, and freeze it or mark it active. */
 function Actions({ plan }: { plan: FinancialPlan }) {
   const session = useSession();
   const queryClient = useQueryClient();

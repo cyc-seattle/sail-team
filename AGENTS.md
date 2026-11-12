@@ -67,10 +67,11 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   settings, each offering with its activities, and the Operations Plan's rates, with each bonus on the position it
   pays. `src/model/reports.ts` makes each report from those and the results: shares of a pool (`pool:` lines) are a
   plan's indirect costs, and everything else of its own is direct. `/plans` lists every Financial Plan, where a Plan
-  Writer saves a draft, deletes one, or marks a saved one active. `/plans/financial/<set>` is its Overview, and
+  Writer freezes a draft (saves it, as `status` says), deletes one, marks a frozen one active, or archives one
+  (`archived_at`), which hides it until the status filter asks for archived ones. `/plans/financial/<set>` is its Overview, and
   `/plans/financial/<set>/<report>` its other reports: `rates` (Assumptions), a Program Plan's id, `non-program`, or
-  `fundraising`. Each report's header is where a Plan Writer renames it, changes its note, saves a draft, marks a
-  saved one active, or starts a draft from it. A club plan's old address, `/plans/club/<set>`, sends people to its
+  `fundraising`. Each report's header is where a Plan Writer renames it, changes its note, freezes a draft, marks a
+  frozen one active, or duplicates it. A club plan's old address, `/plans/club/<set>`, sends people to its
   Financial Plan.
 - `src/directus/roster.ts` reads the team rosters. A team is a program area, such as Doublehanded, and its programs
   marked as a team, such as J-Pod and K-Pod, are its divisions; a program that isn't a team has no roster. It reads
