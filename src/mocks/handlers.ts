@@ -63,6 +63,9 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
   return [
     http.get(`${directusUrl}/users/me`, () => (session.me ? HttpResponse.json({ data: session.me }) : forbidden())),
     http.post(`${directusUrl}/auth/logout`, () => new HttpResponse(null, { status: 204 })),
+    http.post(`${directusUrl}/auth/refresh`, () =>
+      session.me ? HttpResponse.json({ data: { expires: 86_400_000 } }) : HttpResponse.json({}, { status: 401 }),
+    ),
     // Other users' names, which platform lets a planner read.
     http.get(`${directusUrl}/users`, ({ request }) => {
       const query = new URL(request.url).searchParams;
