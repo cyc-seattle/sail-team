@@ -267,7 +267,11 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         versions.length
           ? readAll<{ id: string; rules: string | null }>("plan_versions", { id: { _in: versions } }, ["id", "rules"])
           : [],
-        rowsOf<PlanOffering & { product_id: { name: string } }>("plan_offerings", versions, ["*", "product_id.name"]),
+        rowsOf<PlanOffering & { product_id: { name: string; programs: { id: string; color: string | null }[] } }>(
+          "plan_offerings",
+          versions,
+          ["*", "product_id.name", "product_id.programs.id", "product_id.programs.color"],
+        ),
         rowsOf<PlanActivity>("plan_activities", versions, [
           "id",
           "key",
@@ -411,7 +415,13 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
             .map((o) => ({
               version_id: o.version_id,
               ...reportOffering(
-                { ...o, program: o.product_id.name, estimated: plannedEnrollment(o) ?? 0 },
+                {
+                  ...o,
+                  program: o.product_id.name,
+                  program_id: o.product_id.programs[0]?.id ?? null,
+                  program_color: o.product_id.programs[0]?.color ?? null,
+                  estimated: plannedEnrollment(o) ?? 0,
+                },
                 activities.filter((a) => a.offering_id === o.id),
               ),
             })),

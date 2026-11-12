@@ -10,23 +10,25 @@ import {
   summerRules,
   doublehandedTrips,
   summerFixedCosts,
-  summerScheduleProps,
   summerStaffTime,
   summerStatement,
   warnings,
 } from "./fixtures";
+import { withRouter } from "../../../../.storybook/with-router";
 import { ProgramAreaReport } from "./program-area-report";
 
 const meta = {
   component: ProgramAreaReport,
+  decorators: [withRouter("/plans/financial/budget/doublehanded", ["/plans/financial/$setId/$planId"])],
   args: {
+    setId: "budget",
+    areaKey: "doublehanded",
     area: "Doublehanded",
     rules: doublehandedRules,
     warnings: warnings.filter((w) => w.area === "doublehanded"),
     statement: doublehandedStatement,
     programs: doublehandedPrograms,
     offerings: doublehandedOfferings,
-    schedule: { blocks: [], closedDays: [], elsewhere: [] },
     trips: doublehandedTrips,
     fixedCosts: [],
     staffTime: [],
@@ -40,7 +42,7 @@ export const Doublehanded: Story = {
   play: async ({ canvas }) => {
     const table = canvas.getByRole("table", { name: "Offerings" });
     const names = [...table.querySelectorAll("tbody button")].map((b) => b.textContent);
-    await expect(names.slice(0, 2)).toEqual(["J-Pod 1", "J-Pod 2"]);
+    await expect(names.slice(0, 2)).toEqual(["J-Pod Spring", "J-Pod Summer"]);
     await expect(canvas.getByRole("list", { name: "J-Pod rules" })).not.toBeVisible();
   },
 };
@@ -61,28 +63,20 @@ export const Summer: Story = {
     statement: summerStatement,
     programs: summerPrograms,
     offerings: summerOfferings,
-    schedule: summerScheduleProps,
+    areaKey: "summer",
     trips: [],
     fixedCosts: summerFixedCosts,
     staffTime: summerStaffTime,
   },
 };
 
-/** The weeks with each program's sailors, then a week's blocks by day, then one block in full. */
-export const SummerSchedule: Story = {
+/** Its offerings link to the Calendar, showing only this area. */
+export const SeeOnTheCalendar: Story = {
   args: Summer.args!,
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByText("Schedule", { selector: "h2" }));
-    await expect(canvas.getByRole("table", { name: "Weeks" })).toHaveTextContent("9 / 10");
-    await userEvent.click(canvas.getByRole("button", { name: "Jun 28" }));
-    await expect(canvas.getByRole("table", { name: "Week of Jun 28" })).toHaveTextContent("Morning dock");
-    await userEvent.click(canvas.getByRole("button", { name: "Race Camp, Wednesday, June 30" }));
-    await expect(canvas.getByRole("region", { name: "Race Camp · Wednesday, June 30" })).toHaveTextContent(
-      "1:00 PM–4:00 PM",
-    );
-    await userEvent.click(canvas.getByRole("button", { name: "Morning dock, the whole week" }));
-    await expect(canvas.getByRole("list", { name: "How it differs" })).toHaveTextContent(
-      "Mon 28: 2 Level 1 Instructors",
+    await expect(canvas.getByRole("link", { name: "See on the calendar" })).toHaveAttribute(
+      "href",
+      "/plans/financial/budget/calendar?area=summer",
     );
   },
 };
@@ -91,6 +85,6 @@ export const SummerSchedule: Story = {
 export const DoublehandedTrips: Story = {
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByText("Trips", { selector: "h2" }));
-    await expect(canvas.getByRole("row", { name: /Nationals/ })).toHaveTextContent("NationalsK-Pod 25$450—");
+    await expect(canvas.getByRole("row", { name: /Nationals/ })).toHaveTextContent("NationalsK-Pod Summer5$450—");
   },
 };

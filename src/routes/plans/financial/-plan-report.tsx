@@ -1,11 +1,12 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { FinancialPlanActions } from "@/components/plans/financial-plan-actions";
 import { FundraisingCapitalReport } from "@/components/plans/reports/fundraising-capital-report";
 import { NonProgramReport } from "@/components/plans/reports/non-program-report";
 import { OverviewReport } from "@/components/plans/reports/overview-report";
 import { ProgramAreaReport } from "@/components/plans/reports/program-area-report";
+import { PlanCalendar, type PlanCalendarProps } from "@/components/plans/reports/plan-calendar";
 import { RatesReport } from "@/components/plans/reports/rates-report";
 import { ReportPage } from "@/components/plans/reports/report-page";
 import { NoAccess } from "@/components/shell/no-access";
@@ -29,7 +30,6 @@ import {
   sharedCostsOf,
   statementOf,
 } from "@/model/reports";
-import { programsByWeek } from "@/model/schedule";
 
 /** One report of a Financial Plan, by its key: `overview`, `rates`, a Program Plan's id, `non-program` or `fundraising`. */
 export function PlanReport({ setId, report }: { setId: string; report: string }) {
@@ -109,15 +109,21 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
         warnings={warnings}
         totals={results.totals}
         functions={functionalExpenses(results.lines)}
-        timeline={members
+      />
+    );
+  }
+  if (report === "calendar") {
+    return (
+      <CalendarReport
+        areas={members
           .filter((m) => m.kind === "program_area")
           .map((m) => ({
             key: reportKey(m),
             name: reportName(m),
             blocks: inputs.schedule[reportKey(m)] ?? [],
             offerings: inputs.offerings[reportKey(m)] ?? [],
-          }))
-          .sort((a, b) => a.name.localeCompare(b.name))}
+          }))}
+        closedDays={inputs.operations?.closedDays ?? []}
       />
     );
   }
@@ -156,19 +162,28 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
       statement={statementOf(results.lines.filter((l) => l.member === member.id))}
       programs={inputs.programs[report] ?? []}
       offerings={inputs.offerings[report] ?? []}
-      schedule={{
-        blocks: inputs.schedule[report] ?? [],
-        closedDays: inputs.operations?.closedDays ?? [],
-        elsewhere: members
-          .filter((m) => m.kind === "program_area" && m.id !== member.id)
-          .map((m) => ({
-            area: reportName(m),
-            weeks: programsByWeek(inputs.schedule[reportKey(m)] ?? [], inputs.offerings[reportKey(m)] ?? []),
-          })),
-      }}
+      setId={set.id}
+      areaKey={report}
       trips={inputs.trips[report] ?? []}
       fixedCosts={inputs.fixedCosts[report] ?? []}
       staffTime={inputs.staffTime[report] ?? []}
+    />
+  );
+}
+
+const reportRoute = getRouteApi("/plans/financial/$setId/$planId");
+
+/** The Calendar, with its area and day kept in the address. */
+function CalendarReport(props: Pick<PlanCalendarProps, "areas" | "closedDays">) {
+  const { area, day } = reportRoute.useSearch();
+  const navigate = reportRoute.useNavigate();
+  return (
+    <PlanCalendar
+      {...props}
+      area={area ?? null}
+      day={day ?? null}
+      onAreaChange={(next) => void navigate({ search: { ...(next && { area: next }) }, replace: true })}
+      onDayChange={(next) => void navigate({ search: (s) => ({ ...s, day: next }), replace: true })}
     />
   );
 }

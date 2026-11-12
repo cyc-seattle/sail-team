@@ -69,26 +69,6 @@ describe.each(Object.entries(themes))("the %s theme", (_, theme) => {
     expect(contrast(theme[fg]!, theme[bg]!)).toBeGreaterThanOrEqual(4.5);
   });
 
-  const programs = Array.from({ length: 10 }, (_, i) => `program-${i + 1}`);
-
-  // A mark that tells programs apart needs 3:1 against what it sits on (WCAG 1.4.11).
-  it.each(programs)("gives %s at least 3:1 on the page and on a card", (name) => {
-    expect(contrast(theme[name]!, theme["background"]!)).toBeGreaterThanOrEqual(3);
-    expect(contrast(theme[name]!, theme["card"]!)).toBeGreaterThanOrEqual(3);
-  });
-
-  it("keeps every program color apart from the others", () => {
-    const lab = (name: string) => {
-      const [l, c, h] = theme[name]!.slice(6, -1).split(" ").map(Number) as [number, number, number];
-      return [l, c * Math.cos((h * Math.PI) / 180), c * Math.sin((h * Math.PI) / 180)];
-    };
-    for (const [i, x] of programs.entries()) {
-      for (const y of programs.slice(i + 1)) {
-        expect(Math.hypot(...lab(x).map((v, k) => v - lab(y)[k]!)), `${x} and ${y}`).toBeGreaterThan(0.06);
-      }
-    }
-  });
-
   it("gives every status color the same lightness and chroma", () => {
     const lc = (name: string) => theme[name]!.split(" ").slice(0, 2).join(" ");
     expect(new Set(["success", "warning", "info", "destructive"].map(lc)).size).toBe(1);

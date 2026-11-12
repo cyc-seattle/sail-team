@@ -3,12 +3,12 @@ import type { NumberedOffering } from "../src/model/reports.ts";
 import {
   blockName,
   counted,
-  daysOf,
+  lanes,
+  runsOf,
+  weekDays,
   patternsOf,
-  sailorsIn,
   scheduleOf,
   weekdaysOf,
-  weekName,
   weeksOf,
   type ScheduleBlock,
 } from "../src/model/schedule.ts";
@@ -43,7 +43,7 @@ const offering = (program: string, n: number, estimated: number, max: number): N
   hours: 10,
   cogs_rate: null,
   note: null,
-  label: `${program} ${n}`,
+  label: `${program} Week ${n}`,
 });
 const offerings = new Map(
   [offering("Guppies", 1, 6, 10), offering("Guppies", 2, 9, 10), offering("Sea Otters", 1, 10, 12)].map((o) => [
@@ -120,6 +120,25 @@ describe("scheduleOf", () => {
   });
 });
 
+describe("scheduleOf's parts", () => {
+  it("lists a block's parts the same way whatever order they come in", () => {
+    const row = { id: "a", key: "a", offering_id: "o", date: "2027-07-05", kind: "practice" as const };
+    const at = { uses_boats: true, start_time: null, end_time: null, on_water_minutes: null, setup_minutes: null };
+    const boats = [
+      { block_id: "x", boat_class: "Qube", count: 1, sailor_owned: null },
+      { block_id: "x", boat_class: "Harpoon", count: 2, sailor_owned: null },
+    ];
+    const partsOf = (order: typeof boats) =>
+      scheduleOf(
+        [{ id: "x", key: "x", date: "2027-07-05", name: null }],
+        [{ ...row, ...at, block_id: "x", putaway_minutes: null }],
+        { staff: [], resources: [], boats: order },
+        () => "o",
+      )[0]?.parts;
+    expect(partsOf(boats)).toEqual(partsOf([...boats].reverse()));
+  });
+});
+
 describe("weekdaysOf", () => {
   it("names the days of the week", () => {
     expect(weekdaysOf(["2027-06-21", "2027-06-22", "2027-06-23", "2027-06-24", "2027-06-25"])).toBe("Weekdays");
@@ -136,8 +155,8 @@ describe("patternsOf", () => {
       weekdays: "Mondays, Tuesdays, and Wednesdays",
       days: 6,
       programs: [
-        { program: "Guppies", offerings: "Guppies 1–2", time: "9:00 AM–12:00 PM" },
-        { program: "Sea Otters", offerings: "Sea Otters 1", time: "9:00 AM–12:00 PM" },
+        { program: "Guppies", offerings: "Guppies Weeks 1–2", time: "9:00 AM–12:00 PM" },
+        { program: "Sea Otters", offerings: "Sea Otters Week 1", time: "9:00 AM–12:00 PM" },
       ],
       parts: usual,
       exceptions: ["Jun 28 to 29: 2 Level 1 Instructors", "Jun 30: no staff, coach boats or boats yet"],
@@ -147,6 +166,18 @@ describe("patternsOf", () => {
   it("names blocks with no name by their programs, apart from blocks with other programs", () => {
     const alone = week2.map((b) => ({ ...b, name: null }));
     expect(patternsOf([...week1, ...alone], offerings).map((p) => p.title)).toEqual(["Morning dock", "Guppies"]);
+  });
+
+  it("keeps blocks with no name and the same programs together, whatever their times", () => {
+    const weekend = [
+      block("2027-07-16", [], activity("fri", "Guppies 1", "16:00:00", "19:00:00")),
+      block("2027-07-17", [], activity("sat", "Guppies 1", "09:00:00")),
+      block("2027-07-18", [], activity("sun", "Guppies 1", "10:00:00")),
+    ].map((b) => ({ ...b, name: null }));
+    const patterns = patternsOf(weekend, offerings);
+    expect(patterns.map((p) => [p.title, p.weekdays, p.programs[0]?.time])).toEqual([
+      ["Guppies", "Fridays, Saturdays, and Sundays", null],
+    ]);
   });
 
   it("counts an activity in no block as a day that differs, among named blocks at the same times", () => {
@@ -166,20 +197,32 @@ describe("patternsOf", () => {
 });
 
 describe("weeks and days", () => {
-  const blocks = [...week1, ...week2];
-
-  it("lists every week from the first block's to the last's", () => {
-    expect(weeksOf(blocks)).toEqual(["2027-06-21", "2027-06-28"]);
-    expect(daysOf(blocks, "2027-06-28")).toEqual(["2027-06-28", "2027-06-29", "2027-06-30"]);
-    expect(weekName("2027-06-28", daysOf(blocks, "2027-06-28"))).toBe("Jun 28 to 30");
+  it("lists every week from the first block's to the last's, each Monday to Sunday", () => {
+    expect(weeksOf([...week1, ...week2])).toEqual(["2027-06-21", "2027-06-28"]);
+    expect(weekDays("2027-06-28")).toEqual([
+      "2027-06-28",
+      "2027-06-29",
+      "2027-06-30",
+      "2027-07-01",
+      "2027-07-02",
+      "2027-07-03",
+      "2027-07-04",
+    ]);
   });
 
-  it("adds up each program's estimated and max sailors in a week, each offering once", () => {
-    expect(sailorsIn(blocks, "2027-06-21", offerings)).toEqual(
-      new Map([
-        ["Guppies", { estimated: 6, max: 10 }],
-        ["Sea Otters", { estimated: 10, max: 12 }],
-      ]),
-    );
+  it("joins consecutive weeks into runs", () => {
+    expect(runsOf([5, 1, 2, 3, 2])).toEqual([
+      [1, 3],
+      [5, 5],
+    ]);
+  });
+
+  it("puts overlapping spans in rows of their own", () => {
+    const spans = [
+      { key: "spring", from: 0, to: 4 },
+      { key: "clinic", from: 2, to: 2 },
+      { key: "fall", from: 6, to: 9 },
+    ];
+    expect(lanes(spans).map((l) => l.map((s) => s.key))).toEqual([["spring", "fall"], ["clinic"]]);
   });
 });

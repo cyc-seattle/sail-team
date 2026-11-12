@@ -19,9 +19,10 @@ Never write a hex value or a raw Tailwind color like `text-red-600` in a compone
   white. Links use `text-link`, navy in light and a lighter navy in dark.
 - **Charts**: `chart-1` to `chart-6` stay distinct with the common kinds of color blindness. Every chart sits beside the
   table it summarizes.
-- **Programs**: `program-1` to `program-10` give each program on a schedule its own color, apart from the others and 3:1
-  on the page and a card in both themes. An eleventh program and on takes a color again, striped. Its name always
-  sits beside it.
+- **Programs**: each program's color comes from the catalog, through `programColor` in `@cyc-seattle/platform`: the
+  one a Catalog Writer set, or one of its palette's twelve, picked by the program, so it's the same in every app. Words
+  on it use `program-foreground`, white, which the palette keeps at 4.5:1. A program's name always sits beside its
+  color.
 - **Space**: `p-card` (16px) inside a card, `p-card-sm` (12px) inside a small nested one. `min-h-tap` (44px) for
   anything a phone user taps.
 

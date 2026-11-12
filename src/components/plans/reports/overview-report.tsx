@@ -25,9 +25,7 @@ import {
 import type { Totals } from "@/model/financial-plans";
 import { cn } from "@/lib/utils";
 import { Money } from "../money";
-import { CollapsibleSection } from "./collapsible-section";
 import { ReportSection } from "./report-page";
-import { YearTimeline, type TimelineArea } from "./year-timeline";
 import { SegmentedControl } from "./segmented-control";
 import { WarningsSection } from "./warnings-section";
 
@@ -132,8 +130,6 @@ export interface OverviewReportProps {
   totals: Totals;
   /** The year's expenses by function, as Form 990 splits them. */
   functions: FunctionalExpenses;
-  /** Each program area's schedule, for the year at a glance. */
-  timeline: TimelineArea[];
 }
 
 const percent = new Intl.NumberFormat("en-US", { style: "percent", maximumFractionDigits: 0 });
@@ -195,7 +191,7 @@ function NonProgram({ setId, row }: { setId: string; row: OverviewRow }) {
  * by program or by session, as the switch at the top says, and the schedule's weeks across every area, closed at
  * first. Fees and enrollment list program areas A to Z.
  */
-export function OverviewReport({ setId, rows, offerings, warnings, totals, functions, timeline }: OverviewReportProps) {
+export function OverviewReport({ setId, rows, offerings, warnings, totals, functions }: OverviewReportProps) {
   const [sort, setSort] = useState<Sort>(defaultSort);
   const [by, setBy] = useState<EnrollmentBy>("session");
   const nonProgram = rows.find((r) => r.report === "non-program");
@@ -425,12 +421,6 @@ export function OverviewReport({ setId, rows, offerings, warnings, totals, funct
           </TableFooter>
         </Table>
       </ReportSection>
-
-      {timeline.some((a) => a.blocks.length > 0) && (
-        <CollapsibleSection title="Schedule">
-          <YearTimeline setId={setId} areas={timeline.filter((a) => a.blocks.length > 0)} />
-        </CollapsibleSection>
-      )}
     </>
   );
 }

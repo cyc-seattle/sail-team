@@ -724,11 +724,7 @@ export const summerSchedule: ScheduleBlock[] = summerOfferings
     });
   });
 
-export const summerScheduleProps = {
-  blocks: summerSchedule,
-  closedDays: [{ date: "2027-07-05", name: "Independence Day, observed" }],
-  elsewhere: [{ area: "Doublehanded", weeks: new Map([["2027-07-12", 2]]) }],
-};
+export const closedDays = [{ date: "2027-07-05", name: "Independence Day, observed" }];
 export const doublehandedTrips: Trip[] = [
   {
     key: "fall-regatta",

@@ -94,6 +94,7 @@ export function scheduleOf(
   });
   const byStart = (a: ScheduledActivity, b: ScheduledActivity) =>
     (a.start_time ?? "").localeCompare(b.start_time ?? "") || a.offering_key.localeCompare(b.offering_key);
+  // Each kind sorted, so blocks with the same parts list them alike, whatever order Directus returns them in.
   const partsOf = (id: string) => [
     ...parts.staff
       .filter((s) => s.block_id === id)
@@ -101,16 +102,19 @@ export function scheduleOf(
         s.position
           ? `${counted(s.count, s.position)}${s.pay === "hourly" ? ", by the hour" : ""}`
           : counted(s.count, s.staff_level ?? "staff"),
-      ),
+      )
+      .sort(),
     ...parts.resources
       .filter((r) => r.block_id === id)
-      .map((r) => `${counted(r.quantity, r.resource)}${r.hours === null ? "" : `, ${amount(r.hours)} hours each`}`),
+      .map((r) => `${counted(r.quantity, r.resource)}${r.hours === null ? "" : `, ${amount(r.hours)} hours each`}`)
+      .sort(),
     ...parts.boats
       .filter((b) => b.block_id === id)
       .map(
         (b) =>
           `${counted(b.count, b.boat_class)}${b.sailor_owned ? `, plus ${amount(b.sailor_owned)} sailors' own` : ""}`,
-      ),
+      )
+      .sort(),
   ];
   const shared: ScheduleBlock[] = blocks.map((b) => ({
     key: b.key,
@@ -184,13 +188,14 @@ function dateRuns(dates: string[], all: string[]): string[] {
 /** One program in a pattern: its offerings' numbers, and its time of day. */
 export interface PatternProgram {
   program: string;
-  /** Such as "Guppies 1–8", or "Guppies 2, 4, and 6". */
+  /** Such as "Guppies Weeks 1–8", or "J-Pod Spring and Fall". */
   offerings: string;
+  /** Its time of day, or none when its days differ. */
   time: string | null;
 }
 
 /**
- * Blocks that repeat: those with the same name, or with no name, the same programs at the same times as others. It's written
+ * Blocks that repeat: those with the same name, or with no name, the same programs as others. It's written
  * once, with the staff, coach boats and boats most of its days share, and the days that differ.
  */
 export interface Pattern {
@@ -224,6 +229,16 @@ function numberRuns(ns: number[]): string {
   return runs.length <= 2 ? runs.join(" and ") : `${runs.slice(0, -1).join(", ")}, and ${runs.at(-1)}`;
 }
 
+/** Sessions as people list them: "Weeks 1–3 and 5" when they're numbered alike, or else "Spring and Fall". */
+function sessionRuns(sessions: string[]): string {
+  const numbered = sessions.map((s) => /^(.*\D)\s*(\d+)$/.exec(s));
+  const prefix = numbered[0]?.[1];
+  if (sessions.length > 1 && numbered.every((m) => m && m[1] === prefix)) {
+    return `${plural(prefix!.trim())} ${numberRuns(numbered.map((m) => Number(m![2])).sort((a, b) => a - b))}`;
+  }
+  return sessions.length <= 2 ? sessions.join(" and ") : `${sessions.slice(0, -1).join(", ")}, and ${sessions.at(-1)}`;
+}
+
 /** The parts a block has that most of its pattern's don't, or what it lacks when it has nothing new. */
 export function differences(parts: string[], usual: string[]): string {
   if (parts.length === 0) {
@@ -238,11 +253,13 @@ export function patternsOf(blocks: ScheduleBlock[], offerings: Map<string, Numbe
   const programOf = (a: ScheduledActivity) => offerings.get(a.offering_key)?.program ?? a.offering_key;
   const times = (b: ScheduleBlock) =>
     b.activities.map((a) => `${programOf(a)}|${a.start_time}|${a.end_time}`).join(";");
-  // A block with no name, such as a practice not in a block yet, joins named ones with the same programs and times.
+  // A block with no name, such as a practice not in a block yet, joins named ones with the same programs and times, or
+  // else others with its programs at any time, so Friday to Sunday practices are one.
   const named = new Map(blocks.filter((b) => b.name).map((b) => [times(b), b.name!]));
+  const programsIn = (b: ScheduleBlock) => [...new Set(b.activities.map(programOf))].sort().join(";");
   const groups = new Map<string, ScheduleBlock[]>();
   for (const b of blocks) {
-    const s = b.name ?? named.get(times(b)) ?? times(b);
+    const s = b.name ?? named.get(times(b)) ?? `|${programsIn(b)}`;
     groups.set(s, [...(groups.get(s) ?? []), b]);
   }
   return [...groups.entries()].map(([key, own]) => {
@@ -268,22 +285,16 @@ export function patternsOf(blocks: ScheduleBlock[], offerings: Map<string, Numbe
       last: dates.at(-1)!,
       days: new Set(dates).size,
       programs: programs.map((program) => {
-        const activity = own.flatMap((b) => b.activities).find((a) => programOf(a) === program)!;
-        const numbers = [
-          ...new Set(
-            own.flatMap((b) =>
-              b.activities
-                .filter((a) => programOf(a) === program)
-                .map((a) => Number(offerings.get(a.offering_key)?.label.slice(program.length + 1))),
-            ),
-          ),
-        ]
-          .filter((n) => !Number.isNaN(n))
-          .sort((a, b) => a - b);
+        const activities = own.flatMap((b) => b.activities).filter((a) => programOf(a) === program);
+        const spans = new Set(activities.map((a) => timeSpan(a.start_time, a.end_time)));
+        const sessions = [...new Set(activities.map((a) => offerings.get(a.offering_key)))]
+          .filter((o) => o !== undefined)
+          .sort((a, b) => a.starts_on.localeCompare(b.starts_on))
+          .map((o) => o.label.slice(program.length + 1));
         return {
           program,
-          offerings: numbers.length > 0 ? `${program} ${numberRuns(numbers)}` : program,
-          time: timeSpan(activity.start_time, activity.end_time),
+          offerings: sessions.length > 0 ? `${program} ${sessionRuns(sessions)}` : program,
+          time: spans.size === 1 ? [...spans][0]! : null,
         };
       }),
       parts: usual,
@@ -306,31 +317,6 @@ export function weeksOf(blocks: ScheduleBlock[]): string[] {
   return weeks;
 }
 
-/** The dates of a week that have a block, in order. */
-export const daysOf = (blocks: ScheduleBlock[], week: string) =>
-  [...new Set(blocks.filter((b) => weekOf(b.date) === week).map((b) => b.date))].sort();
-
-/** Each program's estimated and max sailors in a week: its offerings that run that week, each counted once. */
-export function sailorsIn(
-  blocks: ScheduleBlock[],
-  week: string,
-  offerings: Map<string, NumberedOffering>,
-): Map<string, { estimated: number; max: number }> {
-  const keys = new Set(
-    blocks.filter((b) => weekOf(b.date) === week).flatMap((b) => b.activities.map((a) => a.offering_key)),
-  );
-  const out = new Map<string, { estimated: number; max: number }>();
-  for (const key of keys) {
-    const o = offerings.get(key);
-    if (!o) {
-      continue;
-    }
-    const was = out.get(o.program) ?? { estimated: 0, max: 0 };
-    out.set(o.program, { estimated: was.estimated + o.estimated, max: was.max + o.max });
-  }
-  return out;
-}
-
 /** A day's parts, for a column's two-line heading: "Jul" or "Tue" over "13". */
 export const monthOf = (date: string) => day(date).toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
 export const weekdayOf = (date: string) => day(date).toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
@@ -340,31 +326,33 @@ export const dayOf = (date: string) => String(day(date).getUTCDate());
 export const longDay = (date: string) =>
   day(date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" });
 
-/** A week as people name it: "Jul 12 to 16", or "Jun 28 to Jul 2". */
-export function weekName(week: string, days: string[]): string {
-  const [a, b] = [days[0] ?? week, days.at(-1) ?? addDays(week, 6)];
-  return a === b
-    ? formatShortDay(a)
-    : `${formatShortDay(a)} to ${a.slice(0, 7) === b.slice(0, 7) ? day(b).getUTCDate() : formatShortDay(b)}`;
-}
+/** A week's seven days, Monday to Sunday. */
+export const weekDays = (week: string) => Array.from({ length: 7 }, (_, i) => addDays(week, i));
 
-/** How many programs run in each week, by the week's Monday. */
-export function programsByWeek(
-  blocks: ScheduleBlock[],
-  offerings: { key: string; program: string }[],
-): Map<string, number> {
-  const programOf = new Map(offerings.map((o) => [o.key, o.program]));
-  const weeks = new Map<string, Set<string>>();
-  for (const b of blocks) {
-    const own = weeks.get(weekOf(b.date)) ?? new Set<string>();
-    b.activities.forEach((a) => own.add(programOf.get(a.offering_key) ?? a.offering_key));
-    weeks.set(weekOf(b.date), own);
+/** Positions as runs of consecutive ones, each its first and last: [1, 2, 3, 5] → [[1, 3], [5, 5]]. */
+export function runsOf(positions: number[]): [number, number][] {
+  const runs: [number, number][] = [];
+  for (const p of [...new Set(positions)].sort((a, b) => a - b)) {
+    const last = runs.at(-1);
+    if (last && p === last[1] + 1) {
+      last[1] = p;
+    } else {
+      runs.push([p, p]);
+    }
   }
-  return new Map([...weeks.entries()].map(([w, own]) => [w, own.size]));
+  return runs;
 }
 
-/** How many days of a week have a block. */
-export const daysIn = (blocks: ScheduleBlock[], week: string) => daysOf(blocks, week).length;
-
-/** A week a step before or after: `-1` is the week before. */
-export const weekStep = (week: string, step: number) => addDays(week, 7 * step);
+/** Spans in as few rows as fit, each row's in order, none overlapping. */
+export function lanes<T extends { from: number; to: number }>(spans: T[]): T[][] {
+  const out: T[][] = [];
+  for (const span of [...spans].sort((a, b) => a.from - b.from)) {
+    const lane = out.find((l) => l.at(-1)!.to < span.from);
+    if (lane) {
+      lane.push(span);
+    } else {
+      out.push([span]);
+    }
+  }
+  return out;
+}
