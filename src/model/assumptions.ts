@@ -32,7 +32,7 @@ export interface OperationsAssumptions {
     bonuses: Bonus[];
   })[];
   charges: (Pick<PlanRevenueCharge, "key" | "name" | "rate" | "product_kinds" | "excluded_from_mtdc" | "note"> & {
-    account: string;
+    account: Account;
   })[];
   resources: Pick<
     PlanResource,
@@ -65,7 +65,7 @@ export interface OperationsAssumptions {
 export type Bonus = Pick<PlanBonusOwner, "key" | "role_name" | "bonus_rate" | "basis"> & {
   /** The products whose net it's a share of. */
   products: string[];
-  account: string;
+  account: Account;
   /** The salaried position it pays, if any. */
   position: string | null;
 };
@@ -75,7 +75,7 @@ export type Bonus = Pick<PlanBonusOwner, "key" | "role_name" | "bonus_rate" | "b
  * costs or G&A; one on a revenue account, such as a gala's gifts, is revenue.
  */
 export type FixedCost = Pick<PlanBudgetLine, "key" | "name" | "amount_cents" | "excluded_from_mtdc" | "note"> & {
-  account: string;
+  account: Account;
   charged_to: string;
   revenue: boolean;
 };
@@ -83,7 +83,7 @@ export type FixedCost = Pick<PlanBudgetLine, "key" | "name" | "amount_cents" | "
 /** Hourly staff time outside the programs, such as boat repairs. */
 export type StaffTime = Pick<PlanLaborLine, "key" | "name" | "hours" | "note"> & {
   staff_level: string | null;
-  account: string;
+  account: Account;
   charged_to: string;
 };
 
@@ -96,9 +96,14 @@ export interface SalariedHours {
   hours: number;
 }
 
+/** An account in the chart of accounts. */
+export interface Account {
+  number: string | null;
+  name: string;
+}
+
 /** An account as people know it: its number and name. */
-export const accountName = (a: { number: string | null; name: string }) =>
-  a.number ? `${a.number} ${a.name}` : a.name;
+export const accountName = (a: Account) => (a.number ? `${a.number} ${a.name}` : a.name);
 
 /** The sailors an offering plans for, as the engine counts them: its target, or its capacity at its fill rate. */
 export function plannedEnrollment(

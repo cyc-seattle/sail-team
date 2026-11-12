@@ -10,9 +10,7 @@ export function RatesReport({ assumptions, rules }: { assumptions: OperationsAss
       <ReportSection id="rules" title="Rules">
         <RulesList rules={rules} label="Rules" />
       </ReportSection>
-      <ReportSection id="rates" title="Rates">
-        <OperationsAssumptionsView assumptions={assumptions} stacked />
-      </ReportSection>
+      <OperationsAssumptionsView assumptions={assumptions} />
     </>
   );
 }

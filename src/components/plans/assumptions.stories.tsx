@@ -12,7 +12,10 @@ type Story = StoryObj<typeof meta>;
 
 export const Operations: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("row", { name: /Executive Director/ })).toHaveTextContent("$43.27");
+    await userEvent.hover(
+      within(canvas.getByRole("row", { name: /Executive Director/ })).getByRole("button", { name: "Per hour" }),
+    );
+    await waitFor(async () => expect(await screen.findByText("$43.27 an hour, over 2,080 paid hours")).toBeVisible());
     await expect(canvas.getByRole("row", { name: /Card fees/ })).toHaveTextContent("programs and charters");
     await expect(canvas.getByRole("row", { name: /Parent helper/ })).toHaveTextContent("Volunteer");
     await expect(canvas.getByRole("row", { name: /Sailqube/ })).toHaveTextContent("12");
@@ -29,12 +32,12 @@ export const Bonus: Story = {
   },
 };
 
-/** Every bonus, with the products it's on, its account, and the position it pays, if any. */
+/** Every bonus, by account, with the products it's on and the position it pays, if any. */
 export const Bonuses: Story = {
   play: async ({ canvas }) => {
     const table = canvas.getByRole("table", { name: "Bonuses" });
     await expect(within(table).getByRole("row", { name: /Summer Director/ })).toHaveTextContent(
-      "Summer Director5%Before shared costsGuppies, Opti Camp5030 Salaries—",
+      "5030Summer Director5%Before shared costsGuppies, Opti Camp—",
     );
   },
 };
@@ -51,8 +54,6 @@ export const CostsAndDays: Story = {
     await expect(canvas.getByRole("row", { name: /Labor Day/ })).toHaveTextContent("Sep 6, 2027");
     const hours = canvas.getByRole("table", { name: "Salaried hours on programs" });
     await expect(within(hours).getByRole("row", { name: /J-Pod/ })).toHaveTextContent("120.5");
-    await expect(canvas.getByRole("row", { name: /Program Director \$65,000/ })).toHaveTextContent("Program admin");
+    await expect(canvas.getByRole("row", { name: /Program Director.*\$65,000/ })).toHaveTextContent("Program admin");
   },
 };
-
-export const SideBySide: Story = { args: { stacked: false } };
