@@ -1,6 +1,9 @@
 import type {
   PlanActivity,
   PlanBonusOwner,
+  PlanBlockBoats,
+  PlanBlockResource,
+  PlanBlockStaff,
   PlanBudgetLine,
   PlanClosedDate,
   PlanLaborLine,
@@ -23,7 +26,8 @@ import {
 } from "@/model/assumptions";
 import { isSaved, type FinancialPlanSummary, type Member } from "@/model/financial-plans";
 import { engineRows } from "@/model/plan-data";
-import { reportKey, reportOffering, type ProgramSettings, type ReportOffering } from "@/model/reports";
+import { reportKey, reportName, reportOffering, type ProgramSettings, type ReportOffering } from "@/model/reports";
+import { blockName, scheduleOf, type BlockParts, type ScheduleBlock } from "@/model/schedule";
 import { readAll } from "./plans.ts";
 
 /** A table's rows in some plan copies, decimals as numbers. */
@@ -170,6 +174,32 @@ async function operationsAssumptions(
   };
 }
 
+/** The program areas' blocks, and what each shares. */
+async function blockRows(versions: string[]) {
+  const [blocks, staff, resources, boats] = await Promise.all([
+    rowsOf<{ id: string; key: string; version_id: string; date: string; name: string }>(
+      "plan_activity_blocks",
+      versions,
+      ["id", "key", "version_id", "date", "name"],
+    ),
+    rowsOf<PlanBlockStaff>("plan_block_staff", versions, [
+      "block_id",
+      "staff_level_key",
+      "position_key",
+      "count",
+      "pay",
+    ]),
+    rowsOf<PlanBlockResource>("plan_block_resources", versions, ["block_id", "resource_key", "quantity", "hours"]),
+    rowsOf<Omit<PlanBlockBoats, "boat_class_id"> & { boat_class_id: { name: string } }>("plan_block_boats", versions, [
+      "block_id",
+      "boat_class_id.name",
+      "count",
+      "sailor_owned",
+    ]),
+  ]);
+  return { blocks, staff, resources, boats };
+}
+
 /** The names of what a cost can be charged to besides a pool or an offering, from the catalog. */
 async function costCenterNames() {
   const [products, areas, organizations] = await Promise.all([
@@ -192,6 +222,8 @@ export interface PlanInputs {
   /** Each program area's programs' settings, by its report's key. */
   programs: Record<string, ProgramSettings[]>;
   operations: OperationsAssumptions | null;
+  /** Each program area's blocks by date, by its report's key. */
+  schedule: Record<string, ScheduleBlock[]>;
   /** Each program area's own fixed costs and staff time, by its report's key. */
   fixedCosts: Record<string, FixedCost[]>;
   staffTime: Record<string, StaffTime[]>;
@@ -204,54 +236,62 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
     queryFn: async (): Promise<PlanInputs> => {
       const versions = members.map((m) => m.version_id);
       const ops = members.find((m) => m.kind === "operations");
-      const [copies, offerings, activities, programs, operations, budget, labor, pools, catalog] = await Promise.all([
-        versions.length
-          ? readAll<{ id: string; rules: string | null }>("plan_versions", { id: { _in: versions } }, ["id", "rules"])
-          : [],
-        rowsOf<PlanOffering & { product_id: { name: string } }>("plan_offerings", versions, ["*", "product_id.name"]),
-        rowsOf<PlanActivity>("plan_activities", versions, [
-          "offering_id",
-          "date",
-          "kind",
-          "uses_boats",
-          "start_time",
-          "end_time",
-          "on_water_minutes",
-        ]),
-        rowsOf<PlanProgram & { product_id: { name: string } }>("plan_programs", versions, [
-          "version_id",
-          "product_id.name",
-          "staff_level_key",
-          "sailors_per_coach",
-          "rules",
-        ]),
-        ops ? operationsAssumptions(ops.version_id, versions) : null,
-        rowsOf<BudgetRow>("plan_budget_lines", versions, [
-          "version_id",
-          "key",
-          "name",
-          "cost_center_type",
-          "cost_center_key",
-          "amount_cents",
-          "excluded_from_mtdc",
-          "note",
-          ...accountFields,
-          "account_id.type",
-        ]),
-        rowsOf<LaborRow>("plan_labor_lines", versions, [
-          "version_id",
-          "key",
-          "name",
-          "cost_center_type",
-          "cost_center_key",
-          "staff_level_key",
-          "hours",
-          "note",
-          ...accountFields,
-        ]),
-        rowsOf<{ key: string; name: string }>("plan_pools", versions, ["key", "name"]),
-        costCenterNames(),
-      ]);
+      const [copies, offerings, activities, programs, operations, budget, labor, pools, catalog, blocks] =
+        await Promise.all([
+          versions.length
+            ? readAll<{ id: string; rules: string | null }>("plan_versions", { id: { _in: versions } }, ["id", "rules"])
+            : [],
+          rowsOf<PlanOffering & { product_id: { name: string } }>("plan_offerings", versions, ["*", "product_id.name"]),
+          rowsOf<PlanActivity>("plan_activities", versions, [
+            "id",
+            "key",
+            "version_id",
+            "block_id",
+            "setup_minutes",
+            "putaway_minutes",
+            "offering_id",
+            "date",
+            "kind",
+            "uses_boats",
+            "start_time",
+            "end_time",
+            "on_water_minutes",
+          ]),
+          rowsOf<PlanProgram & { product_id: { name: string } }>("plan_programs", versions, [
+            "version_id",
+            "product_id.name",
+            "staff_level_key",
+            "sailors_per_coach",
+            "rules",
+          ]),
+          ops ? operationsAssumptions(ops.version_id, versions) : null,
+          rowsOf<BudgetRow>("plan_budget_lines", versions, [
+            "version_id",
+            "key",
+            "name",
+            "cost_center_type",
+            "cost_center_key",
+            "amount_cents",
+            "excluded_from_mtdc",
+            "note",
+            ...accountFields,
+            "account_id.type",
+          ]),
+          rowsOf<LaborRow>("plan_labor_lines", versions, [
+            "version_id",
+            "key",
+            "name",
+            "cost_center_type",
+            "cost_center_key",
+            "staff_level_key",
+            "hours",
+            "note",
+            ...accountFields,
+          ]),
+          rowsOf<{ key: string; name: string }>("plan_pools", versions, ["key", "name"]),
+          costCenterNames(),
+          blockRows(versions),
+        ]);
       const levelName = new Map(operations?.staffLevels.map((l) => [l.key, l.name]));
       const keyOf = new Map(members.map((m) => [m.version_id, m.kind === "operations" ? "rates" : reportKey(m)]));
       const byReport = <T>(rows: (T & { version_id: string })[]) => {
@@ -292,6 +332,37 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         charged_to: chargedTo(l),
       }));
       const ofOperations = (l: { version_id: string }) => l.version_id === ops?.version_id;
+      const offeringKey = new Map(offerings.map((o) => [o.id, o.key]));
+      const positionName = new Map(operations?.positions.map((p) => [p.key, p.name]));
+      const resourceName = new Map(operations?.resources.map((r) => [r.key, r.name]));
+      const parts: BlockParts = {
+        staff: blocks.staff.map((s) => ({
+          block_id: s.block_id,
+          staff_level: (s.staff_level_key && levelName.get(s.staff_level_key)) ?? null,
+          position: (s.position_key && positionName.get(s.position_key)) ?? null,
+          count: s.count,
+          pay: s.pay,
+        })),
+        resources: blocks.resources.map((r) => ({
+          block_id: r.block_id,
+          resource: resourceName.get(r.resource_key) ?? "equipment",
+          quantity: r.quantity,
+          hours: r.hours,
+        })),
+        boats: blocks.boats.map((b) => ({
+          block_id: b.block_id,
+          boat_class: b.boat_class_id.name,
+          count: b.count,
+          sailor_owned: b.sailor_owned,
+        })),
+      };
+      const ofVersion = <T extends { version_id: string }>(rows: T[], m: Member) =>
+        rows.filter((r) => r.version_id === m.version_id);
+      const knownNames = (m: Member) => [
+        reportName(m),
+        ...ofVersion(programs, m).map((p) => p.product_id.name),
+        ...ofVersion(offerings, m).flatMap((o) => [o.name, o.product_id.name]),
+      ];
       return {
         rules: Object.fromEntries(copies.map((c) => [keyOf.get(c.id) ?? c.id, c.rules])),
         offerings: byReport(
@@ -324,6 +395,19 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
           fixedCosts: fixedCosts.filter(ofOperations),
           staffTime: staffTime.filter(ofOperations),
         },
+        schedule: Object.fromEntries(
+          members
+            .filter((m) => m.kind === "program_area")
+            .map((m) => [
+              reportKey(m),
+              scheduleOf(
+                ofVersion(blocks.blocks, m).map((b) => ({ ...b, name: blockName(b.name, b.date, knownNames(m)) })),
+                ofVersion(activities, m),
+                parts,
+                (id) => offeringKey.get(id) ?? "",
+              ),
+            ]),
+        ),
         fixedCosts: byReport(fixedCosts.filter((l) => !ofOperations(l))),
         staffTime: byReport(staffTime.filter((l) => !ofOperations(l))),
       };
