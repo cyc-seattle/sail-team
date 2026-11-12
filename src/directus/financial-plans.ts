@@ -67,12 +67,9 @@ export const financialPlansQuery = queryOptions({
         note: set.message,
         platform: platformRelease(set),
         warnings: warnings.filter((w) => w.version_set_id === set.id).length,
-        revenue_cents: total?.operating_revenue_cents ?? null,
-        expense_cents: total?.operating_expense_cents ?? null,
-        net_cents: total?.operating_net_cents ?? null,
-        fundraising_net_cents: total?.fundraising_net_cents ?? null,
-        capital_cents: total?.capital_cents ?? null,
-        total_cents: total?.total_cents ?? null,
+        revenue_cents: total ? total.operating_revenue_cents + total.fundraising_revenue_cents : null,
+        expense_cents: total ? total.operating_expense_cents + total.fundraising_expense_cents : null,
+        net_cents: total ? total.operating_net_cents + total.fundraising_net_cents : null,
       };
     });
   },

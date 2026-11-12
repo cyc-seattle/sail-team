@@ -32,13 +32,12 @@ Feature: Seeing the Financial Plans
       And "Budget" shows its note and the day it was saved
       And "Two coaches" shows it was started from "Budget"
 
-    Scenario: Each Financial Plan shows its revenue, expenses, net, and total
+    Scenario: Each Financial Plan shows its revenue, expenses, and net
       Given I'm a planner who can read plans
       And a saved Financial Plan for 2027 whose camp takes in $10,000 and spends $5,000 running it
       And I've signed in
       When I open Planning for 2027
       Then "Budget" shows revenue of $10,000, expenses of $5,000, and net of $5,000
-      And "Budget" shows no fundraising or capital, and a total of $5,000
 
   Rule: A Financial Plan's Overview shows each program area and Non-program, from revenue to net
 

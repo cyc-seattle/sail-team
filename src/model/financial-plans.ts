@@ -43,15 +43,10 @@ export interface ListedPlan {
   /** The platform package's version that worked out a saved plan's results, such as "1.38.1". Null for a draft. */
   platform: string | null;
   warnings: number;
-  /** Null until platform has worked them out. */
+  /** Null until platform has worked them out. Operating and fundraising together, leaving out capital. */
   revenue_cents: number | null;
   expense_cents: number | null;
   net_cents: number | null;
-  fundraising_net_cents: number | null;
-  /** Spent on capital, such as a coach boat. */
-  capital_cents: number | null;
-  /** Operating net, plus fundraising net, less capital. */
-  total_cents: number | null;
 }
 
 /** The organization's totals in a Financial Plan: operating, fundraising, capital, and all of them together. */

@@ -107,13 +107,6 @@ Then("{string} shows revenue of $10,000, expenses of $5,000, and net of $5,000",
   await expect(cells.nth(5)).toHaveText("$5,000");
 });
 
-Then("{string} shows no fundraising or capital, and a total of $5,000", async ({ page }, name: string) => {
-  const cells = planRow(page, name).getByRole("cell");
-  await expect(cells.nth(6)).toHaveText("$0");
-  await expect(cells.nth(7)).toHaveText("$0");
-  await expect(cells.nth(8)).toHaveText("$5,000");
-});
-
 Given("a saved Financial Plan for 2027 named {string}", async ({ club }, name: string) => {
   named.clear();
   club.ownYear();

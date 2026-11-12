@@ -21,7 +21,7 @@ const inputs = async (id: string) => {
 };
 
 describe("reading Financial Plans from Directus", () => {
-  it("lists every Financial Plan with its operating totals and warnings, once they're worked out", async () => {
+  it("lists every Financial Plan with its totals and warnings, once they're worked out", async () => {
     const plans = await run<ListedPlan[]>(financialPlansQuery);
     expect(plans.map((p) => [p.name, p.status, p.parent?.name ?? null])).toEqual([
       ["Budget", "active", null],
@@ -30,13 +30,16 @@ describe("reading Financial Plans from Directus", () => {
     ]);
     const [budget, two, three] = plans;
     expect(budget!.net_cents).toBe(budget!.revenue_cents! - budget!.expense_cents!);
-    expect(budget!.total_cents).toBe(budget!.net_cents! + budget!.fundraising_net_cents! - budget!.capital_cents!);
-    expect(budget!.capital_cents).toBeGreaterThan(0);
+    // Fundraising is in them; capital isn't.
+    const { results } = await plan(ids.budget);
+    const t = results!.totals;
+    expect(budget!.net_cents).toBe(t.operating_net_cents + t.fundraising_net_cents);
+    expect(t.fundraising_revenue_cents).toBeGreaterThan(0);
     expect(budget!.warnings).toBeGreaterThan(0);
     expect(two!.note).toBe("A fourth instructor on every summer morning.");
     expect([budget!.saved_by, two!.saved_by]).toEqual(["Morgan Keel", null]);
     expect([budget!.platform, two!.platform]).toEqual(["1.38.1", null]);
-    expect(three).toMatchObject({ revenue_cents: null, net_cents: null, total_cents: null, warnings: 0 });
+    expect(three).toMatchObject({ revenue_cents: null, expense_cents: null, net_cents: null, warnings: 0 });
   });
 
   it("lists them without who saved them when Directus won't say", async () => {

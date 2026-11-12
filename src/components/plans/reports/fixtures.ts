@@ -412,28 +412,20 @@ export const totals: Totals = (() => {
 })();
 
 const planSummary = (
-  fields: Partial<Omit<ListedPlan, "net_cents" | "total_cents">> & Pick<ListedPlan, "id" | "name" | "status">,
-): ListedPlan => {
-  const net = (fields.revenue_cents ?? 49_900_000) - (fields.expense_cents ?? 44_600_000);
-  const fundraising = fields.fundraising_net_cents ?? 6_650_000;
-  const capital = fields.capital_cents ?? 7_800_000;
-  return {
-    year: 2027,
-    saved_at: null,
-    saved_by: null,
-    parent: null,
-    note: null,
-    platform: null,
-    warnings: 0,
-    revenue_cents: 49_900_000,
-    expense_cents: 44_600_000,
-    fundraising_net_cents: fundraising,
-    capital_cents: capital,
-    ...fields,
-    net_cents: net,
-    total_cents: net + fundraising - capital,
-  };
-};
+  fields: Partial<Omit<ListedPlan, "net_cents">> & Pick<ListedPlan, "id" | "name" | "status">,
+): ListedPlan => ({
+  year: 2027,
+  saved_at: null,
+  saved_by: null,
+  parent: null,
+  note: null,
+  platform: null,
+  warnings: 0,
+  revenue_cents: 49_900_000,
+  expense_cents: 44_600_000,
+  ...fields,
+  net_cents: (fields.revenue_cents ?? 49_900_000) - (fields.expense_cents ?? 44_600_000),
+});
 
 /** Two years of Financial Plans: each year's active one, drafts including one from the planning agent, and older saved ones. */
 export const planningPlans: ListedPlan[] = [
