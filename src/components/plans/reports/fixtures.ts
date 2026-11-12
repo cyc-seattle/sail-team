@@ -1,5 +1,5 @@
 // Made-up numbers for the Planning report wireframes. Never real figures.
-import type { OperationsAssumptions } from "@/model/assumptions";
+import type { Bonus, FixedCost, OperationsAssumptions, StaffTime } from "@/model/assumptions";
 import type { ListedPlan, Totals } from "@/model/financial-plans";
 import type {
   AccountAmount,
@@ -9,6 +9,7 @@ import type {
   Product,
   ProgramSettings,
   ReportOffering,
+  Trip,
   SharedCost,
 } from "@/model/reports";
 
@@ -142,6 +143,8 @@ const camp = (program: string, n: number, fee: number, estimated: number, max: n
   max,
   days: 5,
   hours,
+  cogs_rate: program === "Race Camp" ? 0.08 : null,
+  note: program === "Race Camp" && n === 4 ? "Doubles as the regional qualifier." : null,
 });
 
 // Listed out of order on purpose: the report sorts them by start date.
@@ -168,6 +171,8 @@ const season = (
   max: 16,
   days: 22,
   hours: 66,
+  cogs_rate: null,
+  note: session === "Summer" ? "Only if enough sailors sign up by May." : null,
 });
 
 // Spring and fall interleaved, as the old pages listed them.
@@ -203,6 +208,8 @@ const offering = (
   max,
   days,
   hours,
+  cogs_rate: null,
+  note: null,
 });
 
 /** Every program area's offerings, for the Overview's fees and enrollment. */
@@ -292,9 +299,55 @@ export const capital = [
   account("1530", "Float repairs", 1_200_000),
 ];
 
+const programDirectorBonus: Bonus = {
+  key: "pd-bonus",
+  role_name: "Program Director",
+  bonus_rate: 0.1,
+  basis: "after_shared_costs",
+  products: ["Guppies", "J-Pod", "Opti Camp"],
+  account: "5030 Salaries",
+  position: "Program Director",
+};
+
+const fixedCost = (
+  key: string,
+  name: string,
+  account: string,
+  amount_cents: number,
+  charged_to: string,
+  more: Partial<FixedCost> = {},
+): FixedCost => ({
+  key,
+  name,
+  account,
+  amount_cents,
+  charged_to,
+  excluded_from_mtdc: false,
+  note: null,
+  revenue: false,
+  ...more,
+});
+
+/** Summer's own fixed costs and staff time, on its report's assumptions. */
+export const summerFixedCosts: FixedCost[] = [
+  fixedCost("tents", "Tent rental", "5410 Rentals", 180_000, "Summer", { excluded_from_mtdc: true }),
+  fixedCost("shirts", "Camp shirts", "5420 Supplies", 95_000, "Opti Camp", { note: "One per sailor." }),
+];
+export const summerStaffTime: StaffTime[] = [
+  {
+    key: "setup",
+    name: "Camp setup",
+    staff_level: "Level 1 Instructor",
+    hours: 40,
+    account: "5010 Coach wages",
+    charged_to: "Summer",
+    note: null,
+  },
+];
+
 /** The Operations Plan's rates for the year, with each bonus on the salaried position it pays. */
 export const reportAssumptions: OperationsAssumptions = {
-  rates: { payroll_tax_rate: 0.1, lodging_per_night_cents: 15_000, mileage_rate_cents: 70 },
+  rates: { payroll_tax_rate: 0.1, lodging_per_night_cents: 15_000, mileage_rate_cents: 70, rib_kind: "RIB" },
   staffLevels: [
     { key: "jr", name: "Junior Instructor", pay_type: "hourly", hourly_rate_cents: 1_900 },
     { key: "l1", name: "Level 1 Instructor", pay_type: "hourly", hourly_rate_cents: 2_200 },
@@ -309,6 +362,8 @@ export const reportAssumptions: OperationsAssumptions = {
       annual_salary_cents: 9_000_000,
       paid_hours_per_year: 2_080,
       ga_share: 0.6,
+      hourly_coaching_rate_cents: null,
+      remainder_pool: "G&A",
       bonuses: [],
     },
     {
@@ -317,13 +372,39 @@ export const reportAssumptions: OperationsAssumptions = {
       annual_salary_cents: 6_500_000,
       paid_hours_per_year: 2_080,
       ga_share: 0.1,
-      bonuses: [{ key: "pd-bonus", role_name: "Program Director", bonus_rate: 0.1, basis: "after_shared_costs" }],
+      hourly_coaching_rate_cents: 3_500,
+      remainder_pool: "Program admin",
+      bonuses: [programDirectorBonus],
     },
   ],
   charges: [
-    { key: "card", name: "Card fees", rate: 0.03, product_kinds: ["program", "charter"] },
-    { key: "scholarships", name: "Scholarships", rate: 0.05, product_kinds: ["program"] },
-    { key: "bo", name: "B&O tax", rate: 0.015, product_kinds: null },
+    {
+      key: "card",
+      name: "Card fees",
+      rate: 0.03,
+      product_kinds: ["program", "charter"],
+      account: "5310 Card fees",
+      excluded_from_mtdc: false,
+      note: null,
+    },
+    {
+      key: "scholarships",
+      name: "Scholarships",
+      rate: 0.05,
+      product_kinds: ["program"],
+      account: "4900 Scholarships",
+      excluded_from_mtdc: true,
+      note: "Matches what the board set aside last year.",
+    },
+    {
+      key: "bo",
+      name: "B&O tax",
+      rate: 0.015,
+      product_kinds: null,
+      account: "6510 B&O tax",
+      excluded_from_mtdc: false,
+      note: null,
+    },
   ],
   resources: [
     {
@@ -334,6 +415,17 @@ export const reportAssumptions: OperationsAssumptions = {
       cost_per_day_cents: 1_000,
       fuel_per_hour_cents: 1_500,
       maintenance_per_hour_cents: 800,
+      excluded_from_mtdc: false,
+    },
+    {
+      key: "rental",
+      name: "Rented RIB",
+      quantity: 1,
+      cost_per_hour_cents: 4_500,
+      cost_per_day_cents: null,
+      fuel_per_hour_cents: 1_500,
+      maintenance_per_hour_cents: null,
+      excluded_from_mtdc: true,
     },
   ],
   boatRates: [
@@ -347,7 +439,57 @@ export const reportAssumptions: OperationsAssumptions = {
     },
     { key: "420", boat_class: "420", maintenance_per_boat_hour_cents: 300, quantity: 14, sailors_per_boat: 2 },
   ],
-  bonuses: [{ key: "summer", role_name: "Summer Director", bonus_rate: 0.05, basis: "before_shared_costs" }],
+  bonuses: [
+    programDirectorBonus,
+    {
+      key: "summer",
+      role_name: "Summer Director",
+      bonus_rate: 0.05,
+      basis: "before_shared_costs",
+      products: ["Guppies", "Opti Camp"],
+      account: "5030 Salaries",
+      position: null,
+    },
+  ],
+  fixedCosts: [
+    fixedCost("insurance", "Insurance", "6110 Insurance", 900_000, "G&A"),
+    fixedCost("rent", "Clubhouse rent", "6310 Clubhouse rent", 600_000, "G&A", { note: "Lease renews in March." }),
+    fixedCost("audit", "Audit", "6410 Audit", 450_000, "G&A", { excluded_from_mtdc: true }),
+    fixedCost("software", "Registration software", "6420 Software", 240_000, "Program admin"),
+    fixedCost("gala", "Spring gala costs", "7010 Event costs", 300_000, "Example Sailing Club"),
+    fixedCost("gifts", "Spring gala gifts", "4500 Individual gifts", 2_000_000, "Example Sailing Club", {
+      revenue: true,
+    }),
+    fixedCost("dock", "Storage dock upkeep", "5130 Boat upkeep", 300_000, "Boat storage 2027"),
+  ],
+  staffTime: [
+    {
+      key: "repairs",
+      name: "Winter boat repairs",
+      staff_level: "Level 1 Instructor",
+      hours: 120,
+      account: "5130 Boat upkeep",
+      charged_to: "Program admin",
+      note: "Two instructors, three weeks in February.",
+    },
+    {
+      key: "training",
+      name: "Staff training week",
+      staff_level: "Junior Instructor",
+      hours: 240,
+      account: "5010 Coach wages",
+      charged_to: "Summer",
+      note: null,
+    },
+  ],
+  salariedHours: [
+    { key: "pd-summer", position: "Program Director", booked_to: "Summer", hours: 400 },
+    { key: "pd-jpod", position: "Program Director", booked_to: "J-Pod", hours: 120.5 },
+  ],
+  closedDays: [
+    { key: "july4", date: "2027-07-05", name: "Independence Day, observed" },
+    { key: "labor", date: "2027-09-06", name: "Labor Day" },
+  ],
 };
 
 export const summerRules =
@@ -480,4 +622,23 @@ export const planningPlans: ListedPlan[] = [
     revenue_cents: 45_200_000,
     expense_cents: 42_900_000,
   }),
+];
+
+export const doublehandedTrips: Trip[] = [
+  {
+    key: "fall-regatta",
+    offering_key: "J-Pod-Fall",
+    name: "Fall regatta",
+    nights: 2,
+    airfare_cents: null,
+    miles: 240,
+  },
+  {
+    key: "nationals",
+    offering_key: "K-Pod-Summer",
+    name: "Nationals",
+    nights: 5,
+    airfare_cents: 45_000,
+    miles: null,
+  },
 ];

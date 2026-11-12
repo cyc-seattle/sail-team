@@ -140,6 +140,48 @@ const date = (start: string, days: number) => {
   return d.toISOString().slice(0, 10);
 };
 
+const budgetLine = (
+  c: Copy,
+  name: string,
+  a: { id: string },
+  cents: number,
+  type: string,
+  center: string | null,
+  more: Row = {},
+) =>
+  c.add("plan_budget_lines", name, {
+    name,
+    account_id: a.id,
+    function: null,
+    cost_center_type: type,
+    cost_center_key: center,
+    amount_cents: cents,
+    fiscal_year: 2027,
+    excluded_from_mtdc: false,
+    note: null,
+    ...more,
+  });
+
+const laborLine = (
+  c: Copy,
+  name: string,
+  level: string,
+  hours: number,
+  type: string,
+  center: string | null,
+  a: { id: string },
+) =>
+  c.add("plan_labor_lines", name, {
+    name,
+    cost_center_type: type,
+    cost_center_key: center,
+    staff_level_key: key(level),
+    hours,
+    account_id: a.id,
+    function: null,
+    note: null,
+  });
+
 /** The Operations Plan: the year's rates, the shared costs, boat storage, fundraising, and a coach boat. */
 function operations(version: string): Copy {
   const c = new Copy(version);
@@ -156,7 +198,7 @@ function operations(version: string): Copy {
   level("Level 3 Coach", 3_200);
   const ga = c.add("plan_pools", "G&A", { name: "G&A" });
   const admin = c.add("plan_pools", "Program admin", { name: "Program admin" });
-  const position = (name: string, salary: number, share: number, pool: string) =>
+  const position = (name: string, salary: number, share: number, pool: string, coaching: number | null = null) =>
     c.add("plan_salaried_positions", name, {
       name,
       annual_salary_cents: salary,
@@ -165,10 +207,17 @@ function operations(version: string): Copy {
       ga_share: share,
       remainder_pool_id: pool,
       form_990_line: null,
-      hourly_coaching_rate_cents: null,
+      hourly_coaching_rate_cents: coaching,
     });
   position("Executive Director", 5_500_000, 0.6, ga);
-  position("Program Director", 4_500_000, 0.1, admin);
+  const director = position("Program Director", 4_500_000, 0.1, admin, 3_000);
+  c.add("plan_salaried_bookings", "Program Director on Guppies", {
+    position_id: director,
+    product_id: products.guppies.id,
+    program_area_id: null,
+    kind: "management",
+    hours: 200,
+  });
   c.add("plan_resources", "RIBs", {
     resource_kind_id: rib.id,
     name: "RIBs",
@@ -192,7 +241,7 @@ function operations(version: string): Copy {
     product_kinds: ["program"],
     account_id: accounts.cards.id,
     excluded_from_mtdc: false,
-    note: null,
+    note: "What the card processor charged last year.",
   });
   const bonus = c.add("plan_bonus_owners", "Program Director bonus", {
     role_name: "Program Director",
@@ -204,24 +253,16 @@ function operations(version: string): Copy {
   for (const p of [products.guppies, products.opti, products.jpod]) {
     c.add("plan_bonus_owner_products", `bonus ${p.name}`, { bonus_owner_id: bonus, product_id: p.id });
   }
-  const line = (name: string, a: { id: string }, cents: number, type: string, center: string | null) =>
-    c.add("plan_budget_lines", name, {
-      name,
-      account_id: a.id,
-      function: null,
-      cost_center_type: type,
-      cost_center_key: center,
-      amount_cents: cents,
-      fiscal_year: 2027,
-      excluded_from_mtdc: false,
-      note: null,
-    });
-  line("Insurance", accounts.insurance, 900_000, "pool", key("G&A"));
+  const line = (name: string, a: { id: string }, cents: number, type: string, center: string | null, more: Row = {}) =>
+    budgetLine(c, name, a, cents, type, center, more);
+  line("Insurance", accounts.insurance, 900_000, "pool", key("G&A"), { note: "Renews in March." });
+  line("Audit", accounts.insurance, 400_000, "pool", key("G&A"), { excluded_from_mtdc: true });
   line("Clubhouse rent", accounts.rent, 600_000, "pool", key("G&A"));
   line("Spring gala gifts", accounts.gifts, 2_000_000, "org", null);
   line("Spring gala costs", accounts.events, 300_000, "org", null);
   line("Coach boat", accounts.equipment, 4_500_000, "org", null);
   line("Storage dock upkeep", accounts.boats, 300_000, "offering", key("Boat storage"));
+  laborLine(c, "Winter boat repairs", "Level 1 Instructor", 120, "pool", key("Program admin"), accounts.boats);
   c.add("plan_closed_dates", "Fourth of July", { date: "2027-07-05", name: "Independence Day, observed" });
   c.add("plan_offerings", "Boat storage", {
     product_id: products.storage.id,
@@ -247,7 +288,7 @@ const offering = (
   session: string,
   starts_on: string,
   ends_on: string,
-  fields: { capacity: number; target: number; price: number },
+  fields: { capacity: number; target: number; price: number; cogs?: number; note?: string },
 ) =>
   c.add("plan_offerings", name, {
     product_id: p.id,
@@ -260,8 +301,8 @@ const offering = (
     target_enrollment: fields.target,
     fill_rate: null,
     price_cents: fields.price,
-    cogs_rate: null,
-    note: null,
+    cogs_rate: fields.cogs ?? null,
+    note: fields.note ?? null,
   });
 
 const activity = (
@@ -340,6 +381,8 @@ function summer(version: string, instructors: number): Copy {
     sailors_per_coach: 8,
     rules: "Never fewer than 2 instructors on the water.",
   });
+  budgetLine(c, "Tent rental", accounts.boats, 180_000, "program_area", ids.summer, { excluded_from_mtdc: true });
+  laborLine(c, "Camp setup", "Level 1 Instructor", 40, "program_area", ids.summer, accounts.wages);
   for (let week = 0; week < 8; week++) {
     const monday = date("2027-06-21", 7 * week);
     const session = `Week ${week + 1}`;
@@ -352,6 +395,8 @@ function summer(version: string, instructors: number): Copy {
       capacity: 16,
       target: 14,
       price: 52_500,
+      cogs: 0.04,
+      ...(week === 0 && { note: "Lunch is included." }),
     });
     for (let day = 0; day < 5; day++) {
       const on = date(monday, day);
@@ -384,6 +429,15 @@ function doublehanded(version: string): Copy {
       target,
       price: 145_000,
     });
+    if (session === "Fall") {
+      c.add("plan_trips", "Fall regatta", {
+        offering_id: o,
+        name: "Fall regatta",
+        nights: 2,
+        airfare_cents: null,
+        miles: 240,
+      });
+    }
     for (let week = 0; week < weeks; week++) {
       const on = date(first, 7 * week);
       const last = session === "Fall" && week === weeks - 1;
@@ -604,7 +658,7 @@ export const tables: Record<string, Row[]> = {
     rules: rules[m.version] ?? null,
   })),
   ...Object.fromEntries(versioned.map((table) => [table, rowsOf(versions, table)])),
-  // Expanded as the app asks for them: a program's or offering's product, and a boat rate's class.
+  // Expanded as the app asks for them: the products, accounts, pools and positions rows name.
   plan_programs: rowsOf(versions, "plan_programs").map((r) => ({
     ...r,
     product_id: named(catalog.products.find((p) => p.id === r["product_id"])!),
@@ -616,6 +670,33 @@ export const tables: Record<string, Row[]> = {
   plan_boat_rates: rowsOf(versions, "plan_boat_rates").map((r) => ({
     ...r,
     boat_class_id: catalog.boat_classes.find((b) => b.id === r["boat_class_id"])!,
+  })),
+  plan_rates: rowsOf(versions, "plan_rates").map((r) => ({
+    ...r,
+    rib_resource_kind_id: catalog.resource_kinds.find((k) => k.id === r["rib_resource_kind_id"]) ?? null,
+  })),
+  plan_salaried_positions: rowsOf(versions, "plan_salaried_positions").map((r) => ({
+    ...r,
+    remainder_pool_id: rowsOf(versions, "plan_pools").find((p) => p["id"] === r["remainder_pool_id"]) ?? null,
+  })),
+  ...Object.fromEntries(
+    ["plan_revenue_charges", "plan_bonus_owners", "plan_budget_lines", "plan_labor_lines"].map((table) => [
+      table,
+      rowsOf(versions, table).map((r) => ({
+        ...r,
+        account_id: catalog.accounts.find((a) => a.id === r["account_id"])!,
+      })),
+    ]),
+  ),
+  plan_bonus_owner_products: rowsOf(versions, "plan_bonus_owner_products").map((r) => ({
+    ...r,
+    product_id: named(catalog.products.find((p) => p.id === r["product_id"])!),
+  })),
+  plan_salaried_bookings: rowsOf(versions, "plan_salaried_bookings").map((r) => ({
+    ...r,
+    position_id: rowsOf(versions, "plan_salaried_positions").find((p) => p["id"] === r["position_id"])!,
+    product_id: catalog.products.find((p) => p.id === r["product_id"]) ?? null,
+    program_area_id: catalog.program_areas.find((a) => a.id === r["program_area_id"]) ?? null,
   })),
   ...resultTables,
 };

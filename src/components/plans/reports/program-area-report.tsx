@@ -1,4 +1,5 @@
 import { Fragment, type ReactNode } from "react";
+import { formatShare, type FixedCost, type StaffTime } from "@/model/assumptions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   numberedOfferings,
@@ -6,8 +7,10 @@ import {
   type PlanWarning,
   type ProgramSettings,
   type ReportOffering,
+  type Trip,
 } from "@/model/reports";
 import { cn } from "@/lib/utils";
+import { BudgetLines, StaffTimeTable } from "../assumptions";
 import { Money } from "../money";
 import { CollapsibleSection } from "./collapsible-section";
 import { OfferingName } from "./offering-name";
@@ -41,10 +44,14 @@ function AreaAssumptions({
   area,
   rules,
   programs,
+  fixedCosts,
+  staffTime,
 }: {
   area: string;
   rules: string | null;
   programs: ProgramSettings[];
+  fixedCosts: FixedCost[];
+  staffTime: StaffTime[];
 }) {
   return (
     <CollapsibleSection title="Assumptions">
@@ -67,12 +74,24 @@ function AreaAssumptions({
             <RulesList rules={p.rules} label={`${p.name} rules`} />
           </section>
         ))}
+        {fixedCosts.length > 0 && (
+          <div className="border-t pt-4">
+            <div className="grid gap-6">
+              <BudgetLines costsTitle="Fixed costs" lines={fixedCosts} />
+            </div>
+          </div>
+        )}
+        {staffTime.length > 0 && (
+          <div className="border-t pt-4">
+            <StaffTimeTable lines={staffTime} />
+          </div>
+        )}
       </div>
     </CollapsibleSection>
   );
 }
 
-const offeringHead = ["Fee", "Fee per day", "Sailors", "Sailor-days", "Fee per hour", "Sailor-hours"];
+const offeringHead = ["Fee", "Fee per day", "Sailors", "Sailor-days", "Fee per hour", "Sailor-hours", "Cost of goods"];
 
 export interface ProgramAreaReportProps {
   /** The program area's name, such as Summer. */
@@ -83,19 +102,34 @@ export interface ProgramAreaReportProps {
   statement: { revenue: AccountAmount[]; direct: AccountAmount[]; indirect: AccountAmount[] };
   programs: ProgramSettings[];
   offerings: ReportOffering[];
+  trips: Trip[];
+  /** The area plan's own fixed costs and staff time outside its programs. */
+  fixedCosts: FixedCost[];
+  staffTime: StaffTime[];
 }
 
 /**
  * One program area: its warnings and its assumptions, both closed at first, its revenue and expenses by account, then its sailors by
  * session and each offering's fee and size, by program and start date, the figures used to compare with other centers.
  */
-export function ProgramAreaReport({ area, rules, warnings, statement, programs, offerings }: ProgramAreaReportProps) {
+export function ProgramAreaReport({
+  area,
+  rules,
+  warnings,
+  statement,
+  programs,
+  offerings,
+  trips,
+  fixedCosts,
+  staffTime,
+}: ProgramAreaReportProps) {
   const groups = numberedOfferings(offerings);
+  const labels = new Map(groups.flatMap((g) => g.offerings.map((o) => [o.key, o.label])));
   return (
     <>
       <div className="grid gap-2">
         <WarningsSection warnings={warnings} />
-        <AreaAssumptions area={area} rules={rules} programs={programs} />
+        <AreaAssumptions area={area} rules={rules} programs={programs} fixedCosts={fixedCosts} staffTime={staffTime} />
       </div>
 
       <ReportSection id="revenue-and-expenses" title="Revenue and expenses">
@@ -136,6 +170,7 @@ export function ProgramAreaReport({ area, rules, warnings, statement, programs, 
                   <TableRow key={o.key}>
                     <TableCell className={cn(pinned, "pl-6")}>
                       <OfferingName offering={o} />
+                      {o.note && <p className="max-w-64 whitespace-normal text-muted-foreground">{o.note}</p>}
                     </TableCell>
                     <Amount cents={o.fee_cents} whole />
                     <Amount cents={per(o.fee_cents, o.days)} />
@@ -143,6 +178,7 @@ export function ProgramAreaReport({ area, rules, warnings, statement, programs, 
                     <Num>{count(o.estimated * o.days)}</Num>
                     <Amount cents={per(o.fee_cents, o.hours)} />
                     <Num>{hoursOf(o.estimated * o.hours)}</Num>
+                    <Num>{o.cogs_rate === null ? none : formatShare(o.cogs_rate)}</Num>
                   </TableRow>
                 ))}
               </Fragment>
@@ -150,6 +186,33 @@ export function ProgramAreaReport({ area, rules, warnings, statement, programs, 
           </TableBody>
         </Table>
       </ReportSection>
+
+      {trips.length > 0 && (
+        <CollapsibleSection title="Trips">
+          <Table aria-label="Trips">
+            <TableHeader>
+              <TableRow>
+                <TableHead className={pinned}>Trip</TableHead>
+                <TableHead>Offering</TableHead>
+                <TableHead className="text-right">Nights</TableHead>
+                <TableHead className="text-right">Airfare per coach</TableHead>
+                <TableHead className="text-right">Miles</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {trips.map((t) => (
+                <TableRow key={t.key}>
+                  <TableCell className={pinned}>{t.name}</TableCell>
+                  <TableCell>{labels.get(t.offering_key) ?? none}</TableCell>
+                  <Num>{t.nights === null ? none : count(t.nights)}</Num>
+                  <Amount cents={t.airfare_cents} whole />
+                  <Num>{t.miles === null ? none : count(t.miles)}</Num>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CollapsibleSection>
+      )}
     </>
   );
 }

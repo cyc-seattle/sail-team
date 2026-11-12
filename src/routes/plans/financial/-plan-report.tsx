@@ -138,6 +138,9 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
       statement={statementOf(results.lines.filter((l) => l.member === member.id))}
       programs={inputs.programs[report] ?? []}
       offerings={inputs.offerings[report] ?? []}
+      trips={inputs.trips[report] ?? []}
+      fixedCosts={inputs.fixedCosts[report] ?? []}
+      staffTime={inputs.staffTime[report] ?? []}
     />
   );
 }

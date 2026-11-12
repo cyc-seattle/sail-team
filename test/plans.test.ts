@@ -120,12 +120,75 @@ describe("reading a Financial Plan's inputs from Directus", () => {
       ["Executive Director", []],
       ["Program Director", [0.05]],
     ]);
-    expect(operations?.bonuses).toEqual([]);
+    expect(operations?.bonuses).toEqual([
+      {
+        key: "key:Program Director bonus",
+        role_name: "Program Director",
+        bonus_rate: 0.05,
+        basis: "after_shared_costs",
+        products: ["Guppies", "J-Pod", "Opti Camp"],
+        account: "5030 Salaries",
+        position: "Program Director",
+      },
+    ]);
     expect(operations?.boatRates.find((b) => b.boat_class === "Sailqube")).toMatchObject({
       quantity: 8,
       sailors_per_boat: 2,
     });
     expect(products).toEqual([{ key: "key:Boat storage", product: "Boat storage" }]);
+  });
+
+  it("reads the Operations Plan's other inputs, naming the accounts, pools and positions their rows point at", async () => {
+    const { operations } = await inputs(ids.budget);
+    expect(operations?.rates?.rib_kind).toBe("RIB");
+    expect(operations?.positions.find((p) => p.name === "Program Director")).toMatchObject({
+      hourly_coaching_rate_cents: 3_000,
+      remainder_pool: "Program admin",
+    });
+    expect(operations?.charges[0]).toMatchObject({ account: "5310 Card fees", excluded_from_mtdc: false });
+    expect(operations?.fixedCosts.find((c) => c.name === "Audit")).toMatchObject({
+      account: "6110 Insurance",
+      charged_to: "G&A",
+      excluded_from_mtdc: true,
+    });
+    expect(operations?.fixedCosts.find((c) => c.name === "Spring gala costs")).toMatchObject({
+      charged_to: "Example Sailing Club",
+      revenue: false,
+    });
+    expect(operations?.fixedCosts.find((c) => c.name === "Spring gala gifts")?.revenue).toBe(true);
+    expect(operations?.fixedCosts.find((c) => c.name === "Storage dock upkeep")?.charged_to).toBe("Boat storage 2027");
+    expect(operations?.staffTime).toEqual([
+      expect.objectContaining({ name: "Winter boat repairs", staff_level: "Level 1 Instructor", hours: 120 }),
+    ]);
+    expect(operations?.salariedHours).toEqual([
+      { key: "key:Program Director on Guppies", position: "Program Director", booked_to: "Guppies", hours: 200 },
+    ]);
+    expect(operations?.closedDays.map((d) => d.date)).toEqual(["2027-07-05"]);
+  });
+
+  it("reads each program area's trips, and each offering's cost of goods and note", async () => {
+    const { trips, offerings } = await inputs(ids.budget);
+    expect(trips[ids.doublehandedPlan]).toEqual([
+      expect.objectContaining({
+        key: "key:Fall regatta",
+        offering_key: "key:J-Pod Fall",
+        name: "Fall regatta",
+        nights: 2,
+        airfare_cents: null,
+        miles: 240,
+      }),
+    ]);
+    const opti = offerings[ids.summerPlan]?.find((o) => o.key === "key:Opti Camp Week 1");
+    expect(opti).toMatchObject({ cogs_rate: 0.04, note: "Lunch is included." });
+  });
+
+  it("reads each program area's own fixed costs and staff time, by its report", async () => {
+    const { fixedCosts, staffTime } = await inputs(ids.budget);
+    expect(fixedCosts[ids.summerPlan]).toEqual([
+      expect.objectContaining({ name: "Tent rental", charged_to: "Summer", excluded_from_mtdc: true }),
+    ]);
+    expect(staffTime[ids.summerPlan]?.map((l) => [l.name, l.charged_to])).toEqual([["Camp setup", "Summer"]]);
+    expect(fixedCosts[ids.doublehandedPlan]).toBeUndefined();
   });
 });
 
@@ -153,10 +216,10 @@ describe("a Financial Plan's reports", () => {
     const { results } = await plan(ids.budget);
     const { direct } = statementOf(results!.lines.filter((l) => l.member === ids.summerMember));
     const wages = direct.find((a) => a.name === "Coach wages")!;
-    expect(wages.lines).toHaveLength(1);
-    expect(wages.lines![0]).toMatchObject({ name: "Coach wages", cents: wages.cents });
-    expect(wages.lines![0]!.offerings).toBeGreaterThan(1);
-    expect(wages.lines![0]!.explanation).toBeTruthy();
+    const coaching = wages.lines!.find((l) => l.name === "Coach wages")!;
+    expect(coaching.offerings).toBeGreaterThan(1);
+    expect(coaching.explanation).toBeTruthy();
+    expect(wages.lines!.reduce((total, l) => total + l.cents, 0)).toBe(wages.cents);
   });
 
   it("adds each shared cost back up, with the part the programs carry", async () => {
