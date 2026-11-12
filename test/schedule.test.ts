@@ -148,6 +148,14 @@ describe("patternsOf", () => {
     expect(patternsOf([...week1, ...alone], offerings).map((p) => p.title)).toEqual(["Morning dock", "Guppies"]);
   });
 
+  it("counts an activity in no block as a day that differs, among named blocks at the same times", () => {
+    const named = week2.slice(0, 2);
+    const alone = { ...week2[2]!, name: null };
+    const [guppies] = patternsOf([...named, alone], offerings);
+    expect(guppies?.title).toBe("Morning dock");
+    expect(guppies?.exceptions).toEqual(["Jun 30: no staff, coach boats or boats yet"]);
+  });
+
   it("joins consecutive days that differ the same way", () => {
     const days = ["2027-07-12", "2027-07-13", "2027-07-14", "2027-07-15", "2027-07-19"].map((d, i) =>
       block(d, i < 2 ? ["11 Sailqubes"] : ["6 Sailqubes"], activity(`g ${d}`, "Guppies 1", "09:00:00")),

@@ -110,6 +110,19 @@ Feature: Seeing the Financial Plans
       Then I see the rule "No more than 4 RIBs on the water"
       And I see the coach's pay of $30.00 an hour
 
+  Rule: A program area's schedule writes each repeating block once, then shows its weeks and days
+
+    Scenario: Practices that repeat, and a day that differs
+      Given I'm a planner who can read plans
+      And a draft Financial Plan whose Youth Racing plan has one offering of 10 sailors at $1,000 each
+      And it practices each weekday morning for two weeks with a Lead coach, but the last day has no coach yet
+      And I've signed in
+      When I open Youth Racing's report in the draft
+      And I open its schedule
+      Then it shows weekday practices from Jul 5 to Jul 16 with 1 Lead coach
+      And it says Jul 16 has no staff, coach boats or boats yet
+      And the week of Jul 12 shows the offering's 10 sailors on each day
+
   Rule: The planning engine's warnings are listed at the top of the Overview and each program area's report
 
     Scenario: A practice on a closed day is pointed out

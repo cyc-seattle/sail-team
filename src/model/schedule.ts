@@ -190,7 +190,7 @@ export interface PatternProgram {
 }
 
 /**
- * Blocks that repeat: those with the same name, or with no name, the same programs at the same times. It's written
+ * Blocks that repeat: those with the same name, or with no name, the same programs at the same times as others. It's written
  * once, with the staff, coach boats and boats most of its days share, and the days that differ.
  */
 export interface Pattern {
@@ -235,11 +235,13 @@ function differences(parts: string[], usual: string[]): string {
 /** The area's blocks as patterns, in the order they first run. */
 export function patternsOf(blocks: ScheduleBlock[], offerings: Map<string, NumberedOffering>): Pattern[] {
   const programOf = (a: ScheduledActivity) => offerings.get(a.offering_key)?.program ?? a.offering_key;
-  const signature = (b: ScheduleBlock) =>
-    b.name ?? b.activities.map((a) => `${programOf(a)}|${a.start_time}|${a.end_time}`).join(";");
+  const times = (b: ScheduleBlock) =>
+    b.activities.map((a) => `${programOf(a)}|${a.start_time}|${a.end_time}`).join(";");
+  // A block with no name, such as a practice not in a block yet, joins named ones with the same programs and times.
+  const named = new Map(blocks.filter((b) => b.name).map((b) => [times(b), b.name!]));
   const groups = new Map<string, ScheduleBlock[]>();
   for (const b of blocks) {
-    const s = signature(b);
+    const s = b.name ?? named.get(times(b)) ?? times(b);
     groups.set(s, [...(groups.get(s) ?? []), b]);
   }
   return [...groups.entries()].map(([key, own]) => {
@@ -259,7 +261,7 @@ export function patternsOf(blocks: ScheduleBlock[], offerings: Map<string, Numbe
     const programs = [...new Set(own.flatMap((b) => b.activities.map(programOf)))];
     return {
       key,
-      title: own[0]!.name ?? programs.join(" and "),
+      title: own.find((b) => b.name)?.name ?? programs.join(" and "),
       weekdays: weekdaysOf(dates),
       first: dates[0]!,
       last: dates.at(-1)!,
