@@ -54,7 +54,7 @@ async function details(page: Page, name: string) {
 
 // Planning lists every Financial Plan.
 Given(
-  "a saved Financial Plan for 2027 named {string}, noted {string}",
+  "a frozen Financial Plan for 2027 named {string}, noted {string}",
   async ({ club }, name: string, note: string) => {
     named.clear();
     club.ownYear();
@@ -72,17 +72,17 @@ When("I open Planning for 2027", async ({ page, club }) => {
 });
 
 Then(
-  "I see {string}, marked saved, and {string}, marked as a draft",
-  async ({ page }, saved: string, draft: string) => {
-    await expect(planRow(page, saved)).toContainText("Saved");
+  "I see {string}, marked frozen, and {string}, marked as a draft",
+  async ({ page }, frozen: string, draft: string) => {
+    await expect(planRow(page, frozen)).toContainText("Frozen");
     await expect(planRow(page, draft)).toContainText("Draft");
   },
 );
 
-Then("{string} shows its note and the day it was saved", async ({ page }, name: string) => {
+Then("{string} shows its note and the day it was frozen", async ({ page }, name: string) => {
   const about = await details(page, name);
   await expect(about).toContainText("Reviewed with the board");
-  await expect(about).toContainText(/Saved \w+ \d+, \d{4}/);
+  await expect(about).toContainText(/Frozen \w+ \d+, \d{4}/);
 });
 
 Then("{string} shows it was started from {string}", async ({ page }, name: string, parent: string) => {
@@ -94,7 +94,7 @@ Then("{string} shows it was started from {string}", async ({ page }, name: strin
   );
 });
 
-Given("a saved Financial Plan for 2027 whose camp takes in $10,000 and spends $5,000 running it", async ({ club }) => {
+Given("a frozen Financial Plan for 2027 whose camp takes in $10,000 and spends $5,000 running it", async ({ club }) => {
   named.clear();
   club.ownYear();
   await savedBudget(club, "Budget");
@@ -107,7 +107,7 @@ Then("{string} shows revenue of $10,000, expenses of $5,000, and net of $5,000",
   await expect(cells.nth(5)).toHaveText("$5,000");
 });
 
-Given("a saved Financial Plan for 2027 named {string}", async ({ club }, name: string) => {
+Given("a frozen Financial Plan for 2027 named {string}", async ({ club }, name: string) => {
   named.clear();
   club.ownYear();
   await savedBudget(club, name);
@@ -115,7 +115,7 @@ Given("a saved Financial Plan for 2027 named {string}", async ({ club }, name: s
 
 // A Financial Plan's Overview.
 Given(
-  "a saved Financial Plan with an Operations Plan, and Program Plans for Youth Racing and Adult Sailing",
+  "a frozen Financial Plan with an Operations Plan, and Program Plans for Youth Racing and Adult Sailing",
   async ({ club }) => {
     named.clear();
     const { operations, youth } = await plansWithCopies(club);
@@ -132,10 +132,15 @@ When("I open that Financial Plan", async ({ page }) => {
 
 const overview = (page: Page) => page.getByRole("table", { name: "Revenue and expenses" });
 
-Then("its Overview has a row for Youth Racing, Adult Sailing, Non-program, and the total", async ({ page, club }) => {
-  for (const name of [club.area, `Adult Sailing ${club.run}`, "Non-program", "Total"]) {
+Then("its Overview has a row for Youth Racing, Adult Sailing, and all program areas", async ({ page, club }) => {
+  for (const name of [club.area, `Adult Sailing ${club.run}`, "All program areas"]) {
     await expect(overview(page).getByRole("row", { name: new RegExp(`^${name}`) })).toBeVisible();
   }
+  await expect(overview(page)).not.toContainText("Non-program");
+});
+
+Then("Non-program has its own section", async ({ page }) => {
+  await expect(page.getByRole("table", { name: "Non-program" })).toBeVisible();
 });
 
 Then("Youth Racing's row shows revenue of $10,000 and net of $5,000", async ({ page, club }) => {
@@ -174,7 +179,7 @@ async function coachedCamp(club: Club): Promise<string> {
 }
 
 Given(
-  "a saved Financial Plan whose Youth Racing offering took in $10,000, paid $3,000 of coaches' wages, and paid $1,000 of shared costs",
+  "a frozen Financial Plan whose Youth Racing offering took in $10,000, paid $3,000 of coaches' wages, and paid $1,000 of shared costs",
   async ({ club }) => {
     opened.set = await coachedCamp(club);
     await club.save(opened.set);
@@ -230,7 +235,7 @@ Then("it shows the $1,000 of the office", async ({ page }) => {
 
 // A saved Financial Plan keeps its P&L.
 Given(
-  "a saved Financial Plan named {string} whose Youth Racing offering paid $1,000 of office costs",
+  "a frozen Financial Plan named {string} whose Youth Racing offering paid $1,000 of office costs",
   async ({ club }, name: string) => {
     named.clear();
     const { operations, youth } = await plansWithCopies(club);
@@ -377,11 +382,6 @@ When("I open the draft", async ({ page }) => {
   await page.goto(`${await app()}/plans/financial/${opened.set}`);
 });
 
-When("I open its warnings on a closed day", async ({ page }) => {
-  await page.locator("summary", { hasText: /\d+ warnings?/ }).click();
-  await page.locator("summary", { hasText: "On a closed day" }).click();
-});
-
 Then("a warning says the practice falls on a closed day, on that day", async ({ page }) => {
   const closed = page
     .getByRole("list", { name: "On a closed day" })
@@ -395,7 +395,7 @@ Then("no plan, version, or amount appears", async ({ page }) => {
   await expect(page.getByText(/\$\d/)).toHaveCount(0);
 });
 
-// Naming, noting, saving, deleting, and starting a draft.
+// Naming, noting, freezing, deleting, archiving, and duplicating.
 Given("a draft Financial Plan named {string}", async ({ club }, name: string) => {
   named.clear();
   club.ownYear();
@@ -426,12 +426,12 @@ Then("Planning shows {string} with the note {string}", async ({ page, club }, na
   await expect(await details(page, name)).toContainText(note);
 });
 
-When("I open {string} and start a draft from it named {string}", async ({ page }, parent: string, name: string) => {
+When("I open {string} and duplicate it as {string}", async ({ page }, parent: string, name: string) => {
   await page.goto(`${await app()}/plans/financial/${named.get(parent)}`);
-  await page.getByRole("button", { name: "Start a draft from this" }).click();
+  await page.getByRole("button", { name: "Duplicate" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Name").fill(name);
-  await dialog.getByRole("button", { name: "Start the draft" }).click();
+  await dialog.getByRole("button", { name: "Duplicate" }).click();
   await expect(dialog).toBeHidden({ timeout: 30_000 });
 });
 
@@ -448,10 +448,10 @@ Then("it holds the same plans as {string}", async ({ page, club }, parent: strin
   }
 });
 
-Then("I see no way to edit it or start a draft from it", async ({ page }) => {
+Then("I see no way to edit it or duplicate it", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.getByRole("button", { name: "Edit" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Start a draft from this" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Duplicate" })).toHaveCount(0);
 });
 
 Then("Planning has no actions for {string}", async ({ page, club }, name: string) => {
@@ -460,16 +460,16 @@ Then("Planning has no actions for {string}", async ({ page, club }, name: string
   await expect(page.getByRole("button", { name: `Actions for ${name}` })).toHaveCount(0);
 });
 
-When("I save it", async ({ page }) => {
-  await page.getByRole("button", { name: "Save" }).click();
+When("I freeze it", async ({ page }) => {
+  await page.getByRole("button", { name: "Freeze" }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByRole("button", { name: "Save" }).click();
+  await dialog.getByRole("button", { name: "Freeze" }).click();
   await expect(dialog).toBeHidden({ timeout: 30_000 });
 });
 
-Then("it's marked saved", async ({ page }) => {
-  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Save" })).toHaveCount(0);
+Then("it's marked frozen", async ({ page }) => {
+  await expect(page.getByText("Frozen", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Freeze" })).toHaveCount(0);
 });
 
 When("I delete {string}", async ({ page }, name: string) => {
@@ -478,6 +478,18 @@ When("I delete {string}", async ({ page }, name: string) => {
   const dialog = page.getByRole("dialog", { name: `Delete ${name}?` });
   await dialog.getByRole("button", { name: "Delete" }).click();
   await expect(dialog).toBeHidden({ timeout: 30_000 });
+});
+
+When("I archive {string}", async ({ page }, name: string) => {
+  await page.getByRole("button", { name: `Actions for ${name}` }).click();
+  await page.getByRole("menuitem", { name: "Archive" }).click();
+  await expect(page.locator(`a[href$="/plans/financial/${named.get(name)}"]`)).toHaveCount(0, { timeout: 30_000 });
+});
+
+Then("Planning lists {string} when I ask to see archived plans", async ({ page }, name: string) => {
+  await page.getByRole("combobox", { name: "Status" }).click();
+  await page.getByRole("option", { name: "Archived" }).click();
+  await expect(page.locator(`a[href$="/plans/financial/${named.get(name)}"]`)).toBeVisible();
 });
 
 Then("Planning no longer lists {string}", async ({ page }, name: string) => {

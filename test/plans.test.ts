@@ -35,8 +35,10 @@ describe("reading Financial Plans from Directus", () => {
       ["Budget", "active", null],
       ["Two coaches", "draft", "Budget"],
       ["Three coaches", "draft", "Budget"],
+      ["First pass", "saved", null],
     ]);
-    const [budget, two, three] = plans;
+    const [budget, two, three, first] = plans;
+    expect([budget!.archived, first!.archived]).toEqual([false, true]);
     expect(budget!.net_cents).toBe(budget!.revenue_cents! - budget!.expense_cents!);
     // Fundraising is in them; capital isn't.
     const { results } = await plan(ids.budget);
@@ -56,7 +58,7 @@ describe("reading Financial Plans from Directus", () => {
     );
     try {
       const plans = await run<ListedPlan[]>(financialPlansQuery);
-      expect(plans.map((p) => p.saved_by)).toEqual([null, null, null]);
+      expect(plans.map((p) => p.saved_by)).toEqual([null, null, null, null]);
       expect(plans[0]!.saved_at).toBe("2027-03-10T18:00:00Z");
     } finally {
       server.resetHandlers();

@@ -9,7 +9,8 @@ import {
   onWaterMinutes,
   productsOf,
   reportOffering,
-  programFees,
+  fees,
+  functionalExpenses,
   rulesOf,
   sessionGrid,
   sortRows,
@@ -103,15 +104,57 @@ describe("sessionGrid", () => {
   });
 });
 
-describe("programFees", () => {
+describe("fees", () => {
+  const guppies = [
+    { ...offering("Guppies", "Week 1", "2027-06-21"), fee_cents: 40_000, estimated: 5, days: 5, hours: 20 },
+    { ...offering("Guppies", "Week 2", "2027-06-28"), fee_cents: 20_000, estimated: 5, days: 5, hours: 20 },
+  ];
+
   it("averages each program's fees over its sailors, days and hours", () => {
-    const fees = programFees([
-      { ...offering("Guppies", "Week 1", "2027-06-21"), fee_cents: 40_000, estimated: 5, days: 5, hours: 20 },
-      { ...offering("Guppies", "Week 2", "2027-06-28"), fee_cents: 20_000, estimated: 5, days: 5, hours: 20 },
+    expect(fees(guppies, "program")).toEqual([
+      { name: "Guppies", per_offering_cents: 30_000, per_day_cents: 6_000, per_hour_cents: 1_500 },
     ]);
-    expect(fees).toEqual([
-      { program: "Guppies", per_offering_cents: 30_000, per_day_cents: 6_000, per_hour_cents: 1_500 },
+  });
+
+  it("lists programs A to Z, and sessions in the order they start", () => {
+    const offerings = [
+      { ...offering("Youth Intermediate", "Week 2", "2027-06-28") },
+      { ...offering("Teen Sailing", "Week 1", "2027-06-21") },
+      { ...offering("Youth Beginner", "Week 1", "2027-06-21") },
+    ];
+    expect(fees(offerings, "program").map((f) => f.name)).toEqual([
+      "Teen Sailing",
+      "Youth Beginner",
+      "Youth Intermediate",
     ]);
+    expect(fees(offerings, "session").map((f) => f.name)).toEqual(["Week 1", "Week 2"]);
+  });
+});
+
+describe("functionalExpenses", () => {
+  const line = (fields: Partial<Parameters<typeof functionalExpenses>[0][number]>) => ({
+    key: "line",
+    name: "Line",
+    account_number: null,
+    account_name: "Account",
+    amount_cents: 100,
+    revenue: false,
+    capital: false,
+    function: "program" as const,
+    ...fields,
+  });
+
+  it("adds up expenses by function, leaving out revenue and capital, and counts none as management", () => {
+    expect(
+      functionalExpenses([
+        line({ amount_cents: 500 }),
+        line({ key: "pool:ga:insurance", amount_cents: 200, function: "management" }),
+        line({ amount_cents: 50, function: null }),
+        line({ amount_cents: 70, function: "fundraising" }),
+        line({ amount_cents: 1_000, revenue: true }),
+        line({ amount_cents: 9_000, capital: true }),
+      ]),
+    ).toEqual({ program_cents: 500, management_cents: 250, fundraising_cents: 70 });
   });
 });
 

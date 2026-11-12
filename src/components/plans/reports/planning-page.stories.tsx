@@ -10,7 +10,13 @@ const meta = {
   parameters: { layout: "fullscreen" },
   args: {
     plans: planningPlans,
-    actions: { canUpdate: true, canDelete: true, onMove: fn(async () => {}), onDelete: fn(async () => {}) },
+    actions: {
+      canUpdate: true,
+      canDelete: true,
+      onMove: fn(async () => {}),
+      onArchive: fn(async () => {}),
+      onDelete: fn(async () => {}),
+    },
   },
 } satisfies Meta<typeof PlanningPage>;
 export default meta;
@@ -41,12 +47,12 @@ export const AgentsReport: Story = {
   },
 };
 
-/** A saved plan's details say when and by whom it was saved, and which platform version worked it out. */
-export const SavedPlansDetails: Story = {
+/** A frozen plan's details say when and by whom it was frozen, and which platform version worked it out. */
+export const FrozenPlansDetails: Story = {
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "About Budget" }));
     await waitFor(async () => expect(await screen.findByText("Platform 1.38.1")).toBeVisible());
-    await expect(screen.getByText(/Saved .* by Morgan Keel/)).toBeVisible();
+    await expect(screen.getByText(/Frozen .* by Morgan Keel/)).toBeVisible();
   },
 };
 
@@ -59,21 +65,57 @@ export const DeletingTheAgentsDraft: Story = {
   },
 };
 
-/** Saving a draft asks first, then saves it. */
-export const SavingADraft: Story = {
+/** Freezing a draft asks first, then freezes it. */
+export const FreezingADraft: Story = {
   play: async ({ args, canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Actions for Two more coaches" }));
-    await userEvent.click(await screen.findByRole("menuitem", { name: "Save" }));
-    await userEvent.click(await screen.findByRole("button", { name: "Save" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Freeze" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Freeze" }));
     await waitFor(() =>
       expect(args.actions.onMove).toHaveBeenCalledWith(expect.objectContaining({ id: "two-coaches" }), "saved"),
     );
   },
 };
 
+/** Archiving a frozen plan hides it from the list. It can be undone, so it doesn't ask. */
+export const ArchivingAFrozenPlan: Story = {
+  play: async ({ args, canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Actions for Board review" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Archive" }));
+    await waitFor(() =>
+      expect(args.actions.onArchive).toHaveBeenCalledWith(expect.objectContaining({ id: "board" }), true),
+    );
+    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
+  },
+};
+
+/** Archived plans show only when asked for, and each can be brought back. */
+export const Archived: Story = {
+  play: async ({ args, canvas }) => {
+    await expect(canvas.queryByRole("link", { name: "First pass" })).toBeNull();
+    await userEvent.click(canvas.getByRole("combobox", { name: "Status" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Archived" }));
+    await waitFor(() => expect(canvas.getByRole("link", { name: "First pass" })).toBeVisible());
+    await expect(canvas.queryByRole("link", { name: "Budget" })).toBeNull();
+    await userEvent.click(canvas.getByRole("button", { name: "Actions for First pass" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Unarchive" }));
+    await waitFor(() =>
+      expect(args.actions.onArchive).toHaveBeenCalledWith(expect.objectContaining({ id: "first" }), false),
+    );
+    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
+  },
+};
+
+/** The active plan can't be archived. */
+export const ActivePlanStays: Story = {
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByRole("button", { name: "Actions for Budget" })).toBeNull();
+  },
+};
+
 /** A planner who can only read plans has no actions. */
 export const ReadOnly: Story = {
-  args: { actions: { canUpdate: false, canDelete: false, onMove: fn(), onDelete: fn() } },
+  args: { actions: { canUpdate: false, canDelete: false, onMove: fn(), onArchive: fn(), onDelete: fn() } },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("button", { name: /Actions for/ })).toBeNull();
   },

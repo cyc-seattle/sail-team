@@ -4,6 +4,7 @@ import type { ScheduleBlock, ScheduledActivity } from "@/model/schedule";
 import type { ListedPlan, Totals } from "@/model/financial-plans";
 import type {
   AccountAmount,
+  FunctionalExpenses,
   LineAmount,
   OverviewRow,
   PlanWarning,
@@ -554,6 +555,16 @@ export const totals: Totals = (() => {
   };
 })();
 
+/** The same year's expenses by function: G&A's shares are management, and fundraising's costs are fundraising. */
+export const functions: FunctionalExpenses = (() => {
+  const management = overviewRows.reduce((total, r) => total + r.indirect_cents, 0);
+  return {
+    program_cents: totals.operating_expense_cents - management,
+    management_cents: management,
+    fundraising_cents: totals.fundraising_expense_cents,
+  };
+})();
+
 const planSummary = (
   fields: Partial<Omit<ListedPlan, "net_cents">> & Pick<ListedPlan, "id" | "name" | "status">,
 ): ListedPlan => ({
@@ -561,6 +572,7 @@ const planSummary = (
   saved_at: null,
   saved_by: null,
   parent: null,
+  archived: false,
   note: null,
   platform: null,
   warnings: 0,
@@ -570,7 +582,7 @@ const planSummary = (
   net_cents: (fields.revenue_cents ?? 49_900_000) - (fields.expense_cents ?? 44_600_000),
 });
 
-/** Two years of Financial Plans: each year's active one, drafts including one from the planning agent, and older saved ones. */
+/** Two years of Financial Plans: each year's active one, drafts including one from the planning agent, older frozen ones, and an archived one. */
 export const planningPlans: ListedPlan[] = [
   planSummary({
     id: "budget",
@@ -613,6 +625,7 @@ export const planningPlans: ListedPlan[] = [
     status: "saved",
     saved_at: "2027-01-15T18:00:00Z",
     expense_cents: 48_700_000,
+    archived: true,
   }),
   planSummary({
     id: "2026",

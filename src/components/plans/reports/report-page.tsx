@@ -10,24 +10,20 @@ export interface ReportPageProps {
   status: VersionState;
   reports: Report[];
   current: string;
-  /** The plan's buttons, beside its status. */
+  /** The plan's buttons, on the right. */
   actions?: ReactNode;
   children: ReactNode;
 }
 
-/** One report of a Financial Plan: its name, status and buttons, the report switcher, then the report's sections. */
+/** One report of a Financial Plan: its name with its status beside it, its buttons, the report switcher, then the report's sections. */
 export function ReportPage({ setId, name, status, reports, current, actions, children }: ReportPageProps) {
   return (
     <main className="mx-auto grid max-w-6xl gap-6 p-card">
       <PageHeader
         title={name}
+        badge={<VersionBadge state={status} />}
         back={{ to: "/plans", label: "Planning" }}
-        actions={
-          <>
-            <VersionBadge state={status} />
-            {actions}
-          </>
-        }
+        actions={actions}
       />
       <ReportNav setId={setId} reports={reports} current={current} />
       <div className="grid gap-12">{children}</div>

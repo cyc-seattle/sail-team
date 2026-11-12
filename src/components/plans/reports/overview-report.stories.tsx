@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, userEvent } from "storybook/test";
+import { expect, userEvent, within } from "storybook/test";
 import { withRouter } from "../../../../.storybook/with-router";
-import { areaOfferings, overviewRows, summerOfferings, summerSchedule, totals, warnings } from "./fixtures";
+import { areaOfferings, functions, overviewRows, summerOfferings, summerSchedule, totals, warnings } from "./fixtures";
 import { OverviewReport } from "./overview-report";
 
 const meta = {
@@ -15,19 +15,33 @@ const meta = {
     offerings: areaOfferings,
     warnings,
     totals,
+    functions,
     timeline: [{ key: "summer", name: "Summer", blocks: summerSchedule, offerings: summerOfferings }],
   },
 } satisfies Meta<typeof OverviewReport>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Opens with the largest revenue first, and Non-program last. */
+/** Opens with the largest revenue first. Non-program has its own section, out of the program areas' table. */
 export const ByRevenue: Story = {
   play: async ({ canvas }) => {
     const table = canvas.getByRole("table", { name: "Revenue and expenses" });
     const rows = table.querySelectorAll("tbody tr");
     await expect(rows[0]).toHaveTextContent("Summer");
-    await expect(rows[rows.length - 1]).toHaveTextContent("Non-program");
+    await expect(table).not.toHaveTextContent("Non-program");
+    await expect(table.querySelector("tfoot")).toHaveTextContent("All program areas");
+    await expect(canvas.getByRole("table", { name: "Non-program" })).toHaveTextContent("Indirect costs");
+  },
+};
+
+/** Once Non-program carries no G&A, its net reduces G&A instead. */
+export const NonProgramReducesGA: Story = {
+  args: {
+    rows: overviewRows.map((r) => (r.report === "non-program" ? { ...r, indirect_cents: 0 } : r)),
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("table", { name: "Non-program" })).not.toHaveTextContent("Indirect costs");
+    await expect(canvas.getByText(/Reduces G&A by/)).toBeVisible();
   },
 };
 
@@ -35,17 +49,21 @@ export const ByRevenue: Story = {
 export const ByNet: Story = {
   play: async ({ canvas }) => {
     const table = canvas.getByRole("table", { name: "Revenue and expenses" });
-    await userEvent.click(canvas.getByRole("button", { name: "Net" }));
-    await expect(canvas.getByRole("columnheader", { name: "Net" })).toHaveAttribute("aria-sort", "descending");
-    await userEvent.click(canvas.getByRole("button", { name: "Net" }));
-    await expect(canvas.getByRole("columnheader", { name: "Net" })).toHaveAttribute("aria-sort", "ascending");
+    const head = within(table).getByRole("columnheader", { name: "Net" });
+    await userEvent.click(within(table).getByRole("button", { name: "Net" }));
+    await expect(head).toHaveAttribute("aria-sort", "descending");
+    await userEvent.click(within(table).getByRole("button", { name: "Net" }));
+    await expect(head).toHaveAttribute("aria-sort", "ascending");
     await expect(table.querySelector("tbody tr")).toHaveTextContent("High Performance");
   },
 };
 
-/** The year's operating net, with fundraising, less capital, adds up to its total. */
+/** The year's expenses by function, as on Form 990, and its operating net, with fundraising, less capital. */
 export const Year: Story = {
   play: async ({ canvas }) => {
+    const split = canvas.getByRole("table", { name: "Expenses by function" });
+    await expect(split).toHaveTextContent("Management and general");
+    await expect(split.querySelector("tfoot")).toHaveTextContent("100%");
     const table = canvas.getByRole("table", { name: "Year" });
     await expect(table).toHaveTextContent("Fundraising net");
     await expect(table).toHaveTextContent("Capital");
@@ -53,14 +71,19 @@ export const Year: Story = {
   },
 };
 
-/** Enrollment opens by session, and can be grouped by program instead. */
-export const EnrollmentByProgram: Story = {
+/** Fees and enrollment open by season, and the switch at the top groups both by program instead. */
+export const ByProgram: Story = {
   play: async ({ canvas }) => {
-    const table = canvas.getByRole("table", { name: "Enrollment" });
-    await expect(table).toHaveTextContent("Week 1");
+    const enrollment = canvas.getByRole("table", { name: "Enrollment" });
+    const fees = canvas.getByRole("table", { name: "Program fees" });
+    await expect(enrollment).toHaveTextContent("Week 1");
+    await expect(fees).toHaveTextContent("Week 1");
     await userEvent.click(canvas.getByRole("button", { name: "By program" }));
-    await expect(table).toHaveTextContent("Guppies");
-    await expect(table).not.toHaveTextContent("Week 1");
+    for (const table of [enrollment, fees]) {
+      await expect(table).toHaveTextContent("Guppies");
+      await expect(table).not.toHaveTextContent("Week 1");
+    }
+    await expect(fees.querySelector("tfoot")).toHaveTextContent("All programs");
   },
 };
 

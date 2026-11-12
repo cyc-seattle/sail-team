@@ -34,6 +34,10 @@ function AllPlans() {
           await updateFinancialPlan(plan.id, { status });
           await refresh();
         },
+        onArchive: async (plan, archived) => {
+          await updateFinancialPlan(plan.id, { archived_at: archived ? new Date().toISOString() : null });
+          await refresh();
+        },
         onDelete: async (plan) => {
           await deleteFinancialPlan(plan.id);
           await refresh();
