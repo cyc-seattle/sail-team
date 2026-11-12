@@ -38,7 +38,8 @@ Feature: Getting around
     Then Links offers only <links>
 
     Examples:
-      | role      | screen | links                                                          |
-      | Community | phone  | Google Calendar and Support                                    |
-      | Crew      | laptop | the Clubspot dashboard, Google Calendar, and Support           |
-      | Staff     | laptop | the Clubspot dashboard, Directus, Google Calendar, and Support |
+      | role      | screen | links                                                                              |
+      | Community | phone  | Google Calendar and Support                                                        |
+      | Crew      | laptop | the Clubspot dashboard, Google Calendar, and Support                               |
+      | Staff     | laptop | the Clubspot dashboard, Directus, Google Calendar, and Support                     |
+      | Admin     | laptop | the Clubspot dashboard, Directus, Sign in as someone, Google Calendar, and Support |
