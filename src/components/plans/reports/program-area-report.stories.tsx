@@ -70,7 +70,7 @@ export const SummerSchedule: Story = {
   args: Summer.args!,
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByText("Schedule", { selector: "h2" }));
-    const dock = within(canvas.getByRole("region", { name: "Every week" })).getByRole("article", {
+    const dock = within(canvas.getByRole("region", { name: "Activity blocks" })).getByRole("article", {
       name: "Morning dock",
     });
     await expect(dock).toHaveTextContent("Weekdays, Jun 21 to Aug 20");
@@ -78,7 +78,8 @@ export const SummerSchedule: Story = {
       "Jul 12 to 16: 11 Sailqubes",
     );
     await userEvent.click(canvas.getByRole("button", { name: "Jul 12" }));
-    await expect(canvas.getByRole("table", { name: "Week of Jul 12" })).toHaveTextContent("9 / 10");
+    await expect(canvas.getByRole("table", { name: "Weeks" })).toHaveTextContent("9 / 10");
+    await expect(canvas.getByRole("table", { name: "Week of Jul 12" })).toHaveTextContent("Morning dock");
     await userEvent.click(canvas.getByRole("button", { name: "Wed 14" }));
     await expect(canvas.getByRole("heading", { name: "Wednesday, July 14" })).toBeVisible();
     await expect(canvas.getByRole("article", { name: "Race Camp" })).toHaveTextContent("1:00 PM–4:00 PM");

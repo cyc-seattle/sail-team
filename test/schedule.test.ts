@@ -6,7 +6,7 @@ import {
   counted,
   daysOf,
   patternsOf,
-  sailorsOn,
+  sailorsIn,
   scheduleOf,
   weekdaysOf,
   weekName,
@@ -174,8 +174,8 @@ describe("weeks and days", () => {
     expect(weekName("2027-06-28", daysOf(blocks, "2027-06-28"))).toBe("Jun 28 to 30");
   });
 
-  it("adds up each program's estimated and max sailors on a day", () => {
-    expect(sailorsOn(blocks, "2027-06-21", offerings)).toEqual(
+  it("adds up each program's estimated and max sailors in a week, each offering once", () => {
+    expect(sailorsIn(blocks, "2027-06-21", offerings)).toEqual(
       new Map([
         ["Guppies", { estimated: 6, max: 10 }],
         ["Sea Otters", { estimated: 10, max: 12 }],

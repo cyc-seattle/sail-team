@@ -14,10 +14,11 @@ type Story = StoryObj<typeof meta>;
 
 export const Summer: Story = {
   play: async ({ canvas }) => {
-    const cards = within(canvas.getByRole("region", { name: "Every week" }));
+    const cards = within(canvas.getByRole("region", { name: "Activity blocks" }));
     await expect(cards.getByRole("article", { name: "Morning dock" })).toHaveTextContent("Guppies 1–9");
     await userEvent.click(canvas.getByRole("button", { name: "Jul 12" }));
-    await expect(canvas.getByRole("table", { name: "Week of Jul 12" })).toHaveTextContent("9 / 10");
+    await expect(canvas.getByRole("table", { name: "Weeks" })).toHaveTextContent("9 / 10");
+    await expect(canvas.getByRole("table", { name: "Week of Jul 12" })).toHaveTextContent("Morning dock");
   },
 };
 

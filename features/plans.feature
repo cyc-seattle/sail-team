@@ -121,7 +121,7 @@ Feature: Seeing the Financial Plans
       And I open its schedule
       Then it shows weekday practices from Jul 5 to Jul 16 with 1 Lead coach
       And it says Jul 16 has no staff, coach boats or boats yet
-      And the week of Jul 12 shows the offering's 10 sailors on each day
+      And each week shows the offering's 10 sailors
 
   Rule: The planning engine's warnings are listed at the top of the Overview and each program area's report
 

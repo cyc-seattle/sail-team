@@ -9,7 +9,7 @@ import {
   longDay,
   monthOf,
   patternsOf,
-  sailorsOn,
+  sailorsIn,
   timeSpan,
   weekdayOf,
   weekName,
@@ -54,6 +54,12 @@ function ProgramName({ program, style }: { program: string; style: CSSProperties
     </span>
   );
 }
+
+/** Who a block's staff and boats are for: "Opti Camp and Sailqube Camp share", or "Adventure Camp has". */
+const sharers = (programs: string[]) =>
+  programs.length === 1
+    ? `${programs[0]} has`
+    : `${programs.length > 2 ? `${programs.slice(0, -1).join(", ")}, and ${programs.at(-1)}` : programs.join(" and ")} share`;
 
 function Pills({ parts }: { parts: string[] }) {
   return parts.length > 0 ? (
@@ -108,13 +114,17 @@ export function ScheduleCalendar({ blocks, offerings, warnings, closedDays, else
   const first = blocks[0]?.date ?? "";
   const last = blocks.at(-1)?.date ?? "";
   const closed = closedDays.filter((d) => d.date >= first && d.date <= last);
+  const closedOn = (d: string) => closed.some((c) => c.date === d);
 
   if (blocks.length === 0) {
     return <p className="text-sm text-muted-foreground">No activities yet</p>;
   }
   return (
     <div className="grid gap-8">
-      <section aria-label="Every week" className="grid gap-3">
+      <section aria-labelledby="schedule-blocks" className="grid gap-3">
+        <h3 id="schedule-blocks" className="font-medium">
+          Activity blocks
+        </h3>
         <div className="grid gap-3 md:grid-cols-2">
           {patterns.map((p) => (
             <article
@@ -123,7 +133,7 @@ export function ScheduleCalendar({ blocks, offerings, warnings, closedDays, else
               className="grid content-start gap-2 rounded-lg border bg-card p-4"
             >
               <div>
-                <h3 className="font-medium">{p.title}</h3>
+                <h4 className="font-medium">{p.title}</h4>
                 <p className="text-sm text-muted-foreground">
                   {p.weekdays}, {formatShortDay(p.first)} to {formatShortDay(p.last)} ·{" "}
                   {p.days === 1 ? "1 day" : `${p.days} days`}
@@ -140,7 +150,10 @@ export function ScheduleCalendar({ blocks, offerings, warnings, closedDays, else
                   </li>
                 ))}
               </ul>
-              <Pills parts={p.parts} />
+              <div className="grid gap-1">
+                {p.parts.length > 0 && <p className="text-sm">{sharers(p.programs.map((pp) => pp.program))}</p>}
+                <Pills parts={p.parts} />
+              </div>
               {p.exceptions.length > 0 && (
                 <ul aria-label={`${p.title}: days that differ`} className="grid text-sm text-warning">
                   {p.exceptions.map((e) => (
@@ -186,22 +199,32 @@ export function ScheduleCalendar({ blocks, offerings, warnings, closedDays, else
                 {weeks.map((w) => {
                   const own = runs(program, w);
                   const odd = own.some((b) => differing.has(b.key));
+                  const sailors = sailorsIn(blocks, w, numbered).get(program);
                   return (
-                    <TableCell key={w} className={cn("px-0.5 py-1 sm:px-1", w === week && "bg-muted")}>
-                      <div
-                        style={color(program)}
-                        className={cn("relative h-5 min-w-4 rounded-sm", own.length > 0 ? fill : "bg-muted")}
-                      >
-                        <span className="sr-only">
-                          {own.length > 0 ? (odd ? "Runs, with a day that differs" : "Runs") : "No"}
+                    <TableCell key={w} className={cn("px-0.5 py-1 text-center sm:px-1", w === week && "bg-muted")}>
+                      {sailors ? (
+                        <span
+                          style={color(program)}
+                          className="relative block rounded-sm border-l-2 border-(--program) bg-card [border-left-style:var(--edge,solid)] px-1 text-xs whitespace-nowrap tabular-nums sm:border-l-4 sm:px-2 sm:text-sm"
+                        >
+                          {sailors.estimated}
+                          <span className="text-muted-foreground">
+                            <span className="hidden sm:inline"> </span>/<span className="hidden sm:inline"> </span>
+                            {sailors.max}
+                          </span>
+                          {odd && (
+                            <>
+                              <span className="sr-only">, with a day that differs</span>
+                              <span
+                                aria-hidden
+                                className="absolute -top-1 -right-1 size-2.5 rounded-full bg-warning ring-2 ring-background"
+                              />
+                            </>
+                          )}
                         </span>
-                        {odd && (
-                          <span
-                            aria-hidden
-                            className="absolute -top-1 -right-1 size-2.5 rounded-full bg-warning ring-2 ring-background"
-                          />
-                        )}
-                      </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                   );
                 })}
@@ -209,9 +232,12 @@ export function ScheduleCalendar({ blocks, offerings, warnings, closedDays, else
             ))}
           </TableBody>
         </Table>
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span aria-hidden className="inline-block size-2.5 rounded-full bg-warning" />A day that differs from its
-          block's usual staff, coach boats or boats
+        <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
+          <span>Estimated / max sailors ·</span>
+          <span className="flex items-center gap-2">
+            <span aria-hidden className="inline-block size-2.5 rounded-full bg-warning" />a day that differs from its
+            block's usual staff, coach boats or boats
+          </span>
         </p>
       </section>
 
@@ -224,39 +250,56 @@ export function ScheduleCalendar({ blocks, offerings, warnings, closedDays, else
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className={pinned}>
-                  <span className="sr-only">Program</span>
+                  <span className="sr-only">Block</span>
                 </TableHead>
                 {days.map((d) => (
                   <TableHead key={d} className={cn("px-0.5 text-center sm:px-2", d === today && "bg-muted")}>
                     <button type="button" aria-pressed={d === today} className={pressable} onClick={() => setDay(d)}>
                       <span className="block text-xs font-normal text-muted-foreground">{weekdayOf(d)}</span> {dayOf(d)}
                     </button>
+                    {closedOn(d) && <span className="block text-xs font-normal text-muted-foreground">Closed</span>}
+                    {warnings.some((w) => w.date === d) && (
+                      <span className="block text-xs font-normal text-warning">
+                        {warnings.filter((w) => w.date === d).length === 1
+                          ? "1 warning"
+                          : `${warnings.filter((w) => w.date === d).length} warnings`}
+                      </span>
+                    )}
                   </TableHead>
                 ))}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {programs
-                .filter((program) => runs(program, week).length > 0)
-                .map((program) => (
-                  <TableRow key={program} className="border-0 hover:bg-transparent">
-                    <TableCell className={cn(pinned, "py-1 pr-1 pl-0 sm:px-2")}>
-                      <ProgramName program={program} style={color(program)} />
+              {patterns
+                .filter((p) => blocks.some((b) => weekOf(b.date) === week && p.blocks.includes(b.key)))
+                .map((p) => (
+                  <TableRow key={p.key} className="border-0 hover:bg-transparent">
+                    <TableCell className={cn(pinned, "max-w-28 truncate py-1 pr-1 pl-0 sm:max-w-none sm:px-2")}>
+                      {p.title}
                     </TableCell>
                     {days.map((d) => {
-                      const sailors = sailorsOn(blocks, d, numbered).get(program);
+                      const own = blocks.filter((b) => b.date === d && p.blocks.includes(b.key));
+                      const odd = own.some((b) => differing.has(b.key));
+                      const running = [
+                        ...new Set(own.flatMap((b) => b.activities.map((a) => programOf(a.offering_key)))),
+                      ];
                       return (
                         <TableCell key={d} className={cn("px-0.5 py-1 text-center sm:px-1", d === today && "bg-muted")}>
-                          {sailors ? (
-                            <span
-                              style={color(program)}
-                              className="block rounded-sm border-l-2 border-(--program) bg-card [border-left-style:var(--edge,solid)] px-1 text-xs tabular-nums sm:border-l-4 sm:px-2 sm:text-sm"
-                            >
-                              {sailors.estimated}
-                              <span className="text-muted-foreground">
-                                <span className="hidden sm:inline"> </span>/<span className="hidden sm:inline"> </span>
-                                {sailors.max}
+                          {running.length > 0 ? (
+                            <span className="relative inline-flex items-center gap-0.5 rounded-sm bg-card px-1 py-1">
+                              {running.map((program) => (
+                                <Swatch key={program} style={color(program)} />
+                              ))}
+                              <span className="sr-only">
+                                {running.join(", ")}
+                                {odd && ", different from the usual staff, coach boats or boats"}
                               </span>
+                              {odd && (
+                                <span
+                                  aria-hidden
+                                  className="absolute -top-1 -right-1 size-2.5 rounded-full bg-warning ring-2 ring-background"
+                                />
+                              )}
                             </span>
                           ) : (
                             <span className="text-muted-foreground">—</span>
@@ -269,7 +312,7 @@ export function ScheduleCalendar({ blocks, offerings, warnings, closedDays, else
             </TableBody>
           </Table>
           <p className="text-sm text-muted-foreground">
-            Estimated / max sailors
+            Tap a day for its blocks
             {elsewhere.some((e) => e.weeks.get(week)) &&
               ` · Also this week: ${elsewhere
                 .filter((e) => e.weeks.get(week))

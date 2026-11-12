@@ -284,7 +284,7 @@ When("I open its schedule", async ({ page }) => {
 });
 
 const practices = (page: Page) =>
-  page.getByRole("region", { name: "Every week" }).getByRole("article", { name: "Practice" });
+  page.getByRole("region", { name: "Activity blocks" }).getByRole("article", { name: "Practice" });
 
 Then("it shows weekday practices from Jul 5 to Jul 16 with 1 Lead coach", async ({ page }) => {
   await expect(practices(page)).toContainText("Weekdays, Jul 5 to Jul 16");
@@ -297,10 +297,10 @@ Then("it says Jul 16 has no staff, coach boats or boats yet", async ({ page }) =
   );
 });
 
-Then("the week of Jul 12 shows the offering's 10 sailors on each day", async ({ page }) => {
-  await page.getByRole("button", { name: "Jul 12" }).click();
-  const week = page.getByRole("table", { name: "Week of Jul 12" });
-  await expect(week.getByRole("cell", { name: "10 / 10" })).toHaveCount(5);
+Then("each week shows the offering's 10 sailors", async ({ page }) => {
+  const weeks = page.getByRole("table", { name: "Weeks" });
+  // The second week's Jul 16 differs, which its cell also says.
+  await expect(weeks.getByRole("cell", { name: /^10 \/ 10/ })).toHaveCount(2);
 });
 
 Then("its offering shows a fee of $1,000 and 10 sailors", async ({ page, club }) => {

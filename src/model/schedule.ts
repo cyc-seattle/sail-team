@@ -205,7 +205,8 @@ export interface Pattern {
   parts: string[];
   /** Days whose staff, coach boats or boats differ, such as "Jul 12 to 16: 11 Sailqubes". */
   exceptions: string[];
-  /** The block keys that differ, to mark their weeks. */
+  /** Its blocks' keys, and the keys of those that differ, to mark their weeks and days. */
+  blocks: string[];
   differing: string[];
 }
 
@@ -287,6 +288,7 @@ export function patternsOf(blocks: ScheduleBlock[], offerings: Map<string, Numbe
       }),
       parts: usual,
       exceptions: [...byDifference.entries()].flatMap(([d, on]) => dateRuns(on, dates).map((r) => `${r}: ${d}`)),
+      blocks: own.map((b) => b.key),
       differing: odd.map((b) => b.key),
     };
   });
@@ -317,13 +319,15 @@ export function busiestWeek(blocks: ScheduleBlock[]): string | null {
 export const daysOf = (blocks: ScheduleBlock[], week: string) =>
   [...new Set(blocks.filter((b) => weekOf(b.date) === week).map((b) => b.date))].sort();
 
-/** Each program's estimated and max sailors on a day: its offerings that run that day, each counted once. */
-export function sailorsOn(
+/** Each program's estimated and max sailors in a week: its offerings that run that week, each counted once. */
+export function sailorsIn(
   blocks: ScheduleBlock[],
-  date: string,
+  week: string,
   offerings: Map<string, NumberedOffering>,
 ): Map<string, { estimated: number; max: number }> {
-  const keys = new Set(blocks.filter((b) => b.date === date).flatMap((b) => b.activities.map((a) => a.offering_key)));
+  const keys = new Set(
+    blocks.filter((b) => weekOf(b.date) === week).flatMap((b) => b.activities.map((a) => a.offering_key)),
+  );
   const out = new Map<string, { estimated: number; max: number }>();
   for (const key of keys) {
     const o = offerings.get(key);
