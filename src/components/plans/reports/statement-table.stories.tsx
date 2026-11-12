@@ -47,3 +47,41 @@ export const RevenueAndCosts: Story = {
     ],
   },
 };
+
+/** An account whose one line only repeats it, give or take case, punctuation and a plural, doesn't open. */
+export const LineNamedAfterItsAccount: Story = {
+  args: {
+    label: "Fundraising",
+    sections: [
+      {
+        title: "Revenue",
+        accounts: [
+          {
+            number: "5350",
+            name: "Donations by Individual - unrestricted",
+            cents: 3_000_000,
+            lines: [
+              {
+                name: "Donations by individuals, unrestricted",
+                explanation: "Donations by individuals, unrestricted",
+                offerings: 0,
+                cents: 3_000_000,
+              },
+            ],
+          },
+          {
+            number: "4530",
+            name: "Event tickets and auction",
+            cents: 1_800_000,
+            lines: [{ name: "Spring gala", explanation: null, offerings: 0, cents: 1_800_000 }],
+          },
+        ],
+      },
+    ],
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByRole("button", { name: "Donations by Individual - unrestricted" })).toBeNull();
+    await userEvent.click(canvas.getByRole("button", { name: "Event tickets and auction" }));
+    await expect(canvas.getByText("Spring gala")).toBeVisible();
+  },
+};

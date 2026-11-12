@@ -12,6 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import { BudgetLines, StaffTimeTable } from "../assumptions";
 import { Money } from "../money";
+import { NoteInfo } from "../note-info";
 import { CollapsibleSection } from "./collapsible-section";
 import { OfferingName } from "./offering-name";
 import { ReportSection } from "./report-page";
@@ -78,13 +79,13 @@ function AreaAssumptions({
         {fixedCosts.length > 0 && (
           <div className="border-t pt-4">
             <div className="grid gap-6">
-              <BudgetLines costsTitle="Fixed costs" lines={fixedCosts} />
+              <BudgetLines costsTitle="Fixed costs" lines={fixedCosts} level={3} />
             </div>
           </div>
         )}
         {staffTime.length > 0 && (
           <div className="border-t pt-4">
-            <StaffTimeTable lines={staffTime} />
+            <StaffTimeTable lines={staffTime} level={3} />
           </div>
         )}
       </div>
@@ -172,8 +173,10 @@ export function ProgramAreaReport({
                 {own.map((o) => (
                   <TableRow key={o.key}>
                     <TableCell className={cn(pinned, "pl-6")}>
-                      <OfferingName offering={o} />
-                      {o.note && <p className="max-w-64 whitespace-normal text-muted-foreground">{o.note}</p>}
+                      <span className="inline-flex items-center gap-1">
+                        <OfferingName offering={o} />
+                        <NoteInfo note={o.note} />
+                      </span>
                     </TableCell>
                     <Amount cents={o.fee_cents} whole />
                     <Amount cents={per(o.fee_cents, o.days)} />

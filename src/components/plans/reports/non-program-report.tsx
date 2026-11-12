@@ -1,6 +1,6 @@
-import { Fragment } from "react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { Product, SharedCost } from "@/model/reports";
+import { AccountTable } from "../account-table";
 import { Money } from "../money";
 import { ReportSection } from "./report-page";
 
@@ -14,6 +14,13 @@ function Amount({ cents, colored = false }: { cents: number; colored?: boolean }
   );
 }
 
+/** A shared cost's allocated and unallocated parts, and its total. */
+const amounts = (c: Pick<SharedCost, "allocated_cents" | "total_cents">) => [
+  <Money key="allocated" cents={c.allocated_cents} whole />,
+  <Money key="unallocated" cents={c.total_cents - c.allocated_cents} whole />,
+  <Money key="total" cents={c.total_cents} whole />,
+];
+
 const add = <T,>(rows: T[], of: (row: T) => number) => rows.reduce((total, r) => total + of(r), 0);
 
 /**
@@ -25,7 +32,7 @@ export function NonProgramReport({ products, shared }: { products: Product[]; sh
     revenue_cents: add(products, (p) => p.revenue_cents),
     direct_cents: add(products, (p) => p.direct_cents),
   };
-  const pools = [...new Set(shared.map((c) => c.pool))];
+  const pools = [...new Set(shared.map((c) => c.pool))].sort((a, b) => a.localeCompare(b));
   return (
     <>
       <ReportSection id="sold-outside-programs" title="Sold outside programs">
@@ -62,51 +69,32 @@ export function NonProgramReport({ products, shared }: { products: Product[]; sh
       </ReportSection>
 
       <ReportSection id="shared-costs" title="Shared costs">
-        <Table aria-label="Shared costs">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-16">Account</TableHead>
-              <TableHead>
-                <span className="sr-only">Name</span>
-              </TableHead>
-              <TableHead className="text-right">Allocated</TableHead>
-              <TableHead className="text-right">Unallocated</TableHead>
-              <TableHead className="text-right">Total</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {pools.map((pool) => {
-              const costs = shared.filter((c) => c.pool === pool);
-              return (
-                <Fragment key={pool}>
-                  <TableRow className="hover:bg-transparent">
-                    <TableCell colSpan={5} className="pt-6 font-medium">
-                      {pool}
-                    </TableCell>
-                  </TableRow>
-                  {costs.map((c) => (
-                    <TableRow key={`${c.number} ${c.name}`}>
-                      <TableCell className="text-muted-foreground tabular-nums">{c.number}</TableCell>
-                      <TableCell className="whitespace-normal">{c.name}</TableCell>
-                      <Amount cents={c.allocated_cents} />
-                      <Amount cents={c.total_cents - c.allocated_cents} />
-                      <Amount cents={c.total_cents} />
-                    </TableRow>
-                  ))}
-                </Fragment>
-              );
-            })}
-          </TableBody>
-          <TableFooter className="bg-transparent">
-            <TableRow>
-              <TableCell />
-              <TableCell>Total</TableCell>
-              <Amount cents={add(shared, (c) => c.allocated_cents)} />
-              <Amount cents={add(shared, (c) => c.total_cents - c.allocated_cents)} />
-              <Amount cents={add(shared, (c) => c.total_cents)} />
-            </TableRow>
-          </TableFooter>
-        </Table>
+        <AccountTable
+          label="Shared costs"
+          columns={[{ head: "Allocated" }, { head: "Unallocated" }, { head: "Total" }]}
+          groups={pools.map((pool, i) => ({
+            title: pool,
+            rows: shared
+              .filter((c) => c.pool === pool)
+              .map((c) => ({
+                key: `${c.number} ${c.name}`,
+                number: c.number,
+                name: c.name,
+                values: amounts(c),
+              })),
+            ...(i === pools.length - 1 && {
+              footers: [
+                {
+                  name: "Total",
+                  values: amounts({
+                    allocated_cents: add(shared, (c) => c.allocated_cents),
+                    total_cents: add(shared, (c) => c.total_cents),
+                  }),
+                },
+              ],
+            }),
+          }))}
+        />
       </ReportSection>
     </>
   );
