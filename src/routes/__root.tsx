@@ -5,7 +5,7 @@ import { NoticePage } from "@/components/shell/notice-page";
 import { SignInBlocked } from "@/components/shell/sign-in-blocked";
 import { Skeleton } from "@/components/ui/skeleton";
 import { appDirectus } from "@/directus/app";
-import { useSession } from "@/directus/use-session";
+import { signOutOfApp, useSession } from "@/directus/use-session";
 import { displayName } from "@/model/display-name";
 import { linksFor, pagesFor } from "@/model/nav";
 
@@ -40,6 +40,7 @@ function Signed() {
           name={displayName(session.me)}
           pages={pagesFor(session.permissions)}
           links={linksFor(session.me.role?.name, appDirectus().url)}
+          onSignOut={() => void signOutOfApp()}
         >
           <Outlet />
         </AppShell>

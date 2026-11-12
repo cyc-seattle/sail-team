@@ -62,6 +62,7 @@ function shape(row: Row, fields: string | null): Row {
 export function handlers(directusUrl: string, session: MockSession = { me: planner, permissions: plannerPermissions }) {
   return [
     http.get(`${directusUrl}/users/me`, () => (session.me ? HttpResponse.json({ data: session.me }) : forbidden())),
+    http.post(`${directusUrl}/auth/logout`, () => new HttpResponse(null, { status: 204 })),
     // Other users' names, which platform lets a planner read.
     http.get(`${directusUrl}/users`, ({ request }) => {
       const query = new URL(request.url).searchParams;

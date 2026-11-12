@@ -9,16 +9,18 @@ export function AppShell({
   name,
   pages,
   links,
+  onSignOut,
   children,
 }: {
   name: string;
   pages: NavItem[];
   links: ExternalLink[];
+  onSignOut: () => void;
   children: ReactNode;
 }) {
   return (
     <SidebarProvider>
-      <AppSidebar name={name} pages={pages} links={links} />
+      <AppSidebar name={name} pages={pages} links={links} onSignOut={onSignOut} />
       {/* Clears the phone's tab bar, so it never covers the end of a page. */}
       <div className="min-w-0 flex-1 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0">{children}</div>
       <TabBar pages={pages} />

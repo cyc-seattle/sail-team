@@ -1,4 +1,4 @@
-import { isDirectusError, readMe, readUserPermissions } from "@directus/sdk";
+import { isDirectusError, logout, readMe, readUserPermissions } from "@directus/sdk";
 import type { Permissions } from "./access.ts";
 import type { Client } from "./client.ts";
 import { decideSignIn, parseRedirectAt, signInUrl } from "./session.ts";
@@ -70,4 +70,18 @@ export async function signIn(context: SignInContext): Promise<SignIn> {
     case "blocked":
       return { kind: "blocked", signInUrl: action.signInUrl };
   }
+}
+
+/**
+ * Ends the Directus session, then sends the browser through Authentik's sign-out, since Directus's sign-out leaves
+ * Authentik's session, and any impersonation, in place. It goes on even if Directus didn't answer, so the person lands
+ * back in the app, still signed in, and can try again.
+ */
+export async function signOut(context: { client: Client; signOutUrl: string; navigate: (url: string) => void }) {
+  try {
+    await context.client.request(logout({ mode: "session" }));
+  } catch {
+    // Already signed out, or Directus is down.
+  }
+  context.navigate(context.signOutUrl);
 }

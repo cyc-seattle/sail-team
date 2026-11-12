@@ -50,6 +50,8 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
 - `src/directus/` talks to Directus. `client.ts` makes a client that sends the browser's Directus session cookie, and
   `app.ts` is the app's own, at `directus.<the app's hostname>`. `sign-in.ts` sends a visitor with no session to
   Directus's sign-in, and stops instead of looping if they come straight back without one (`session.ts`).
+  Sign out, in the person's menu, ends the Directus session, then Authentik's (`signOutUrl`), which also ends an
+  admin's impersonation.
   `access.ts` reads `/permissions/me` to decide what to show; Directus still checks every request.
 - `src/directus/financial-plans.ts` reads Financial Plans (`version_sets`): the organization's plan for a year, holding
   a copy of the Operations Plan and of each Program Plan (`version_set_members`). Every one shows the results platform
