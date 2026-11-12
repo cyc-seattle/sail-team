@@ -1,6 +1,6 @@
 import { ExternalLinkIcon, TriangleAlertIcon } from "lucide-react";
-import { Fragment } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import type { AccountAmount, CapitalItem } from "@/model/reports";
 import { Money } from "../money";
 import { NoteInfo } from "../note-info";
@@ -27,7 +27,7 @@ export function FundraisingCapitalReport({
         />
       </ReportSection>
       <ReportSection id="capital" title="Capital">
-        <CapitalTable {...capital} />
+        <CapitalTable items={capital.items} />
       </ReportSection>
     </>
   );
@@ -37,7 +37,7 @@ export function FundraisingCapitalReport({
  * The planned purchases, most needed first, with a running total and a line where what's left after operations and
  * fundraising runs out. Capital entered as a budget line has no rank, so it comes last, with a warning.
  */
-export function CapitalTable({ items, available_cents }: { items: CapitalItem[]; available_cents: number }) {
+export function CapitalTable({ items }: { items: CapitalItem[] }) {
   if (items.length === 0) {
     return <p className="text-sm text-muted-foreground">No capital purchases are planned.</p>;
   }
@@ -46,12 +46,7 @@ export function CapitalTable({ items, available_cents }: { items: CapitalItem[];
   // The money runs out before the first item it doesn't cover, ranked or not.
   const runsOut = items.find((i) => !i.funded)?.key;
   const rows = (list: CapitalItem[]) =>
-    list.map((item) => (
-      <Fragment key={item.key}>
-        {item.key === runsOut && <RunsOut available_cents={available_cents} />}
-        <ItemRow item={item} />
-      </Fragment>
-    ));
+    list.map((item) => <ItemRow key={item.key} item={item} runsOut={item.key === runsOut} />);
   return (
     <Table aria-label="Capital">
       <TableHeader>
@@ -87,12 +82,14 @@ export function CapitalTable({ items, available_cents }: { items: CapitalItem[];
   );
 }
 
-function ItemRow({ item }: { item: CapitalItem }) {
+/** One purchase. The first the money doesn't cover has a line above it, and it and every one after it are muted. */
+function ItemRow({ item, runsOut }: { item: CapitalItem; runsOut: boolean }) {
   return (
-    <TableRow className={item.funded ? undefined : "text-muted-foreground"}>
+    <TableRow className={cn(!item.funded && "text-muted-foreground", runsOut && "border-t-2 border-t-warning")}>
       <TableCell className="text-right align-top tabular-nums">{item.rank}</TableCell>
       <TableCell className="whitespace-normal">
         <span className="flex items-center gap-1">
+          {runsOut && <span className="sr-only">The money runs out here.</span>}
           {item.name}
           <NoteInfo note={item.note} />
           {item.link && (
@@ -122,25 +119,6 @@ function ItemRow({ item }: { item: CapitalItem }) {
       </TableCell>
       <TableCell className="text-right align-top">
         <Money cents={item.running_cents} whole />
-      </TableCell>
-    </TableRow>
-  );
-}
-
-/** The line in the list where the money left after operations and fundraising runs out. */
-function RunsOut({ available_cents }: { available_cents: number }) {
-  return (
-    <TableRow className="border-t-2 border-t-warning hover:bg-transparent">
-      <TableCell />
-      <TableCell colSpan={4} className="text-sm font-medium">
-        {available_cents > 0 ? (
-          <>
-            The money runs out here. Operations and fundraising leave <Money cents={available_cents} whole /> for
-            capital.
-          </>
-        ) : (
-          "Operations and fundraising leave nothing for capital."
-        )}
       </TableCell>
     </TableRow>
   );
