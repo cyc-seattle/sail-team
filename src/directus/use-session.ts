@@ -1,7 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { appDirectus, landing } from "./app.ts";
-import { returnUrl } from "./session.ts";
-import { signIn, type SignIn } from "./sign-in.ts";
+import { returnUrl, signOutUrl } from "./session.ts";
+import { signIn, signOut, type SignIn } from "./sign-in.ts";
 
 export const sessionQuery = {
   queryKey: ["session"],
@@ -20,4 +20,12 @@ export const sessionQuery = {
 
 export function useSession(): SignIn {
   return useSuspenseQuery(sessionQuery).data;
+}
+
+export function signOutOfApp() {
+  return signOut({
+    client: appDirectus().client,
+    signOutUrl: signOutUrl(window.location.hostname),
+    navigate: (url) => window.location.assign(url),
+  });
 }

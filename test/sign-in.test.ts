@@ -2,7 +2,7 @@ import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { makeClient } from "../src/directus/client.ts";
 import { redirectGuardMs } from "../src/directus/session.ts";
-import { signIn, type SignInContext } from "../src/directus/sign-in.ts";
+import { signIn, signOut, type SignInContext } from "../src/directus/sign-in.ts";
 import { planner, plannerPermissions } from "../src/mocks/fixtures.ts";
 import { handlers } from "../src/mocks/handlers.ts";
 
@@ -65,5 +65,33 @@ describe("signIn", () => {
     const { ctx, navigate } = context();
     await expect(signIn(ctx)).rejects.toBeDefined();
     expect(navigate).not.toHaveBeenCalled();
+  });
+});
+
+describe("signOut", () => {
+  const authentik = "https://login.example.org/flows/-/default/invalidation/";
+
+  it("ends the Directus session, then goes through Authentik's sign-out", async () => {
+    server.use(...handlers(directusUrl));
+    const { http, HttpResponse } = await import("msw");
+    const bodies: unknown[] = [];
+    server.use(
+      http.post(`${directusUrl}/auth/logout`, async ({ request }) => {
+        bodies.push(await request.json());
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const navigate = vi.fn();
+    await signOut({ client: makeClient(directusUrl), signOutUrl: authentik, navigate });
+    expect(bodies).toEqual([{ mode: "session" }]);
+    expect(navigate).toHaveBeenCalledWith(authentik);
+  });
+
+  it("still goes through Authentik's sign-out when Directus fails", async () => {
+    const { http, HttpResponse } = await import("msw");
+    server.use(http.post(`${directusUrl}/auth/logout`, () => HttpResponse.json({ errors: [] }, { status: 503 })));
+    const navigate = vi.fn();
+    await signOut({ client: makeClient(directusUrl), signOutUrl: authentik, navigate });
+    expect(navigate).toHaveBeenCalledWith(authentik);
   });
 });

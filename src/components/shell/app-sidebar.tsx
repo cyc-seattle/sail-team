@@ -26,7 +26,17 @@ const item = "min-h-tap data-[status=active]:bg-sidebar-accent data-[status=acti
  * Every page this person can open, Links to the other sites their role sees, and their menu. Always open on a laptop;
  * on a phone, the tab bar's More opens it as a sheet.
  */
-export function AppSidebar({ name, pages, links }: { name: string; pages: NavItem[]; links: ExternalLink[] }) {
+export function AppSidebar({
+  name,
+  pages,
+  links,
+  onSignOut,
+}: {
+  name: string;
+  pages: NavItem[];
+  links: ExternalLink[];
+  onSignOut: () => void;
+}) {
   const { setOpenMobile } = useSidebar();
   const [linksOpen, setLinksOpen] = useState(false);
   const close = () => setOpenMobile(false);
@@ -94,7 +104,7 @@ export function AppSidebar({ name, pages, links }: { name: string; pages: NavIte
         </nav>
       </SidebarContent>
       <SidebarFooter>
-        <AccountMenu name={name} />
+        <AccountMenu name={name} onSignOut={onSignOut} />
       </SidebarFooter>
     </Sidebar>
   );
