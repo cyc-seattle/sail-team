@@ -55,11 +55,11 @@ function ProgramName({ program, style }: { program: string; style: CSSProperties
   );
 }
 
-/** Who a block's staff and boats are for: "Opti Camp and Sailqube Camp share", or "Adventure Camp has". */
+/** Who a block's staff and boats are for: "Opti Camp and Sailqube Camp share:", or "Adventure Camp has:". */
 const sharers = (programs: string[]) =>
   programs.length === 1
-    ? `${programs[0]} has`
-    : `${programs.length > 2 ? `${programs.slice(0, -1).join(", ")}, and ${programs.at(-1)}` : programs.join(" and ")} share`;
+    ? `${programs[0]} has:`
+    : `${programs.length > 2 ? `${programs.slice(0, -1).join(", ")}, and ${programs.at(-1)}` : programs.join(" and ")} share:`;
 
 function Pills({ parts }: { parts: string[] }) {
   return parts.length > 0 ? (
