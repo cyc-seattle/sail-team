@@ -18,6 +18,7 @@ import {
   summerOfferings,
   summerPrograms,
   summerRules,
+  doublehandedTrips,
   summerFixedCosts,
   summerStaffTime,
   summerStatement,
@@ -63,6 +64,7 @@ export const Summer: Story = {
         statement={summerStatement}
         programs={summerPrograms}
         offerings={summerOfferings}
+        trips={[]}
         fixedCosts={summerFixedCosts}
         staffTime={summerStaffTime}
       />
@@ -92,6 +94,7 @@ export const Doublehanded: Story = {
         statement={doublehandedStatement}
         programs={doublehandedPrograms}
         offerings={doublehandedOfferings}
+        trips={doublehandedTrips}
         fixedCosts={[]}
         staffTime={[]}
       />

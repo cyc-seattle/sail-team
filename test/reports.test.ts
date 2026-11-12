@@ -68,6 +68,8 @@ const offering = (program: string, session: string, starts_on: string): ReportOf
   max: 0,
   days: 0,
   hours: 0,
+  cogs_rate: null,
+  note: null,
 });
 
 describe("numberedOfferings", () => {
@@ -173,6 +175,8 @@ describe("reportOffering", () => {
     capacity: null,
     program: "Camp",
     estimated: 8,
+    cogs_rate: null,
+    note: null,
   };
   const day = (date: string, kind: "practice" | "travel" = "practice") => ({
     date,

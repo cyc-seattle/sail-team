@@ -8,6 +8,7 @@ import {
   summerOfferings,
   summerPrograms,
   summerRules,
+  doublehandedTrips,
   summerFixedCosts,
   summerStaffTime,
   summerStatement,
@@ -24,6 +25,7 @@ const meta = {
     statement: doublehandedStatement,
     programs: doublehandedPrograms,
     offerings: doublehandedOfferings,
+    trips: doublehandedTrips,
     fixedCosts: [],
     staffTime: [],
   },
@@ -57,7 +59,16 @@ export const Summer: Story = {
     statement: summerStatement,
     programs: summerPrograms,
     offerings: summerOfferings,
+    trips: [],
     fixedCosts: summerFixedCosts,
     staffTime: summerStaffTime,
+  },
+};
+
+/** A trip names its offering, and what each coach's travel takes. */
+export const DoublehandedTrips: Story = {
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByText("Trips", { selector: "h2" }));
+    await expect(canvas.getByRole("row", { name: /Nationals/ })).toHaveTextContent("NationalsK-Pod 25$450—");
   },
 };
