@@ -146,7 +146,6 @@ export function ProgramAreaReport({
     ...terms.map((t) => ({ value: t.key, label: t.name })),
     ...(offerings.some((o) => !o.term_key) ? [{ value: NO_TERM, label: "No term" }] : []),
   ];
-  const picked = termItems.find((t) => t.value === term)?.label;
   const groups = numberedOfferings(shown);
   const labels = new Map(numberedOfferings(offerings).flatMap((g) => g.offerings.map((o) => [o.key, o.label])));
   return (
@@ -188,12 +187,6 @@ export function ProgramAreaReport({
             </SelectContent>
           </Select>
         </div>
-        {term !== ALL && (
-          <p className="text-sm text-muted-foreground">
-            {term === NO_TERM ? "Showing offerings in no term." : `Showing ${picked} offerings.`} Revenue and expenses
-            above are for the whole year.
-          </p>
-        )}
       </div>
 
       <ReportSection id="enrollment" title="Enrollment">

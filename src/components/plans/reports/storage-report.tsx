@@ -13,10 +13,6 @@ export function StorageReport({ costs }: { costs: StorageCost[] }) {
   const total = costs.reduce((sum, c) => sum + c.cents, 0);
   return (
     <ReportSection id="storage" title="Storage">
-      <p className="max-w-3xl text-sm text-muted-foreground">
-        Only a Plan Admin can change storage costs, in the Operations Plan, on the Storage account under 7350
-        Occupancy/Rent. Plan Writers can see them.
-      </p>
       {costs.length === 0 ? (
         <p className="text-sm text-muted-foreground">This plan has no storage costs on the Storage account yet.</p>
       ) : (

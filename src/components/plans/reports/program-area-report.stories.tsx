@@ -57,7 +57,6 @@ export const FallOnly: Story = {
     const table = canvas.getByRole("table", { name: "Offerings" });
     const names = [...table.querySelectorAll("tbody button")].map((b) => b.textContent);
     await expect(names).toEqual(["J-Pod Fall", "K-Pod Fall", "L-Pod Fall"]);
-    await expect(canvas.getByText(/Revenue and expenses above are for the whole year/)).toBeVisible();
     await userEvent.click(canvas.getByRole("combobox", { name: "Term" }));
     await userEvent.click(await screen.findByRole("option", { name: "Winter 2027" }));
     await expect(canvas.getByText("No offerings in this term.")).toBeVisible();

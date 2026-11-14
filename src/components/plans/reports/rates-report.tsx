@@ -10,9 +10,6 @@ import { RulesList } from "./rules-list";
 export function RatesReport({ assumptions, rules }: { assumptions: OperationsAssumptions; rules: string | null }) {
   return (
     <>
-      <p className="max-w-3xl text-sm text-muted-foreground">
-        Only a Plan Admin can change these, in the Operations Plan. Plan Writers can see them.
-      </p>
       <ReportSection id="rules" title="Rules">
         <RulesList rules={rules} label="Rules" />
       </ReportSection>
