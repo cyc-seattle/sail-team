@@ -442,7 +442,6 @@ export const reportAssumptions: OperationsAssumptions = {
     {
       key: "rib",
       name: "RIBs",
-      quantity: 6,
       cost_per_hour_cents: 0,
       cost_per_day_cents: 1_000,
       fuel_per_hour_cents: 1_500,
@@ -452,7 +451,6 @@ export const reportAssumptions: OperationsAssumptions = {
     {
       key: "rental",
       name: "Rented RIB",
-      quantity: 1,
       cost_per_hour_cents: 4_500,
       cost_per_day_cents: null,
       fuel_per_hour_cents: 1_500,
@@ -461,15 +459,14 @@ export const reportAssumptions: OperationsAssumptions = {
     },
   ],
   boatRates: [
-    { key: "opti", boat_class: "Opti", maintenance_per_boat_hour_cents: 150, quantity: 30, sailors_per_boat: 1 },
+    { key: "opti", boat_class: "Opti", maintenance_per_boat_hour_cents: 150, max_capacity: 1 },
     {
       key: "sailqube",
       boat_class: "Sailqube",
       maintenance_per_boat_hour_cents: 200,
-      quantity: 12,
-      sailors_per_boat: 2,
+      max_capacity: 2,
     },
-    { key: "420", boat_class: "420", maintenance_per_boat_hour_cents: 300, quantity: 14, sailors_per_boat: 2 },
+    { key: "420", boat_class: "420", maintenance_per_boat_hour_cents: 300, max_capacity: 2 },
   ],
   bonuses: [
     programDirectorBonus,

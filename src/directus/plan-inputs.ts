@@ -89,16 +89,13 @@ async function operationsAssumptions(
       ),
       rowsOf<PlanRevenueCharge & { account_id: Account }>("plan_revenue_charges", [version], ["*", ...accountFields]),
       rowsOf<PlanResource>("plan_resources", [version]),
+      // The whole boat class, since platform renames sailors_per_boat to max_capacity (cyc-seattle/platform#126),
+      // and Directus refuses a field it doesn't have.
       rowsOf<{
         key: string;
-        boat_class_id: { name: string; sailors_per_boat: number | null };
+        boat_class_id: { name: string; max_capacity?: number | null; sailors_per_boat?: number | null };
         maintenance_per_boat_hour_cents: number;
-        quantity: number | null;
-      }>(
-        "plan_boat_rates",
-        [version],
-        ["key", "boat_class_id.name", "boat_class_id.sailors_per_boat", "maintenance_per_boat_hour_cents", "quantity"],
-      ),
+      }>("plan_boat_rates", [version], ["key", "boat_class_id.*", "maintenance_per_boat_hour_cents"]),
       rowsOf<BonusRow>("plan_bonus_owners", versions, [
         "id",
         "key",
@@ -163,12 +160,20 @@ async function operationsAssumptions(
       ...c,
       account: { number: account_id.number, name: account_id.name },
     })),
-    resources: byName(resources),
+    resources: byName(resources).map((r) => ({
+      key: r.key,
+      name: r.name,
+      cost_per_hour_cents: r.cost_per_hour_cents,
+      cost_per_day_cents: r.cost_per_day_cents,
+      fuel_per_hour_cents: r.fuel_per_hour_cents,
+      maintenance_per_hour_cents: r.maintenance_per_hour_cents,
+      excluded_from_mtdc: r.excluded_from_mtdc,
+    })),
     boatRates: boatRates
       .map(({ boat_class_id, ...b }) => ({
         ...b,
         boat_class: boat_class_id.name,
-        sailors_per_boat: boat_class_id.sailors_per_boat,
+        max_capacity: boat_class_id.max_capacity ?? boat_class_id.sailors_per_boat ?? null,
       }))
       .sort((a, b) => a.boat_class.localeCompare(b.boat_class)),
     bonuses: all,
