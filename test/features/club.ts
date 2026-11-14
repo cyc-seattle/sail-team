@@ -13,7 +13,6 @@ type Row = Record<string, unknown>;
 /** The tables a plan copy holds rows in, each before the rows it points at, so cleanup can go in this order. */
 const COPY_ROWS = [
   "plan_block_staff",
-  "plan_block_resources",
   "plan_block_boats",
   "plan_activities",
   "plan_activity_blocks",
@@ -24,7 +23,6 @@ const COPY_ROWS = [
   "plan_bonus_owners",
   "plan_salaried_bookings",
   "plan_salaried_positions",
-  "plan_resources",
   "plan_boat_rates",
   "plan_rates",
   "plan_staff_levels",
