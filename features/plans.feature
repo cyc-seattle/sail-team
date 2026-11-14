@@ -70,6 +70,15 @@ Feature: Seeing the Financial Plans
       Then it shows $3,000 of coaches' wages
       And it shows the $1,000 of the office
 
+  Rule: A program area's report shows its P&L for each term
+
+    Scenario: A term that loses money
+      Given I'm a planner who can read plans
+      And a frozen Financial Plan whose Youth Racing makes $20,000 in "Summer 2027" and loses $5,000 in "Fall 2027"
+      And I've signed in
+      When I open Youth Racing's report in that Financial Plan
+      Then "Summer 2027" shows a net of $20,000, and "Fall 2027" a net of −$5,000
+
   Rule: A frozen Financial Plan shows the P&L it was frozen with, and never recalculates it
 
     Scenario: A Financial Plan started from it doesn't change its numbers

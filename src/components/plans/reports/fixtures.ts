@@ -12,6 +12,7 @@ import type {
   Product,
   ProgramSettings,
   ReportOffering,
+  TermRow,
   Trip,
   SharedCost,
 } from "@/model/reports";
@@ -248,6 +249,19 @@ export const doublehandedPrograms: ProgramSettings[] = [
   { name: "J-Pod", staff_level: "Level 3 Coach", sailors_per_coach: 8, rules: "Travel regattas take two coaches." },
   { name: "K-Pod", staff_level: "Level 3 Coach", sailors_per_coach: 10, rules: null },
   { name: "L-Pod", staff_level: "Level 4 Coach", sailors_per_coach: 12, rules: "Most sailors bring their own 420s." },
+];
+
+/** Doublehanded by term, adding up to its year. Summer loses money. */
+export const doublehandedTerms: TermRow[] = [
+  { term: "Spring 2027", revenue_cents: 3_800_000, expense_cents: 3_100_000 },
+  { term: "Summer 2027", revenue_cents: 3_000_000, expense_cents: 3_300_000 },
+  { term: "Fall 2027", revenue_cents: 2_500_000, expense_cents: 2_100_000 },
+];
+
+/** Summer's camps are all in one term, and its adult classes in no term. */
+export const summerTerms: TermRow[] = [
+  { term: "Summer 2027", revenue_cents: 19_200_000, expense_cents: 15_800_000 },
+  { term: null, revenue_cents: 2_300_000, expense_cents: 2_000_000 },
 ];
 
 export const doublehandedStatement = {

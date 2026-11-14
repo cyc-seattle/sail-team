@@ -15,9 +15,11 @@ import {
   rulesOf,
   sessionGrid,
   sortRows,
+  termsOf,
   type OverviewRow,
   type ReportOffering,
 } from "../src/model/reports.ts";
+import type { PnlRow, ResultTerm } from "../src/model/financial-plans.ts";
 
 const row = (name: string, revenue: number, offerings = 1): OverviewRow => ({
   report: name,
@@ -378,5 +380,39 @@ describe("capitalList", () => {
       [null, "Coach boat", 5_000, true],
       [null, "Sails", 7_000, false],
     ]);
+  });
+});
+
+describe("termsOf", () => {
+  const term = (name: string | null, starts: string | null = null) => ({
+    term_key: name === null ? null : `key-${name}`,
+    term_name: name,
+    term_starts_on: starts,
+  });
+  const fall = term("Fall 2027", "2027-09-01");
+  const spring = term("Spring 2027", "2027-03-01");
+  const pnl = (t: ResultTerm, revenue: number, area = "area"): PnlRow => ({
+    level: "program_area_term",
+    subject_key: area,
+    ...t,
+    name: "Doublehanded",
+    revenue_cents: revenue,
+    expense_cents: 1000,
+    enrollment: 0,
+    days: 0,
+    sailor_days: 0,
+    member: "m",
+  });
+  it("lists the area's terms in the order they start, then no term", () => {
+    const rows = termsOf([pnl(term(null), 5), pnl(fall, 4), pnl(spring, 3), pnl(spring, 9, "other")], "area");
+    expect(rows.map((r) => [r.term, r.revenue_cents])).toEqual([
+      ["Spring 2027", 3],
+      ["Fall 2027", 4],
+      [null, 5],
+    ]);
+  });
+
+  it("is empty when none of the area's offerings is in a term", () => {
+    expect(termsOf([pnl(term(null), 5)], "area")).toEqual([]);
   });
 });

@@ -4,10 +4,12 @@ import {
   doublehandedOfferings,
   doublehandedPrograms,
   doublehandedRules,
+  doublehandedTerms,
   doublehandedStatement,
   summerOfferings,
   summerPrograms,
   summerRules,
+  summerTerms,
   doublehandedTrips,
   summerFixedCosts,
   summerStaffTime,
@@ -27,6 +29,7 @@ const meta = {
     rules: doublehandedRules,
     warnings: warnings.filter((w) => w.area === "doublehanded"),
     statement: doublehandedStatement,
+    terms: doublehandedTerms,
     programs: doublehandedPrograms,
     offerings: doublehandedOfferings,
     trips: doublehandedTrips,
@@ -61,6 +64,7 @@ export const Summer: Story = {
     rules: summerRules,
     warnings: warnings.filter((w) => w.area === "summer"),
     statement: summerStatement,
+    terms: summerTerms,
     programs: summerPrograms,
     offerings: summerOfferings,
     areaKey: "summer",
@@ -86,5 +90,25 @@ export const DoublehandedTrips: Story = {
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByText("Trips", { selector: "h2" }));
     await expect(canvas.getByRole("row", { name: /Nationals/ })).toHaveTextContent("NationalsK-Pod Summer5$450—");
+  },
+};
+
+/** Each term's revenue, expenses and net, in the order the terms start. */
+export const ByTerm: Story = {
+  play: async ({ canvas }) => {
+    const table = canvas.getByRole("table", { name: "By term" });
+    const rows = [...table.querySelectorAll("tbody tr")].map((r) =>
+      [...r.querySelectorAll("td")].map((c) => c.textContent),
+    );
+    await expect(rows.map((r) => r[0])).toEqual(["Spring 2027", "Summer 2027", "Fall 2027"]);
+    await expect(rows[1]).toEqual(["Summer 2027", "$30,000", "$33,000", "−$3,000"]);
+  },
+};
+
+/** An area with no terms shows no term table, since its year says the same. */
+export const NoTerms: Story = {
+  args: { terms: [] },
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByRole("table", { name: "By term" })).toBeNull();
   },
 };
