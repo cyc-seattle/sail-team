@@ -47,6 +47,19 @@ export const Doublehanded: Story = {
   },
 };
 
+/** The season filter narrows the offerings to one season, and the year's money stays as it is. */
+export const FallOnly: Story = {
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Fall" }));
+    const table = canvas.getByRole("table", { name: "Offerings" });
+    const names = [...table.querySelectorAll("tbody button")].map((b) => b.textContent);
+    await expect(names).toEqual(["J-Pod Fall", "K-Pod Fall", "L-Pod Fall"]);
+    await expect(canvas.getByText(/Revenue and expenses above are for the whole year/)).toBeVisible();
+    await userEvent.click(canvas.getByRole("button", { name: "Winter" }));
+    await expect(canvas.getByText("No offerings this season.")).toBeVisible();
+  },
+};
+
 /** The area's assumptions open from the top of the page. */
 export const AssumptionsOpen: Story = {
   play: async ({ canvas }) => {

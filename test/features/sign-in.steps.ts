@@ -16,9 +16,14 @@ Given("I'm a planner who can read plans", async ({ visitor }) => {
   await giveThroughGroup(visitor, "Plan Reader");
 });
 
-Given("I'm a planner who can change plans", async ({ visitor }) => {
+Given("I'm a program director", async ({ visitor }) => {
   await makeDirectusUser(visitor);
   await giveThroughGroup(visitor, "Plan Writer");
+});
+
+Given("I'm on the finance committee", async ({ visitor }) => {
+  await makeDirectusUser(visitor);
+  await giveThroughGroup(visitor, "Plan Writer", "Plan Approver");
 });
 
 Given(/^I'm a (?:parent|coach) who can't read plans$/, async ({ visitor }) => {

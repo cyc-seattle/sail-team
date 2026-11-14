@@ -40,7 +40,15 @@ const meta = {
     withRouter("/plans/financial/budget", ["/plans/financial/$setId", "/plans/financial/$setId/$planId", "/plans"]),
   ],
   parameters: { layout: "fullscreen" },
-  args: { setId: "budget", name: "Budget", status: "active", reports, current: "overview", children: null },
+  args: {
+    setId: "budget",
+    name: "Budget",
+    status: "saved",
+    inForce: { when: "now", from: "2026-07-01", to: null },
+    reports,
+    current: "overview",
+    children: null,
+  },
 } satisfies Meta<typeof ReportPage>;
 export default meta;
 type Story = StoryObj<typeof meta>;

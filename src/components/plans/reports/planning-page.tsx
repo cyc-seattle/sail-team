@@ -20,78 +20,93 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { refusalOf } from "@/directus/financial-plans";
 import { formatDate } from "@/model/dates";
 import type { ListedPlan } from "@/model/financial-plans";
+import { ActiveDateDialog } from "../active-date-dialog";
 import { Money } from "../money";
 import { PageHeader } from "../page-header";
-import { VersionBadge, type VersionState } from "../version-badge";
+import { PlanStatus } from "../version-badge";
 
 export interface PlanningActions {
-  /** Whether the person can freeze, mark active, archive, and delete Financial Plans. Directus still checks each request. */
-  canUpdate: boolean;
+  /**
+   * Whether the person is on the finance committee, who freeze, make active, and archive Financial Plans, and whether
+   * they can delete a draft. Directus still checks each request.
+   */
+  canApprove: boolean;
   canDelete: boolean;
-  onMove: (plan: ListedPlan, status: "saved" | "active") => Promise<void>;
+  onFreeze: (plan: ListedPlan) => Promise<void>;
+  /** Makes it active from `date`, `YYYY-MM-DD`. */
+  onActivate: (plan: ListedPlan, date: string) => Promise<void>;
   onArchive: (plan: ListedPlan, archived: boolean) => Promise<void>;
   onDelete: (plan: ListedPlan) => Promise<void>;
 }
 
 const ALL = "all";
 const ARCHIVED = "archived";
-const statusOrder: Record<VersionState, number> = { active: 0, draft: 1, saved: 2 };
+const IN_FORCE = "in-force";
 // Archived plans show only when asked for.
 const statusItems = [
   { value: ALL, label: "Every status" },
-  { value: "active", label: "Active" },
+  { value: IN_FORCE, label: "In force" },
   { value: "draft", label: "Draft" },
   { value: "saved", label: "Frozen" },
   { value: ARCHIVED, label: "Archived" },
 ];
+const isInForce = (plan: ListedPlan) => plan.in_force?.when === "now";
 const statusMatches = (plan: ListedPlan, status: string) =>
-  status === ARCHIVED ? plan.archived : !plan.archived && (status === ALL || plan.status === status);
+  status === ARCHIVED
+    ? plan.archived
+    : !plan.archived && (status === ALL || (status === IN_FORCE ? isInForce(plan) : plan.status === status));
 
-/** Active first, then drafts by name, then frozen ones, newest first. */
+/** The plan in force first, then drafts by name, then frozen ones, newest first. */
 const byStatus = (a: ListedPlan, b: ListedPlan) =>
-  statusOrder[a.status] - statusOrder[b.status] ||
+  Number(isInForce(b)) - Number(isInForce(a)) ||
+  Number(a.status !== "draft") - Number(b.status !== "draft") ||
   (a.status === "draft" ? a.name.localeCompare(b.name) : (b.saved_at ?? "").localeCompare(a.saved_at ?? ""));
 
-type Confirmed = "save" | "activate" | "delete";
-type Action = Confirmed | "archive" | "unarchive";
+type Confirmed = "save" | "delete";
+type Action = Confirmed | "activate" | "archive" | "unarchive";
 
-const labels: Record<Action, string> = {
+const labels = (plan: ListedPlan): Record<Action, string> => ({
   save: "Freeze",
-  activate: "Mark active",
+  activate: plan.in_force ? "Change active date" : "Make active",
   archive: "Archive",
   unarchive: "Unarchive",
   delete: "Delete",
-};
+});
 
 /** What each action asks before it does what can't be undone. */
 const confirmations = (plan: ListedPlan): Record<Confirmed, { label: string; title: string; description: string }> => ({
   save: {
-    label: labels.save,
+    label: "Freeze",
     title: `Freeze ${plan.name}?`,
-    description: "Once it's frozen, its plans and numbers never change. Its name and note still can.",
-  },
-  activate: {
-    label: labels.activate,
-    title: `Mark ${plan.name} active?`,
-    description: `It becomes the active plan for ${plan.year}, in place of the one active now.`,
+    description:
+      "Once it's frozen, its plans and numbers never change. Its name, note, and the date it's active from still can.",
   },
   delete: {
-    label: labels.delete,
+    label: "Delete",
     title: `Delete ${plan.name}?`,
     description: "Its plans and numbers go with it. This can't be undone.",
   },
 });
 
-/** What can be done to a plan: a draft is frozen, archived or deleted, a frozen one marked active or archived. */
-function actionsFor(plan: ListedPlan, { canUpdate, canDelete }: PlanningActions): Action[] {
+/**
+ * What can be done to a plan. The finance committee freezes a draft, makes a draft or frozen plan active from a date,
+ * and archives one that isn't in force and won't be. A draft that's never been active can be deleted.
+ */
+function actionsFor(plan: ListedPlan, { canApprove, canDelete }: PlanningActions): Action[] {
   if (plan.archived) {
-    return canUpdate ? ["unarchive"] : [];
+    return canApprove ? ["unarchive"] : [];
   }
-  const updates: Action[] =
-    plan.status === "draft" ? ["save", "archive"] : plan.status === "saved" ? ["activate", "archive"] : [];
-  return [...(canUpdate ? updates : []), ...(canDelete && plan.status === "draft" ? (["delete"] as const) : [])];
+  const archivable = !plan.in_force || plan.in_force.when === "past";
+  const approvals: Action[] = [
+    ...(plan.status === "draft" ? (["save"] as const) : []),
+    "activate",
+    ...(archivable ? (["archive"] as const) : []),
+  ];
+  const deletable = canDelete && plan.status === "draft" && !plan.in_force;
+  return [...(canApprove ? approvals : []), ...(deletable ? (["delete"] as const) : [])];
 }
 
 /**
@@ -101,8 +116,9 @@ function PlanActions({ plan, actions }: { plan: ListedPlan; actions: PlanningAct
   // The action stays set while its dialog closes, so the dialog keeps its words as it fades.
   const [pending, setPending] = useState<Confirmed>("save");
   const [open, setOpen] = useState(false);
+  const [activating, setActivating] = useState(false);
   const [state, setState] = useState<"idle" | "working" | "failed">("idle");
-  const [archiveFailed, setArchiveFailed] = useState(false);
+  const [archiveFailed, setArchiveFailed] = useState<string | null>(null);
   const items = actionsFor(plan, actions);
   if (items.length === 0) {
     return null;
@@ -114,7 +130,7 @@ function PlanActions({ plan, actions }: { plan: ListedPlan; actions: PlanningAct
       if (pending === "delete") {
         await actions.onDelete(plan);
       } else {
-        await actions.onMove(plan, pending === "save" ? "saved" : "active");
+        await actions.onFreeze(plan);
       }
       setOpen(false);
       setState("idle");
@@ -127,7 +143,7 @@ function PlanActions({ plan, actions }: { plan: ListedPlan; actions: PlanningAct
     <>
       {archiveFailed && (
         <span role="alert" className="mr-2 text-sm text-destructive">
-          That didn&apos;t work. Try again.
+          {archiveFailed}
         </span>
       )}
       <DropdownMenu>
@@ -142,19 +158,31 @@ function PlanActions({ plan, actions }: { plan: ListedPlan; actions: PlanningAct
               variant={item === "delete" ? "destructive" : "default"}
               onClick={() => {
                 if (item === "archive" || item === "unarchive") {
-                  setArchiveFailed(false);
-                  actions.onArchive(plan, item === "archive").catch(() => setArchiveFailed(true));
+                  setArchiveFailed(null);
+                  actions.onArchive(plan, item === "archive").catch((error) => setArchiveFailed(refusalOf(error)));
+                  return;
+                }
+                if (item === "activate") {
+                  setActivating(true);
                   return;
                 }
                 setPending(item);
                 setOpen(true);
               }}
             >
-              {labels[item]}
+              {labels(plan)[item]}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
+      <ActiveDateDialog
+        name={plan.name}
+        year={plan.year}
+        current={plan.in_force?.from ?? null}
+        open={activating}
+        onOpenChange={setActivating}
+        onSubmit={(date) => actions.onActivate(plan, date)}
+      />
       <Dialog
         open={open}
         onOpenChange={(next) => {
@@ -265,8 +293,8 @@ function Amount({ cents, colored = false }: { cents: number | null; colored?: bo
 
 /**
  * Planning's first page: every Financial Plan in one table, narrowed by year and status, opening on the newest year.
- * One line a plan: its details on hover, and its actions in a menu, where a draft, such as one the planning agent
- * wrote, is frozen, archived or deleted. Archived plans show only when the status filter asks for them.
+ * One line a plan: when it's in force, its details on hover, and its actions in a menu, which offers each person what
+ * their policies allow. Archived plans show only when the status filter asks for them.
  */
 export function PlanningPage({ plans, actions }: { plans: ListedPlan[]; actions: PlanningActions }) {
   const years = [...new Set(plans.map((p) => p.year))].sort((a, b) => b - a);
@@ -309,7 +337,7 @@ export function PlanningPage({ plans, actions }: { plans: ListedPlan[]; actions:
               <TableRow key={p.id}>
                 <TableCell className="tabular-nums">{p.year}</TableCell>
                 <TableCell>
-                  <VersionBadge state={p.status} />
+                  <PlanStatus state={p.status} inForce={p.in_force} />
                 </TableCell>
                 <TableCell>
                   <span className="flex items-center gap-1">

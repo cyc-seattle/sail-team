@@ -1,9 +1,12 @@
 import { createItem, customEndpoint, deleteItem, updateItem } from "@directus/sdk";
 import { queryOptions } from "@tanstack/react-query";
 import {
+  inForce,
   platformRelease,
+  today,
   type CapitalResult,
   type FinancialPlanSummary,
+  type InForce,
   type ListedPlan,
   type Member,
   type PlanLine,
@@ -22,6 +25,7 @@ const setFields = [
   "name",
   "message",
   "status",
+  "effective_from",
   "saved_at",
   "saved_by",
   "platform_version",
@@ -56,6 +60,7 @@ export const financialPlansQuery = queryOptions({
       readAll<{ version_set_id: string }>("plan_result_warnings", undefined, ["version_set_id"]),
     ]);
     const savers = await userNames(sets.map((set) => set.saved_by));
+    const forces = inForce(sets, today());
     return sets.map(summary).map((set): ListedPlan => {
       const total = totals.find((t) => t.version_set_id === set.id);
       return {
@@ -63,6 +68,7 @@ export const financialPlansQuery = queryOptions({
         name: set.name,
         year: set.fiscal_year,
         status: set.status,
+        in_force: forces.get(set.id) ?? null,
         saved_at: set.saved_at,
         saved_by: (set.saved_by && savers.get(set.saved_by)) ?? null,
         parent: set.parent,
@@ -223,6 +229,8 @@ async function userNames(users: (string | null)[]): Promise<Map<string, string>>
 
 export interface FinancialPlan {
   set: FinancialPlanSummary;
+  /** When it's in force, among its year's Financial Plans, or null when it's never been made active. */
+  inForce: InForce | null;
   members: Member[];
   /** Null until platform has worked them out. */
   results: Results | null;
@@ -241,19 +249,32 @@ export const financialPlanQuery = (setId: string) =>
         return null;
       }
       const set = summary(row);
-      const members = await readMembers(setId);
-      const results = await readResults(setId);
-      return { set, members, results };
+      const [members, results, year] = await Promise.all([
+        readMembers(setId),
+        readResults(setId),
+        readAll<Pick<FinancialPlanSummary, "id" | "organization_id" | "fiscal_year" | "effective_from">>(
+          "version_sets",
+          { _and: [{ organization_id: { _eq: set.organization_id } }, { fiscal_year: { _eq: set.fiscal_year } }] },
+          ["id", "organization_id", "fiscal_year", "effective_from"],
+        ),
+      ]);
+      return { set, inForce: inForce(year, today()).get(set.id) ?? null, members, results };
     },
   });
 
 /**
- * Renames a Financial Plan, changes its note, archives it or brings it back, or moves it on: a draft to saved, a saved
- * one to active. Platform refuses any move back, and archiving the active one.
+ * Renames a Financial Plan, changes its note, archives it or brings it back, freezes a draft, or sets the day it's
+ * active from. Platform refuses unfreezing, archiving the plan in force, and two plans for a year active from one day.
  */
 export async function updateFinancialPlan(
   id: string,
-  changes: { name?: string; message?: string | null; status?: "saved" | "active"; archived_at?: string | null },
+  changes: {
+    name?: string;
+    message?: string | null;
+    status?: "saved";
+    effective_from?: string | null;
+    archived_at?: string | null;
+  },
 ): Promise<void> {
   await appDirectus().client.request(updateItem("version_sets", id, changes));
 }
@@ -290,4 +311,15 @@ export async function startFinancialPlan(
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   return id;
+}
+
+const tryAgain = "That didn't work. Try again.";
+
+/**
+ * What to tell someone when Directus refuses a change to a Financial Plan: platform's own reason when it gives one, such
+ * as "Another Financial Plan for the year is already active from that date.", or to try again.
+ */
+export function refusalOf(error: unknown): string {
+  const [first] = (error as { errors?: { message?: string; extensions?: { code?: string } }[] } | null)?.errors ?? [];
+  return first?.extensions?.code === "INVALID_PAYLOAD" && first.message ? first.message : tryAgain;
 }

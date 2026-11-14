@@ -11,6 +11,7 @@ const budget: FinancialPlanSummary = {
   name: "Budget",
   message: "Reviewed with the board",
   status: "saved",
+  effective_from: "2026-07-01",
   saved_at: "2027-03-10T18:00:00Z",
   saved_by: null,
   platform_version: null,
@@ -23,6 +24,7 @@ const twoCoaches: FinancialPlanSummary = {
   name: "Two coaches",
   message: null,
   status: "draft",
+  effective_from: null,
   saved_at: null,
   parent: { id: "budget", name: "Budget" },
 };
@@ -31,11 +33,13 @@ const meta = {
   component: FinancialPlanActions,
   args: {
     set: twoCoaches,
-    canUpdate: true,
+    canEdit: true,
     canCreate: true,
+    canApprove: true,
     onEdit: fn(async () => {}),
     onStart: fn(async () => {}),
-    onMove: fn(async () => {}),
+    onFreeze: fn(async () => {}),
+    onActivate: fn(async () => {}),
   },
   render: (args) => (
     <div className="flex flex-wrap gap-2">
@@ -53,14 +57,28 @@ export const Draft: Story = {
     const dialog = within(await within(canvasElement.ownerDocument.body).findByRole("dialog"));
     await waitFor(() => expect(dialog.getByText(/never change/)).toBeVisible());
     await userEvent.click(dialog.getByRole("button", { name: "Freeze" }));
-    await waitFor(() => expect(args.onMove).toHaveBeenCalledWith("saved"));
+    await waitFor(() => expect(args.onFreeze).toHaveBeenCalled());
   },
 };
 
+/** A draft can be made active from a date, today unless it's changed, and stays a draft. */
+export const MakeADraftActive: Story = {
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Make active" }));
+    const dialog = within(await within(canvasElement.ownerDocument.body).findByRole("dialog"));
+    const date = dialog.getByLabelText("Active from");
+    await userEvent.clear(date);
+    await userEvent.type(date, "2027-09-01");
+    await userEvent.click(dialog.getByRole("button", { name: "Make active" }));
+    await waitFor(() => expect(args.onActivate).toHaveBeenCalledWith("2027-09-01"));
+  },
+};
+
+/** A frozen plan that's active can't be frozen again, but its date can change. */
 export const Frozen: Story = {
   args: { set: budget },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: "Mark active" })).toBeVisible();
+    await expect(canvas.getByRole("button", { name: "Change active date" })).toBeVisible();
     await expect(canvas.queryByRole("button", { name: "Freeze" })).toBeNull();
   },
 };
@@ -93,16 +111,19 @@ export const RenameFrozen: Story = {
   },
 };
 
-export const Active: Story = {
-  args: { set: { ...budget, status: "active" } },
+/** A program director can rename a plan and duplicate it, but freezing it and making it active are the committee's. */
+export const ProgramDirector: Story = {
+  args: { canApprove: false },
   play: async ({ canvas }) => {
-    await expect(canvas.queryByRole("button", { name: "Mark active" })).toBeNull();
+    await expect(canvas.getByRole("button", { name: "Duplicate" })).toBeVisible();
+    await expect(canvas.queryByRole("button", { name: "Freeze" })).toBeNull();
+    await expect(canvas.queryByRole("button", { name: "Make active" })).toBeNull();
   },
 };
 
 /** Someone who can only read plans gets no buttons. */
 export const ReadOnly: Story = {
-  args: { set: budget, canUpdate: false, canCreate: false },
+  args: { set: budget, canEdit: false, canCreate: false, canApprove: false },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).queryAllByRole("button")).toHaveLength(0);
   },

@@ -112,6 +112,8 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
       const row: Row = {
         saved_at: null,
         saved_by: null,
+        effective_from: null,
+        archived_at: null,
         ...body,
         status: "draft",
         parent_id: parent ? { id: parent["id"], name: parent["name"] } : null,

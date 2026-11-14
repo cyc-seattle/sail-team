@@ -53,10 +53,10 @@ export async function makeDirectusUser(visitor: Visitor) {
 }
 
 /**
- * Gives the visitor a policy the way the club does: they're a person in a made-up group that gives it. The
- * `group-policies` hook links the policy to their user, which this waits for.
+ * Gives the visitor policies the way the club does: they're a person in a made-up group that gives them. The
+ * `group-policies` hook links the policies to their user, which this waits for.
  */
-export async function giveThroughGroup(visitor: Visitor, policy: string) {
+export async function giveThroughGroup(visitor: Visitor, ...policies: string[]) {
   const person = await asAdmin("POST", "/items/people", {
     first_name: visitor.firstName,
     last_name: visitor.lastName,
@@ -69,7 +69,9 @@ export async function giveThroughGroup(visitor: Visitor, policy: string) {
   });
   visitor.groupId = group.id;
   await asAdmin("POST", "/items/group_members", { group_id: group.id, person_id: person.id });
-  await asAdmin("POST", "/items/group_policies", { group_id: group.id, policy_id: await idOf("policies", policy) });
+  for (const policy of policies) {
+    await asAdmin("POST", "/items/group_policies", { group_id: group.id, policy_id: await idOf("policies", policy) });
+  }
   await expect
     .poll(
       async () => {
@@ -78,7 +80,7 @@ export async function giveThroughGroup(visitor: Visitor, policy: string) {
       },
       { timeout: 30_000, intervals: [1_000] },
     )
-    .toContain(policy);
+    .toEqual(expect.arrayContaining(policies));
 }
 
 // Authentik answers 500 while the session the journey signed in with still holds an authorization code.
