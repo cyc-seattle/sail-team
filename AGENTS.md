@@ -129,14 +129,14 @@ domain. The image is Caddy serving `dist/` (`Dockerfile`, `Caddyfile`), with a c
 policy that lets the page call only itself and Directus.
 
 - PRs merge through the merge queue, which squashes them. A PR's push runs only CI. The queue deploys the PRs queued together to
-  dev, at `https://dev.cycsail.team/plans`, as one batch, and runs `mise run integration` there. The batch merges only
-  if they pass (the `dev-passed` check). A push to `main` skips dev, which the queue already ran on that commit, previews
+  dev, at `https://dev.cycsail.team/plans`, as one batch. The batch merges only
+  if the deploy passes (the `dev-passed` check). The queue doesn't run the journeys (cyc-seattle/platform#161); a
+  nightly run does. A push to `main` skips dev, which the queue already ran on that commit, previews
   prod, and applies prod once a maintainer approves. Prod runs the image dev built for the same commit. All of it goes
-  through the org's `deploy.yml` (`.github/workflows/pull-request.yml`). When the journeys fail, the run uploads
+  through the org's `deploy.yml` (`.github/workflows/pull-request.yml`). When the journeys fail in a run that runs them, it uploads
   `test-results/` as the `test-results-dev` artifact, kept 7 days: each failed scenario's page snapshot
   (`error-context.md`) and trace.
-- The queue is batched, and dev is one shared environment, so the queue deploys and runs the journeys one batch at a
-  time.
+- The queue is batched, and dev is one shared environment, so the queue deploys one batch at a time.
 - Never force-push. To bring a branch up to date, merge `origin/main` into it. A queued branch can't be pushed until
   it's dequeued, so take the PR out of the queue first.
 - `gh workflow run pull-request.yml --ref <branch>` deploys a branch to dev and runs the journeys before it's queued.
