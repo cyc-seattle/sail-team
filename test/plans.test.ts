@@ -40,11 +40,15 @@ describe("reading Financial Plans from Directus", () => {
     const [budget, two, three, first] = plans;
     expect([budget!.archived, first!.archived]).toEqual([false, true]);
     expect(budget!.net_cents).toBe(budget!.revenue_cents! - budget!.expense_cents!);
-    // Fundraising is in them; capital isn't.
+    // Operating only: fundraising and capital stay out.
     const { results } = await plan(ids.budget);
     const t = results!.totals;
-    expect(budget!.net_cents).toBe(t.operating_net_cents + t.fundraising_net_cents);
     expect(t.fundraising_revenue_cents).toBeGreaterThan(0);
+    expect(budget).toMatchObject({
+      revenue_cents: t.operating_revenue_cents,
+      expense_cents: t.operating_expense_cents,
+      net_cents: t.operating_net_cents,
+    });
     expect(budget!.warnings).toBeGreaterThan(0);
     expect(two!.note).toBe("A fourth instructor on every summer morning.");
     expect([budget!.saved_by, two!.saved_by]).toEqual(["Morgan Keel", null]);
