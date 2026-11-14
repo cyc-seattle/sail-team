@@ -94,11 +94,19 @@ Then("{string} shows it was started from {string}", async ({ page }, name: strin
   );
 });
 
-Given("a frozen Financial Plan for 2027 whose camp takes in $10,000 and spends $5,000 running it", async ({ club }) => {
-  named.clear();
-  club.ownYear();
-  await savedBudget(club, "Budget");
-});
+Given(
+  "a frozen Financial Plan for 2027 whose camp takes in $10,000 and spends $5,000 running it, with $2,000 of donations",
+  async ({ club }) => {
+    named.clear();
+    club.ownYear();
+    const { operations, youth } = await plansWithCopies(club);
+    await club.offering(youth, OFFERING, 10, 100_000, 500_000);
+    await club.donations(operations, 200_000);
+    const set = await club.financialPlan("Budget", [operations, youth]);
+    await club.save(set);
+    named.set("Budget", set);
+  },
+);
 
 Then("{string} shows revenue of $10,000, expenses of $5,000, and net of $5,000", async ({ page }, name: string) => {
   const cells = planRow(page, name).getByRole("cell");

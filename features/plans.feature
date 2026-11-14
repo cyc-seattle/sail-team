@@ -32,9 +32,9 @@ Feature: Seeing the Financial Plans
       And "Budget" shows its note and the day it was frozen
       And "Two coaches" shows it was started from "Budget"
 
-    Scenario: Each Financial Plan shows its revenue, expenses, and net
+    Scenario: Each Financial Plan shows its operating revenue, expenses, and net, leaving out fundraising
       Given I'm a planner who can read plans
-      And a frozen Financial Plan for 2027 whose camp takes in $10,000 and spends $5,000 running it
+      And a frozen Financial Plan for 2027 whose camp takes in $10,000 and spends $5,000 running it, with $2,000 of donations
       And I've signed in
       When I open Planning for 2027
       Then "Budget" shows revenue of $10,000, expenses of $5,000, and net of $5,000

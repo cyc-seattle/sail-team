@@ -46,7 +46,7 @@ export interface ListedPlan {
   /** The platform package's version that worked out a saved plan's results, such as "1.38.1". Null for a draft. */
   platform: string | null;
   warnings: number;
-  /** Null until platform has worked them out. Operating and fundraising together, leaving out capital. */
+  /** Null until platform has worked them out. Operating only, leaving out fundraising and capital. */
   revenue_cents: number | null;
   expense_cents: number | null;
   net_cents: number | null;

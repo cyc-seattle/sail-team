@@ -83,6 +83,7 @@ export class Club {
       ["office", "expense", "management"],
       ["coachWages", "expense", "program"],
       ["payrollTax", "expense", "program"],
+      ["donations", "revenue", "fundraising"],
     ] as const) {
       this.accounts[name] = (
         await this.create("accounts", {
@@ -298,6 +299,19 @@ export class Club {
       account_id: this.accounts["office"],
       cost_center_type: "pool",
       cost_center_key: pool["key"],
+      amount_cents: cents,
+      fiscal_year: this.year,
+      excluded_from_mtdc: false,
+    });
+  }
+
+  /** Donations, in an Operations Plan's copy: `cents` of fundraising revenue for the year, on the organization. */
+  async donations(operations: string, cents: number): Promise<void> {
+    await this.versioned("plan_budget_lines", operations, {
+      name: "Donations",
+      account_id: this.accounts["donations"],
+      function: "fundraising",
+      cost_center_type: "org",
       amount_cents: cents,
       fiscal_year: this.year,
       excluded_from_mtdc: false,
