@@ -58,7 +58,11 @@ type CostRow<T> = T & {
   account_id: Account;
 };
 
-type BudgetRow = CostRow<Pick<PlanBudgetLine, "key" | "name" | "amount_cents" | "excluded_from_mtdc" | "note">> & {
+/** Platform renames excluded_from_mtdc to in_mtdc (cyc-seattle/platform#262), so a row has one or the other. */
+type Mtdc = { in_mtdc?: boolean | undefined; excluded_from_mtdc?: boolean | undefined };
+const inMtdc = (row: Mtdc) => row.in_mtdc ?? !row.excluded_from_mtdc;
+
+type BudgetRow = CostRow<Pick<PlanBudgetLine, "key" | "name" | "amount_cents" | "note"> & Mtdc> & {
   account_id: { type: string };
 };
 type LaborRow = CostRow<Pick<PlanLaborLine, "key" | "name" | "staff_level_key" | "hours" | "note">>;
@@ -83,7 +87,11 @@ async function operationsAssumptions(
         [version],
         ["*", "remainder_pool_id.name"],
       ),
-      rowsOf<PlanRevenueCharge & { account_id: Account }>("plan_revenue_charges", [version], ["*", ...accountFields]),
+      rowsOf<Omit<PlanRevenueCharge, "excluded_from_mtdc"> & Mtdc & { account_id: Account }>(
+        "plan_revenue_charges",
+        [version],
+        ["*", ...accountFields],
+      ),
       // Every field, since platform adds the fuel and charter rates (cyc-seattle/platform#126).
       rowsOf<{
         key: string;
@@ -151,8 +159,9 @@ async function operationsAssumptions(
       remainder_pool: remainder_pool_id?.name ?? null,
       bonuses: paying(p.name),
     })),
-    charges: byName(charges).map(({ account_id, ...c }) => ({
+    charges: byName(charges).map(({ account_id, excluded_from_mtdc, in_mtdc, ...c }) => ({
       ...c,
+      in_mtdc: inMtdc({ in_mtdc, excluded_from_mtdc }),
       account: { number: account_id.number, name: account_id.name },
     })),
     boatRates: boatRates
@@ -294,8 +303,9 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
           "cost_center_type",
           "cost_center_key",
           "amount_cents",
-          "excluded_from_mtdc",
           "note",
+          // Every field, for whichever MTDC field platform has.
+          "*",
           ...accountFields,
           "account_id.type",
         ]),
@@ -351,7 +361,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         key: l.key,
         name: l.name,
         amount_cents: l.amount_cents,
-        excluded_from_mtdc: l.excluded_from_mtdc,
+        in_mtdc: inMtdc(l),
         note: l.note,
         account: { number: l.account_id.number, name: l.account_id.name },
         charged_to: chargedTo(l),

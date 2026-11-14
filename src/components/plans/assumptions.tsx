@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -21,8 +22,11 @@ const none = <span className="text-muted-foreground">—</span>;
 const money = (cents: number | null, whole = false) => (cents === null ? none : formatCents(cents, whole));
 const share = (value: number | null | undefined) => (value === null || value === undefined ? none : formatShare(value));
 const count = (value: number | null) => (value === null ? none : value.toLocaleString("en-US"));
-const leftOut = (excluded: boolean) => (excluded ? "Yes" : none);
-const mtdc = "Left out of MTDC";
+/** Whether a cost counts toward MTDC, as a checkbox to read, not change. */
+const inMtdc = (counts: boolean) => (
+  <Checkbox checked={counts} readOnly aria-label={counts ? "In MTDC" : "Not in MTDC"} />
+);
+const mtdc = "MTDC";
 
 /** Accounts in the order of the chart of accounts, then by name. */
 const byAccount = <T extends { account: Account; name: string }>(rows: T[]) =>
@@ -261,7 +265,7 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
                   number: c.account.number,
                   name: c.name,
                   note: c.note,
-                  values: [share(c.rate), appliesTo(c.product_kinds), leftOut(c.excluded_from_mtdc)],
+                  values: [share(c.rate), appliesTo(c.product_kinds), inMtdc(c.in_mtdc)],
                 })),
               },
             ]}
@@ -336,7 +340,7 @@ function BudgetTable({
       number: c.account.number,
       name: c.name,
       note: c.note,
-      values: [money(c.amount_cents, true), ...(cost ? [leftOut(c.excluded_from_mtdc)] : [])],
+      values: [money(c.amount_cents, true), ...(cost ? [inMtdc(c.in_mtdc)] : [])],
     })),
   }));
   return (

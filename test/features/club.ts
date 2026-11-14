@@ -222,7 +222,6 @@ export class Club {
         cost_center_key: offering["key"],
         amount_cents: costs,
         fiscal_year: this.year,
-        excluded_from_mtdc: false,
       });
     }
     return offering;
@@ -301,7 +300,6 @@ export class Club {
       cost_center_key: pool["key"],
       amount_cents: cents,
       fiscal_year: this.year,
-      excluded_from_mtdc: false,
     });
   }
 
@@ -314,7 +312,6 @@ export class Club {
       cost_center_type: "org",
       amount_cents: cents,
       fiscal_year: this.year,
-      excluded_from_mtdc: false,
     });
   }
 
