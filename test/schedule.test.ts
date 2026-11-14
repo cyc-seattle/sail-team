@@ -137,6 +137,22 @@ describe("scheduleOf's parts", () => {
       )[0]?.parts;
     expect(partsOf(boats)).toEqual(partsOf([...boats].reverse()));
   });
+
+  it("lists a block's powerboats after its staff and before its sailboats", () => {
+    const row = { id: "a", key: "a", offering_id: "o", date: "2027-07-05", kind: "practice" as const };
+    const at = { uses_boats: true, start_time: null, end_time: null, on_water_minutes: null, setup_minutes: null };
+    const [block] = scheduleOf(
+      [{ id: "x", key: "x", date: "2027-07-05", name: null, powerboats: 2 }],
+      [{ ...row, ...at, block_id: "x", putaway_minutes: null }],
+      {
+        staff: [{ block_id: "x", staff_level: "Coach", position: null, count: 2, pay: null }],
+        resources: [],
+        boats: [{ block_id: "x", boat_class: "Opti", count: 6, sailor_owned: null }],
+      },
+      () => "o",
+    );
+    expect(block?.parts).toEqual(["2 Coaches", "2 powerboats", "6 Optis"]);
+  });
 });
 
 describe("weekdaysOf", () => {

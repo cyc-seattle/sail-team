@@ -379,7 +379,12 @@ export const summerStaffTime: StaffTime[] = [
 
 /** The Operations Plan's rates for the year, with each bonus on the salaried position it pays. */
 export const reportAssumptions: OperationsAssumptions = {
-  rates: { payroll_tax_rate: 0.1, lodging_per_night_cents: 15_000, mileage_rate_cents: 70, rib_kind: "RIB" },
+  rates: {
+    payroll_tax_rate: 0.1,
+    lodging_per_night_cents: 15_000,
+    mileage_rate_cents: 70,
+    powerboat_per_hour_cents: 2_300,
+  },
   staffLevels: [
     { key: "jr", name: "Junior Instructor", pay_type: "hourly", hourly_rate_cents: 1_900 },
     { key: "l1", name: "Level 1 Instructor", pay_type: "hourly", hourly_rate_cents: 2_200 },
@@ -439,15 +444,6 @@ export const reportAssumptions: OperationsAssumptions = {
     },
   ],
   resources: [
-    {
-      key: "rib",
-      name: "RIBs",
-      cost_per_hour_cents: 0,
-      cost_per_day_cents: 1_000,
-      fuel_per_hour_cents: 1_500,
-      maintenance_per_hour_cents: 800,
-      excluded_from_mtdc: false,
-    },
     {
       key: "rental",
       name: "Rented RIB",

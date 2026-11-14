@@ -76,11 +76,9 @@ async function operationsAssumptions(
 ): Promise<Omit<OperationsAssumptions, "fixedCosts" | "staffTime">> {
   const [rates, staffLevels, positions, charges, resources, boatRates, bonuses, bonusProducts, bookings, closed] =
     await Promise.all([
-      rowsOf<PlanRates & { rib_resource_kind_id: { name: string } | null }>(
-        "plan_rates",
-        [version],
-        ["*", "rib_resource_kind_id.name"],
-      ),
+      // Every field, since platform replaces rib_resource_kind_id with powerboat_per_hour_cents
+      // (cyc-seattle/platform#126), and Directus refuses a field it doesn't have.
+      rowsOf<PlanRates & { powerboat_per_hour_cents?: number | null }>("plan_rates", [version]),
       rowsOf<PlanStaffLevel>("plan_staff_levels", [version]),
       rowsOf<PlanSalariedPosition & { remainder_pool_id: { name: string } | null }>(
         "plan_salaried_positions",
@@ -146,7 +144,7 @@ async function operationsAssumptions(
           payroll_tax_rate: rate.payroll_tax_rate,
           lodging_per_night_cents: rate.lodging_per_night_cents,
           mileage_rate_cents: rate.mileage_rate_cents,
-          rib_kind: rate.rib_resource_kind_id?.name ?? null,
+          powerboat_per_hour_cents: rate.powerboat_per_hour_cents ?? null,
         }
       : null,
     staffLevels: byName(staffLevels),
@@ -192,10 +190,10 @@ async function operationsAssumptions(
 /** The program areas' blocks, and what each shares. */
 async function blockRows(versions: string[]) {
   const [blocks, staff, resources, boats] = await Promise.all([
-    rowsOf<{ id: string; key: string; version_id: string; date: string; name: string }>(
+    // Every field, since platform adds powerboats (cyc-seattle/platform#126).
+    rowsOf<{ id: string; key: string; version_id: string; date: string; name: string; powerboats?: number | null }>(
       "plan_activity_blocks",
       versions,
-      ["id", "key", "version_id", "date", "name"],
     ),
     rowsOf<PlanBlockStaff>("plan_block_staff", versions, [
       "block_id",

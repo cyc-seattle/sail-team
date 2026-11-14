@@ -155,7 +155,7 @@ describe("reading a Financial Plan's inputs from Directus", () => {
 
   it("reads the Operations Plan's other inputs, naming the accounts, pools and positions their rows point at", async () => {
     const { operations } = await inputs(ids.budget);
-    expect(operations?.rates?.rib_kind).toBe("RIB");
+    expect(operations?.rates?.powerboat_per_hour_cents).toBe(2_300);
     expect(operations?.positions.find((p) => p.name === "Program Director")).toMatchObject({
       hourly_coaching_rate_cents: 3_000,
       remainder_pool: "Program admin",

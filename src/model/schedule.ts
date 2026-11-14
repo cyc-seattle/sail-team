@@ -23,11 +23,11 @@ export interface ScheduleBlock {
   date: string;
   name: string | null;
   activities: ScheduledActivity[];
-  /** Its staff, then its coach boats and equipment, then its boats. */
+  /** Its staff, then its powerboats and equipment, then its boats. */
   parts: string[];
 }
 
-type BlockRow = { id: string; key: string; date: string; name: string | null };
+type BlockRow = { id: string; key: string; date: string; name: string | null; powerboats?: number | null };
 type ActivityRow = Pick<
   PlanActivity,
   | "id"
@@ -104,6 +104,9 @@ export function scheduleOf(
           : counted(s.count, s.staff_level ?? "staff"),
       )
       .sort(),
+    ...blocks
+      .filter((b) => b.id === id && (b.powerboats ?? 0) > 0)
+      .map((b) => counted(b.powerboats ?? 0, "powerboats")),
     ...parts.resources
       .filter((r) => r.block_id === id)
       .map((r) => `${counted(r.quantity, r.resource)}${r.hours === null ? "" : `, ${amount(r.hours)} hours each`}`)

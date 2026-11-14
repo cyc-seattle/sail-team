@@ -15,8 +15,8 @@ import type {
 export interface OperationsAssumptions {
   rates:
     | (Pick<PlanRates, "payroll_tax_rate" | "lodging_per_night_cents" | "mileage_rate_cents"> & {
-        /** The kind of equipment whose rates price coach boat hours. */
-        rib_kind: string | null;
+        /** What one powerboat costs an hour on the water, fuel included. */
+        powerboat_per_hour_cents: number | null;
       })
     | null;
   staffLevels: Pick<PlanStaffLevel, "key" | "name" | "pay_type" | "hourly_rate_cents">[];

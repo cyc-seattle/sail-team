@@ -191,8 +191,8 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
               <Num>{money(a.rates.mileage_rate_cents)}</Num>
             </TableRow>
             <TableRow>
-              <TableCell>Coach boat hours priced as</TableCell>
-              <Num>{a.rates.rib_kind ?? none}</Num>
+              <TableCell>Powerboat, per hour on the water</TableCell>
+              <Num>{money(a.rates.powerboat_per_hour_cents)}</Num>
             </TableRow>
           </RateTable>
         </TableSection>
