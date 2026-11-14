@@ -101,19 +101,22 @@ export interface PlanLine {
   member: string | null;
 }
 
-/** The seasons an offering can run in, in the order a year has them. */
-export const SEASONS = ["winter", "spring", "summer", "fall"] as const;
-export type Season = (typeof SEASONS)[number];
+/** The term a row is for, as it was when platform worked the row out. All null for offerings in no term. */
+export interface ResultTerm {
+  /** The Operations Plan's key for it. */
+  term_key: string | null;
+  /** Such as Summer 2027. */
+  term_name: string | null;
+  term_starts_on: string | null;
+}
 
 /**
- * One offering's, product's, or program area's P&L, with the member it's charged in. A `program_area_season` row is an
- * area's offerings in one season, or in none.
+ * One offering's, product's, or program area's P&L, with the member it's charged in. A `program_area_term` row is an
+ * area's offerings in one term, or in none.
  */
-export interface PnlRow {
-  level: Pnl["level"] | "program_area_season";
+export interface PnlRow extends ResultTerm {
+  level: Pnl["level"] | "program_area_term";
   subject_key: string;
-  /** For a `program_area_season`, its season, or null for its offerings in no season. */
-  season: Season | null;
   name: string;
   revenue_cents: number;
   expense_cents: number;
@@ -148,13 +151,12 @@ export interface CapitalResult {
 }
 
 /**
- * A bonus for one season, or for the offerings in no season, on the year. Each season's stands alone, so a season that
- * loses money pays nothing and doesn't lower another's (cyc-seattle/platform#255).
+ * A bonus for one term, or for the offerings in no term, on the year. Each term's stands alone, so a term that loses
+ * money pays nothing and doesn't lower another's (cyc-seattle/platform#255).
  */
-export interface BonusResult {
+export interface BonusResult extends ResultTerm {
   /** The bonus's role, such as Director. */
   name: string;
-  season: Season | null;
   /** The net it's figured on, which can be below zero. */
   net_cents: number;
   bonus_cents: number;
@@ -171,7 +173,7 @@ export interface Results {
   warnings: ResultWarning[];
   /** None in results worked out before capital was ranked. */
   capital: CapitalResult[];
-  /** None in results worked out before bonuses were paid per season. */
+  /** None in results worked out before bonuses were paid per term. */
   bonuses: BonusResult[];
 }
 

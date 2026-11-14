@@ -1,13 +1,6 @@
 // The shapes the Planning reports show, and how they're made from a Financial Plan's results and inputs.
 import type { PlanActivity, PlanOffering } from "@cyc-seattle/platform/planning";
-import {
-  SEASONS,
-  type Member,
-  type PlanLine,
-  type ResultWarning,
-  type Results,
-  type Season,
-} from "./financial-plans.ts";
+import type { Member, PlanLine, ResultTerm, ResultWarning, Results } from "./financial-plans.ts";
 
 /** Lines that are worked out the same way, added up, such as every offering's coach wages. */
 export interface LineAmount {
@@ -641,43 +634,48 @@ export interface Trip {
   miles: number | null;
 }
 
-/** One season's P&L for a program area, with each of its bonuses, in the order of `SeasonsReport.bonuses`. */
-export interface SeasonRow {
-  season: Season | null;
+/** One term's P&L for a program area, with each of its bonuses, in the order of `TermsReport.bonuses`. */
+export interface TermRow {
+  /** The term's name, or null for the offerings in no term. */
+  term: string | null;
   revenue_cents: number;
   expense_cents: number;
   bonuses: (number | null)[];
 }
 
-export interface SeasonsReport {
+export interface TermsReport {
   /** Each bonus on the area's programs, by role, such as Director. */
   bonuses: string[];
-  rows: SeasonRow[];
+  rows: TermRow[];
 }
 
+/** Terms in the order they start, then by name, with no term last. */
+const byTermStart = (a: ResultTerm, b: ResultTerm) =>
+  a.term_key === null || b.term_key === null
+    ? Number(a.term_key === null) - Number(b.term_key === null)
+    : (a.term_starts_on ?? "").localeCompare(b.term_starts_on ?? "") ||
+      (a.term_name ?? "").localeCompare(b.term_name ?? "");
+
 /**
- * A program area's P&L for each season, then for its offerings in no season, with each bonus paid on it. Empty when
- * none of its offerings has a season, since its year says the same.
+ * A program area's P&L for each term, then for its offerings in no term, with each bonus paid on it. Empty when none of
+ * its offerings is in a term, since its year says the same.
  */
-export function seasonsOf(results: Pick<Results, "pnl" | "bonuses">, areaId: string | null): SeasonsReport {
-  const own = results.pnl.filter((p) => p.level === "program_area_season" && p.subject_key === areaId);
-  if (!own.some((p) => p.season !== null)) {
+export function termsOf(results: Pick<Results, "pnl" | "bonuses">, areaId: string | null): TermsReport {
+  const own = results.pnl.filter((p) => p.level === "program_area_term" && p.subject_key === areaId);
+  if (!own.some((p) => p.term_key !== null)) {
     return { bonuses: [], rows: [] };
   }
   const paid = results.bonuses.filter((b) => b.program_area_key === areaId);
   const owners = [...new Map(paid.map((b) => [b.bonus_owner_key, b.name])).entries()];
-  const order = [...SEASONS, null];
   return {
     bonuses: owners.map(([, name]) => name),
-    rows: own
-      .sort((a, b) => order.indexOf(a.season) - order.indexOf(b.season))
-      .map((p) => ({
-        season: p.season,
-        revenue_cents: p.revenue_cents,
-        expense_cents: p.expense_cents,
-        bonuses: owners.map(
-          ([key]) => paid.find((b) => b.bonus_owner_key === key && b.season === p.season)?.bonus_cents ?? null,
-        ),
-      })),
+    rows: own.sort(byTermStart).map((p) => ({
+      term: p.term_key === null ? null : (p.term_name ?? "A term"),
+      revenue_cents: p.revenue_cents,
+      expense_cents: p.expense_cents,
+      bonuses: owners.map(
+        ([key]) => paid.find((b) => b.bonus_owner_key === key && b.term_key === p.term_key)?.bonus_cents ?? null,
+      ),
+    })),
   };
 }

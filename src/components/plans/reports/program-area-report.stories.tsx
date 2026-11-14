@@ -4,12 +4,12 @@ import {
   doublehandedOfferings,
   doublehandedPrograms,
   doublehandedRules,
-  doublehandedSeasons,
+  doublehandedTerms,
   doublehandedStatement,
   summerOfferings,
   summerPrograms,
   summerRules,
-  summerSeasons,
+  summerTerms,
   doublehandedTrips,
   summerFixedCosts,
   summerStaffTime,
@@ -29,7 +29,7 @@ const meta = {
     rules: doublehandedRules,
     warnings: warnings.filter((w) => w.area === "doublehanded"),
     statement: doublehandedStatement,
-    seasons: doublehandedSeasons,
+    terms: doublehandedTerms,
     programs: doublehandedPrograms,
     offerings: doublehandedOfferings,
     trips: doublehandedTrips,
@@ -64,7 +64,7 @@ export const Summer: Story = {
     rules: summerRules,
     warnings: warnings.filter((w) => w.area === "summer"),
     statement: summerStatement,
-    seasons: summerSeasons,
+    terms: summerTerms,
     programs: summerPrograms,
     offerings: summerOfferings,
     areaKey: "summer",
@@ -93,23 +93,23 @@ export const DoublehandedTrips: Story = {
   },
 };
 
-/** Each season's bonus stands alone: summer loses money and pays no bonus. */
-export const BySeason: Story = {
+/** Each term's bonus stands alone: summer loses money and pays no bonus. */
+export const ByTerm: Story = {
   play: async ({ canvas }) => {
-    const table = canvas.getByRole("table", { name: "By season" });
+    const table = canvas.getByRole("table", { name: "By term" });
     const rows = [...table.querySelectorAll("tbody tr")].map((r) =>
       [...r.querySelectorAll("td")].map((c) => c.textContent),
     );
-    await expect(rows.map((r) => r[0])).toEqual(["Spring", "Summer", "Fall"]);
-    await expect(rows[1]).toEqual(["Summer", "$30,000", "$33,000", "−$3,000", "$0"]);
+    await expect(rows.map((r) => r[0])).toEqual(["Spring 2027", "Summer 2027", "Fall 2027"]);
+    await expect(rows[1]).toEqual(["Summer 2027", "$30,000", "$33,000", "−$3,000", "$0"]);
     await expect(canvas.getByRole("columnheader", { name: "Program Director's bonus" })).toBeVisible();
   },
 };
 
-/** An area with no seasons shows no season table, since its year says the same. */
-export const NoSeasons: Story = {
-  args: { seasons: { bonuses: [], rows: [] } },
+/** An area with no terms shows no term table, since its year says the same. */
+export const NoTerms: Story = {
+  args: { terms: { bonuses: [], rows: [] } },
   play: async ({ canvas }) => {
-    await expect(canvas.queryByRole("table", { name: "By season" })).toBeNull();
+    await expect(canvas.queryByRole("table", { name: "By term" })).toBeNull();
   },
 };

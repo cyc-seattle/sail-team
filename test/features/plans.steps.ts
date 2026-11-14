@@ -205,35 +205,45 @@ Given("its only Program Plan has an offering with a coach on every practice, 100
   // Ten days of camp from 8am to 6pm, each in a block with one coach, made with the Financial Plan above.
 });
 
-// Bonuses by season.
+// Bonuses by term.
 let bonusPlans: { operations: string; youth: string } | undefined;
-Given("a Financial Plan that pays Youth Racing's director 10% of each season's net", async ({ club }) => {
+Given("a Financial Plan that pays Youth Racing's director 10% of each term's net", async ({ club }) => {
   bonusPlans = await plansWithCopies(club);
   await club.bonus(bonusPlans.operations, "Director", 0.1);
 });
 
 Given(
-  "Youth Racing makes $20,000 in the summer and loses $5,000 in the fall, and the Financial Plan is frozen",
-  async ({ club }) => {
+  "Youth Racing makes $20,000 in {string} and loses $5,000 in {string}, and the Financial Plan is frozen",
+  async ({ club }, summer: string, fall: string) => {
     const { operations, youth } = bonusPlans!;
-    await club.offering(youth, `${OFFERING} summer`, 1, 2_000_000, 0, { season_term: "summer" });
-    await club.offering(youth, `${OFFERING} fall`, 1, 0, 500_000, { season_term: "fall" });
+    const inSummer = await club.term(operations, summer, "07-01", "08-31");
+    const inFall = await club.term(operations, fall, "09-01", "11-30");
+    await club.offering(youth, `${OFFERING} summer`, 1, 2_000_000, 0, { term_key: inSummer });
+    await club.offering(youth, `${OFFERING} fall`, 1, 0, 500_000, { term_key: inFall });
     opened.set = await club.financialPlan("Budget", [operations, youth]);
     await club.save(opened.set);
   },
 );
 
-Then("its summer shows a $2,000 bonus for the director, and its fall shows none", async ({ page }) => {
-  const seasons = page.getByRole("table", { name: "By season" });
-  await expect(seasons.getByRole("columnheader", { name: "Director's bonus" })).toBeVisible();
-  await expect(
-    seasons
-      .getByRole("row", { name: /^Summer/ })
-      .getByRole("cell")
-      .last(),
-  ).toHaveText("$2,000");
-  await expect(seasons.getByRole("row", { name: /^Fall/ }).getByRole("cell").last()).toHaveText("$0");
-});
+Then(
+  "{string} shows a $2,000 bonus for the director, and {string} shows none",
+  async ({ page }, summer: string, fall: string) => {
+    const terms = page.getByRole("table", { name: "By term" });
+    await expect(terms.getByRole("columnheader", { name: "Director's bonus" })).toBeVisible();
+    await expect(
+      terms
+        .getByRole("row", { name: new RegExp(`^${summer}`) })
+        .getByRole("cell")
+        .last(),
+    ).toHaveText("$2,000");
+    await expect(
+      terms
+        .getByRole("row", { name: new RegExp(`^${fall}`) })
+        .getByRole("cell")
+        .last(),
+    ).toHaveText("$0");
+  },
+);
 
 When(/^I open Youth Racing's report in (?:that Financial Plan|the draft)$/, async ({ page, club }) => {
   await page.goto(`${await app()}/plans/financial/${opened.set}/${club.areaPlan}`);

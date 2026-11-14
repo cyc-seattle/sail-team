@@ -8,7 +8,7 @@ import {
   type PlanWarning,
   type ProgramSettings,
   type ReportOffering,
-  type SeasonsReport,
+  type TermsReport,
   type Trip,
 } from "@/model/reports";
 import { cn } from "@/lib/utils";
@@ -94,20 +94,17 @@ function AreaAssumptions({
   );
 }
 
-const seasonName = (season: string | null) =>
-  season === null ? "No season" : season[0]!.toUpperCase() + season.slice(1);
-
-/** Each season's revenue, expenses, and net, and each bonus paid on it, since bonuses are paid per season. */
-function Seasons({ seasons }: { seasons: SeasonsReport }) {
+/** Each term's revenue, expenses, and net, and each bonus paid on it, since bonuses are paid per term. */
+function Terms({ terms }: { terms: TermsReport }) {
   return (
-    <Table aria-label="By season">
+    <Table aria-label="By term">
       <TableHeader>
         <TableRow>
-          <TableHead className={pinned}>Season</TableHead>
+          <TableHead className={pinned}>Term</TableHead>
           <TableHead className="text-right">Revenue</TableHead>
           <TableHead className="text-right">Expenses</TableHead>
           <TableHead className="text-right">Net</TableHead>
-          {seasons.bonuses.map((role) => (
+          {terms.bonuses.map((role) => (
             <TableHead key={role} className="text-right">
               {role}&apos;s bonus
             </TableHead>
@@ -115,14 +112,14 @@ function Seasons({ seasons }: { seasons: SeasonsReport }) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {seasons.rows.map((row) => (
-          <TableRow key={row.season ?? "none"}>
-            <TableCell className={pinned}>{seasonName(row.season)}</TableCell>
+        {terms.rows.map((row) => (
+          <TableRow key={row.term ?? ""}>
+            <TableCell className={pinned}>{row.term ?? "No term"}</TableCell>
             <Amount cents={row.revenue_cents} whole />
             <Amount cents={row.expense_cents} whole />
             <Amount cents={row.revenue_cents - row.expense_cents} whole />
             {row.bonuses.map((cents, i) => (
-              <Amount key={seasons.bonuses[i]} cents={cents} whole />
+              <Amount key={terms.bonuses[i]} cents={cents} whole />
             ))}
           </TableRow>
         ))}
@@ -140,8 +137,8 @@ export interface ProgramAreaReportProps {
   rules: string | null;
   warnings: PlanWarning[];
   statement: { revenue: AccountAmount[]; direct: AccountAmount[]; indirect: AccountAmount[] };
-  /** Its P&L for each season, with each bonus. Empty when none of its offerings has a season. */
-  seasons: SeasonsReport;
+  /** Its P&L for each term, with each bonus. Empty when none of its offerings is in a term. */
+  terms: TermsReport;
   programs: ProgramSettings[];
   offerings: ReportOffering[];
   /** The Financial Plan's id and this area's report key, for its link to the Calendar. */
@@ -162,7 +159,7 @@ export function ProgramAreaReport({
   rules,
   warnings,
   statement,
-  seasons,
+  terms,
   programs,
   offerings,
   setId,
@@ -191,9 +188,9 @@ export function ProgramAreaReport({
         />
       </ReportSection>
 
-      {seasons.rows.length > 0 && (
-        <ReportSection id="seasons" title="By season">
-          <Seasons seasons={seasons} />
+      {terms.rows.length > 0 && (
+        <ReportSection id="terms" title="By term">
+          <Terms terms={terms} />
         </ReportSection>
       )}
 

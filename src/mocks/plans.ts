@@ -2,12 +2,12 @@
 // come from platform's own engine, run on these rows the way platform's hook runs it, so they always add up.
 import { computePlan, type PlanData } from "@cyc-seattle/platform/planning";
 
-/** The engine's bonus for one season (cyc-seattle/platform#255). */
+/** The engine's bonus for one term (cyc-seattle/platform#255). */
 interface BonusSummary {
   bonus_owner_key: string;
   role_name: string;
   program_area_id: string | null;
-  season: string | null;
+  term_key: string | null;
   net_cents: number;
   bonus_cents: number;
 }
@@ -649,6 +649,12 @@ function results(setRow: Row, calculatedAt: string): Record<string, Row[]> {
   const areaVersion = (area: string | null | undefined) =>
     own.find((m) => plans.find((p) => p.id === m.plan)?.program_area_id === area)?.version ?? operations;
   const offerings = new Map((data.plan_offerings as unknown as Row[]).map((o) => [o["key"], o]));
+  const terms = new Map(((data as { plan_terms?: Row[] }).plan_terms ?? []).map((t) => [t["key"], t]));
+  const resultTerm = (key: string | null | undefined) => ({
+    term_key: key ?? null,
+    term_name: terms.get(key)?.["name"] ?? null,
+    term_starts_on: terms.get(key)?.["starts_on"] ?? null,
+  });
   const ownerOf = (type: string, subject: string | null) => {
     if (type === "offering") {
       return offerings.get(subject)?.["version_id"] as string | undefined;
@@ -656,7 +662,7 @@ function results(setRow: Row, calculatedAt: string): Record<string, Row[]> {
     if (type === "product") {
       return areaVersion(catalog.products.find((p) => p.id === subject)?.program_area_id);
     }
-    if (type === "program_area") {
+    if (type === "program_area" || type === "program_area_term") {
       return areaVersion(subject);
     }
     return operations;
@@ -704,13 +710,13 @@ function results(setRow: Row, calculatedAt: string): Record<string, Row[]> {
       enrollment: p.enrollment,
       days: p.days,
       sailor_days: p.sailor_days,
-      season: (p as { season?: string | null }).season ?? null,
+      ...resultTerm((p as { term_key?: string | null }).term_key),
     })),
     // Older engines pay bonuses on the year, with no rows here.
     plan_result_bonuses: ((out as { bonuses?: BonusSummary[] }).bonuses ?? []).map((b) => ({
       version_set_id: setId,
       name: b.role_name,
-      season: b.season,
+      ...resultTerm(b.term_key),
       net_cents: b.net_cents,
       bonus_cents: b.bonus_cents,
       bonus_owner_key: b.bonus_owner_key,

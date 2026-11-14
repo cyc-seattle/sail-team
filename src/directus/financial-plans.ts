@@ -125,7 +125,9 @@ async function readResults(setId: string): Promise<Results | null> {
       "enrollment",
       "days",
       "sailor_days",
-      "season",
+      "term_key",
+      "term_name",
+      "term_starts_on",
       "version_set_member_id",
     ]),
     readAll<{
@@ -168,7 +170,9 @@ async function readResults(setId: string): Promise<Results | null> {
     ]),
     readAll<BonusResult>("plan_result_bonuses", bySet, [
       "name",
-      "season",
+      "term_key",
+      "term_name",
+      "term_starts_on",
       "net_cents",
       "bonus_cents",
       "bonus_owner_key",

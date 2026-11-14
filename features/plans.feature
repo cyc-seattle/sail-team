@@ -70,15 +70,15 @@ Feature: Seeing the Financial Plans
       Then it shows $3,000 of coaches' wages
       And it shows the $1,000 of the office
 
-  Rule: A program area's report shows its P&L for each season, with each season's bonus, since bonuses are paid per season
+  Rule: A program area's report shows its P&L for each term, with each term's bonus, since bonuses are paid per term
 
-    Scenario: A director's bonus when the fall loses money
+    Scenario: A director's bonus when the fall term loses money
       Given I'm a planner who can read plans
-      And a Financial Plan that pays Youth Racing's director 10% of each season's net
-      And Youth Racing makes $20,000 in the summer and loses $5,000 in the fall, and the Financial Plan is frozen
+      And a Financial Plan that pays Youth Racing's director 10% of each term's net
+      And Youth Racing makes $20,000 in "Summer 2027" and loses $5,000 in "Fall 2027", and the Financial Plan is frozen
       And I've signed in
       When I open Youth Racing's report in that Financial Plan
-      Then its summer shows a $2,000 bonus for the director, and its fall shows none
+      Then "Summer 2027" shows a $2,000 bonus for the director, and "Fall 2027" shows none
 
   Rule: A frozen Financial Plan shows the P&L it was frozen with, and never recalculates it
 

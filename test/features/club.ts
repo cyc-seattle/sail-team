@@ -33,6 +33,7 @@ const COPY_ROWS = [
   "plan_offerings",
   "plan_revenue_charges",
   "plan_closed_dates",
+  "plan_terms",
 ];
 
 export class Club {
@@ -228,6 +229,16 @@ export class Club {
       });
     }
     return offering;
+  }
+
+  /** A term named `name` in the Operations Plan's `copy`, from `starts` to `ends` (`MM-DD`) this year. Returns its key. */
+  async term(copy: string, name: string, starts: string, ends: string): Promise<string> {
+    const term = await this.versioned("plan_terms", copy, {
+      name,
+      starts_on: `${this.year}-${starts}`,
+      ends_on: `${this.year}-${ends}`,
+    });
+    return term["key"] as string;
   }
 
   /** A bonus in the Operations Plan's `copy` for `role`, of `rate` of the net of Youth Racing's program. */

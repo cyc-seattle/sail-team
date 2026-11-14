@@ -13,13 +13,13 @@ import {
   fees,
   functionalExpenses,
   rulesOf,
-  seasonsOf,
   sessionGrid,
   sortRows,
+  termsOf,
   type OverviewRow,
   type ReportOffering,
 } from "../src/model/reports.ts";
-import type { BonusResult, PnlRow, Season } from "../src/model/financial-plans.ts";
+import type { BonusResult, PnlRow, ResultTerm } from "../src/model/financial-plans.ts";
 
 const row = (name: string, revenue: number, offerings = 1): OverviewRow => ({
   report: name,
@@ -383,11 +383,18 @@ describe("capitalList", () => {
   });
 });
 
-describe("seasonsOf", () => {
-  const season = (s: Season | null, revenue: number, area = "area"): PnlRow => ({
-    level: "program_area_season",
+describe("termsOf", () => {
+  const term = (name: string | null, starts: string | null = null) => ({
+    term_key: name === null ? null : `key-${name}`,
+    term_name: name,
+    term_starts_on: starts,
+  });
+  const fall = term("Fall 2027", "2027-09-01");
+  const spring = term("Spring 2027", "2027-03-01");
+  const pnl = (t: ResultTerm, revenue: number, area = "area"): PnlRow => ({
+    level: "program_area_term",
     subject_key: area,
-    season: s,
+    ...t,
     name: "Doublehanded",
     revenue_cents: revenue,
     expense_cents: 1000,
@@ -396,33 +403,33 @@ describe("seasonsOf", () => {
     sailor_days: 0,
     member: "m",
   });
-  const bonus = (s: Season | null, cents: number, key = "director", name = "Director"): BonusResult => ({
+  const bonus = (t: ResultTerm, cents: number, key = "director", name = "Director"): BonusResult => ({
     name,
-    season: s,
+    ...t,
     net_cents: cents * 10,
     bonus_cents: cents,
     bonus_owner_key: key,
     program_area_key: "area",
   });
 
-  it("lists the area's seasons in a year's order, then no season, each with its bonuses", () => {
-    const report = seasonsOf(
+  it("lists the area's terms in the order they start, then no term, each with its bonuses", () => {
+    const report = termsOf(
       {
-        pnl: [season(null, 5), season("fall", 4), season("spring", 3), season("spring", 9, "other")],
-        bonuses: [bonus("spring", 30), bonus(null, 50), bonus("fall", 0), bonus("fall", 7, "coach", "Head Coach")],
+        pnl: [pnl(term(null), 5), pnl(fall, 4), pnl(spring, 3), pnl(spring, 9, "other")],
+        bonuses: [bonus(spring, 30), bonus(term(null), 50), bonus(fall, 0), bonus(fall, 7, "coach", "Head Coach")],
       },
       "area",
     );
     expect(report.bonuses).toEqual(["Director", "Head Coach"]);
-    expect(report.rows.map((r) => [r.season, r.revenue_cents, r.bonuses])).toEqual([
-      ["spring", 3, [30, null]],
-      ["fall", 4, [0, 7]],
+    expect(report.rows.map((r) => [r.term, r.revenue_cents, r.bonuses])).toEqual([
+      ["Spring 2027", 3, [30, null]],
+      ["Fall 2027", 4, [0, 7]],
       [null, 5, [50, null]],
     ]);
   });
 
-  it("is empty when none of the area's offerings has a season", () => {
-    expect(seasonsOf({ pnl: [season(null, 5)], bonuses: [bonus(null, 50)] }, "area")).toEqual({
+  it("is empty when none of the area's offerings is in a term", () => {
+    expect(termsOf({ pnl: [pnl(term(null), 5)], bonuses: [bonus(term(null), 50)] }, "area")).toEqual({
       bonuses: [],
       rows: [],
     });

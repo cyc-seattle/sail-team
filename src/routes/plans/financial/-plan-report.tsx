@@ -27,9 +27,9 @@ import {
   reportKey,
   reportName,
   reportsOf,
-  seasonsOf,
   sharedCostsOf,
   statementOf,
+  termsOf,
 } from "@/model/reports";
 
 /** One report of a Financial Plan, by its key: `overview`, `rates`, a Program Plan's id, `non-program` or `fundraising`. */
@@ -161,7 +161,7 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
       rules={inputs.rules[report] ?? null}
       warnings={warnings.filter((w) => w.area === report)}
       statement={statementOf(results.lines.filter((l) => l.member === member.id))}
-      seasons={seasonsOf(results, member.program_area_id)}
+      terms={termsOf(results, member.program_area_id)}
       programs={inputs.programs[report] ?? []}
       offerings={inputs.offerings[report] ?? []}
       setId={set.id}
