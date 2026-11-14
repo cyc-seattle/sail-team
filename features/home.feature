@@ -1,17 +1,16 @@
 Feature: The home page
-  cycsail.team's home page is a list of links: the pages of this app the person can open, then the other sites their
-  role uses, the same as the sidebar's Links.
+  cycsail.team's home page lists announcements, newest first. Everyone who signs in reads all of them.
 
-  Scenario: A planner sees Planning among the links
+  Scenario: A planner signs in and reads today's announcement
     Given I'm a planner who can read plans
+    And an announcement posted today
     When I open the home page
     And I sign in
-    Then the home page links to Planning
-    And it links to Google Calendar and Support
+    Then the home page shows today's announcement
 
-  Scenario: Someone who can't read plans sees only the other sites
+  Scenario: A parent reads the newest announcement first
     Given I'm a parent who can't read plans
+    And an announcement posted today and one posted yesterday
     And I've signed in
     When I open the home page
-    Then the home page doesn't link to Planning
-    And it links to Google Calendar and Support
+    Then today's announcement comes before yesterday's

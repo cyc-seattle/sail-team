@@ -12,6 +12,7 @@ import type {
   Product,
   ProgramSettings,
   ReportOffering,
+  TermRow,
   Trip,
   SharedCost,
 } from "@/model/reports";
@@ -252,6 +253,19 @@ export const doublehandedPrograms: ProgramSettings[] = [
   { name: "L-Pod", staff_level: "Level 4 Coach", sailors_per_coach: 12, rules: "Most sailors bring their own 420s." },
 ];
 
+/** Doublehanded by term, adding up to its year. Summer loses money. */
+export const doublehandedTerms: TermRow[] = [
+  { term: "Spring 2027", revenue_cents: 3_800_000, expense_cents: 3_100_000 },
+  { term: "Summer 2027", revenue_cents: 3_000_000, expense_cents: 3_300_000 },
+  { term: "Fall 2027", revenue_cents: 2_500_000, expense_cents: 2_100_000 },
+];
+
+/** Summer's camps are all in one term, and its adult classes in no term. */
+export const summerTerms: TermRow[] = [
+  { term: "Summer 2027", revenue_cents: 19_200_000, expense_cents: 15_800_000 },
+  { term: null, revenue_cents: 2_300_000, expense_cents: 2_000_000 },
+];
+
 export const doublehandedStatement = {
   revenue: [account("4130", "Doublehanded tuition", 9_500_000), account("4900", "Scholarships", -200_000)],
   direct: [
@@ -356,7 +370,7 @@ const fixedCost = (
   account: { number: account.split(" ")[0]!, name: account.slice(account.indexOf(" ") + 1) },
   amount_cents,
   charged_to,
-  excluded_from_mtdc: false,
+  in_mtdc: true,
   note: null,
   revenue: false,
   ...more,
@@ -364,7 +378,7 @@ const fixedCost = (
 
 /** Summer's own fixed costs and staff time, on its report's assumptions. */
 export const summerFixedCosts: FixedCost[] = [
-  fixedCost("tents", "Tent rental", "5410 Rentals", 180_000, "Summer", { excluded_from_mtdc: true }),
+  fixedCost("tents", "Tent rental", "5410 Rentals", 180_000, "Summer", { in_mtdc: false }),
   fixedCost("shirts", "Camp shirts", "5420 Supplies", 95_000, "Opti Camp", { note: "One per sailor." }),
 ];
 export const summerStaffTime: StaffTime[] = [
@@ -381,7 +395,11 @@ export const summerStaffTime: StaffTime[] = [
 
 /** The Operations Plan's rates for the year, with each bonus on the salaried position it pays. */
 export const reportAssumptions: OperationsAssumptions = {
-  rates: { payroll_tax_rate: 0.1, lodging_per_night_cents: 15_000, mileage_rate_cents: 70, rib_kind: "RIB" },
+  rates: {
+    payroll_tax_rate: 0.1,
+    lodging_per_night_cents: 15_000,
+    mileage_rate_cents: 70,
+  },
   staffLevels: [
     { key: "jr", name: "Junior Instructor", pay_type: "hourly", hourly_rate_cents: 1_900 },
     { key: "l1", name: "Level 1 Instructor", pay_type: "hourly", hourly_rate_cents: 2_200 },
@@ -418,7 +436,7 @@ export const reportAssumptions: OperationsAssumptions = {
       rate: 0.03,
       product_kinds: ["program", "charter"],
       account: { number: "5310", name: "Card fees" },
-      excluded_from_mtdc: false,
+      in_mtdc: true,
       note: null,
     },
     {
@@ -427,7 +445,7 @@ export const reportAssumptions: OperationsAssumptions = {
       rate: 0.05,
       product_kinds: ["program"],
       account: { number: "4900", name: "Scholarships" },
-      excluded_from_mtdc: true,
+      in_mtdc: false,
       note: "Matches what the board set aside last year.",
     },
     {
@@ -436,42 +454,39 @@ export const reportAssumptions: OperationsAssumptions = {
       rate: 0.015,
       product_kinds: null,
       account: { number: "6510", name: "B&O tax" },
-      excluded_from_mtdc: false,
+      in_mtdc: true,
       note: null,
     },
   ],
-  resources: [
-    {
-      key: "rib",
-      name: "RIBs",
-      quantity: 6,
-      cost_per_hour_cents: 0,
-      cost_per_day_cents: 1_000,
-      fuel_per_hour_cents: 1_500,
-      maintenance_per_hour_cents: 800,
-      excluded_from_mtdc: false,
-    },
-    {
-      key: "rental",
-      name: "Rented RIB",
-      quantity: 1,
-      cost_per_hour_cents: 4_500,
-      cost_per_day_cents: null,
-      fuel_per_hour_cents: 1_500,
-      maintenance_per_hour_cents: null,
-      excluded_from_mtdc: true,
-    },
-  ],
   boatRates: [
-    { key: "opti", boat_class: "Opti", maintenance_per_boat_hour_cents: 150, quantity: 30, sailors_per_boat: 1 },
+    {
+      key: "opti",
+      boat_class: "Opti",
+      fuel_per_hour_cents: null,
+      maintenance_per_boat_hour_cents: 150,
+      charter_per_day_cents: null,
+    },
     {
       key: "sailqube",
       boat_class: "Sailqube",
+      fuel_per_hour_cents: null,
       maintenance_per_boat_hour_cents: 200,
-      quantity: 12,
-      sailors_per_boat: 2,
+      charter_per_day_cents: null,
     },
-    { key: "420", boat_class: "420", maintenance_per_boat_hour_cents: 300, quantity: 14, sailors_per_boat: 2 },
+    {
+      key: "420",
+      boat_class: "420",
+      fuel_per_hour_cents: null,
+      maintenance_per_boat_hour_cents: 300,
+      charter_per_day_cents: 7_500,
+    },
+    {
+      key: "rib",
+      boat_class: "RIB",
+      fuel_per_hour_cents: 1_500,
+      maintenance_per_boat_hour_cents: 800,
+      charter_per_day_cents: 30_000,
+    },
   ],
   bonuses: [
     programDirectorBonus,
@@ -488,7 +503,7 @@ export const reportAssumptions: OperationsAssumptions = {
   fixedCosts: [
     fixedCost("insurance", "Insurance", "6110 Insurance", 900_000, "G&A"),
     fixedCost("rent", "Clubhouse rent", "6310 Clubhouse rent", 600_000, "G&A", { note: "Lease renews in March." }),
-    fixedCost("audit", "Audit", "6410 Audit", 450_000, "G&A", { excluded_from_mtdc: true }),
+    fixedCost("audit", "Audit", "6410 Audit", 450_000, "G&A", { in_mtdc: false }),
     fixedCost("software", "Registration software", "6420 Software", 240_000, "Program admin"),
     fixedCost("gala", "Spring gala costs", "7010 Event costs", 300_000, "Example Sailing Club"),
     fixedCost("gifts", "Spring gala gifts", "4500 Individual gifts", 2_000_000, "Example Sailing Club", {

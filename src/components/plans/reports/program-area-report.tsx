@@ -8,6 +8,7 @@ import {
   type PlanWarning,
   type ProgramSettings,
   type ReportOffering,
+  type TermRow,
   type Trip,
 } from "@/model/reports";
 import { cn } from "@/lib/utils";
@@ -93,6 +94,32 @@ function AreaAssumptions({
   );
 }
 
+/** Each term's revenue, expenses, and net. */
+function Terms({ terms }: { terms: TermRow[] }) {
+  return (
+    <Table aria-label="By term">
+      <TableHeader>
+        <TableRow>
+          <TableHead className={pinned}>Term</TableHead>
+          <TableHead className="text-right">Revenue</TableHead>
+          <TableHead className="text-right">Expenses</TableHead>
+          <TableHead className="text-right">Net</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {terms.map((row) => (
+          <TableRow key={row.term ?? ""}>
+            <TableCell className={pinned}>{row.term ?? "No term"}</TableCell>
+            <Amount cents={row.revenue_cents} whole />
+            <Amount cents={row.expense_cents} whole />
+            <Amount cents={row.revenue_cents - row.expense_cents} whole />
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
 const offeringHead = ["Fee", "Fee per day", "Sailors", "Sailor-days", "Fee per hour", "Sailor-hours", "Cost of goods"];
 
 export interface ProgramAreaReportProps {
@@ -102,6 +129,8 @@ export interface ProgramAreaReportProps {
   rules: string | null;
   warnings: PlanWarning[];
   statement: { revenue: AccountAmount[]; direct: AccountAmount[]; indirect: AccountAmount[] };
+  /** Its P&L for each term. Empty when none of its offerings is in a term. */
+  terms: TermRow[];
   programs: ProgramSettings[];
   offerings: ReportOffering[];
   /** The Financial Plan's id and this area's report key, for its link to the Calendar. */
@@ -122,6 +151,7 @@ export function ProgramAreaReport({
   rules,
   warnings,
   statement,
+  terms,
   programs,
   offerings,
   setId,
@@ -149,6 +179,12 @@ export function ProgramAreaReport({
           ]}
         />
       </ReportSection>
+
+      {terms.length > 0 && (
+        <ReportSection id="terms" title="By term">
+          <Terms terms={terms} />
+        </ReportSection>
+      )}
 
       <ReportSection id="enrollment" title="Enrollment">
         <SessionGrid offerings={offerings} />

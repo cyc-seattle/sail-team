@@ -8,6 +8,7 @@ import {
   doublehandedOfferings,
   doublehandedPrograms,
   doublehandedRules,
+  doublehandedTerms,
   doublehandedStatement,
   functions,
   fundraising,
@@ -22,6 +23,7 @@ import {
   doublehandedTrips,
   summerFixedCosts,
   summerStaffTime,
+  summerTerms,
   summerStatement,
   totals,
   warnings,
@@ -81,6 +83,7 @@ export const Summer: Story = {
         rules={summerRules}
         warnings={warnings.filter((w) => w.area === "summer")}
         statement={summerStatement}
+        terms={summerTerms}
         programs={summerPrograms}
         offerings={summerOfferings}
         setId="budget"
@@ -113,6 +116,7 @@ export const Doublehanded: Story = {
         rules={doublehandedRules}
         warnings={warnings.filter((w) => w.area === "doublehanded")}
         statement={doublehandedStatement}
+        terms={doublehandedTerms}
         programs={doublehandedPrograms}
         offerings={doublehandedOfferings}
         setId="budget"

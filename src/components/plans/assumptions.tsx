@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -21,8 +22,11 @@ const none = <span className="text-muted-foreground">—</span>;
 const money = (cents: number | null, whole = false) => (cents === null ? none : formatCents(cents, whole));
 const share = (value: number | null | undefined) => (value === null || value === undefined ? none : formatShare(value));
 const count = (value: number | null) => (value === null ? none : value.toLocaleString("en-US"));
-const leftOut = (excluded: boolean) => (excluded ? "Yes" : none);
-const mtdc = "Left out of MTDC";
+/** Whether a cost counts toward MTDC, as a checkbox to read, not change. */
+const inMtdc = (counts: boolean) => (
+  <Checkbox checked={counts} readOnly aria-label={counts ? "In MTDC" : "Not in MTDC"} />
+);
+const mtdc = "MTDC";
 
 /** Accounts in the order of the chart of accounts, then by name. */
 const byAccount = <T extends { account: Account; name: string }>(rows: T[]) =>
@@ -190,10 +194,6 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
               <TableCell>Mileage, per mile</TableCell>
               <Num>{money(a.rates.mileage_rate_cents)}</Num>
             </TableRow>
-            <TableRow>
-              <TableCell>RIB hours priced as</TableCell>
-              <Num>{a.rates.rib_kind ?? none}</Num>
-            </TableRow>
           </RateTable>
         </TableSection>
       )}
@@ -265,45 +265,24 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
                   number: c.account.number,
                   name: c.name,
                   note: c.note,
-                  values: [share(c.rate), appliesTo(c.product_kinds), leftOut(c.excluded_from_mtdc)],
+                  values: [share(c.rate), appliesTo(c.product_kinds), inMtdc(c.in_mtdc)],
                 })),
               },
             ]}
           />
         </TableSection>
       )}
-      {a.resources.length > 0 && (
-        <TableSection title="Boats and equipment" level={2}>
-          <RateTable
-            label="Boats and equipment"
-            head={["Item", "How many", "Per hour", "Per day", "Fuel per hour", "Upkeep per hour", mtdc]}
-            text={[mtdc]}
-          >
-            {a.resources.map((r) => (
-              <TableRow key={r.key}>
-                <TableCell>{r.name}</TableCell>
-                <Num>{count(r.quantity)}</Num>
-                <Num>{money(r.cost_per_hour_cents)}</Num>
-                <Num>{money(r.cost_per_day_cents, true)}</Num>
-                <Num>{money(r.fuel_per_hour_cents)}</Num>
-                <Num>{money(r.maintenance_per_hour_cents)}</Num>
-                <TableCell>{leftOut(r.excluded_from_mtdc)}</TableCell>
-              </TableRow>
-            ))}
-          </RateTable>
-        </TableSection>
-      )}
       {a.boatRates.length > 0 && (
-        <TableSection title="Boat upkeep" level={2}>
-          <RateTable label="Boat upkeep" head={["Boat class", "Boats", "Sailors per boat", "Upkeep per boat-hour"]}>
+        <TableSection title="Boat rates" level={2}>
+          <RateTable label="Boat rates" head={["Boat class", "Fuel per hour", "Upkeep per hour", "Charter per day"]}>
             {[...a.boatRates]
               .sort((x, y) => x.boat_class.localeCompare(y.boat_class, undefined, { numeric: true }))
               .map((b) => (
                 <TableRow key={b.key}>
                   <TableCell>{b.boat_class}</TableCell>
-                  <Num>{count(b.quantity)}</Num>
-                  <Num>{count(b.sailors_per_boat)}</Num>
+                  <Num>{money(b.fuel_per_hour_cents)}</Num>
                   <Num>{money(b.maintenance_per_boat_hour_cents)}</Num>
+                  <Num>{money(b.charter_per_day_cents, true)}</Num>
                 </TableRow>
               ))}
           </RateTable>
@@ -361,7 +340,7 @@ function BudgetTable({
       number: c.account.number,
       name: c.name,
       note: c.note,
-      values: [money(c.amount_cents, true), ...(cost ? [leftOut(c.excluded_from_mtdc)] : [])],
+      values: [money(c.amount_cents, true), ...(cost ? [inMtdc(c.in_mtdc)] : [])],
     })),
   }));
   return (

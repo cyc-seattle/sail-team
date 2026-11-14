@@ -1,4 +1,5 @@
 import { rm } from "node:fs/promises";
+import { cleanUpStalePosts } from "./posts";
 import { authentikLock } from "./support";
 import { cleanUp, staleVisitors } from "./visitors";
 
@@ -8,4 +9,5 @@ export default async function globalSetup() {
   for (const email of await staleVisitors()) {
     await cleanUp(email);
   }
+  await cleanUpStalePosts();
 }

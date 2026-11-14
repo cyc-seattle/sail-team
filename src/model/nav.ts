@@ -13,7 +13,10 @@ const sections: (NavItem & { shown: (permissions: Permissions) => boolean })[] =
   { to: "/household", label: "Household", shown: canSeeHousehold },
 ];
 
-/** The roles that see more links, least first. Any other role sees only the links everyone sees. */
+/** Where to ask for help, at the foot of the sidebar. */
+export const supportUrl = "mailto:info@cyccommunitysailing.org";
+
+/** The roles that get more tools, least first. Any other role gets none. */
 const ranks = ["Crew", "Staff", "Admin"];
 
 function rank(role: string | undefined): number {
@@ -22,17 +25,15 @@ function rank(role: string | undefined): number {
 }
 
 /**
- * Sites outside this app, and where to ask for help, on the home page and in the Links menu. A link with `from` is
- * only for that role and the roles above it (cyc-seattle/sail-team#55).
+ * Sites for one role and the roles above it, in the account menu (cyc-seattle/sail-team#55). Links everyone sees are
+ * on the Links page, from Directus.
  */
-function links(directusUrl: string): (ExternalLink & { from?: string })[] {
+function tools(directusUrl: string): (ExternalLink & { from: string })[] {
   return [
     { href: "https://theclubspot.com/dashboard/acct/nw6IMf9Bnq/", label: "Clubspot dashboard", from: "Crew" },
     { href: directusUrl, label: "Directus", from: "Staff" },
     // Authentik's users page, where an admin impersonates someone (platform's docs/access.md).
     { href: `${loginUrlFor(directusUrl)}/if/admin/#/identity/users`, label: "Sign in as someone", from: "Admin" },
-    { href: "https://calendar.google.com", label: "Google Calendar" },
-    { href: "mailto:info@cyccommunitysailing.org", label: "Support" },
   ];
 }
 
@@ -41,10 +42,10 @@ function loginUrlFor(directusUrl: string): string {
   return directusUrl.replace("://directus.", "://login.");
 }
 
-/** The links this person's role sees. Directus still decides what Clubspot and Directus show them. */
-export function linksFor(role: string | undefined, directusUrl: string): ExternalLink[] {
-  return links(directusUrl)
-    .filter(({ from }) => from === undefined || rank(role) >= rank(from))
+/** The tools this person's role gets. Directus still decides what Clubspot and Directus show them. */
+export function toolsFor(role: string | undefined, directusUrl: string): ExternalLink[] {
+  return tools(directusUrl)
+    .filter(({ from }) => rank(role) >= rank(from))
     .map(({ href, label }) => ({ href, label }));
 }
 
@@ -54,20 +55,12 @@ export interface ExternalLink {
   label: string;
 }
 
-/** A link on the home page: a section of this app, or another site. */
-export type HomeLink = NavItem | ExternalLink;
-
 /** The sections to show this person. Directus still decides what each one loads. */
 export function navFor(permissions: Permissions): NavItem[] {
   return sections.filter((s) => s.shown(permissions)).map(({ to, label }) => ({ to, label }));
 }
 
-/** Every page this person can open, starting with home, for the sidebar and the phone's tab bar. */
+/** Every page this person can open, from Home to Links, for the sidebar and the phone's tab bar. */
 export function pagesFor(permissions: Permissions): NavItem[] {
-  return [{ to: "/", label: "Home" }, ...navFor(permissions)];
-}
-
-/** The home page's links for this person: their sections, then the links their role sees. */
-export function homeLinksFor(permissions: Permissions, links: ExternalLink[]): HomeLink[] {
-  return [...navFor(permissions), ...links];
+  return [{ to: "/", label: "Home" }, ...navFor(permissions), { to: "/links", label: "Links" }];
 }

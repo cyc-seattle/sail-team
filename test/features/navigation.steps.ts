@@ -19,7 +19,30 @@ const headings: Record<string, string> = {
   Planning: "Planning",
   Rosters: "Rosters",
   Household: "Household",
+  Links: "Links",
 };
+
+/** The link the scenario added. */
+const link: { title?: string } = {};
+
+/** The sidebar: always open on a laptop, and opened by More on a phone. */
+async function openSidebar(page: Page) {
+  if (screen.size === "laptop") {
+    return page.locator("body");
+  }
+  if (!(await page.getByRole("dialog").count())) {
+    await page.getByRole("button", { name: "More" }).click();
+  }
+  return page.getByRole("dialog");
+}
+
+/** Shuts More's sidebar on a phone, waiting out its closing. */
+async function closeSidebar(page: Page) {
+  if (screen.size === "phone") {
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  }
+}
 
 /** The menu that holds a page's link: on a phone, its tab, or More's sidebar if it has none. */
 async function menu(page: Page, label: string) {
@@ -44,16 +67,40 @@ Given(/^I have the (\w+) role$/, async ({ visitor }, role: string) => {
   }
 });
 
-When("I open Links in the menu", async ({ page }) => {
-  if (screen.size === "phone") {
-    await page.getByRole("button", { name: "More" }).click();
-  }
-  await page.getByRole("navigation", { name: "Menu" }).getByRole("button", { name: "Links" }).click();
+Given("a link to the CSC website", async ({ posts }) => {
+  link.title = await posts.link("https://csc-website.web.app");
 });
 
-Then(/^Links offers only (.+)$/, async ({ page }, list: string) => {
-  const labels = list.split(/, and |, | and /).map((label) => label.replace(/^the /, ""));
-  await expect(page.locator("#sidebar-links").getByRole("link")).toHaveText(labels);
+When("I open Links from the menu", async ({ page }) => {
+  await (await menu(page, "Links")).getByRole("link", { name: "Links" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Links" })).toBeVisible();
+});
+
+Then("Links shows the CSC website", async ({ page }) => {
+  await expect(page.getByRole("main").getByRole("link", { name: new RegExp(link.title!) })).toHaveAttribute(
+    "href",
+    "https://csc-website.web.app",
+  );
+});
+
+Then("the menu offers Support", async ({ page }) => {
+  const sidebar = await openSidebar(page);
+  await expect(sidebar.getByRole("link", { name: "Support" })).toHaveAttribute(
+    "href",
+    "mailto:info@cyccommunitysailing.org",
+  );
+  await closeSidebar(page);
+});
+
+When("I open my account menu", async ({ page, visitor }) => {
+  await openSidebar(page);
+  await page.getByRole("button", { name: visitor.name, exact: true }).click();
+});
+
+Then(/^it offers (?:only )?(.+)$/, async ({ page }, list: string) => {
+  const labels = list === "no tools" ? [] : list.split(/, and |, | and /).map((label) => label.replace(/^the /, ""));
+  await expect(page.getByRole("menu")).toBeVisible();
+  await expect(page.getByRole("menu").locator("a[role=menuitem]")).toHaveText(labels);
 });
 
 Given(/^I'm on a (laptop|phone)$/, async ({ page }, size: keyof typeof sizes) => {

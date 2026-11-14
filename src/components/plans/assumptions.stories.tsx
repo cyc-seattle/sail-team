@@ -18,7 +18,8 @@ export const Operations: Story = {
     await waitFor(async () => expect(await screen.findByText("$43.27 an hour, over 2,080 paid hours")).toBeVisible());
     await expect(canvas.getByRole("row", { name: /Card fees/ })).toHaveTextContent("programs and charters");
     await expect(canvas.getByRole("row", { name: /Parent helper/ })).toHaveTextContent("Volunteer");
-    await expect(canvas.getByRole("row", { name: /Sailqube/ })).toHaveTextContent("12");
+    // Fuel, upkeep and charter for the year; how many boats CSC has is platform's asset list, not the plan's.
+    await expect(canvas.getByRole("row", { name: /RIB/ })).toHaveTextContent(/^RIB\$15\.00\$8\.00\$300$/);
   },
 };
 
@@ -46,7 +47,9 @@ export const Bonuses: Story = {
 export const CostsAndDays: Story = {
   play: async ({ canvas }) => {
     const costs = canvas.getByRole("table", { name: "Fixed costs and G&A" });
-    await expect(within(costs).getByRole("row", { name: /Audit/ })).toHaveTextContent("Yes");
+    // The audit is left out of MTDC; insurance counts.
+    await expect(within(within(costs).getByRole("row", { name: /Audit/ })).getByRole("checkbox")).not.toBeChecked();
+    await expect(within(within(costs).getByRole("row", { name: /Insurance/ })).getByRole("checkbox")).toBeChecked();
     await expect(costs).toHaveTextContent("Program admin");
     await expect(costs).not.toHaveTextContent("Spring gala gifts");
     await expect(canvas.getByRole("table", { name: "Other revenue" })).toHaveTextContent("Spring gala gifts");

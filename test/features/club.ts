@@ -13,7 +13,6 @@ type Row = Record<string, unknown>;
 /** The tables a plan copy holds rows in, each before the rows it points at, so cleanup can go in this order. */
 const COPY_ROWS = [
   "plan_block_staff",
-  "plan_block_resources",
   "plan_block_boats",
   "plan_activities",
   "plan_activity_blocks",
@@ -24,7 +23,6 @@ const COPY_ROWS = [
   "plan_bonus_owners",
   "plan_salaried_bookings",
   "plan_salaried_positions",
-  "plan_resources",
   "plan_boat_rates",
   "plan_rates",
   "plan_staff_levels",
@@ -33,6 +31,7 @@ const COPY_ROWS = [
   "plan_offerings",
   "plan_revenue_charges",
   "plan_closed_dates",
+  "plan_terms",
 ];
 
 export class Club {
@@ -204,7 +203,7 @@ export class Club {
   }
 
   /** An offering in `copy` of `sailors` at `price` cents each, with `costs` cents of its own costs. Returns it. */
-  async offering(copy: string, name: string, sailors: number, price: number, costs = 0): Promise<Row> {
+  async offering(copy: string, name: string, sailors: number, price: number, costs = 0, extra: Row = {}): Promise<Row> {
     const offering = await this.versioned("plan_offerings", copy, {
       product_id: this.productId,
       name,
@@ -213,6 +212,7 @@ export class Club {
       capacity: sailors,
       target_enrollment: sailors,
       price_cents: price,
+      ...extra,
     });
     if (costs > 0) {
       await this.versioned("plan_budget_lines", copy, {
@@ -222,10 +222,19 @@ export class Club {
         cost_center_key: offering["key"],
         amount_cents: costs,
         fiscal_year: this.year,
-        excluded_from_mtdc: false,
       });
     }
     return offering;
+  }
+
+  /** A term named `name` in the Operations Plan's `copy`, from `starts` to `ends` (`MM-DD`) this year. Returns its key. */
+  async term(copy: string, name: string, starts: string, ends: string): Promise<string> {
+    const term = await this.versioned("plan_terms", copy, {
+      name,
+      starts_on: `${this.year}-${starts}`,
+      ends_on: `${this.year}-${ends}`,
+    });
+    return term["key"] as string;
   }
 
   /**
@@ -301,7 +310,6 @@ export class Club {
       cost_center_key: pool["key"],
       amount_cents: cents,
       fiscal_year: this.year,
-      excluded_from_mtdc: false,
     });
   }
 
@@ -314,7 +322,6 @@ export class Club {
       cost_center_type: "org",
       amount_cents: cents,
       fiscal_year: this.year,
-      excluded_from_mtdc: false,
     });
   }
 

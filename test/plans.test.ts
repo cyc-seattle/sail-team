@@ -137,7 +137,7 @@ describe("reading a Financial Plan's inputs from Directus", () => {
     );
   });
 
-  it("reads the Operations Plan's rates, with each bonus on the position it pays, and the boats the club has", async () => {
+  it("reads the Operations Plan's rates, with each bonus on the position it pays, and each boat class's rates", async () => {
     const { operations, products } = await inputs(ids.budget);
     expect(operations?.rates?.payroll_tax_rate).toBe(0.1);
     expect(operations?.positions.map((p) => [p.name, p.bonuses.map((b) => b.bonus_rate)])).toEqual([
@@ -156,27 +156,27 @@ describe("reading a Financial Plan's inputs from Directus", () => {
       },
     ]);
     expect(operations?.boatRates.find((b) => b.boat_class === "Sailqube")).toMatchObject({
-      quantity: 12,
-      sailors_per_boat: 2,
+      maintenance_per_boat_hour_cents: 200,
+      fuel_per_hour_cents: 50,
+      charter_per_day_cents: null,
     });
     expect(products).toEqual([{ key: "key:Boat storage", product: "Boat storage" }]);
   });
 
   it("reads the Operations Plan's other inputs, naming the accounts, pools and positions their rows point at", async () => {
     const { operations } = await inputs(ids.budget);
-    expect(operations?.rates?.rib_kind).toBe("RIB");
     expect(operations?.positions.find((p) => p.name === "Program Director")).toMatchObject({
       hourly_coaching_rate_cents: 3_000,
       remainder_pool: "Program admin",
     });
     expect(operations?.charges[0]).toMatchObject({
       account: { number: "5310", name: "Card fees" },
-      excluded_from_mtdc: false,
+      in_mtdc: true,
     });
     expect(operations?.fixedCosts.find((c) => c.name === "Audit")).toMatchObject({
       account: { number: "6110", name: "Insurance" },
       charged_to: "G&A",
-      excluded_from_mtdc: true,
+      in_mtdc: false,
     });
     expect(operations?.fixedCosts.find((c) => c.name === "Spring gala costs")).toMatchObject({
       charged_to: "Example Sailing Club",
@@ -197,7 +197,8 @@ describe("reading a Financial Plan's inputs from Directus", () => {
     const { schedule, offerings } = await inputs(ids.budget);
     const summer = schedule[ids.summerPlan]!;
     const dock = summer.find((b) => b.date === "2027-06-21" && b.name === "Morning dock");
-    expect(dock?.parts).toEqual(["3 Level 1 Instructors", "2 RIBs", "6 Sailqubes"]);
+    // The mocks' RIBs are equipment, which the app no longer reads, until it takes platform's boat classes.
+    expect(dock?.parts).toEqual(["3 Level 1 Instructors", "6 Sailqubes"]);
     expect(dock?.activities.map((a) => [a.offering_key, a.setup_minutes, a.on_water_minutes])).toEqual([
       ["key:Guppies Week 1", 30, 180],
       ["key:Sea Otters Week 1", 30, 180],
@@ -205,7 +206,7 @@ describe("reading a Financial Plan's inputs from Directus", () => {
     // "J-Pod 2027-03-02" only repeats the program and the date.
     expect(schedule[ids.doublehandedPlan]?.[0]).toMatchObject({
       name: null,
-      parts: ["2 Level 3 Coaches", "2 RIBs", "3 420s, plus 3 sailors' own"],
+      parts: ["2 Level 3 Coaches", "3 420s, plus 3 sailors' own"],
     });
     const numbered = new Map(
       numberedOfferings(offerings[ids.summerPlan]!).flatMap((g) => g.offerings.map((o) => [o.key, o])),
@@ -235,7 +236,7 @@ describe("reading a Financial Plan's inputs from Directus", () => {
   it("reads each program area's own fixed costs and staff time, by its report", async () => {
     const { fixedCosts, staffTime } = await inputs(ids.budget);
     expect(fixedCosts[ids.summerPlan]).toEqual([
-      expect.objectContaining({ name: "Tent rental", charged_to: "Summer", excluded_from_mtdc: true }),
+      expect.objectContaining({ name: "Tent rental", charged_to: "Summer", in_mtdc: false }),
     ]);
     expect(staffTime[ids.summerPlan]?.map((l) => [l.name, l.charged_to])).toEqual([["Camp setup", "Summer"]]);
     expect(fixedCosts[ids.doublehandedPlan]).toBeUndefined();

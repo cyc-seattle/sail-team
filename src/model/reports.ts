@@ -1,6 +1,6 @@
 // The shapes the Planning reports show, and how they're made from a Financial Plan's results and inputs.
 import type { PlanActivity, PlanOffering } from "@cyc-seattle/platform/planning";
-import type { Member, PlanLine, ResultWarning, Results } from "./financial-plans.ts";
+import type { Member, PlanLine, PnlRow, ResultTerm, ResultWarning, Results } from "./financial-plans.ts";
 
 /** Lines that are worked out the same way, added up, such as every offering's coach wages. */
 export interface LineAmount {
@@ -702,4 +702,35 @@ export function storageOf(lines: (Line & Pick<PlanLine, "member">)[], members: M
   return [...costs.values()].sort(
     (a, b) => order[a.kind] - order[b.kind] || a.payer.localeCompare(b.payer) || a.name.localeCompare(b.name),
   );
+}
+
+/** One term's P&L for a program area. */
+export interface TermRow {
+  /** The term's name, or null for the offerings in no term. */
+  term: string | null;
+  revenue_cents: number;
+  expense_cents: number;
+}
+
+/** Terms in the order they start, then by name, with no term last. */
+const byTermStart = (a: ResultTerm, b: ResultTerm) =>
+  a.term_key === null || b.term_key === null
+    ? Number(a.term_key === null) - Number(b.term_key === null)
+    : (a.term_starts_on ?? "").localeCompare(b.term_starts_on ?? "") ||
+      (a.term_name ?? "").localeCompare(b.term_name ?? "");
+
+/**
+ * A program area's P&L for each term, then for its offerings in no term. Empty when none of its offerings is in a term,
+ * since its year says the same.
+ */
+export function termsOf(pnl: PnlRow[], areaId: string | null): TermRow[] {
+  const own = pnl.filter((p) => p.level === "program_area_term" && p.subject_key === areaId);
+  if (!own.some((p) => p.term_key !== null)) {
+    return [];
+  }
+  return own.sort(byTermStart).map((p) => ({
+    term: p.term_key === null ? null : (p.term_name ?? "A term"),
+    revenue_cents: p.revenue_cents,
+    expense_cents: p.expense_cents,
+  }));
 }

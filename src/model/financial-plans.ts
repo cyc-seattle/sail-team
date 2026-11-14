@@ -162,9 +162,21 @@ export interface PlanLine {
   member: string | null;
 }
 
-/** One offering's, product's, or program area's P&L, with the member it's charged in. */
-export interface PnlRow {
-  level: Pnl["level"];
+/** The term a row is for, as it was when platform worked the row out. All null for offerings in no term. */
+export interface ResultTerm {
+  /** The Operations Plan's key for it. */
+  term_key: string | null;
+  /** Such as Summer 2027. */
+  term_name: string | null;
+  term_starts_on: string | null;
+}
+
+/**
+ * One offering's, product's, or program area's P&L, with the member it's charged in. A `program_area_term` row is an
+ * area's offerings in one term, or in none.
+ */
+export interface PnlRow extends ResultTerm {
+  level: Pnl["level"] | "program_area_term";
   subject_key: string;
   name: string;
   revenue_cents: number;
