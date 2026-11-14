@@ -47,7 +47,9 @@ export const Bonuses: Story = {
 export const CostsAndDays: Story = {
   play: async ({ canvas }) => {
     const costs = canvas.getByRole("table", { name: "Fixed costs and G&A" });
-    await expect(within(costs).getByRole("row", { name: /Audit/ })).toHaveTextContent("Yes");
+    // The audit is left out of MTDC; insurance counts.
+    await expect(within(within(costs).getByRole("row", { name: /Audit/ })).getByRole("checkbox")).not.toBeChecked();
+    await expect(within(within(costs).getByRole("row", { name: /Insurance/ })).getByRole("checkbox")).toBeChecked();
     await expect(costs).toHaveTextContent("Program admin");
     await expect(costs).not.toHaveTextContent("Spring gala gifts");
     await expect(canvas.getByRole("table", { name: "Other revenue" })).toHaveTextContent("Spring gala gifts");
