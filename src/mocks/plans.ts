@@ -694,6 +694,9 @@ function results(setRow: Row, calculatedAt: string): Record<string, Row[]> {
       enrollment: p.enrollment,
       days: p.days,
       sailor_days: p.sailor_days,
+      // The engine gives these from cyc-seattle/platform#258 on; an older package leaves them out.
+      allocation_holds: (p as { allocation_holds?: number | null }).allocation_holds ?? null,
+      breakeven_enrollment: (p as { breakeven_enrollment?: number | null }).breakeven_enrollment ?? null,
     })),
     plan_result_capital: out.capital.map((item) => ({
       version_set_id: setId,

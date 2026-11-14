@@ -29,6 +29,7 @@ import {
   reportsOf,
   sharedCostsOf,
   statementOf,
+  withResults,
 } from "@/model/reports";
 
 /** One report of a Financial Plan, by its key: `overview`, `rates`, a Program Plan's id, `non-program` or `fundraising`. */
@@ -161,7 +162,7 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
       warnings={warnings.filter((w) => w.area === report)}
       statement={statementOf(results.lines.filter((l) => l.member === member.id))}
       programs={inputs.programs[report] ?? []}
-      offerings={inputs.offerings[report] ?? []}
+      offerings={withResults(inputs.offerings[report] ?? [], results.pnl)}
       setId={set.id}
       areaKey={report}
       trips={inputs.trips[report] ?? []}

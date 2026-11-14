@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { TriangleAlertIcon } from "lucide-react";
 import { Fragment, type ReactNode } from "react";
 import { formatShare, type FixedCost, type StaffTime } from "@/model/assumptions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -32,6 +33,37 @@ function Num({ children }: { children: ReactNode }) {
 
 function Amount({ cents, whole = false }: { cents: number | null; whole?: boolean }) {
   return <TableCell className="text-right">{cents === null ? none : <Money cents={cents} whole={whole} />}</TableCell>;
+}
+
+/** A number that needs the planner's eye, such as fewer sailors' room than the offering's max. */
+function Flagged({ children, why }: { children: ReactNode; why: string }) {
+  return (
+    <TableCell className="text-right font-medium text-warning tabular-nums">
+      <span className="inline-flex items-center gap-1" title={why}>
+        <TriangleAlertIcon aria-hidden className="size-3.5" />
+        {children}
+        <span className="sr-only">: {why}</span>
+      </span>
+    </TableCell>
+  );
+}
+
+/** The most sailors the offering's blocks can take, flagged when that's fewer than its max. */
+function Room({ offering: o }: { offering: ReportOffering }) {
+  if (o.room == null) return <Num>{none}</Num>;
+  if (o.room < o.max)
+    return <Flagged why={`Its blocks have room for fewer than its max of ${o.max}`}>{count(o.room)}</Flagged>;
+  return <Num>{count(o.room)}</Num>;
+}
+
+/** The fewest sailors at which the offering pays for itself, flagged when that's more than the plan expects. */
+function Breakeven({ offering: o }: { offering: ReportOffering }) {
+  if (!o.max_set) return <Num>{none}</Num>;
+  if (o.breakeven == null) return <Flagged why="It loses money even when full">Never</Flagged>;
+  if (o.breakeven > o.estimated) {
+    return <Flagged why={`More than the ${o.estimated} sailors expected`}>{count(o.breakeven)}</Flagged>;
+  }
+  return <Num>{count(o.breakeven)}</Num>;
 }
 
 /** A fee divided by days or hours, or nothing to show when the offering has none. */
@@ -93,7 +125,18 @@ function AreaAssumptions({
   );
 }
 
-const offeringHead = ["Fee", "Fee per day", "Sailors", "Sailor-days", "Fee per hour", "Sailor-hours", "Cost of goods"];
+const offeringHead = [
+  "Fee",
+  "Fee per day",
+  "Sailors",
+  "Max",
+  "Room for",
+  "Breaks even at",
+  "Sailor-days",
+  "Fee per hour",
+  "Sailor-hours",
+  "Cost of goods",
+];
 
 export interface ProgramAreaReportProps {
   /** The program area's name, such as Summer. */
@@ -197,6 +240,9 @@ export function ProgramAreaReport({
                     <Amount cents={o.fee_cents} whole />
                     <Amount cents={per(o.fee_cents, o.days)} />
                     <Num>{count(o.estimated)}</Num>
+                    <Num>{count(o.max)}</Num>
+                    <Room offering={o} />
+                    <Breakeven offering={o} />
                     <Num>{count(o.estimated * o.days)}</Num>
                     <Amount cents={per(o.fee_cents, o.hours)} />
                     <Num>{hoursOf(o.estimated * o.hours)}</Num>

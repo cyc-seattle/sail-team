@@ -1,6 +1,6 @@
 // The shapes the Planning reports show, and how they're made from a Financial Plan's results and inputs.
 import type { PlanActivity, PlanOffering } from "@cyc-seattle/platform/planning";
-import type { Member, PlanLine, ResultWarning, Results } from "./financial-plans.ts";
+import type { Member, PlanLine, PnlRow, ResultWarning, Results } from "./financial-plans.ts";
 
 /** Lines that are worked out the same way, added up, such as every offering's coach wages. */
 export interface LineAmount {
@@ -119,6 +119,12 @@ export interface ReportOffering {
   /** How many sailors the plan expects. */
   estimated: number;
   max: number;
+  /** Whether the plan sets its max, rather than taking the sailors expected. */
+  max_set?: boolean;
+  /** The most sailors its blocks can take, from the results. Null when nothing limits it. */
+  room?: number | null;
+  /** The fewest sailors at which it pays for itself, from the results. Null when it doesn't even when full. */
+  breakeven?: number | null;
   days: number;
   /** Hours on the water for one sailor, across the whole offering. */
   hours: number;
@@ -617,11 +623,25 @@ export function reportOffering(
     fee_cents: offering.price_cents ?? 0,
     estimated: offering.estimated,
     max: offering.capacity ?? offering.estimated,
+    max_set: offering.capacity !== null,
     days: new Set(activities.filter((a) => a.kind !== "travel").map((a) => a.date)).size,
     hours: activities.reduce((total, a) => total + onWaterMinutes(a), 0) / 60,
     cogs_rate: offering.cogs_rate,
     note: offering.note,
   };
+}
+
+/** Offerings with the room their blocks have and the sailors they need to pay for themselves, from the results. */
+export function withResults(
+  offerings: ReportOffering[],
+  pnl: Pick<PnlRow, "level" | "subject_key" | "allocation_holds" | "breakeven_enrollment">[],
+): ReportOffering[] {
+  const rows = new Map(pnl.filter((p) => p.level === "offering").map((p) => [p.subject_key, p]));
+  return offerings.map((o) => ({
+    ...o,
+    room: rows.get(o.key)?.allocation_holds ?? null,
+    breakeven: rows.get(o.key)?.breakeven_enrollment ?? null,
+  }));
 }
 
 /** A regatta trip, with what each coach's travel costs. */

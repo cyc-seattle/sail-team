@@ -17,6 +17,7 @@ import {
   sortRows,
   type OverviewRow,
   type ReportOffering,
+  withResults,
 } from "../src/model/reports.ts";
 
 const row = (name: string, revenue: number, offerings = 1): OverviewRow => ({
@@ -260,7 +261,40 @@ describe("reportOffering", () => {
   });
 
   it("names its session by its name when it has none, and takes its sailors as its max when it has no capacity", () => {
-    expect(reportOffering(offering, [])).toMatchObject({ session: "Camp, week 1", max: 8, fee_cents: 50_000 });
+    expect(reportOffering(offering, [])).toMatchObject({
+      session: "Camp, week 1",
+      max: 8,
+      max_set: false,
+      fee_cents: 50_000,
+    });
+  });
+});
+
+describe("withResults", () => {
+  const offering = (key: string) => ({
+    key,
+    program: "Guppies",
+    session: key,
+    starts_on: "2027-07-05",
+    ends_on: "2027-07-09",
+    fee_cents: 0,
+    estimated: 8,
+    max: 10,
+    days: 5,
+    hours: 15,
+    cogs_rate: null,
+    note: null,
+  });
+
+  it("gives each offering its room and breakeven from its own P&L row, and none without one", () => {
+    const pnl = [
+      { level: "offering" as const, subject_key: "w1", allocation_holds: 12, breakeven_enrollment: 6 },
+      { level: "product" as const, subject_key: "w2", allocation_holds: 99, breakeven_enrollment: 99 },
+    ];
+    expect(withResults([offering("w1"), offering("w2")], pnl)).toMatchObject([
+      { key: "w1", room: 12, breakeven: 6 },
+      { key: "w2", room: null, breakeven: null },
+    ]);
   });
 });
 
