@@ -197,7 +197,6 @@ function operations(version: string): Copy {
     lodging_per_night_cents: 15_000,
     mileage_rate_cents: 70,
     rib_resource_kind_id: rib.id,
-    powerboat_per_hour_cents: 2_300,
   });
   const level = (name: string, cents: number) =>
     c.add("plan_staff_levels", name, { name, pay_type: "hourly", hourly_rate_cents: cents });
@@ -240,7 +239,13 @@ function operations(version: string): Copy {
     [boatClasses.keelboat, 900, 2],
     [boatClasses.c420, 300, 10],
   ] as const) {
-    c.add("plan_boat_rates", boat.name, { boat_class_id: boat.id, maintenance_per_boat_hour_cents: cents, quantity });
+    c.add("plan_boat_rates", boat.name, {
+      boat_class_id: boat.id,
+      maintenance_per_boat_hour_cents: cents,
+      fuel_per_hour_cents: boat === boatClasses.keelboat ? 400 : 50,
+      charter_per_day_cents: null,
+      quantity,
+    });
   }
   c.add("plan_revenue_charges", "Card fees", {
     name: "Card fees",

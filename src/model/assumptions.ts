@@ -5,7 +5,6 @@ import type {
   PlanLaborLine,
   PlanOffering,
   PlanRates,
-  PlanResource,
   PlanRevenueCharge,
   PlanSalariedPosition,
   PlanStaffLevel,
@@ -13,12 +12,7 @@ import type {
 
 /** The rates the Operations Plan sets for the year, which every plan's numbers come from. */
 export interface OperationsAssumptions {
-  rates:
-    | (Pick<PlanRates, "payroll_tax_rate" | "lodging_per_night_cents" | "mileage_rate_cents"> & {
-        /** What one powerboat costs an hour on the water, fuel included. */
-        powerboat_per_hour_cents: number | null;
-      })
-    | null;
+  rates: Pick<PlanRates, "payroll_tax_rate" | "lodging_per_night_cents" | "mileage_rate_cents"> | null;
   staffLevels: Pick<PlanStaffLevel, "key" | "name" | "pay_type" | "hourly_rate_cents">[];
   positions: (Pick<
     PlanSalariedPosition,
@@ -34,22 +28,13 @@ export interface OperationsAssumptions {
   charges: (Pick<PlanRevenueCharge, "key" | "name" | "rate" | "product_kinds" | "excluded_from_mtdc" | "note"> & {
     account: Account;
   })[];
-  resources: Pick<
-    PlanResource,
-    | "key"
-    | "name"
-    | "cost_per_hour_cents"
-    | "cost_per_day_cents"
-    | "fuel_per_hour_cents"
-    | "maintenance_per_hour_cents"
-    | "excluded_from_mtdc"
-  >[];
-  /** Each boat class's upkeep, and the most sailors one boat takes, which the engine checks blocks against. */
+  /** Each boat class's rates for the year: fuel and upkeep an hour on the water, and a day's charter. */
   boatRates: {
     key: string;
     boat_class: string;
+    fuel_per_hour_cents: number | null;
     maintenance_per_boat_hour_cents: number;
-    max_capacity: number | null;
+    charter_per_day_cents: number | null;
   }[];
   /** Every plan's bonuses. */
   bonuses: Bonus[];

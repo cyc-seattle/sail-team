@@ -23,11 +23,11 @@ export interface ScheduleBlock {
   date: string;
   name: string | null;
   activities: ScheduledActivity[];
-  /** Its staff, then its powerboats and equipment, then its boats. */
+  /** Its staff, then its boats: the club's own, then chartered. */
   parts: string[];
 }
 
-type BlockRow = { id: string; key: string; date: string; name: string | null; powerboats?: number | null };
+type BlockRow = { id: string; key: string; date: string; name: string | null };
 type ActivityRow = Pick<
   PlanActivity,
   | "id"
@@ -47,8 +47,13 @@ type ActivityRow = Pick<
 /** What each block shares, with the names of the levels, positions, equipment and boat classes it uses. */
 export interface BlockParts {
   staff: { block_id: string; staff_level: string | null; position: string | null; count: number; pay: string | null }[];
-  resources: { block_id: string; resource: string; quantity: number; hours: number | null }[];
-  boats: { block_id: string; boat_class: string; count: number; sailor_owned: number | null }[];
+  boats: {
+    block_id: string;
+    boat_class: string;
+    count: number;
+    chartered: number | null;
+    sailor_owned: number | null;
+  }[];
 }
 
 const amount = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 2 });
@@ -104,19 +109,16 @@ export function scheduleOf(
           : counted(s.count, s.staff_level ?? "staff"),
       )
       .sort(),
-    ...blocks
-      .filter((b) => b.id === id && (b.powerboats ?? 0) > 0)
-      .map((b) => counted(b.powerboats ?? 0, "powerboats")),
-    ...parts.resources
-      .filter((r) => r.block_id === id)
-      .map((r) => `${counted(r.quantity, r.resource)}${r.hours === null ? "" : `, ${amount(r.hours)} hours each`}`)
-      .sort(),
     ...parts.boats
-      .filter((b) => b.block_id === id)
+      .filter((b) => b.block_id === id && (b.count > 0 || !b.chartered))
       .map(
         (b) =>
           `${counted(b.count, b.boat_class)}${b.sailor_owned ? `, plus ${amount(b.sailor_owned)} sailors' own` : ""}`,
       )
+      .sort(),
+    ...parts.boats
+      .filter((b) => b.block_id === id && (b.chartered ?? 0) > 0)
+      .map((b) => counted(b.chartered ?? 0, `chartered ${b.boat_class}`))
       .sort(),
   ];
   const shared: ScheduleBlock[] = blocks.map((b) => ({

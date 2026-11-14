@@ -2,7 +2,6 @@ import type {
   PlanActivity,
   PlanBonusOwner,
   PlanBlockBoats,
-  PlanBlockResource,
   PlanBlockStaff,
   PlanBudgetLine,
   PlanClosedDate,
@@ -10,7 +9,6 @@ import type {
   PlanOffering,
   PlanProgram,
   PlanRates,
-  PlanResource,
   PlanRevenueCharge,
   PlanSalariedPosition,
   PlanStaffLevel,
@@ -74,11 +72,11 @@ async function operationsAssumptions(
   version: string,
   versions: string[],
 ): Promise<Omit<OperationsAssumptions, "fixedCosts" | "staffTime">> {
-  const [rates, staffLevels, positions, charges, resources, boatRates, bonuses, bonusProducts, bookings, closed] =
+  const [rates, staffLevels, positions, charges, boatRates, bonuses, bonusProducts, bookings, closed] =
     await Promise.all([
-      // Every field, since platform replaces rib_resource_kind_id with powerboat_per_hour_cents
-      // (cyc-seattle/platform#126), and Directus refuses a field it doesn't have.
-      rowsOf<PlanRates & { powerboat_per_hour_cents?: number | null }>("plan_rates", [version]),
+      // Every field, since platform drops rib_resource_kind_id (cyc-seattle/platform#126), and Directus refuses a
+      // field it doesn't have.
+      rowsOf<PlanRates>("plan_rates", [version]),
       rowsOf<PlanStaffLevel>("plan_staff_levels", [version]),
       rowsOf<PlanSalariedPosition & { remainder_pool_id: { name: string } | null }>(
         "plan_salaried_positions",
@@ -86,14 +84,14 @@ async function operationsAssumptions(
         ["*", "remainder_pool_id.name"],
       ),
       rowsOf<PlanRevenueCharge & { account_id: Account }>("plan_revenue_charges", [version], ["*", ...accountFields]),
-      rowsOf<PlanResource>("plan_resources", [version]),
-      // The whole boat class, since platform renames sailors_per_boat to max_capacity (cyc-seattle/platform#126),
-      // and Directus refuses a field it doesn't have.
+      // Every field, since platform adds the fuel and charter rates (cyc-seattle/platform#126).
       rowsOf<{
         key: string;
-        boat_class_id: { name: string; max_capacity?: number | null; sailors_per_boat?: number | null };
+        boat_class_id: { name: string };
         maintenance_per_boat_hour_cents: number;
-      }>("plan_boat_rates", [version], ["key", "boat_class_id.*", "maintenance_per_boat_hour_cents"]),
+        fuel_per_hour_cents?: number | null;
+        charter_per_day_cents?: number | null;
+      }>("plan_boat_rates", [version], ["*", "boat_class_id.name"]),
       rowsOf<BonusRow>("plan_bonus_owners", versions, [
         "id",
         "key",
@@ -144,7 +142,6 @@ async function operationsAssumptions(
           payroll_tax_rate: rate.payroll_tax_rate,
           lodging_per_night_cents: rate.lodging_per_night_cents,
           mileage_rate_cents: rate.mileage_rate_cents,
-          powerboat_per_hour_cents: rate.powerboat_per_hour_cents ?? null,
         }
       : null,
     staffLevels: byName(staffLevels),
@@ -158,20 +155,13 @@ async function operationsAssumptions(
       ...c,
       account: { number: account_id.number, name: account_id.name },
     })),
-    resources: byName(resources).map((r) => ({
-      key: r.key,
-      name: r.name,
-      cost_per_hour_cents: r.cost_per_hour_cents,
-      cost_per_day_cents: r.cost_per_day_cents,
-      fuel_per_hour_cents: r.fuel_per_hour_cents,
-      maintenance_per_hour_cents: r.maintenance_per_hour_cents,
-      excluded_from_mtdc: r.excluded_from_mtdc,
-    })),
     boatRates: boatRates
-      .map(({ boat_class_id, ...b }) => ({
-        ...b,
-        boat_class: boat_class_id.name,
-        max_capacity: boat_class_id.max_capacity ?? boat_class_id.sailors_per_boat ?? null,
+      .map((b) => ({
+        key: b.key,
+        boat_class: b.boat_class_id.name,
+        fuel_per_hour_cents: b.fuel_per_hour_cents ?? null,
+        maintenance_per_boat_hour_cents: b.maintenance_per_boat_hour_cents,
+        charter_per_day_cents: b.charter_per_day_cents ?? null,
       }))
       .sort((a, b) => a.boat_class.localeCompare(b.boat_class)),
     bonuses: all,
@@ -189,11 +179,11 @@ async function operationsAssumptions(
 
 /** The program areas' blocks, and what each shares. */
 async function blockRows(versions: string[]) {
-  const [blocks, staff, resources, boats] = await Promise.all([
-    // Every field, since platform adds powerboats (cyc-seattle/platform#126).
-    rowsOf<{ id: string; key: string; version_id: string; date: string; name: string; powerboats?: number | null }>(
+  const [blocks, staff, boats] = await Promise.all([
+    rowsOf<{ id: string; key: string; version_id: string; date: string; name: string }>(
       "plan_activity_blocks",
       versions,
+      ["id", "key", "version_id", "date", "name"],
     ),
     rowsOf<PlanBlockStaff>("plan_block_staff", versions, [
       "block_id",
@@ -202,15 +192,14 @@ async function blockRows(versions: string[]) {
       "count",
       "pay",
     ]),
-    rowsOf<PlanBlockResource>("plan_block_resources", versions, ["block_id", "resource_key", "quantity", "hours"]),
-    rowsOf<Omit<PlanBlockBoats, "boat_class_id"> & { boat_class_id: { name: string } }>("plan_block_boats", versions, [
-      "block_id",
-      "boat_class_id.name",
-      "count",
-      "sailor_owned",
-    ]),
+    // Every field, since platform adds chartered (cyc-seattle/platform#126). Platform drops the blocks' equipment.
+    rowsOf<Omit<PlanBlockBoats, "boat_class_id"> & { boat_class_id: { name: string }; chartered?: number | null }>(
+      "plan_block_boats",
+      versions,
+      ["*", "boat_class_id.name"],
+    ),
   ]);
-  return { blocks, staff, resources, boats };
+  return { blocks, staff, boats };
 }
 
 /** The names of what a cost can be charged to besides a pool or an offering, from the catalog. */
@@ -381,7 +370,6 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
       const ofOperations = (l: { version_id: string }) => l.version_id === ops?.version_id;
       const offeringKey = new Map(offerings.map((o) => [o.id, o.key]));
       const positionName = new Map(operations?.positions.map((p) => [p.key, p.name]));
-      const resourceName = new Map(operations?.resources.map((r) => [r.key, r.name]));
       const parts: BlockParts = {
         staff: blocks.staff.map((s) => ({
           block_id: s.block_id,
@@ -390,16 +378,11 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
           count: s.count,
           pay: s.pay,
         })),
-        resources: blocks.resources.map((r) => ({
-          block_id: r.block_id,
-          resource: resourceName.get(r.resource_key) ?? "equipment",
-          quantity: r.quantity,
-          hours: r.hours,
-        })),
         boats: blocks.boats.map((b) => ({
           block_id: b.block_id,
           boat_class: b.boat_class_id.name,
           count: b.count,
+          chartered: b.chartered ?? null,
           sailor_owned: b.sailor_owned,
         })),
       };

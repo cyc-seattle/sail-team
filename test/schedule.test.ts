@@ -103,8 +103,10 @@ describe("scheduleOf", () => {
           { block_id: "b", staff_level: null, position: "Head Coach", count: 1, pay: "hourly" },
           { block_id: "b", staff_level: "Level 3 Coach", position: null, count: 2, pay: null },
         ],
-        resources: [{ block_id: "b", resource: "RIBs", quantity: 1, hours: 2.5 }],
-        boats: [{ block_id: "b", boat_class: "420", count: 3, sailor_owned: 3 }],
+        boats: [
+          { block_id: "b", boat_class: "420", count: 3, chartered: null, sailor_owned: 3 },
+          { block_id: "b", boat_class: "RIB", count: 1, chartered: 1, sailor_owned: null },
+        ],
       },
       () => "J-Pod 1",
     );
@@ -112,7 +114,7 @@ describe("scheduleOf", () => {
       [
         "Tuesday practice",
         ["a"],
-        ["1 Head Coach, by the hour", "2 Level 3 Coaches", "1 RIB, 2.5 hours each", "3 420s, plus 3 sailors' own"],
+        ["1 Head Coach, by the hour", "2 Level 3 Coaches", "1 RIB", "3 420s, plus 3 sailors' own", "1 chartered RIB"],
       ],
       [null, ["late"], []],
     ]);
@@ -125,33 +127,36 @@ describe("scheduleOf's parts", () => {
     const row = { id: "a", key: "a", offering_id: "o", date: "2027-07-05", kind: "practice" as const };
     const at = { uses_boats: true, start_time: null, end_time: null, on_water_minutes: null, setup_minutes: null };
     const boats = [
-      { block_id: "x", boat_class: "Qube", count: 1, sailor_owned: null },
-      { block_id: "x", boat_class: "Harpoon", count: 2, sailor_owned: null },
+      { block_id: "x", boat_class: "Qube", count: 1, chartered: null, sailor_owned: null },
+      { block_id: "x", boat_class: "Harpoon", count: 2, chartered: null, sailor_owned: null },
     ];
     const partsOf = (order: typeof boats) =>
       scheduleOf(
         [{ id: "x", key: "x", date: "2027-07-05", name: null }],
         [{ ...row, ...at, block_id: "x", putaway_minutes: null }],
-        { staff: [], resources: [], boats: order },
+        { staff: [], boats: order },
         () => "o",
       )[0]?.parts;
     expect(partsOf(boats)).toEqual(partsOf([...boats].reverse()));
   });
 
-  it("lists a block's powerboats after its staff and before its sailboats", () => {
+  it("lists a block's chartered boats after the club's own", () => {
     const row = { id: "a", key: "a", offering_id: "o", date: "2027-07-05", kind: "practice" as const };
     const at = { uses_boats: true, start_time: null, end_time: null, on_water_minutes: null, setup_minutes: null };
     const [block] = scheduleOf(
-      [{ id: "x", key: "x", date: "2027-07-05", name: null, powerboats: 2 }],
+      [{ id: "x", key: "x", date: "2027-07-05", name: null }],
       [{ ...row, ...at, block_id: "x", putaway_minutes: null }],
       {
         staff: [{ block_id: "x", staff_level: "Coach", position: null, count: 2, pay: null }],
-        resources: [],
-        boats: [{ block_id: "x", boat_class: "Opti", count: 6, sailor_owned: null }],
+        boats: [
+          { block_id: "x", boat_class: "Opti", count: 6, chartered: null, sailor_owned: null },
+          { block_id: "x", boat_class: "RIB", count: 2, chartered: 1, sailor_owned: null },
+          { block_id: "x", boat_class: "420", count: 0, chartered: 2, sailor_owned: null },
+        ],
       },
       () => "o",
     );
-    expect(block?.parts).toEqual(["2 Coaches", "2 powerboats", "6 Optis"]);
+    expect(block?.parts).toEqual(["2 Coaches", "2 RIBs", "6 Optis", "1 chartered RIB", "2 chartered 420s"]);
   });
 });
 

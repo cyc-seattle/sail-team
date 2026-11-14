@@ -13,6 +13,7 @@ const kinds: Record<string, string> = {
   closed_date: "On a closed day",
   closed_date_in_area_plan: "Closed day in a program area's plan",
   many_rates: "More than one set of rates",
+  no_charter_rate: "Chartered boats with no charter rate",
   no_cost_account: "Cost with no account",
   // Saved before platform counted boats from its asset list (cyc-seattle/platform#126).
   no_fleet_quantity: "Boats with no count",
@@ -23,14 +24,12 @@ const kinds: Record<string, string> = {
   no_rate: "Trip rate missing",
   no_revenue_account: "Product with no revenue account",
   no_max_capacity: "Boat class with no max capacity",
-  no_powerboat_rate: "Powerboats with no hourly cost",
   // Saved before platform renamed it no_max_capacity.
   no_sailors_per_boat: "Boat class with no sailors per boat",
   offering_in_wrong_plan: "Offering in the wrong plan",
   over_capacity: "Too many sailors",
   over_inventory_boats: "More boats out than there are",
-  over_inventory_powerboats: "More powerboats out than there are",
-  // Saved before platform counted powerboats on blocks.
+  // Saved before platform counted coach boats by boat class.
   over_inventory_resource: "More equipment out than there is",
   position_double_booked: "Coach in two places at once",
   position_overbooked: "Position charged more than its salary",

@@ -383,7 +383,6 @@ export const reportAssumptions: OperationsAssumptions = {
     payroll_tax_rate: 0.1,
     lodging_per_night_cents: 15_000,
     mileage_rate_cents: 70,
-    powerboat_per_hour_cents: 2_300,
   },
   staffLevels: [
     { key: "jr", name: "Junior Instructor", pay_type: "hourly", hourly_rate_cents: 1_900 },
@@ -443,26 +442,35 @@ export const reportAssumptions: OperationsAssumptions = {
       note: null,
     },
   ],
-  resources: [
-    {
-      key: "rental",
-      name: "Rented RIB",
-      cost_per_hour_cents: 4_500,
-      cost_per_day_cents: null,
-      fuel_per_hour_cents: 1_500,
-      maintenance_per_hour_cents: null,
-      excluded_from_mtdc: true,
-    },
-  ],
   boatRates: [
-    { key: "opti", boat_class: "Opti", maintenance_per_boat_hour_cents: 150, max_capacity: 1 },
+    {
+      key: "opti",
+      boat_class: "Opti",
+      fuel_per_hour_cents: null,
+      maintenance_per_boat_hour_cents: 150,
+      charter_per_day_cents: null,
+    },
     {
       key: "sailqube",
       boat_class: "Sailqube",
+      fuel_per_hour_cents: null,
       maintenance_per_boat_hour_cents: 200,
-      max_capacity: 2,
+      charter_per_day_cents: null,
     },
-    { key: "420", boat_class: "420", maintenance_per_boat_hour_cents: 300, max_capacity: 2 },
+    {
+      key: "420",
+      boat_class: "420",
+      fuel_per_hour_cents: null,
+      maintenance_per_boat_hour_cents: 300,
+      charter_per_day_cents: 7_500,
+    },
+    {
+      key: "rib",
+      boat_class: "RIB",
+      fuel_per_hour_cents: 1_500,
+      maintenance_per_boat_hour_cents: 800,
+      charter_per_day_cents: 30_000,
+    },
   ],
   bonuses: [
     programDirectorBonus,
