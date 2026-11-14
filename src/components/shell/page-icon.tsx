@@ -1,10 +1,19 @@
-import { ChartColumnIcon, CircleIcon, ContactIcon, HouseIcon, UsersIcon, type LucideIcon } from "lucide-react";
+import {
+  ChartColumnIcon,
+  CircleIcon,
+  ContactIcon,
+  HouseIcon,
+  LinkIcon,
+  UsersIcon,
+  type LucideIcon,
+} from "lucide-react";
 
 const icons: Record<string, LucideIcon> = {
   "/": HouseIcon,
   "/plans": ChartColumnIcon,
   "/roster": UsersIcon,
   "/household": ContactIcon,
+  "/links": LinkIcon,
 };
 
 /** A page's icon, the same in the sidebar and the tab bar. */

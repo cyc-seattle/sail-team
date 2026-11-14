@@ -12,8 +12,8 @@ and served by Caddy on the club's cluster. It has no server of its own. The brow
 each person can see and change. The app adds no security of its own.
 
 The app serves all of `cycsail.team`, which isthmia's portal had until #1, and puts its built files under `/_app`
-(`vite.config.ts`). The home page (`/`) lists the sections the person
-can open (`src/model/nav.ts`), then other sites the team uses. `/rosters`, where the roster was while the portal had its
+(`vite.config.ts`). The home page (`/`) lists announcements, newest first, and `/links` the other sites the team
+uses, both from Directus, so adding one needs no deploy. `/rosters`, where the roster was while the portal had its
 own, sends old links to `/roster`, and `/welcome`, where the portal's sign-in pages sent people, sends them to `/`.
 
 ## Tasks
@@ -42,9 +42,12 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   Planning Page that lists every Financial Plan, and a Financial Plan's reports, each on a Report Page with its Report
   Nav: Overview, Calendar (Plan Calendar), Assumptions (Rates Report), one Program Area Report for each area,
   Non-program, and Fundraising and Capital ([#63](https://github.com/cyc-seattle/sail-team/issues/63)).
-  `src/components/home/` holds the home page's Link List. `src/components/household/` holds the household page's
+  `src/components/home/` holds the home page's Announcement List, and `src/components/links/` the Links page's Link
+  List. `src/components/household/` holds the household page's
   Share Contact, Member Card, School Field, and Household View, and `src/components/phone-field.tsx` the Phone Field. `src/components/shell/` holds the App Shell around every
-  signed-in page: the sidebar on a laptop, and the tab bar on a phone, whose More opens the sidebar.
+  signed-in page: the sidebar on a laptop, and the tab bar on a phone, whose More opens the sidebar. Support, at the
+  sidebar's foot, emails the office, and the account menu holds the tools a role gets, such as Directus for Staff
+  (`toolsFor` in `src/model/nav.ts`).
   `src/styles/tokens.css` holds the design tokens. Read [docs/design.md](docs/design.md) before changing any of
   them, or use the [`design`](.agents/skills/design/SKILL.md) skill.
 - `src/directus/` talks to Directus. `client.ts` makes a client that sends the browser's Directus session cookie, and
@@ -75,6 +78,12 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   Plan Writer renames it, changes its note, freezes a draft, marks a frozen one active, or duplicates it. A club plan's
   old address, `/plans/club/<set>`, sends people to its
   Financial Plan.
+- `src/directus/announcements.ts` reads `announcements`, which everyone who signs in reads: a title, a Markdown body,
+  drawn without its raw HTML, and the day it was posted (`published_on`). The
+  [`weekly-announcement`](.agents/skills/weekly-announcement/SKILL.md) skill writes the week's roundup.
+  `src/directus/links.ts` reads `links`, which a Link Writer keeps in order (`sort`). Platform's hook fills each one's
+  preview from the site (`preview_description`, `preview_image`), and the page's content security policy lets images
+  load from any https site for it.
 - `src/directus/roster.ts` reads the team rosters. A team is a program area, such as Doublehanded, and its programs
   marked as a team, such as J-Pod and K-Pod, are its divisions; a program that isn't a team has no roster. It reads
   each division's current or most recent offering, its confirmed registrations, the sailors' guardians, their names

@@ -1,24 +1,19 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { LinkList } from "@/components/home/link-list";
+import { AnnouncementList } from "@/components/home/announcement-list";
 import { PageHeader } from "@/components/plans/page-header";
-import { appDirectus } from "@/directus/app";
-import { useSession } from "@/directus/use-session";
-import { homeLinksFor, linksFor } from "@/model/nav";
+import { announcementsQuery } from "@/directus/announcements";
 
 export const Route = createFileRoute("/")({
   component: Home,
 });
 
 function Home() {
-  const session = useSession();
-  const links =
-    session.kind === "signed-in"
-      ? homeLinksFor(session.permissions, linksFor(session.me.role?.name, appDirectus().url))
-      : linksFor(undefined, appDirectus().url);
+  const { data: announcements } = useSuspenseQuery(announcementsQuery);
   return (
     <main className="mx-auto max-w-6xl p-card">
       <PageHeader title="Sail Team" />
-      <LinkList links={links} />
+      <AnnouncementList announcements={announcements} />
     </main>
   );
 }
