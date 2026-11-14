@@ -2,9 +2,9 @@
 import type { Bonus, FixedCost, OperationsAssumptions, StaffTime } from "@/model/assumptions";
 import type { ScheduleBlock, ScheduledActivity } from "@/model/schedule";
 import type { ListedPlan, Totals } from "@/model/financial-plans";
-import { moneyOf } from "@/model/reports";
 import type {
   AccountAmount,
+  InAndOut,
   CapitalItem,
   FunctionalExpenses,
   LineAmount,
@@ -148,8 +148,6 @@ const camp = (program: string, n: number, fee: number, estimated: number, max: n
   max_set: true,
   // Race Camp runs outside the summer term, as a one-off.
   term: program === "Race Camp" ? null : "Summer 2027",
-  revenue_cents: fee * estimated,
-  expense_cents: Math.round(fee * max * 0.6),
   // Week 5's Opti Camp is short a coach, and Race Camp needs more sailors than it expects.
   room: program === "Opti Camp" && n === 4 ? 12 : max,
   breakeven: program === "Race Camp" ? 9 : program === "Guppies" ? 7 : 10,
@@ -183,9 +181,6 @@ const season = (
   max: 16,
   max_set: true,
   term: `${session} 2027`,
-  revenue_cents: 145_000 * estimated,
-  // Summer's coaches cost more than its sailors pay.
-  expense_cents: session === "Summer" ? 1_600_000 : 1_100_000,
   room: 16,
   breakeven: session === "Summer" ? null : 9,
   days: 22,
@@ -300,18 +295,6 @@ export const doublehandedPrograms: ProgramSettings[] = [
   { name: "L-Pod", staff_level: "Level 4 Coach", sailors_per_coach: 12, rules: "Most sailors bring their own 420s." },
 ];
 
-/** Doublehanded's total, its offerings' plus $6,000 of coaching charged to the area itself. */
-export const doublehandedTotal = {
-  revenue_cents: moneyOf(doublehandedOfferings).revenue_cents,
-  expense_cents: moneyOf(doublehandedOfferings).expense_cents + 600_000,
-};
-
-/** Summer's total, its offerings' plus $7,000 of its director's time charged to the area itself. */
-export const summerTotal = {
-  revenue_cents: moneyOf(summerOfferings).revenue_cents,
-  expense_cents: moneyOf(summerOfferings).expense_cents + 700_000,
-};
-
 export const doublehandedStatement = {
   revenue: [account("4130", "Doublehanded tuition", 9_500_000), account("4900", "Scholarships", -200_000)],
   direct: [
@@ -324,6 +307,40 @@ export const doublehandedStatement = {
   ],
   indirect: [account(null, "G&A", 1_700_000), account(null, "Program admin", 500_000), account(null, "Space", 200_000)],
 };
+
+/** An area's revenue and expenses, from its statement. */
+const totalOf = (statement: { revenue: AccountAmount[]; direct: AccountAmount[]; indirect: AccountAmount[] }) => ({
+  revenue_cents: statement.revenue.reduce((t, a) => t + a.cents, 0),
+  expense_cents: [...statement.direct, ...statement.indirect].reduce((t, a) => t + a.cents, 0),
+});
+
+/**
+ * Shares an area's total out among its offerings, revenue by what their sailors pay and expenses by how big they're
+ * planned, all but `charged`, which is the area's own, so the Budget adds up to the statement.
+ */
+function fit(offerings: ReportOffering[], total: InAndOut, charged: number): void {
+  const share = (cents: number, weight: (o: ReportOffering) => number) => {
+    const all = offerings.reduce((t, o) => t + weight(o), 0);
+    let left = cents;
+    return offerings.map((o, i) => {
+      const part = i === offerings.length - 1 ? left : Math.round((cents * weight(o)) / all);
+      left -= part;
+      return part;
+    });
+  };
+  const revenue = share(total.revenue_cents, (o) => o.fee_cents * o.estimated);
+  // Summer's coaches cost more than its sailors pay.
+  const expenses = share(total.expense_cents - charged, (o) => o.fee_cents * o.max * (o.session === "Summer" ? 2 : 1));
+  offerings.forEach((o, i) => Object.assign(o, { revenue_cents: revenue[i], expense_cents: expenses[i] }));
+}
+
+/** Doublehanded's total, with $7,000 of coaching charged to the area itself. */
+export const doublehandedTotal = totalOf(doublehandedStatement);
+fit(doublehandedOfferings, doublehandedTotal, 700_000);
+
+/** Summer's total, with $9,000 of its director's time charged to the area itself. */
+export const summerTotal = totalOf(summerStatement);
+fit(summerOfferings, summerTotal, 900_000);
 
 /** What CSC sells outside the programs. */
 export const products: Product[] = [

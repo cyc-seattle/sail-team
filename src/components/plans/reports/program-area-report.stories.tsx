@@ -136,9 +136,11 @@ export const Budget: Story = {
       "K-Pod",
       "K-Pod Spring",
     ]);
-    await expect(rows.find((r) => r[0] === "Summer 2027")).toEqual(["Summer 2027", "$29,000", "$32,000", "−$3,000"]);
-    await expect(rows.at(-2)).toEqual(["Charged to the area", "$0", "$6,000", "−$6,000"]);
-    await expect(rows.at(-1)?.[0]).toBe("Total");
+    // Summer's coaches cost more than its sailors pay.
+    await expect(rows.find((r) => r[0] === "Summer 2027")?.[3]).toMatch(/^−/);
+    await expect(rows.at(-2)).toEqual(["Charged to the area", "$0", "$7,000", "−$7,000"]);
+    // The same as the statement above it.
+    await expect(rows.at(-1)).toEqual(["Total", "$93,000", "$85,000", "$8,000"]);
   },
 };
 
