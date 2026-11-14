@@ -197,6 +197,7 @@ function operations(version: string): Copy {
     lodging_per_night_cents: 15_000,
     mileage_rate_cents: 70,
     rib_resource_kind_id: rib.id,
+    powerboat_per_hour_cents: 2_300,
   });
   const level = (name: string, cents: number) =>
     c.add("plan_staff_levels", name, { name, pay_type: "hourly", hourly_rate_cents: cents });

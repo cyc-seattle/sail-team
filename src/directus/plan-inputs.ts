@@ -76,11 +76,9 @@ async function operationsAssumptions(
 ): Promise<Omit<OperationsAssumptions, "fixedCosts" | "staffTime">> {
   const [rates, staffLevels, positions, charges, resources, boatRates, bonuses, bonusProducts, bookings, closed] =
     await Promise.all([
-      rowsOf<PlanRates & { rib_resource_kind_id: { name: string } | null }>(
-        "plan_rates",
-        [version],
-        ["*", "rib_resource_kind_id.name"],
-      ),
+      // Every field, since platform replaces rib_resource_kind_id with powerboat_per_hour_cents
+      // (cyc-seattle/platform#126), and Directus refuses a field it doesn't have.
+      rowsOf<PlanRates & { powerboat_per_hour_cents?: number | null }>("plan_rates", [version]),
       rowsOf<PlanStaffLevel>("plan_staff_levels", [version]),
       rowsOf<PlanSalariedPosition & { remainder_pool_id: { name: string } | null }>(
         "plan_salaried_positions",
@@ -89,16 +87,13 @@ async function operationsAssumptions(
       ),
       rowsOf<PlanRevenueCharge & { account_id: Account }>("plan_revenue_charges", [version], ["*", ...accountFields]),
       rowsOf<PlanResource>("plan_resources", [version]),
+      // The whole boat class, since platform renames sailors_per_boat to max_capacity (cyc-seattle/platform#126),
+      // and Directus refuses a field it doesn't have.
       rowsOf<{
         key: string;
-        boat_class_id: { name: string; sailors_per_boat: number | null };
+        boat_class_id: { name: string; max_capacity?: number | null; sailors_per_boat?: number | null };
         maintenance_per_boat_hour_cents: number;
-        quantity: number | null;
-      }>(
-        "plan_boat_rates",
-        [version],
-        ["key", "boat_class_id.name", "boat_class_id.sailors_per_boat", "maintenance_per_boat_hour_cents", "quantity"],
-      ),
+      }>("plan_boat_rates", [version], ["key", "boat_class_id.*", "maintenance_per_boat_hour_cents"]),
       rowsOf<BonusRow>("plan_bonus_owners", versions, [
         "id",
         "key",
@@ -149,7 +144,7 @@ async function operationsAssumptions(
           payroll_tax_rate: rate.payroll_tax_rate,
           lodging_per_night_cents: rate.lodging_per_night_cents,
           mileage_rate_cents: rate.mileage_rate_cents,
-          rib_kind: rate.rib_resource_kind_id?.name ?? null,
+          powerboat_per_hour_cents: rate.powerboat_per_hour_cents ?? null,
         }
       : null,
     staffLevels: byName(staffLevels),
@@ -163,12 +158,20 @@ async function operationsAssumptions(
       ...c,
       account: { number: account_id.number, name: account_id.name },
     })),
-    resources: byName(resources),
+    resources: byName(resources).map((r) => ({
+      key: r.key,
+      name: r.name,
+      cost_per_hour_cents: r.cost_per_hour_cents,
+      cost_per_day_cents: r.cost_per_day_cents,
+      fuel_per_hour_cents: r.fuel_per_hour_cents,
+      maintenance_per_hour_cents: r.maintenance_per_hour_cents,
+      excluded_from_mtdc: r.excluded_from_mtdc,
+    })),
     boatRates: boatRates
       .map(({ boat_class_id, ...b }) => ({
         ...b,
         boat_class: boat_class_id.name,
-        sailors_per_boat: boat_class_id.sailors_per_boat,
+        max_capacity: boat_class_id.max_capacity ?? boat_class_id.sailors_per_boat ?? null,
       }))
       .sort((a, b) => a.boat_class.localeCompare(b.boat_class)),
     bonuses: all,
@@ -187,10 +190,10 @@ async function operationsAssumptions(
 /** The program areas' blocks, and what each shares. */
 async function blockRows(versions: string[]) {
   const [blocks, staff, resources, boats] = await Promise.all([
-    rowsOf<{ id: string; key: string; version_id: string; date: string; name: string }>(
+    // Every field, since platform adds powerboats (cyc-seattle/platform#126).
+    rowsOf<{ id: string; key: string; version_id: string; date: string; name: string; powerboats?: number | null }>(
       "plan_activity_blocks",
       versions,
-      ["id", "key", "version_id", "date", "name"],
     ),
     rowsOf<PlanBlockStaff>("plan_block_staff", versions, [
       "block_id",

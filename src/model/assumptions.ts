@@ -15,8 +15,8 @@ import type {
 export interface OperationsAssumptions {
   rates:
     | (Pick<PlanRates, "payroll_tax_rate" | "lodging_per_night_cents" | "mileage_rate_cents"> & {
-        /** The kind of equipment whose rates price coach boat (RIB) hours. */
-        rib_kind: string | null;
+        /** What one powerboat costs an hour on the water, fuel included. */
+        powerboat_per_hour_cents: number | null;
       })
     | null;
   staffLevels: Pick<PlanStaffLevel, "key" | "name" | "pay_type" | "hourly_rate_cents">[];
@@ -38,20 +38,18 @@ export interface OperationsAssumptions {
     PlanResource,
     | "key"
     | "name"
-    | "quantity"
     | "cost_per_hour_cents"
     | "cost_per_day_cents"
     | "fuel_per_hour_cents"
     | "maintenance_per_hour_cents"
     | "excluded_from_mtdc"
   >[];
-  /** Each boat class's upkeep, and how many the club has and sailors each takes, which the engine checks blocks against. */
+  /** Each boat class's upkeep, and the most sailors one boat takes, which the engine checks blocks against. */
   boatRates: {
     key: string;
     boat_class: string;
     maintenance_per_boat_hour_cents: number;
-    quantity: number | null;
-    sailors_per_boat: number | null;
+    max_capacity: number | null;
   }[];
   /** Every plan's bonuses. */
   bonuses: Bonus[];

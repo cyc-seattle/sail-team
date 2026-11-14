@@ -129,7 +129,7 @@ describe("reading a Financial Plan's inputs from Directus", () => {
     );
   });
 
-  it("reads the Operations Plan's rates, with each bonus on the position it pays, and the boats the club has", async () => {
+  it("reads the Operations Plan's rates, with each bonus on the position it pays, and each boat class's max capacity", async () => {
     const { operations, products } = await inputs(ids.budget);
     expect(operations?.rates?.payroll_tax_rate).toBe(0.1);
     expect(operations?.positions.map((p) => [p.name, p.bonuses.map((b) => b.bonus_rate)])).toEqual([
@@ -148,15 +148,14 @@ describe("reading a Financial Plan's inputs from Directus", () => {
       },
     ]);
     expect(operations?.boatRates.find((b) => b.boat_class === "Sailqube")).toMatchObject({
-      quantity: 12,
-      sailors_per_boat: 2,
+      max_capacity: 2,
     });
     expect(products).toEqual([{ key: "key:Boat storage", product: "Boat storage" }]);
   });
 
   it("reads the Operations Plan's other inputs, naming the accounts, pools and positions their rows point at", async () => {
     const { operations } = await inputs(ids.budget);
-    expect(operations?.rates?.rib_kind).toBe("RIB");
+    expect(operations?.rates?.powerboat_per_hour_cents).toBe(2_300);
     expect(operations?.positions.find((p) => p.name === "Program Director")).toMatchObject({
       hourly_coaching_rate_cents: 3_000,
       remainder_pool: "Program admin",

@@ -191,8 +191,8 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
               <Num>{money(a.rates.mileage_rate_cents)}</Num>
             </TableRow>
             <TableRow>
-              <TableCell>RIB hours priced as</TableCell>
-              <Num>{a.rates.rib_kind ?? none}</Num>
+              <TableCell>Powerboat, per hour on the water</TableCell>
+              <Num>{money(a.rates.powerboat_per_hour_cents)}</Num>
             </TableRow>
           </RateTable>
         </TableSection>
@@ -276,13 +276,12 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
         <TableSection title="Boats and equipment" level={2}>
           <RateTable
             label="Boats and equipment"
-            head={["Item", "How many", "Per hour", "Per day", "Fuel per hour", "Upkeep per hour", mtdc]}
+            head={["Item", "Per hour", "Per day", "Fuel per hour", "Upkeep per hour", mtdc]}
             text={[mtdc]}
           >
             {a.resources.map((r) => (
               <TableRow key={r.key}>
                 <TableCell>{r.name}</TableCell>
-                <Num>{count(r.quantity)}</Num>
                 <Num>{money(r.cost_per_hour_cents)}</Num>
                 <Num>{money(r.cost_per_day_cents, true)}</Num>
                 <Num>{money(r.fuel_per_hour_cents)}</Num>
@@ -295,14 +294,13 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
       )}
       {a.boatRates.length > 0 && (
         <TableSection title="Boat upkeep" level={2}>
-          <RateTable label="Boat upkeep" head={["Boat class", "Boats", "Sailors per boat", "Upkeep per boat-hour"]}>
+          <RateTable label="Boat upkeep" head={["Boat class", "Max capacity", "Upkeep per boat-hour"]}>
             {[...a.boatRates]
               .sort((x, y) => x.boat_class.localeCompare(y.boat_class, undefined, { numeric: true }))
               .map((b) => (
                 <TableRow key={b.key}>
                   <TableCell>{b.boat_class}</TableCell>
-                  <Num>{count(b.quantity)}</Num>
-                  <Num>{count(b.sailors_per_boat)}</Num>
+                  <Num>{count(b.max_capacity)}</Num>
                   <Num>{money(b.maintenance_per_boat_hour_cents)}</Num>
                 </TableRow>
               ))}
