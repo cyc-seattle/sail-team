@@ -9,4 +9,4 @@ type Story = StoryObj<typeof meta>;
 /** Race Camp runs only some weeks, so the others show a dash. A full session is bold. */
 export const SummerWeeks: Story = {};
 
-export const Seasons: Story = { args: { offerings: doublehandedOfferings } };
+export const Sessions: Story = { args: { offerings: doublehandedOfferings } };

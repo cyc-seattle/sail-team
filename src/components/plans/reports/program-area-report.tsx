@@ -227,6 +227,7 @@ export function ProgramAreaReport({
                     <TableCell className={cn(pinned, "pl-6")}>
                       <span className="inline-flex items-center gap-1">
                         <OfferingName offering={o} />
+                        {o.term && <span className="text-xs text-muted-foreground">{o.term}</span>}
                         <NoteInfo note={o.note} />
                       </span>
                     </TableCell>

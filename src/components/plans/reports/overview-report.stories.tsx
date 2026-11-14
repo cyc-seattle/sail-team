@@ -70,7 +70,7 @@ export const Year: Story = {
   },
 };
 
-/** Fees and enrollment open by season, and the switch at the top groups both by program instead. */
+/** Fees and enrollment open by session, and the switch at the top groups both by program instead. */
 export const ByProgram: Story = {
   play: async ({ canvas }) => {
     const enrollment = canvas.getByRole("table", { name: "Enrollment" });
