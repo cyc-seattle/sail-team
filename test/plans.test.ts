@@ -163,12 +163,12 @@ describe("reading a Financial Plan's inputs from Directus", () => {
     });
     expect(operations?.charges[0]).toMatchObject({
       account: { number: "5310", name: "Card fees" },
-      excluded_from_mtdc: false,
+      in_mtdc: true,
     });
     expect(operations?.fixedCosts.find((c) => c.name === "Audit")).toMatchObject({
       account: { number: "6110", name: "Insurance" },
       charged_to: "G&A",
-      excluded_from_mtdc: true,
+      in_mtdc: false,
     });
     expect(operations?.fixedCosts.find((c) => c.name === "Spring gala costs")).toMatchObject({
       charged_to: "Example Sailing Club",
@@ -228,7 +228,7 @@ describe("reading a Financial Plan's inputs from Directus", () => {
   it("reads each program area's own fixed costs and staff time, by its report", async () => {
     const { fixedCosts, staffTime } = await inputs(ids.budget);
     expect(fixedCosts[ids.summerPlan]).toEqual([
-      expect.objectContaining({ name: "Tent rental", charged_to: "Summer", excluded_from_mtdc: true }),
+      expect.objectContaining({ name: "Tent rental", charged_to: "Summer", in_mtdc: false }),
     ]);
     expect(staffTime[ids.summerPlan]?.map((l) => [l.name, l.charged_to])).toEqual([["Camp setup", "Summer"]]);
     expect(fixedCosts[ids.doublehandedPlan]).toBeUndefined();

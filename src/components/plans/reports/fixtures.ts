@@ -354,7 +354,7 @@ const fixedCost = (
   account: { number: account.split(" ")[0]!, name: account.slice(account.indexOf(" ") + 1) },
   amount_cents,
   charged_to,
-  excluded_from_mtdc: false,
+  in_mtdc: true,
   note: null,
   revenue: false,
   ...more,
@@ -362,7 +362,7 @@ const fixedCost = (
 
 /** Summer's own fixed costs and staff time, on its report's assumptions. */
 export const summerFixedCosts: FixedCost[] = [
-  fixedCost("tents", "Tent rental", "5410 Rentals", 180_000, "Summer", { excluded_from_mtdc: true }),
+  fixedCost("tents", "Tent rental", "5410 Rentals", 180_000, "Summer", { in_mtdc: false }),
   fixedCost("shirts", "Camp shirts", "5420 Supplies", 95_000, "Opti Camp", { note: "One per sailor." }),
 ];
 export const summerStaffTime: StaffTime[] = [
@@ -420,7 +420,7 @@ export const reportAssumptions: OperationsAssumptions = {
       rate: 0.03,
       product_kinds: ["program", "charter"],
       account: { number: "5310", name: "Card fees" },
-      excluded_from_mtdc: false,
+      in_mtdc: true,
       note: null,
     },
     {
@@ -429,7 +429,7 @@ export const reportAssumptions: OperationsAssumptions = {
       rate: 0.05,
       product_kinds: ["program"],
       account: { number: "4900", name: "Scholarships" },
-      excluded_from_mtdc: true,
+      in_mtdc: false,
       note: "Matches what the board set aside last year.",
     },
     {
@@ -438,7 +438,7 @@ export const reportAssumptions: OperationsAssumptions = {
       rate: 0.015,
       product_kinds: null,
       account: { number: "6510", name: "B&O tax" },
-      excluded_from_mtdc: false,
+      in_mtdc: true,
       note: null,
     },
   ],
@@ -487,7 +487,7 @@ export const reportAssumptions: OperationsAssumptions = {
   fixedCosts: [
     fixedCost("insurance", "Insurance", "6110 Insurance", 900_000, "G&A"),
     fixedCost("rent", "Clubhouse rent", "6310 Clubhouse rent", 600_000, "G&A", { note: "Lease renews in March." }),
-    fixedCost("audit", "Audit", "6410 Audit", 450_000, "G&A", { excluded_from_mtdc: true }),
+    fixedCost("audit", "Audit", "6410 Audit", 450_000, "G&A", { in_mtdc: false }),
     fixedCost("software", "Registration software", "6420 Software", 240_000, "Program admin"),
     fixedCost("gala", "Spring gala costs", "7010 Event costs", 300_000, "Example Sailing Club"),
     fixedCost("gifts", "Spring gala gifts", "4500 Individual gifts", 2_000_000, "Example Sailing Club", {
