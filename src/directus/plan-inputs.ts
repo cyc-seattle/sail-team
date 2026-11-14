@@ -2,7 +2,6 @@ import type {
   PlanActivity,
   PlanBonusOwner,
   PlanBlockBoats,
-  PlanBlockResource,
   PlanBlockStaff,
   PlanBudgetLine,
   PlanClosedDate,
@@ -10,7 +9,6 @@ import type {
   PlanOffering,
   PlanProgram,
   PlanRates,
-  PlanResource,
   PlanRevenueCharge,
   PlanSalariedPosition,
   PlanStaffLevel,
@@ -60,7 +58,11 @@ type CostRow<T> = T & {
   account_id: Account;
 };
 
-type BudgetRow = CostRow<Pick<PlanBudgetLine, "key" | "name" | "amount_cents" | "excluded_from_mtdc" | "note">> & {
+/** Platform renames excluded_from_mtdc to in_mtdc (cyc-seattle/platform#262), so a row has one or the other. */
+type Mtdc = { in_mtdc?: boolean | undefined; excluded_from_mtdc?: boolean | undefined };
+const inMtdc = (row: Mtdc) => row.in_mtdc ?? !row.excluded_from_mtdc;
+
+type BudgetRow = CostRow<Pick<PlanBudgetLine, "key" | "name" | "amount_cents" | "note"> & Mtdc> & {
   account_id: { type: string };
 };
 type LaborRow = CostRow<Pick<PlanLaborLine, "key" | "name" | "staff_level_key" | "hours" | "note">>;
@@ -74,31 +76,30 @@ async function operationsAssumptions(
   version: string,
   versions: string[],
 ): Promise<Omit<OperationsAssumptions, "fixedCosts" | "staffTime">> {
-  const [rates, staffLevels, positions, charges, resources, boatRates, bonuses, bonusProducts, bookings, closed] =
+  const [rates, staffLevels, positions, charges, boatRates, bonuses, bonusProducts, bookings, closed] =
     await Promise.all([
-      rowsOf<PlanRates & { rib_resource_kind_id: { name: string } | null }>(
-        "plan_rates",
-        [version],
-        ["*", "rib_resource_kind_id.name"],
-      ),
+      // Every field, since platform drops rib_resource_kind_id (cyc-seattle/platform#126), and Directus refuses a
+      // field it doesn't have.
+      rowsOf<PlanRates>("plan_rates", [version]),
       rowsOf<PlanStaffLevel>("plan_staff_levels", [version]),
       rowsOf<PlanSalariedPosition & { remainder_pool_id: { name: string } | null }>(
         "plan_salaried_positions",
         [version],
         ["*", "remainder_pool_id.name"],
       ),
-      rowsOf<PlanRevenueCharge & { account_id: Account }>("plan_revenue_charges", [version], ["*", ...accountFields]),
-      rowsOf<PlanResource>("plan_resources", [version]),
+      rowsOf<Omit<PlanRevenueCharge, "excluded_from_mtdc"> & Mtdc & { account_id: Account }>(
+        "plan_revenue_charges",
+        [version],
+        ["*", ...accountFields],
+      ),
+      // Every field, since platform adds the fuel and charter rates (cyc-seattle/platform#126).
       rowsOf<{
         key: string;
-        boat_class_id: { name: string; sailors_per_boat: number | null };
+        boat_class_id: { name: string };
         maintenance_per_boat_hour_cents: number;
-        quantity: number | null;
-      }>(
-        "plan_boat_rates",
-        [version],
-        ["key", "boat_class_id.name", "boat_class_id.sailors_per_boat", "maintenance_per_boat_hour_cents", "quantity"],
-      ),
+        fuel_per_hour_cents?: number | null;
+        charter_per_day_cents?: number | null;
+      }>("plan_boat_rates", [version], ["*", "boat_class_id.name"]),
       rowsOf<BonusRow>("plan_bonus_owners", versions, [
         "id",
         "key",
@@ -149,7 +150,6 @@ async function operationsAssumptions(
           payroll_tax_rate: rate.payroll_tax_rate,
           lodging_per_night_cents: rate.lodging_per_night_cents,
           mileage_rate_cents: rate.mileage_rate_cents,
-          rib_kind: rate.rib_resource_kind_id?.name ?? null,
         }
       : null,
     staffLevels: byName(staffLevels),
@@ -159,16 +159,18 @@ async function operationsAssumptions(
       remainder_pool: remainder_pool_id?.name ?? null,
       bonuses: paying(p.name),
     })),
-    charges: byName(charges).map(({ account_id, ...c }) => ({
+    charges: byName(charges).map(({ account_id, excluded_from_mtdc, in_mtdc, ...c }) => ({
       ...c,
+      in_mtdc: inMtdc({ in_mtdc, excluded_from_mtdc }),
       account: { number: account_id.number, name: account_id.name },
     })),
-    resources: byName(resources),
     boatRates: boatRates
-      .map(({ boat_class_id, ...b }) => ({
-        ...b,
-        boat_class: boat_class_id.name,
-        sailors_per_boat: boat_class_id.sailors_per_boat,
+      .map((b) => ({
+        key: b.key,
+        boat_class: b.boat_class_id.name,
+        fuel_per_hour_cents: b.fuel_per_hour_cents ?? null,
+        maintenance_per_boat_hour_cents: b.maintenance_per_boat_hour_cents,
+        charter_per_day_cents: b.charter_per_day_cents ?? null,
       }))
       .sort((a, b) => a.boat_class.localeCompare(b.boat_class)),
     bonuses: all,
@@ -186,7 +188,7 @@ async function operationsAssumptions(
 
 /** The program areas' blocks, and what each shares. */
 async function blockRows(versions: string[]) {
-  const [blocks, staff, resources, boats] = await Promise.all([
+  const [blocks, staff, boats] = await Promise.all([
     rowsOf<{ id: string; key: string; version_id: string; date: string; name: string }>(
       "plan_activity_blocks",
       versions,
@@ -199,15 +201,14 @@ async function blockRows(versions: string[]) {
       "count",
       "pay",
     ]),
-    rowsOf<PlanBlockResource>("plan_block_resources", versions, ["block_id", "resource_key", "quantity", "hours"]),
-    rowsOf<Omit<PlanBlockBoats, "boat_class_id"> & { boat_class_id: { name: string } }>("plan_block_boats", versions, [
-      "block_id",
-      "boat_class_id.name",
-      "count",
-      "sailor_owned",
-    ]),
+    // Every field, since platform adds chartered (cyc-seattle/platform#126). Platform drops the blocks' equipment.
+    rowsOf<Omit<PlanBlockBoats, "boat_class_id"> & { boat_class_id: { name: string }; chartered?: number | null }>(
+      "plan_block_boats",
+      versions,
+      ["*", "boat_class_id.name"],
+    ),
   ]);
-  return { blocks, staff, resources, boats };
+  return { blocks, staff, boats };
 }
 
 /** The names of what a cost can be charged to besides a pool or an offering, from the catalog. */
@@ -302,8 +303,9 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
           "cost_center_type",
           "cost_center_key",
           "amount_cents",
-          "excluded_from_mtdc",
           "note",
+          // Every field, for whichever MTDC field platform has.
+          "*",
           ...accountFields,
           "account_id.type",
         ]),
@@ -359,7 +361,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         key: l.key,
         name: l.name,
         amount_cents: l.amount_cents,
-        excluded_from_mtdc: l.excluded_from_mtdc,
+        in_mtdc: inMtdc(l),
         note: l.note,
         account: { number: l.account_id.number, name: l.account_id.name },
         charged_to: chargedTo(l),
@@ -378,7 +380,6 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
       const ofOperations = (l: { version_id: string }) => l.version_id === ops?.version_id;
       const offeringKey = new Map(offerings.map((o) => [o.id, o.key]));
       const positionName = new Map(operations?.positions.map((p) => [p.key, p.name]));
-      const resourceName = new Map(operations?.resources.map((r) => [r.key, r.name]));
       const parts: BlockParts = {
         staff: blocks.staff.map((s) => ({
           block_id: s.block_id,
@@ -387,16 +388,11 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
           count: s.count,
           pay: s.pay,
         })),
-        resources: blocks.resources.map((r) => ({
-          block_id: r.block_id,
-          resource: resourceName.get(r.resource_key) ?? "equipment",
-          quantity: r.quantity,
-          hours: r.hours,
-        })),
         boats: blocks.boats.map((b) => ({
           block_id: b.block_id,
           boat_class: b.boat_class_id.name,
           count: b.count,
+          chartered: b.chartered ?? null,
           sailor_owned: b.sailor_owned,
         })),
       };

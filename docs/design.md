@@ -47,7 +47,7 @@ Every token has a dark value, so a component that uses the utilities needs no `d
 ## Layout rules
 
 - Every page someone can open is in the sidebar, always open beside the page on a laptop. On a phone, the first four
-  are tabs along the bottom, and More opens the same sidebar as a sheet. The account menu sits at the sidebar's foot.
+  are tabs along the bottom, and More opens the same sidebar as a sheet. Support and the account menu sit at the sidebar's foot.
 - Actions go on the right, where a thumb reaches them on a phone.
 - An inline "Add {thing}" row goes at the top of a list, never below it.
 - One way to save: explicit Save and Discard, with a warning before leaving unsaved changes.

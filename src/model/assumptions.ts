@@ -5,7 +5,6 @@ import type {
   PlanLaborLine,
   PlanOffering,
   PlanRates,
-  PlanResource,
   PlanRevenueCharge,
   PlanSalariedPosition,
   PlanStaffLevel,
@@ -13,12 +12,7 @@ import type {
 
 /** The rates the Operations Plan sets for the year, which every plan's numbers come from. */
 export interface OperationsAssumptions {
-  rates:
-    | (Pick<PlanRates, "payroll_tax_rate" | "lodging_per_night_cents" | "mileage_rate_cents"> & {
-        /** The kind of equipment whose rates price coach boat (RIB) hours. */
-        rib_kind: string | null;
-      })
-    | null;
+  rates: Pick<PlanRates, "payroll_tax_rate" | "lodging_per_night_cents" | "mileage_rate_cents"> | null;
   staffLevels: Pick<PlanStaffLevel, "key" | "name" | "pay_type" | "hourly_rate_cents">[];
   positions: (Pick<
     PlanSalariedPosition,
@@ -31,27 +25,18 @@ export interface OperationsAssumptions {
     /** The bonuses that pay it, which name it in `position_key`. */
     bonuses: Bonus[];
   })[];
-  charges: (Pick<PlanRevenueCharge, "key" | "name" | "rate" | "product_kinds" | "excluded_from_mtdc" | "note"> & {
+  charges: (Pick<PlanRevenueCharge, "key" | "name" | "rate" | "product_kinds" | "note"> & {
+    /** Whether it counts toward MTDC. */
+    in_mtdc: boolean;
     account: Account;
   })[];
-  resources: Pick<
-    PlanResource,
-    | "key"
-    | "name"
-    | "quantity"
-    | "cost_per_hour_cents"
-    | "cost_per_day_cents"
-    | "fuel_per_hour_cents"
-    | "maintenance_per_hour_cents"
-    | "excluded_from_mtdc"
-  >[];
-  /** Each boat class's upkeep, and how many the club has and sailors each takes, which the engine checks blocks against. */
+  /** Each boat class's rates for the year: fuel and upkeep an hour on the water, and a day's charter. */
   boatRates: {
     key: string;
     boat_class: string;
+    fuel_per_hour_cents: number | null;
     maintenance_per_boat_hour_cents: number;
-    quantity: number | null;
-    sailors_per_boat: number | null;
+    charter_per_day_cents: number | null;
   }[];
   /** Every plan's bonuses. */
   bonuses: Bonus[];
@@ -74,7 +59,9 @@ export type Bonus = Pick<PlanBonusOwner, "key" | "role_name" | "bonus_rate" | "b
  * A budget line, with what it's charged to: a pool, an offering, a product, a program area, or CSC. Most are fixed
  * costs or G&A; one on a revenue account, such as a gala's gifts, is revenue.
  */
-export type FixedCost = Pick<PlanBudgetLine, "key" | "name" | "amount_cents" | "excluded_from_mtdc" | "note"> & {
+export type FixedCost = Pick<PlanBudgetLine, "key" | "name" | "amount_cents" | "note"> & {
+  /** Whether it counts toward MTDC. */
+  in_mtdc: boolean;
   account: Account;
   charged_to: string;
   revenue: boolean;
