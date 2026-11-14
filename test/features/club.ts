@@ -84,6 +84,7 @@ export class Club {
       ["coachWages", "expense", "program"],
       ["payrollTax", "expense", "program"],
       ["donations", "revenue", "fundraising"],
+      ["bonus", "expense", "program"],
     ] as const) {
       this.accounts[name] = (
         await this.create("accounts", {
@@ -204,7 +205,7 @@ export class Club {
   }
 
   /** An offering in `copy` of `sailors` at `price` cents each, with `costs` cents of its own costs. Returns it. */
-  async offering(copy: string, name: string, sailors: number, price: number, costs = 0): Promise<Row> {
+  async offering(copy: string, name: string, sailors: number, price: number, costs = 0, extra: Row = {}): Promise<Row> {
     const offering = await this.versioned("plan_offerings", copy, {
       product_id: this.productId,
       name,
@@ -213,6 +214,7 @@ export class Club {
       capacity: sailors,
       target_enrollment: sailors,
       price_cents: price,
+      ...extra,
     });
     if (costs > 0) {
       await this.versioned("plan_budget_lines", copy, {
@@ -226,6 +228,19 @@ export class Club {
       });
     }
     return offering;
+  }
+
+  /** A bonus in the Operations Plan's `copy` for `role`, of `rate` of the net of Youth Racing's program. */
+  async bonus(copy: string, role: string, rate: number): Promise<void> {
+    const owner = await this.versioned("plan_bonus_owners", copy, {
+      role_name: role,
+      bonus_rate: rate,
+      account_id: this.accounts["bonus"],
+    });
+    await this.versioned("plan_bonus_owner_products", copy, {
+      bonus_owner_id: owner["id"],
+      product_id: this.productId,
+    });
   }
 
   /**

@@ -2,6 +2,16 @@
 // come from platform's own engine, run on these rows the way platform's hook runs it, so they always add up.
 import { computePlan, type PlanData } from "@cyc-seattle/platform/planning";
 
+/** The engine's bonus for one season (cyc-seattle/platform#255). */
+interface BonusSummary {
+  bonus_owner_key: string;
+  role_name: string;
+  program_area_id: string | null;
+  season: string | null;
+  net_cents: number;
+  bonus_cents: number;
+}
+
 type Row = Record<string, unknown>;
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
@@ -694,6 +704,17 @@ function results(setRow: Row, calculatedAt: string): Record<string, Row[]> {
       enrollment: p.enrollment,
       days: p.days,
       sailor_days: p.sailor_days,
+      season: (p as { season?: string | null }).season ?? null,
+    })),
+    // Older engines pay bonuses on the year, with no rows here.
+    plan_result_bonuses: ((out as { bonuses?: BonusSummary[] }).bonuses ?? []).map((b) => ({
+      version_set_id: setId,
+      name: b.role_name,
+      season: b.season,
+      net_cents: b.net_cents,
+      bonus_cents: b.bonus_cents,
+      bonus_owner_key: b.bonus_owner_key,
+      program_area_key: b.program_area_id,
     })),
     plan_result_capital: out.capital.map((item) => ({
       version_set_id: setId,
@@ -719,9 +740,14 @@ function results(setRow: Row, calculatedAt: string): Record<string, Row[]> {
 // coaches' are still being worked out.
 const worked = [results(budget, "2027-03-10T18:00:00Z"), results(twoCoaches, "2027-04-02T23:05:00Z")];
 const resultTables = Object.fromEntries(
-  ["plan_results", "plan_result_lines", "plan_result_pnl", "plan_result_warnings", "plan_result_capital"].map(
-    (table) => [table, worked.flatMap((r) => r[table] ?? [])],
-  ),
+  [
+    "plan_results",
+    "plan_result_lines",
+    "plan_result_pnl",
+    "plan_result_warnings",
+    "plan_result_capital",
+    "plan_result_bonuses",
+  ].map((table) => [table, worked.flatMap((r) => r[table] ?? [])]),
 );
 resultTables["plan_results"]!.push({ ...worked[0]!["plan_results"]![0]!, version_set_id: ids.firstPass });
 
