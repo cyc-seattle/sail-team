@@ -2,7 +2,6 @@
 import type { Bonus, FixedCost, OperationsAssumptions, StaffTime } from "@/model/assumptions";
 import type { ScheduleBlock, ScheduledActivity } from "@/model/schedule";
 import type { ListedPlan, Totals } from "@/model/financial-plans";
-import type { Term } from "@/model/terms";
 import type {
   AccountAmount,
   CapitalItem,
@@ -156,14 +155,6 @@ export const summerOfferings: ReportOffering[] = [
   ...[0, 2, 4, 6, 8, 1, 3, 5, 7].map((n) => camp("Opti Camp", n, 52_500, n % 3 === 0 ? 12 : 16, 16, 30)),
   ...[0, 1, 2, 3, 4, 5, 6, 7, 8].map((n) => camp("Guppies", n, 39_500, n < 2 ? 6 : 9, 10, 15)),
   ...[1, 4, 7].map((n) => camp("Race Camp", n, 61_000, 8, 12, 35)),
-];
-
-/** Doublehanded's terms, in the Operations Plan. */
-export const doublehandedTerms: Term[] = [
-  { key: "term-spring", name: "Spring 2027", starts_on: "2027-03-01", ends_on: "2027-06-15" },
-  { key: "term-summer", name: "Summer 2027", starts_on: "2027-06-16", ends_on: "2027-08-31" },
-  { key: "term-fall", name: "Fall 2027", starts_on: "2027-09-01", ends_on: "2027-11-30" },
-  { key: "term-winter", name: "Winter 2027", starts_on: "2027-12-01", ends_on: "2028-02-28" },
 ];
 
 const termOffering = (

@@ -74,7 +74,7 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   the status filter asks for archived ones. The menus follow `/permissions/me`: `canAdminPlans` in `access.ts`. `/plans/financial/<set>` is its Overview, and
   `/plans/financial/<set>/<report>` its other reports: `calendar`, `rates` (Assumptions), `storage`, a Program Plan's
   id, `non-program`, or `fundraising`. Storage lists the lines on the Storage account, 7351 under 7350 Occupancy/Rent:
-  what each area pays, then what every program shares. A program area's report filters its offerings by term: the
+  what each area pays, then what every program shares. A program area's report shows each offering's term: one of the
   Operations Plan's `plan_terms`, which an offering names by `term_key`. The Calendar keeps the one program area it shows and its day in the address
   (`?area=<report>&day=<date>`), and each area's report links to it with its own area. Each report's header is where a
   Plan Writer renames it, changes its note, or duplicates it, and a Plan Admin freezes a draft or makes it active

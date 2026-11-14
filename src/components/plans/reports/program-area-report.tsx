@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { formatShare, type FixedCost, type StaffTime } from "@/model/assumptions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -11,8 +11,6 @@ import {
   type Trip,
 } from "@/model/reports";
 import { cn } from "@/lib/utils";
-import type { Term } from "@/model/terms";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BudgetLines, StaffTimeTable } from "../assumptions";
 import { Money } from "../money";
 import { NoteInfo } from "../note-info";
@@ -25,9 +23,6 @@ import { StatementTable } from "./statement-table";
 import { WarningsSection } from "./warnings-section";
 
 const pinned = "sticky left-0 z-10 bg-background";
-const ALL = "all";
-// No term's key is this, since a term's key is a UUID.
-const NO_TERM = "none";
 const count = (n: number) => n.toLocaleString("en-US");
 const none = <span className="text-muted-foreground">—</span>;
 
@@ -109,8 +104,6 @@ export interface ProgramAreaReportProps {
   statement: { revenue: AccountAmount[]; direct: AccountAmount[]; indirect: AccountAmount[] };
   programs: ProgramSettings[];
   offerings: ReportOffering[];
-  /** The Financial Plan's terms, by start date, which its offerings can be in. */
-  terms: Term[];
   /** The Financial Plan's id and this area's report key, for its link to the Calendar. */
   setId: string;
   areaKey: string;
@@ -131,23 +124,14 @@ export function ProgramAreaReport({
   statement,
   programs,
   offerings,
-  terms,
   setId,
   areaKey,
   trips,
   fixedCosts,
   staffTime,
 }: ProgramAreaReportProps) {
-  const [term, setTerm] = useState<string>(ALL);
-  const shown =
-    term === ALL ? offerings : offerings.filter((o) => (term === NO_TERM ? !o.term_key : o.term_key === term));
-  const termItems = [
-    { value: ALL, label: "All" },
-    ...terms.map((t) => ({ value: t.key, label: t.name })),
-    ...(offerings.some((o) => !o.term_key) ? [{ value: NO_TERM, label: "No term" }] : []),
-  ];
-  const groups = numberedOfferings(shown);
-  const labels = new Map(numberedOfferings(offerings).flatMap((g) => g.offerings.map((o) => [o.key, o.label])));
+  const groups = numberedOfferings(offerings);
+  const labels = new Map(groups.flatMap((g) => g.offerings.map((o) => [o.key, o.label])));
   return (
     <>
       <div className="grid gap-2">
@@ -166,35 +150,8 @@ export function ProgramAreaReport({
         />
       </ReportSection>
 
-      <div className="grid gap-2">
-        <div className="flex flex-wrap items-center gap-3">
-          <span aria-hidden className="text-sm font-medium">
-            Term
-          </span>
-          <Select items={termItems} value={term} onValueChange={(v) => setTerm(String(v ?? ALL))}>
-            <SelectTrigger
-              aria-label="Term"
-              className="w-full data-[size=default]:h-tap md:w-56 md:data-[size=default]:h-8"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {termItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
       <ReportSection id="enrollment" title="Enrollment">
-        {shown.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No offerings in this term.</p>
-        ) : (
-          <SessionGrid offerings={shown} />
-        )}
+        <SessionGrid offerings={offerings} />
       </ReportSection>
 
       <ReportSection
