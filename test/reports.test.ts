@@ -14,10 +14,13 @@ import {
   functionalExpenses,
   rulesOf,
   sortRows,
+  termsOf,
   type OverviewRow,
   type ReportOffering,
   withResults,
+  budgetByProgram,
 } from "../src/model/reports.ts";
+import type { PnlRow, ResultTerm } from "../src/model/financial-plans.ts";
 
 const row = (name: string, revenue: number, offerings = 1): OverviewRow => ({
   report: name,
@@ -272,12 +275,26 @@ describe("withResults", () => {
 
   it("gives each offering its room and breakeven from its own P&L row, and none without one", () => {
     const pnl = [
-      { level: "offering" as const, subject_key: "w1", allocation_holds: 12, breakeven_enrollment: 6 },
-      { level: "product" as const, subject_key: "w2", allocation_holds: 99, breakeven_enrollment: 99 },
+      {
+        level: "offering" as const,
+        subject_key: "w1",
+        allocation_holds: 12,
+        breakeven_enrollment: 6,
+        term_key: "t",
+        term_name: "Summer 2027",
+      },
+      {
+        level: "product" as const,
+        subject_key: "w2",
+        allocation_holds: 99,
+        breakeven_enrollment: 99,
+        term_key: null,
+        term_name: null,
+      },
     ];
     expect(withResults([offering("w1"), offering("w2")], pnl)).toMatchObject([
-      { key: "w1", room: 12, breakeven: 6 },
-      { key: "w2", room: null, breakeven: null },
+      { key: "w1", room: 12, breakeven: 6, term: "Summer 2027" },
+      { key: "w2", room: null, breakeven: null, term: null },
     ]);
   });
 });
@@ -396,5 +413,72 @@ describe("capitalList", () => {
       [null, "Coach boat", 5_000, true],
       [null, "Sails", 7_000, false],
     ]);
+  });
+});
+
+describe("termsOf", () => {
+  const term = (name: string | null, starts: string | null = null) => ({
+    term_key: name === null ? null : `key-${name}`,
+    term_name: name,
+    term_starts_on: starts,
+  });
+  const fall = term("Fall 2027", "2027-09-01");
+  const spring = term("Spring 2027", "2027-03-01");
+  const pnl = (t: ResultTerm, revenue: number, area = "area"): PnlRow => ({
+    level: "program_area_term",
+    subject_key: area,
+    ...t,
+    name: "Doublehanded",
+    revenue_cents: revenue,
+    expense_cents: 1000,
+    allocation_holds: null,
+    breakeven_enrollment: null,
+    enrollment: 0,
+    days: 0,
+    sailor_days: 0,
+    member: "m",
+  });
+  it("lists the area's terms in the order they start, then no term", () => {
+    const rows = termsOf([pnl(term(null), 5), pnl(fall, 4), pnl(spring, 3), pnl(spring, 9, "other")], "area");
+    expect(rows.map((r) => [r.term, r.revenue_cents])).toEqual([
+      ["Spring 2027", 3],
+      ["Fall 2027", 4],
+      [null, 5],
+    ]);
+  });
+
+  it("is empty when none of the area's offerings is in a term", () => {
+    expect(termsOf([pnl(term(null), 5)], "area")).toEqual([]);
+  });
+});
+
+describe("budgetByProgram", () => {
+  const row = (level: PnlRow["level"], subject_key: string, revenue: number, expense: number) => ({
+    level,
+    subject_key,
+    revenue_cents: revenue,
+    expense_cents: expense,
+  });
+
+  it("adds each program's offerings up, A to Z, then what's charged to the area as a whole", () => {
+    const offerings = [
+      { key: "k1", program: "K-Pod" },
+      { key: "j1", program: "J-Pod" },
+      { key: "j2", program: "J-Pod" },
+    ];
+    const pnl = [
+      row("offering", "j1", 100, 60),
+      row("offering", "j2", 50, 30),
+      row("offering", "k1", 80, 70),
+      row("program_area", "area", 230, 200),
+    ];
+    expect(budgetByProgram(offerings, pnl, "area")).toEqual([
+      { name: "J-Pod", revenue_cents: 150, expense_cents: 90 },
+      { name: "K-Pod", revenue_cents: 80, expense_cents: 70 },
+      { name: "The area as a whole", revenue_cents: 0, expense_cents: 40 },
+    ]);
+    expect(
+      budgetByProgram(offerings, pnl.slice(0, 3).concat(row("program_area", "area", 230, 160)), "area"),
+    ).toHaveLength(2);
   });
 });

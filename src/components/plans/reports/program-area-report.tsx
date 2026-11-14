@@ -12,6 +12,8 @@ import {
   type PlanWarning,
   type ProgramSettings,
   type ReportOffering,
+  type BudgetRow,
+  type TermRow,
   type Trip,
 } from "@/model/reports";
 import { cn } from "@/lib/utils";
@@ -142,6 +144,32 @@ const enrollmentHead: Column[] = [
   { name: "Sailor-days" },
   { name: "Sailor-hours" },
 ];
+/** Each term's or program's revenue, expenses, and net. */
+function Budget({ rows, by }: { rows: BudgetRow[]; by: Grouping }) {
+  return (
+    <Table aria-label="Budget">
+      <TableHeader>
+        <TableRow>
+          <TableHead className={pinned}>{by === "term" ? "Term" : "Program"}</TableHead>
+          <TableHead className="text-right">Revenue</TableHead>
+          <TableHead className="text-right">Expenses</TableHead>
+          <TableHead className="text-right">Net</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((row) => (
+          <TableRow key={row.name}>
+            <TableCell className={pinned}>{row.name}</TableCell>
+            <Amount cents={row.revenue_cents} whole />
+            <Amount cents={row.expense_cents} whole />
+            <Amount cents={row.revenue_cents - row.expense_cents} whole />
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
 const feeHead: Column[] = [{ name: "Fee" }, { name: "Per day" }, { name: "Per hour" }, { name: "COGS" }];
 
 /** Offerings under their program's or term's name, each with its name first and then `cells`. */
@@ -203,6 +231,8 @@ export interface ProgramAreaReportProps {
   rules: string | null;
   warnings: PlanWarning[];
   statement: { revenue: AccountAmount[]; direct: AccountAmount[]; indirect: AccountAmount[] };
+  /** Its P&L for each term, empty when none of its offerings is in a term, and for each program. */
+  budget: { term: TermRow[]; program: BudgetRow[] };
   programs: ProgramSettings[];
   offerings: ReportOffering[];
   /** This area's report key. */
@@ -230,6 +260,7 @@ export function ProgramAreaReport({
   rules,
   warnings,
   statement,
+  budget,
   programs,
   offerings,
   areaKey,
@@ -244,7 +275,7 @@ export function ProgramAreaReport({
   staffTime,
 }: ProgramAreaReportProps) {
   const [ownDay, setOwnDay] = useState<string | null>(null);
-  const terms = hasTerms(offerings);
+  const terms = hasTerms(offerings) && budget.term.length > 0;
   const [ownBy, setOwnBy] = useState<Grouping>("term");
   const grouping = terms ? (by ?? ownBy) : "program";
   const groups = offeringGroups(offerings, grouping);
@@ -289,7 +320,14 @@ export function ProgramAreaReport({
         />
       </ReportSection>
 
-      <ReportSection id="enrollment" title="Enrollment" actions={toggle}>
+      <ReportSection id="budget" title="Budget" actions={toggle}>
+        <Budget
+          by={grouping}
+          rows={grouping === "term" ? budget.term.map((t) => ({ ...t, name: t.term ?? "No term" })) : budget.program}
+        />
+      </ReportSection>
+
+      <ReportSection id="enrollment" title="Enrollment">
         <OfferingTable
           label="Enrollment"
           head={enrollmentHead}

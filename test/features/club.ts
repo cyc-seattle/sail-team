@@ -33,6 +33,7 @@ const COPY_ROWS = [
   "plan_offerings",
   "plan_revenue_charges",
   "plan_closed_dates",
+  "plan_terms",
 ];
 
 export class Club {
@@ -204,7 +205,7 @@ export class Club {
   }
 
   /** An offering in `copy` of `sailors` at `price` cents each, with `costs` cents of its own costs. Returns it. */
-  async offering(copy: string, name: string, sailors: number, price: number, costs = 0): Promise<Row> {
+  async offering(copy: string, name: string, sailors: number, price: number, costs = 0, extra: Row = {}): Promise<Row> {
     const offering = await this.versioned("plan_offerings", copy, {
       product_id: this.productId,
       name,
@@ -213,6 +214,7 @@ export class Club {
       capacity: sailors,
       target_enrollment: sailors,
       price_cents: price,
+      ...extra,
     });
     if (costs > 0) {
       await this.versioned("plan_budget_lines", copy, {
@@ -226,6 +228,16 @@ export class Club {
       });
     }
     return offering;
+  }
+
+  /** A term named `name` in the Operations Plan's `copy`, from `starts` to `ends` (`MM-DD`) this year. Returns its key. */
+  async term(copy: string, name: string, starts: string, ends: string): Promise<string> {
+    const term = await this.versioned("plan_terms", copy, {
+      name,
+      starts_on: `${this.year}-${starts}`,
+      ends_on: `${this.year}-${ends}`,
+    });
+    return term["key"] as string;
   }
 
   /**

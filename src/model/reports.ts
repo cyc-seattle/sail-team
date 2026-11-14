@@ -1,6 +1,6 @@
 // The shapes the Planning reports show, and how they're made from a Financial Plan's results and inputs.
 import type { PlanActivity, PlanOffering } from "@cyc-seattle/platform/planning";
-import type { Member, PlanLine, PnlRow, ResultWarning, Results } from "./financial-plans.ts";
+import type { Member, PlanLine, PnlRow, ResultTerm, ResultWarning, Results } from "./financial-plans.ts";
 
 /** Lines that are worked out the same way, added up, such as every offering's coach wages. */
 export interface LineAmount {
@@ -646,14 +646,63 @@ export function reportOffering(
 /** Offerings with the room their blocks have and the sailors they need to pay for themselves, from the results. */
 export function withResults(
   offerings: ReportOffering[],
-  pnl: Pick<PnlRow, "level" | "subject_key" | "allocation_holds" | "breakeven_enrollment">[],
+  pnl: Pick<PnlRow, "level" | "subject_key" | "allocation_holds" | "breakeven_enrollment" | "term_key" | "term_name">[],
 ): ReportOffering[] {
   const rows = new Map(pnl.filter((p) => p.level === "offering").map((p) => [p.subject_key, p]));
-  return offerings.map((o) => ({
-    ...o,
-    room: rows.get(o.key)?.allocation_holds ?? null,
-    breakeven: rows.get(o.key)?.breakeven_enrollment ?? null,
-  }));
+  return offerings.map((o) => {
+    const row = rows.get(o.key);
+    return {
+      ...o,
+      room: row?.allocation_holds ?? null,
+      breakeven: row?.breakeven_enrollment ?? null,
+      term: row?.term_key == null ? null : (row.term_name ?? "A term"),
+    };
+  });
+}
+
+/** One row of a program area's Budget: a term's, or a program's, revenue and expenses. */
+export interface BudgetRow {
+  name: string;
+  revenue_cents: number;
+  expense_cents: number;
+}
+
+/** The area's own costs, such as its director's time, that no one program carries. */
+export const AREA_ROW = "The area as a whole";
+
+/**
+ * A program area's P&L for each of its programs, A to Z, from its offerings' P&L, then what's charged to the area as a
+ * whole, when there's any, so the rows add up to the area's.
+ */
+export function budgetByProgram(
+  offerings: Pick<ReportOffering, "key" | "program">[],
+  pnl: Pick<PnlRow, "level" | "subject_key" | "revenue_cents" | "expense_cents">[],
+  areaId: string | null,
+): BudgetRow[] {
+  const own = new Map(pnl.filter((p) => p.level === "offering").map((p) => [p.subject_key, p]));
+  const programs = new Map<string, BudgetRow>();
+  for (const o of offerings) {
+    const row = own.get(o.key);
+    const total = programs.get(o.program) ?? { name: o.program, revenue_cents: 0, expense_cents: 0 };
+    programs.set(o.program, {
+      ...total,
+      revenue_cents: total.revenue_cents + (row?.revenue_cents ?? 0),
+      expense_cents: total.expense_cents + (row?.expense_cents ?? 0),
+    });
+  }
+  const rows = [...programs.values()].sort((a, b) => a.name.localeCompare(b.name));
+  const area = pnl.find((p) => p.level === "program_area" && p.subject_key === areaId);
+  if (area) {
+    const rest = {
+      name: AREA_ROW,
+      revenue_cents: area.revenue_cents - rows.reduce((t, r) => t + r.revenue_cents, 0),
+      expense_cents: area.expense_cents - rows.reduce((t, r) => t + r.expense_cents, 0),
+    };
+    if (rest.revenue_cents !== 0 || rest.expense_cents !== 0) {
+      rows.push(rest);
+    }
+  }
+  return rows;
 }
 
 /** A regatta trip, with what each coach's travel costs. */
@@ -664,4 +713,35 @@ export interface Trip {
   nights: number | null;
   airfare_cents: number | null;
   miles: number | null;
+}
+
+/** One term's P&L for a program area. */
+export interface TermRow {
+  /** The term's name, or null for the offerings in no term. */
+  term: string | null;
+  revenue_cents: number;
+  expense_cents: number;
+}
+
+/** Terms in the order they start, then by name, with no term last. */
+const byTermStart = (a: ResultTerm, b: ResultTerm) =>
+  a.term_key === null || b.term_key === null
+    ? Number(a.term_key === null) - Number(b.term_key === null)
+    : (a.term_starts_on ?? "").localeCompare(b.term_starts_on ?? "") ||
+      (a.term_name ?? "").localeCompare(b.term_name ?? "");
+
+/**
+ * A program area's P&L for each term, then for its offerings in no term. Empty when none of its offerings is in a term,
+ * since its year says the same.
+ */
+export function termsOf(pnl: PnlRow[], areaId: string | null): TermRow[] {
+  const own = pnl.filter((p) => p.level === "program_area_term" && p.subject_key === areaId);
+  if (!own.some((p) => p.term_key !== null)) {
+    return [];
+  }
+  return own.sort(byTermStart).map((p) => ({
+    term: p.term_key === null ? null : (p.term_name ?? "A term"),
+    revenue_cents: p.revenue_cents,
+    expense_cents: p.expense_cents,
+  }));
 }

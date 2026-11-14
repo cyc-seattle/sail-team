@@ -639,6 +639,12 @@ function results(setRow: Row, calculatedAt: string): Record<string, Row[]> {
   const areaVersion = (area: string | null | undefined) =>
     own.find((m) => plans.find((p) => p.id === m.plan)?.program_area_id === area)?.version ?? operations;
   const offerings = new Map((data.plan_offerings as unknown as Row[]).map((o) => [o["key"], o]));
+  const terms = new Map(((data as { plan_terms?: Row[] }).plan_terms ?? []).map((t) => [t["key"], t]));
+  const resultTerm = (key: string | null | undefined) => ({
+    term_key: key ?? null,
+    term_name: terms.get(key)?.["name"] ?? null,
+    term_starts_on: terms.get(key)?.["starts_on"] ?? null,
+  });
   const ownerOf = (type: string, subject: string | null) => {
     if (type === "offering") {
       return offerings.get(subject)?.["version_id"] as string | undefined;
@@ -646,7 +652,7 @@ function results(setRow: Row, calculatedAt: string): Record<string, Row[]> {
     if (type === "product") {
       return areaVersion(catalog.products.find((p) => p.id === subject)?.program_area_id);
     }
-    if (type === "program_area") {
+    if (type === "program_area" || type === "program_area_term") {
       return areaVersion(subject);
     }
     return operations;
@@ -697,6 +703,7 @@ function results(setRow: Row, calculatedAt: string): Record<string, Row[]> {
       // The engine gives these from cyc-seattle/platform#258 on; an older package leaves them out.
       allocation_holds: (p as { allocation_holds?: number | null }).allocation_holds ?? null,
       breakeven_enrollment: (p as { breakeven_enrollment?: number | null }).breakeven_enrollment ?? null,
+      ...resultTerm((p as { term_key?: string | null }).term_key),
     })),
     plan_result_capital: out.capital.map((item) => ({
       version_set_id: setId,

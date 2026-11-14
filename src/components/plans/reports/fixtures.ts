@@ -4,6 +4,7 @@ import type { ScheduleBlock, ScheduledActivity } from "@/model/schedule";
 import type { ListedPlan, Totals } from "@/model/financial-plans";
 import type {
   AccountAmount,
+  BudgetRow,
   CapitalItem,
   FunctionalExpenses,
   LineAmount,
@@ -12,6 +13,7 @@ import type {
   Product,
   ProgramSettings,
   ReportOffering,
+  TermRow,
   Trip,
   SharedCost,
 } from "@/model/reports";
@@ -145,6 +147,7 @@ const camp = (program: string, n: number, fee: number, estimated: number, max: n
   estimated,
   max,
   max_set: true,
+  term: "Summer 2027",
   // Week 5's Opti Camp is short a coach, and Race Camp needs more sailors than it expects.
   room: program === "Opti Camp" && n === 4 ? 12 : max,
   breakeven: program === "Race Camp" ? 9 : program === "Guppies" ? 7 : 10,
@@ -177,6 +180,7 @@ const season = (
   estimated,
   max: 16,
   max_set: true,
+  term: `${session} 2027`,
   room: 16,
   breakeven: session === "Summer" ? null : 9,
   days: 22,
@@ -289,6 +293,34 @@ export const doublehandedPrograms: ProgramSettings[] = [
   { name: "J-Pod", staff_level: "Level 3 Coach", sailors_per_coach: 8, rules: "Travel regattas take two coaches." },
   { name: "K-Pod", staff_level: "Level 3 Coach", sailors_per_coach: 10, rules: null },
   { name: "L-Pod", staff_level: "Level 4 Coach", sailors_per_coach: 12, rules: "Most sailors bring their own 420s." },
+];
+
+/** Doublehanded by term, adding up to its year. Summer loses money. */
+export const doublehandedTerms: TermRow[] = [
+  { term: "Spring 2027", revenue_cents: 3_800_000, expense_cents: 3_100_000 },
+  { term: "Summer 2027", revenue_cents: 3_000_000, expense_cents: 3_300_000 },
+  { term: "Fall 2027", revenue_cents: 2_500_000, expense_cents: 2_100_000 },
+];
+
+/** Summer's camps are all in one term, and its adult classes in no term. */
+export const summerTerms: TermRow[] = [
+  { term: "Summer 2027", revenue_cents: 19_200_000, expense_cents: 15_800_000 },
+  { term: null, revenue_cents: 2_300_000, expense_cents: 2_000_000 },
+];
+
+/** Doublehanded by program, with its own costs that no one program carries, adding up to its year. */
+export const doublehandedByProgram: BudgetRow[] = [
+  { name: "J-Pod", revenue_cents: 3_700_000, expense_cents: 3_100_000 },
+  { name: "K-Pod", revenue_cents: 3_900_000, expense_cents: 3_400_000 },
+  { name: "L-Pod", revenue_cents: 1_700_000, expense_cents: 1_400_000 },
+  { name: "The area as a whole", revenue_cents: 0, expense_cents: 600_000 },
+];
+
+export const summerByProgram: BudgetRow[] = [
+  { name: "Guppies", revenue_cents: 6_000_000, expense_cents: 4_600_000 },
+  { name: "Opti Camp", revenue_cents: 11_000_000, expense_cents: 9_100_000 },
+  { name: "Race Camp", revenue_cents: 4_500_000, expense_cents: 3_400_000 },
+  { name: "The area as a whole", revenue_cents: 0, expense_cents: 700_000 },
 ];
 
 export const doublehandedStatement = {

@@ -30,6 +30,8 @@ import {
   sharedCostsOf,
   statementOf,
   withResults,
+  termsOf,
+  budgetByProgram,
 } from "@/model/reports";
 
 /** One report of a Financial Plan, by its key: `overview`, `rates`, a Program Plan's id, `non-program` or `fundraising`. */
@@ -155,14 +157,19 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
     );
   }
   const member = members.find((m) => m.kind === "program_area" && reportKey(m) === report)!;
+  const offerings = withResults(inputs.offerings[report] ?? [], results.pnl);
   return (
     <AreaReport
       area={reportName(member)}
       rules={inputs.rules[report] ?? null}
       warnings={warnings.filter((w) => w.area === report)}
       statement={statementOf(results.lines.filter((l) => l.member === member.id))}
+      budget={{
+        term: termsOf(results.pnl, member.program_area_id),
+        program: budgetByProgram(offerings, results.pnl, member.program_area_id),
+      }}
       programs={inputs.programs[report] ?? []}
-      offerings={withResults(inputs.offerings[report] ?? [], results.pnl)}
+      offerings={offerings}
       areaKey={report}
       schedule={inputs.schedule[report] ?? []}
       closedDays={inputs.operations?.closedDays ?? []}
@@ -188,7 +195,11 @@ function AreaReport(props: Omit<ProgramAreaReportProps, "day" | "onDayChange" | 
       by={by ?? "term"}
       onByChange={(next) =>
         void navigate({
-          search: ({ by: _, ...s }) => (next === "program" ? { ...s, by: "program" as const } : s),
+          search: ({ area, day }) => ({
+            ...(area && { area }),
+            ...(day && { day }),
+            ...(next === "program" && { by: "program" as const }),
+          }),
           replace: true,
         })
       }

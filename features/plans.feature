@@ -70,6 +70,17 @@ Feature: Seeing the Financial Plans
       Then it shows $3,000 of coaches' wages
       And it shows the $1,000 of the office
 
+  Rule: A program area's budget shows each term's revenue, expenses and net, or each program's
+
+    Scenario: A term that loses money
+      Given I'm a planner who can read plans
+      And a frozen Financial Plan whose Youth Racing makes $20,000 in "Summer 2027" and loses $5,000 in "Fall 2027"
+      And I've signed in
+      When I open Youth Racing's report in that Financial Plan
+      Then "Summer 2027" shows a net of $20,000, and "Fall 2027" a net of −$5,000
+      When I group its report by program
+      Then its program shows a net of $15,000
+
   Rule: A frozen Financial Plan shows the P&L it was frozen with, and never recalculates it
 
     Scenario: A Financial Plan started from it doesn't change its numbers
@@ -112,7 +123,7 @@ Feature: Seeing the Financial Plans
       Then I see the rule "No more than 4 RIBs on the water"
       And I see the coach's pay of $30.00 an hour
 
-  Rule: The Calendar shows each program area's offerings over the year, then a day's activity blocks at their times
+  Rule: A program area's calendar shows its offerings over the year, then a day's activity blocks at their times
 
     Scenario: A day's practice that differs from the others
       Given I'm a planner who can read plans
@@ -120,7 +131,6 @@ Feature: Seeing the Financial Plans
       And it practices each weekday morning for two weeks with a Lead coach, but the last day has no coach yet
       And I've signed in
       When I open Youth Racing's report in the draft
-      And I see it on the calendar
       Then the calendar shows the offering's 10 sailors across both weeks
       When I open the practice on Jul 16
       Then it has no staff, coach boats or boats yet, where the other days have 1 Lead coach

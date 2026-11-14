@@ -205,6 +205,50 @@ Given("its only Program Plan has an offering with a coach on every practice, 100
   // Ten days of camp from 8am to 6pm, each in a block with one coach, made with the Financial Plan above.
 });
 
+// A program area's P&L by term.
+Given(
+  "a frozen Financial Plan whose Youth Racing makes $20,000 in {string} and loses $5,000 in {string}",
+  async ({ club }, summer: string, fall: string) => {
+    const { operations, youth } = await plansWithCopies(club);
+    const inSummer = await club.term(operations, summer, "07-01", "08-31");
+    const inFall = await club.term(operations, fall, "09-01", "11-30");
+    await club.offering(youth, `${OFFERING} summer`, 1, 2_000_000, 0, { term_key: inSummer });
+    await club.offering(youth, `${OFFERING} fall`, 1, 0, 500_000, { term_key: inFall });
+    opened.set = await club.financialPlan("Budget", [operations, youth]);
+    await club.save(opened.set);
+  },
+);
+
+Then(
+  "{string} shows a net of $20,000, and {string} a net of −$5,000",
+  async ({ page }, summer: string, fall: string) => {
+    const terms = page.getByRole("table", { name: "Budget" });
+    await expect(
+      terms
+        .getByRole("row", { name: new RegExp(`^${summer}`) })
+        .getByRole("cell")
+        .last(),
+    ).toHaveText("$20,000");
+    await expect(
+      terms
+        .getByRole("row", { name: new RegExp(`^${fall}`) })
+        .getByRole("cell")
+        .last(),
+    ).toHaveText("−$5,000");
+  },
+);
+
+When("I group its report by program", async ({ page }) => {
+  await page.getByRole("button", { name: "By program" }).click();
+});
+
+Then("its program shows a net of $15,000", async ({ page, club }) => {
+  const row = page
+    .getByRole("table", { name: "Budget" })
+    .getByRole("row", { name: new RegExp(`^Beginner camp ${club.run}`) });
+  await expect(row.getByRole("cell").last()).toHaveText("$15,000");
+});
+
 When(/^I open Youth Racing's report in (?:that Financial Plan|the draft)$/, async ({ page, club }) => {
   await page.goto(`${await app()}/plans/financial/${opened.set}/${club.areaPlan}`);
 });
@@ -303,10 +347,6 @@ Given(
   },
 );
 
-When("I see it on the calendar", async ({ page }) => {
-  await page.getByRole("link", { name: "See on the calendar" }).click();
-});
-
 Then("the calendar shows the offering's 10 sailors across both weeks", async ({ page }) => {
   await expect(page.getByRole("group", { name: "Year" })).toContainText("10/10");
 });
@@ -331,7 +371,7 @@ Then("its offering's enrollment shows a target of 10 sailors, and its fees a fee
       .getByRole("row", { name: `Beginner camp ${club.run} ${OFFERING}` })
       .getByRole("cell");
   await expect(cells("Enrollment").nth(4)).toHaveText("10");
-  await expect(cells("Offering fees").nth(1)).toHaveText("$1,000");
+  await expect(cells("Fees").nth(1)).toHaveText("$1,000");
 });
 
 Then(
