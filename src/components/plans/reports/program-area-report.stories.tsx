@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, userEvent } from "storybook/test";
+import { expect, userEvent, within } from "storybook/test";
 import {
   doublehandedOfferings,
   doublehandedPrograms,
@@ -40,7 +40,7 @@ type Story = StoryObj<typeof meta>;
 /** Each program's spring comes before its fall, whatever order they were planned in. */
 export const Doublehanded: Story = {
   play: async ({ canvas }) => {
-    const table = canvas.getByRole("table", { name: "Offerings" });
+    const table = canvas.getByRole("table", { name: "Offering fees" });
     const names = [...table.querySelectorAll("tbody button")].map((b) => b.textContent);
     await expect(names.slice(0, 2)).toEqual(["J-Pod Spring", "J-Pod Summer"]);
     await expect(canvas.getByRole("list", { name: "J-Pod rules" })).not.toBeVisible();
@@ -48,6 +48,26 @@ export const Doublehanded: Story = {
 };
 
 /** The area's assumptions open from the top of the page. */
+/** Max and Capacity say what they mean on hover. */
+export const EnrollmentHelp: Story = {
+  play: async ({ canvas }) => {
+    const table = canvas.getByRole("table", { name: "Enrollment" });
+    await expect([...table.querySelectorAll("thead th")].map((h) => h.textContent)).toEqual([
+      "Offering",
+      "Break even",
+      "Max",
+      "Capacity",
+      "Target",
+      "Sailor-days",
+      "Sailor-hours",
+    ]);
+    await userEvent.hover(within(table).getByRole("button", { name: "What Capacity means" }));
+    await expect(
+      await within(document.body).findByText("The most sailors the coaches and boats given to its blocks can take"),
+    ).toBeVisible();
+  },
+};
+
 export const AssumptionsOpen: Story = {
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByText("Assumptions", { selector: "h2" }));

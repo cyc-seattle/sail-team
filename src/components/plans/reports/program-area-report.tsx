@@ -48,20 +48,19 @@ function Flagged({ children, why }: { children: ReactNode; why: string }) {
   );
 }
 
-/** The most sailors the offering's blocks can take, flagged when that's fewer than its max. */
+/** Its capacity: the most sailors its blocks can take, flagged when that's fewer than its max. */
 function Room({ offering: o }: { offering: ReportOffering }) {
   if (o.room == null) return <Num>{none}</Num>;
-  if (o.room < o.max)
-    return <Flagged why={`Its blocks have room for fewer than its max of ${o.max}`}>{count(o.room)}</Flagged>;
+  if (o.room < o.max) return <Flagged why={`Fewer than its max of ${o.max}`}>{count(o.room)}</Flagged>;
   return <Num>{count(o.room)}</Num>;
 }
 
-/** The fewest sailors at which the offering pays for itself, flagged when that's more than the plan expects. */
+/** The fewest sailors at which the offering pays for itself, flagged when that's more than its target. */
 function Breakeven({ offering: o }: { offering: ReportOffering }) {
   if (!o.max_set) return <Num>{none}</Num>;
   if (o.breakeven == null) return <Flagged why="It loses money even when full">Never</Flagged>;
   if (o.breakeven > o.estimated) {
-    return <Flagged why={`More than the ${o.estimated} sailors expected`}>{count(o.breakeven)}</Flagged>;
+    return <Flagged why={`More than its target of ${o.estimated}`}>{count(o.breakeven)}</Flagged>;
   }
   return <Num>{count(o.breakeven)}</Num>;
 }
@@ -125,18 +124,73 @@ function AreaAssumptions({
   );
 }
 
-const offeringHead = [
-  "Fee",
-  "Fee per day",
-  "Sailors",
-  "Max",
-  "Room for",
-  "Breaks even at",
-  "Sailor-days",
-  "Fee per hour",
-  "Sailor-hours",
-  "Cost of goods",
+/** A column of an offerings table, with what it means when that isn't plain from its name. */
+interface Column {
+  name: string;
+  help?: string;
+}
+
+const enrollmentHead: Column[] = [
+  { name: "Break even" },
+  { name: "Max", help: "The most sailors planned for this offering" },
+  { name: "Capacity", help: "The most sailors the coaches and boats given to its blocks can take" },
+  { name: "Target" },
+  { name: "Sailor-days" },
+  { name: "Sailor-hours" },
 ];
+const feeHead: Column[] = [{ name: "Fee" }, { name: "Per day" }, { name: "Per hour" }, { name: "COGS" }];
+
+/** Each program's offerings, under the program's name, with the offering's name first and then `cells`. */
+function OfferingTable({
+  label,
+  head,
+  groups,
+  cells,
+}: {
+  label: string;
+  head: Column[];
+  groups: ReturnType<typeof numberedOfferings>;
+  cells: (o: ReportOffering) => ReactNode;
+}) {
+  return (
+    <Table aria-label={label}>
+      <TableHeader>
+        <TableRow>
+          <TableHead className={pinned}>Offering</TableHead>
+          {head.map((h) => (
+            <TableHead key={h.name} className="text-right">
+              <span className="inline-flex items-center gap-0.5">
+                {h.name}
+                <NoteInfo note={h.help} label={`What ${h.name} means`} />
+              </span>
+            </TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {groups.map(({ program, offerings: own }) => (
+          <Fragment key={program}>
+            <TableRow className="hover:bg-transparent">
+              <TableCell className={cn(pinned, "pt-4 font-medium")}>{program}</TableCell>
+              <TableCell colSpan={head.length} />
+            </TableRow>
+            {own.map((o) => (
+              <TableRow key={o.key}>
+                <TableCell className={cn(pinned, "pl-6")}>
+                  <span className="inline-flex items-center gap-1">
+                    <OfferingName offering={o} />
+                    <NoteInfo note={o.note} />
+                  </span>
+                </TableCell>
+                {cells(o)}
+              </TableRow>
+            ))}
+          </Fragment>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
 
 export interface ProgramAreaReportProps {
   /** The program area's name, such as Summer. */
@@ -193,13 +247,9 @@ export function ProgramAreaReport({
         />
       </ReportSection>
 
-      <ReportSection id="enrollment" title="Enrollment">
-        <SessionGrid offerings={offerings} />
-      </ReportSection>
-
       <ReportSection
-        id="offerings"
-        title="Offerings"
+        id="enrollment"
+        title="Enrollment"
         actions={
           <Link
             to="/plans/financial/$setId/$planId"
@@ -211,48 +261,38 @@ export function ProgramAreaReport({
           </Link>
         }
       >
-        <Table aria-label="Offerings">
-          <TableHeader>
-            <TableRow>
-              <TableHead className={pinned}>Offering</TableHead>
-              {offeringHead.map((h) => (
-                <TableHead key={h} className="text-right">
-                  {h}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {groups.map(({ program, offerings: own }) => (
-              <Fragment key={program}>
-                <TableRow className="hover:bg-transparent">
-                  <TableCell className={cn(pinned, "pt-4 font-medium")}>{program}</TableCell>
-                  <TableCell colSpan={offeringHead.length} />
-                </TableRow>
-                {own.map((o) => (
-                  <TableRow key={o.key}>
-                    <TableCell className={cn(pinned, "pl-6")}>
-                      <span className="inline-flex items-center gap-1">
-                        <OfferingName offering={o} />
-                        <NoteInfo note={o.note} />
-                      </span>
-                    </TableCell>
-                    <Amount cents={o.fee_cents} whole />
-                    <Amount cents={per(o.fee_cents, o.days)} />
-                    <Num>{count(o.estimated)}</Num>
-                    <Num>{count(o.max)}</Num>
-                    <Room offering={o} />
-                    <Breakeven offering={o} />
-                    <Num>{count(o.estimated * o.days)}</Num>
-                    <Amount cents={per(o.fee_cents, o.hours)} />
-                    <Num>{hoursOf(o.estimated * o.hours)}</Num>
-                    <Num>{o.cogs_rate === null ? none : formatShare(o.cogs_rate)}</Num>
-                  </TableRow>
-                ))}
-              </Fragment>
-            ))}
-          </TableBody>
-        </Table>
+        <SessionGrid offerings={offerings} />
+        <OfferingTable
+          label="Enrollment"
+          head={enrollmentHead}
+          groups={groups}
+          cells={(o) => (
+            <>
+              <Breakeven offering={o} />
+              <Num>{count(o.max)}</Num>
+              <Room offering={o} />
+              <Num>{count(o.estimated)}</Num>
+              <Num>{count(o.estimated * o.days)}</Num>
+              <Num>{hoursOf(o.estimated * o.hours)}</Num>
+            </>
+          )}
+        />
+      </ReportSection>
+
+      <ReportSection id="offering-fees" title="Offering fees">
+        <OfferingTable
+          label="Offering fees"
+          head={feeHead}
+          groups={groups}
+          cells={(o) => (
+            <>
+              <Amount cents={o.fee_cents} whole />
+              <Amount cents={per(o.fee_cents, o.days)} />
+              <Amount cents={per(o.fee_cents, o.hours)} />
+              <Num>{o.cogs_rate === null ? none : formatShare(o.cogs_rate)}</Num>
+            </>
+          )}
+        />
       </ReportSection>
 
       {trips.length > 0 && (

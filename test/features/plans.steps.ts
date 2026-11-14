@@ -323,14 +323,15 @@ Then("it has no staff, coach boats or boats yet, where the other days have 1 Lea
   await expect(block).toContainText("Usually 1 Lead coach");
 });
 
-Then("its offering shows a fee of $1,000 and 10 sailors", async ({ page, club }) => {
+Then("its offering's enrollment shows a target of 10 sailors, and its fees a fee of $1,000", async ({ page, club }) => {
   // Its row, named for its program and its session (with no season, its own name), not the program's own row above it.
-  const cells = page
-    .getByRole("table", { name: "Offerings" })
-    .getByRole("row", { name: `Beginner camp ${club.run} ${OFFERING}` })
-    .getByRole("cell");
-  await expect(cells.nth(1)).toHaveText("$1,000");
-  await expect(cells.nth(3)).toHaveText("10");
+  const cells = (table: string) =>
+    page
+      .getByRole("table", { name: table, exact: true })
+      .getByRole("row", { name: `Beginner camp ${club.run} ${OFFERING}` })
+      .getByRole("cell");
+  await expect(cells("Enrollment").nth(4)).toHaveText("10");
+  await expect(cells("Offering fees").nth(1)).toHaveText("$1,000");
 });
 
 Then(

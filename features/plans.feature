@@ -90,15 +90,15 @@ Feature: Seeing the Financial Plans
       And a planner's AI raises the offering's price to $1,200
       Then it shows $12,000 of revenue, without my reloading the page
 
-  Rule: A program area's report shows its programs' settings and rules, and each offering's fee and sailors
+  Rule: A program area's report shows its programs' settings and rules, and each offering's enrollment and fees
 
-    Scenario: An offering's fee and sailors, and its program's settings
+    Scenario: An offering's target and fee, and its program's settings
       Given I'm a planner who can read plans
       And a draft Financial Plan whose Youth Racing plan has one offering of 10 sailors at $1,000 each
       And its program is led by a Lead coach, at 5 sailors per coach, with the rule "Sail in pairs"
       And I've signed in
       When I open Youth Racing's report in the draft
-      Then its offering shows a fee of $1,000 and 10 sailors
+      Then its offering's enrollment shows a target of 10 sailors, and its fees a fee of $1,000
       And its assumptions show the program's Lead coach, 5 sailors per coach, and the rule "Sail in pairs"
 
   Rule: Assumptions show the rules every program follows and the rates every plan uses
