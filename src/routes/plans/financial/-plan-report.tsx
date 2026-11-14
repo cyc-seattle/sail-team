@@ -30,8 +30,7 @@ import {
   sharedCostsOf,
   statementOf,
   withResults,
-  termsOf,
-  budgetByProgram,
+  areaTotal,
 } from "@/model/reports";
 
 /** One report of a Financial Plan, by its key: `overview`, `rates`, a Program Plan's id, `non-program` or `fundraising`. */
@@ -164,10 +163,7 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
       rules={inputs.rules[report] ?? null}
       warnings={warnings.filter((w) => w.area === report)}
       statement={statementOf(results.lines.filter((l) => l.member === member.id))}
-      budget={{
-        term: termsOf(results.pnl, member.program_area_id),
-        program: budgetByProgram(offerings, results.pnl, member.program_area_id),
-      }}
+      total={areaTotal(results.pnl, member.program_area_id)}
       programs={inputs.programs[report] ?? []}
       offerings={offerings}
       areaKey={report}
@@ -183,26 +179,15 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
 
 const reportRoute = getRouteApi("/plans/financial/$setId/$planId");
 
-/** A program area's report, with its calendar's day and its grouping kept in the address. */
-function AreaReport(props: Omit<ProgramAreaReportProps, "day" | "onDayChange" | "by" | "onByChange">) {
-  const { day, by } = reportRoute.useSearch();
+/** A program area's report, with its calendar's day kept in the address. */
+function AreaReport(props: Omit<ProgramAreaReportProps, "day" | "onDayChange">) {
+  const { day } = reportRoute.useSearch();
   const navigate = reportRoute.useNavigate();
   return (
     <ProgramAreaReport
       {...props}
       day={day ?? null}
       onDayChange={(next) => void navigate({ search: (s) => ({ ...s, day: next }), replace: true })}
-      by={by ?? "term"}
-      onByChange={(next) =>
-        void navigate({
-          search: ({ area, day }) => ({
-            ...(area && { area }),
-            ...(day && { day }),
-            ...(next === "program" && { by: "program" as const }),
-          }),
-          replace: true,
-        })
-      }
     />
   );
 }

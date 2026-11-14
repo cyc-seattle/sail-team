@@ -4,16 +4,15 @@ import { formatShare, type FixedCost, type StaffTime } from "@/model/assumptions
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { ScheduleBlock } from "@/model/schedule";
 import {
-  hasTerms,
+  byTermAndProgram,
+  chargedToArea,
+  moneyOf,
   numberedOfferings,
-  offeringGroups,
-  type Grouping,
+  type InAndOut,
   type AccountAmount,
   type PlanWarning,
   type ProgramSettings,
   type ReportOffering,
-  type BudgetRow,
-  type TermRow,
   type Trip,
 } from "@/model/reports";
 import { cn } from "@/lib/utils";
@@ -25,7 +24,6 @@ import { OfferingName } from "./offering-name";
 import { ReportSection } from "./report-page";
 import { RulesList } from "./rules-list";
 import { PlanCalendar } from "./plan-calendar";
-import { SegmentedControl } from "./segmented-control";
 import { StatementTable } from "./statement-table";
 import { WarningsSection } from "./warnings-section";
 
@@ -144,46 +142,32 @@ const enrollmentHead: Column[] = [
   { name: "Sailor-days" },
   { name: "Sailor-hours" },
 ];
-/** Each term's or program's revenue, expenses, and net. */
-function Budget({ rows, by }: { rows: BudgetRow[]; by: Grouping }) {
-  return (
-    <Table aria-label="Budget">
-      <TableHeader>
-        <TableRow>
-          <TableHead className={pinned}>{by === "term" ? "Term" : "Program"}</TableHead>
-          <TableHead className="text-right">Revenue</TableHead>
-          <TableHead className="text-right">Expenses</TableHead>
-          <TableHead className="text-right">Net</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((row) => (
-          <TableRow key={row.name}>
-            <TableCell className={pinned}>{row.name}</TableCell>
-            <Amount cents={row.revenue_cents} whole />
-            <Amount cents={row.expense_cents} whole />
-            <Amount cents={row.revenue_cents - row.expense_cents} whole />
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  );
-}
-
 const feeHead: Column[] = [{ name: "Fee" }, { name: "Per day" }, { name: "Per hour" }, { name: "COGS" }];
+const budgetHead: Column[] = [{ name: "Revenue" }, { name: "Expenses" }, { name: "Net" }];
 
-/** Offerings under their program's or term's name, each with its name first and then `cells`. */
-function OfferingTable({
+/**
+ * Offerings by term, then by program, each with its name first and then `cells`. Given `sums`, each term's and
+ * program's row shows its subtotals; `footer` adds rows at the end, such as a total. The term rows are left out when
+ * no offering is in a term.
+ */
+function GroupedTable({
   label,
   head,
-  groups,
+  offerings,
   cells,
+  sums,
+  footer,
 }: {
   label: string;
   head: Column[];
-  groups: ReturnType<typeof offeringGroups>;
+  offerings: ReportOffering[];
   cells: (o: ReportOffering) => ReactNode;
+  sums?: (offerings: ReportOffering[]) => ReactNode;
+  footer?: ReactNode;
 }) {
+  const terms = byTermAndProgram(offerings);
+  const showTerms = terms.some((t) => t.term !== null);
+  const subtotals = (own: ReportOffering[]) => (sums ? sums(own) : <TableCell colSpan={head.length} />);
   return (
     <Table aria-label={label}>
       <TableHeader>
@@ -200,29 +184,68 @@ function OfferingTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {groups.map(({ name, offerings: own }) => (
-          <Fragment key={name}>
-            <TableRow className="hover:bg-transparent">
-              <TableCell className={cn(pinned, "pt-4 font-medium")}>{name}</TableCell>
-              <TableCell colSpan={head.length} />
-            </TableRow>
-            {own.map((o) => (
-              <TableRow key={o.key}>
-                <TableCell className={cn(pinned, "pl-6")}>
-                  <span className="inline-flex items-center gap-1">
-                    <OfferingName offering={o} />
-                    <NoteInfo note={o.note} />
-                  </span>
-                </TableCell>
-                {cells(o)}
+        {terms.map(({ term, programs: own }) => (
+          <Fragment key={term ?? ""}>
+            {showTerms && (
+              <TableRow className="font-semibold hover:bg-transparent">
+                <TableCell className={cn(pinned, "pt-4")}>{term ?? "No term"}</TableCell>
+                {subtotals(own.flatMap((p) => p.offerings))}
               </TableRow>
+            )}
+            {own.map(({ program, offerings: listed }) => (
+              <Fragment key={program}>
+                <TableRow className="font-medium hover:bg-transparent">
+                  <TableCell className={cn(pinned, showTerms ? "pl-5" : "pt-4")}>{program}</TableCell>
+                  {subtotals(listed)}
+                </TableRow>
+                {listed.map((o) => (
+                  <TableRow key={o.key}>
+                    <TableCell className={cn(pinned, showTerms ? "pl-10" : "pl-6")}>
+                      <span className="inline-flex items-center gap-1">
+                        <OfferingName offering={o} />
+                        <NoteInfo note={o.note} />
+                      </span>
+                    </TableCell>
+                    {cells(o)}
+                  </TableRow>
+                ))}
+              </Fragment>
             ))}
           </Fragment>
         ))}
+        {footer}
       </TableBody>
     </Table>
   );
 }
+
+/** Revenue, expenses and net. */
+function InOut({ money }: { money: InAndOut }) {
+  return (
+    <>
+      <Amount cents={money.revenue_cents} whole />
+      <Amount cents={money.expense_cents} whole />
+      <Amount cents={money.revenue_cents - money.expense_cents} whole />
+    </>
+  );
+}
+
+/** Max, capacity, target, sailor-days and sailor-hours added up; capacity only over the offerings that have one. */
+function EnrollmentSums({ offerings }: { offerings: ReportOffering[] }) {
+  const rooms = offerings.flatMap((o) => (o.room == null ? [] : [o.room]));
+  return (
+    <>
+      <TableCell />
+      <Num>{count(offerings.reduce((t, o) => t + o.max, 0))}</Num>
+      <Num>{rooms.length === 0 ? none : count(rooms.reduce((t, n) => t + n, 0))}</Num>
+      <Num>{count(offerings.reduce((t, o) => t + o.estimated, 0))}</Num>
+      <Num>{count(offerings.reduce((t, o) => t + o.estimated * o.days, 0))}</Num>
+      <Num>{hoursOf(offerings.reduce((t, o) => t + o.estimated * o.hours, 0))}</Num>
+    </>
+  );
+}
+
+const totalRow = "border-t-2 font-semibold hover:bg-transparent";
 
 export interface ProgramAreaReportProps {
   /** The program area's name, such as Summer. */
@@ -231,8 +254,8 @@ export interface ProgramAreaReportProps {
   rules: string | null;
   warnings: PlanWarning[];
   statement: { revenue: AccountAmount[]; direct: AccountAmount[]; indirect: AccountAmount[] };
-  /** Its P&L for each term, empty when none of its offerings is in a term, and for each program. */
-  budget: { term: TermRow[]; program: BudgetRow[] };
+  /** Its total revenue and expenses, which its offerings' and what's charged to the area itself add up to. */
+  total: InAndOut | null;
   programs: ProgramSettings[];
   offerings: ReportOffering[];
   /** This area's report key. */
@@ -240,11 +263,9 @@ export interface ProgramAreaReportProps {
   /** Its activity blocks, for its calendar, and the days CSC is closed. */
   schedule: ScheduleBlock[];
   closedDays: { date: string; name: string }[];
-  /** The calendar's day, and how Enrollment and Fees group their rows. Kept by the report when not given. */
+  /** The calendar's day. Kept by the report when not given. */
   day?: string | null;
   onDayChange?: (day: string) => void;
-  by?: Grouping;
-  onByChange?: (by: Grouping) => void;
   trips: Trip[];
   /** The area plan's own fixed costs and staff time outside its programs. */
   fixedCosts: FixedCost[];
@@ -253,14 +274,14 @@ export interface ProgramAreaReportProps {
 
 /**
  * One program area: its warnings and its assumptions, both closed at first, its calendar, its revenue and expenses by
- * account, then each offering's enrollment and fees, grouped by term or by program.
+ * account, then its budget, enrollment and fees, each by term, then program, then offering.
  */
 export function ProgramAreaReport({
   area,
   rules,
   warnings,
   statement,
-  budget,
+  total,
   programs,
   offerings,
   areaKey,
@@ -268,29 +289,13 @@ export function ProgramAreaReport({
   closedDays,
   day,
   onDayChange,
-  by,
-  onByChange,
   trips,
   fixedCosts,
   staffTime,
 }: ProgramAreaReportProps) {
   const [ownDay, setOwnDay] = useState<string | null>(null);
-  const terms = hasTerms(offerings) && budget.term.length > 0;
-  const [ownBy, setOwnBy] = useState<Grouping>("term");
-  const grouping = terms ? (by ?? ownBy) : "program";
-  const groups = offeringGroups(offerings, grouping);
   const labels = new Map(numberedOfferings(offerings).flatMap((g) => g.offerings.map((o) => [o.key, o.label])));
-  const toggle = terms && (
-    <SegmentedControl
-      label="Group by"
-      value={grouping}
-      options={[
-        { value: "term", label: "By term" },
-        { value: "program", label: "By program" },
-      ]}
-      onChange={onByChange ?? setOwnBy}
-    />
-  );
+  const charged = chargedToArea(offerings, total);
   return (
     <>
       <div className="grid gap-2">
@@ -320,18 +325,35 @@ export function ProgramAreaReport({
         />
       </ReportSection>
 
-      <ReportSection id="budget" title="Budget" actions={toggle}>
-        <Budget
-          by={grouping}
-          rows={grouping === "term" ? budget.term.map((t) => ({ ...t, name: t.term ?? "No term" })) : budget.program}
+      <ReportSection id="budget" title="Budget">
+        <GroupedTable
+          label="Budget"
+          head={budgetHead}
+          offerings={offerings}
+          cells={(o) => <InOut money={moneyOf([o])} />}
+          sums={(own) => <InOut money={moneyOf(own)} />}
+          footer={
+            <>
+              {charged && (
+                <TableRow className="border-t-2 hover:bg-transparent">
+                  <TableCell className={pinned}>Charged to the area</TableCell>
+                  <InOut money={charged} />
+                </TableRow>
+              )}
+              <TableRow className={totalRow}>
+                <TableCell className={pinned}>Total</TableCell>
+                <InOut money={total ?? moneyOf(offerings)} />
+              </TableRow>
+            </>
+          }
         />
       </ReportSection>
 
       <ReportSection id="enrollment" title="Enrollment">
-        <OfferingTable
+        <GroupedTable
           label="Enrollment"
           head={enrollmentHead}
-          groups={groups}
+          offerings={offerings}
           cells={(o) => (
             <>
               <Breakeven offering={o} />
@@ -342,14 +364,21 @@ export function ProgramAreaReport({
               <Num>{hoursOf(o.estimated * o.hours)}</Num>
             </>
           )}
+          sums={(own) => <EnrollmentSums offerings={own} />}
+          footer={
+            <TableRow className={totalRow}>
+              <TableCell className={pinned}>Total</TableCell>
+              <EnrollmentSums offerings={offerings} />
+            </TableRow>
+          }
         />
       </ReportSection>
 
       <ReportSection id="fees" title="Fees">
-        <OfferingTable
+        <GroupedTable
           label="Fees"
           head={feeHead}
-          groups={groups}
+          offerings={offerings}
           cells={(o) => (
             <>
               <Amount cents={o.fee_cents} whole />

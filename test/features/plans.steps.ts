@@ -238,15 +238,12 @@ Then(
   },
 );
 
-When("I group its report by program", async ({ page }) => {
-  await page.getByRole("button", { name: "By program" }).click();
-});
-
-Then("its program shows a net of $15,000", async ({ page, club }) => {
-  const row = page
-    .getByRole("table", { name: "Budget" })
-    .getByRole("row", { name: new RegExp(`^Beginner camp ${club.run}`) });
-  await expect(row.getByRole("cell").last()).toHaveText("$15,000");
+Then("its program shows a net of $20,000 in {string}", async ({ page, club }, term: string) => {
+  // The program's subtotal row comes right after its term's.
+  const rows = page.getByRole("table", { name: "Budget" }).getByRole("row");
+  const names = await rows.evaluateAll((all) => all.map((r) => r.querySelector("td")?.textContent ?? ""));
+  const program = names.indexOf(`Beginner camp ${club.run}`, names.indexOf(term));
+  await expect(rows.nth(program).getByRole("cell").last()).toHaveText("$20,000");
 });
 
 When(/^I open Youth Racing's report in (?:that Financial Plan|the draft)$/, async ({ page, club }) => {

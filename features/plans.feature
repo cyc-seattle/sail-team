@@ -70,7 +70,7 @@ Feature: Seeing the Financial Plans
       Then it shows $3,000 of coaches' wages
       And it shows the $1,000 of the office
 
-  Rule: A program area's budget shows each term's revenue, expenses and net, or each program's
+  Rule: A program area's budget shows revenue, expenses and net for each term, and each program within it
 
     Scenario: A term that loses money
       Given I'm a planner who can read plans
@@ -78,8 +78,7 @@ Feature: Seeing the Financial Plans
       And I've signed in
       When I open Youth Racing's report in that Financial Plan
       Then "Summer 2027" shows a net of $20,000, and "Fall 2027" a net of −$5,000
-      When I group its report by program
-      Then its program shows a net of $15,000
+      And its program shows a net of $20,000 in "Summer 2027"
 
   Rule: A frozen Financial Plan shows the P&L it was frozen with, and never recalculates it
 
