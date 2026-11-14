@@ -137,6 +137,9 @@ policy that lets the page call only itself and Directus.
   (`error-context.md`) and trace.
 - The queue is batched, and dev is one shared environment, so the queue deploys and runs the journeys one batch at a
   time.
+- `nightly.yml` deploys `main` to dev each night and runs the journeys, under the same dev lock as the queues. A failed
+  night opens or comments on the `Nightly integration run failed` issue, assigned to the maintainer, and a green night
+  closes it. Run it early with `gh workflow run nightly.yml`.
 - Never force-push. To bring a branch up to date, merge `origin/main` into it. A queued branch can't be pushed until
   it's dequeued, so take the PR out of the queue first.
 - `gh workflow run pull-request.yml --ref <branch>` deploys a branch to dev and runs the journeys before it's queued.
