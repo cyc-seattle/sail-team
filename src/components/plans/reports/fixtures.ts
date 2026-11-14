@@ -379,7 +379,11 @@ export const summerStaffTime: StaffTime[] = [
 
 /** The Operations Plan's rates for the year, with each bonus on the salaried position it pays. */
 export const reportAssumptions: OperationsAssumptions = {
-  rates: { payroll_tax_rate: 0.1, lodging_per_night_cents: 15_000, mileage_rate_cents: 70, rib_kind: "RIB" },
+  rates: {
+    payroll_tax_rate: 0.1,
+    lodging_per_night_cents: 15_000,
+    mileage_rate_cents: 70,
+  },
   staffLevels: [
     { key: "jr", name: "Junior Instructor", pay_type: "hourly", hourly_rate_cents: 1_900 },
     { key: "l1", name: "Level 1 Instructor", pay_type: "hourly", hourly_rate_cents: 2_200 },
@@ -438,38 +442,35 @@ export const reportAssumptions: OperationsAssumptions = {
       note: null,
     },
   ],
-  resources: [
-    {
-      key: "rib",
-      name: "RIBs",
-      quantity: 6,
-      cost_per_hour_cents: 0,
-      cost_per_day_cents: 1_000,
-      fuel_per_hour_cents: 1_500,
-      maintenance_per_hour_cents: 800,
-      excluded_from_mtdc: false,
-    },
-    {
-      key: "rental",
-      name: "Rented RIB",
-      quantity: 1,
-      cost_per_hour_cents: 4_500,
-      cost_per_day_cents: null,
-      fuel_per_hour_cents: 1_500,
-      maintenance_per_hour_cents: null,
-      excluded_from_mtdc: true,
-    },
-  ],
   boatRates: [
-    { key: "opti", boat_class: "Opti", maintenance_per_boat_hour_cents: 150, quantity: 30, sailors_per_boat: 1 },
+    {
+      key: "opti",
+      boat_class: "Opti",
+      fuel_per_hour_cents: null,
+      maintenance_per_boat_hour_cents: 150,
+      charter_per_day_cents: null,
+    },
     {
       key: "sailqube",
       boat_class: "Sailqube",
+      fuel_per_hour_cents: null,
       maintenance_per_boat_hour_cents: 200,
-      quantity: 12,
-      sailors_per_boat: 2,
+      charter_per_day_cents: null,
     },
-    { key: "420", boat_class: "420", maintenance_per_boat_hour_cents: 300, quantity: 14, sailors_per_boat: 2 },
+    {
+      key: "420",
+      boat_class: "420",
+      fuel_per_hour_cents: null,
+      maintenance_per_boat_hour_cents: 300,
+      charter_per_day_cents: 7_500,
+    },
+    {
+      key: "rib",
+      boat_class: "RIB",
+      fuel_per_hour_cents: 1_500,
+      maintenance_per_boat_hour_cents: 800,
+      charter_per_day_cents: 30_000,
+    },
   ],
   bonuses: [
     programDirectorBonus,

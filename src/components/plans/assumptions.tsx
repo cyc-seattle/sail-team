@@ -190,10 +190,6 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
               <TableCell>Mileage, per mile</TableCell>
               <Num>{money(a.rates.mileage_rate_cents)}</Num>
             </TableRow>
-            <TableRow>
-              <TableCell>RIB hours priced as</TableCell>
-              <Num>{a.rates.rib_kind ?? none}</Num>
-            </TableRow>
           </RateTable>
         </TableSection>
       )}
@@ -272,38 +268,17 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
           />
         </TableSection>
       )}
-      {a.resources.length > 0 && (
-        <TableSection title="Boats and equipment" level={2}>
-          <RateTable
-            label="Boats and equipment"
-            head={["Item", "How many", "Per hour", "Per day", "Fuel per hour", "Upkeep per hour", mtdc]}
-            text={[mtdc]}
-          >
-            {a.resources.map((r) => (
-              <TableRow key={r.key}>
-                <TableCell>{r.name}</TableCell>
-                <Num>{count(r.quantity)}</Num>
-                <Num>{money(r.cost_per_hour_cents)}</Num>
-                <Num>{money(r.cost_per_day_cents, true)}</Num>
-                <Num>{money(r.fuel_per_hour_cents)}</Num>
-                <Num>{money(r.maintenance_per_hour_cents)}</Num>
-                <TableCell>{leftOut(r.excluded_from_mtdc)}</TableCell>
-              </TableRow>
-            ))}
-          </RateTable>
-        </TableSection>
-      )}
       {a.boatRates.length > 0 && (
-        <TableSection title="Boat upkeep" level={2}>
-          <RateTable label="Boat upkeep" head={["Boat class", "Boats", "Sailors per boat", "Upkeep per boat-hour"]}>
+        <TableSection title="Boat rates" level={2}>
+          <RateTable label="Boat rates" head={["Boat class", "Fuel per hour", "Upkeep per hour", "Charter per day"]}>
             {[...a.boatRates]
               .sort((x, y) => x.boat_class.localeCompare(y.boat_class, undefined, { numeric: true }))
               .map((b) => (
                 <TableRow key={b.key}>
                   <TableCell>{b.boat_class}</TableCell>
-                  <Num>{count(b.quantity)}</Num>
-                  <Num>{count(b.sailors_per_boat)}</Num>
+                  <Num>{money(b.fuel_per_hour_cents)}</Num>
                   <Num>{money(b.maintenance_per_boat_hour_cents)}</Num>
+                  <Num>{money(b.charter_per_day_cents, true)}</Num>
                 </TableRow>
               ))}
           </RateTable>
