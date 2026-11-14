@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { appDirectus } from "@/directus/app";
 import { signOutOfApp, useSession } from "@/directus/use-session";
 import { displayName } from "@/model/display-name";
-import { linksFor, pagesFor } from "@/model/nav";
+import { pagesFor, toolsFor } from "@/model/nav";
 
 export const Route = createRootRoute({
   component: Root,
@@ -39,7 +39,7 @@ function Signed() {
         <AppShell
           name={displayName(session.me)}
           pages={pagesFor(session.permissions)}
-          links={linksFor(session.me.role?.name, appDirectus().url)}
+          tools={toolsFor(session.me.role?.name, appDirectus().url)}
           onSignOut={() => void signOutOfApp()}
         >
           <Outlet />

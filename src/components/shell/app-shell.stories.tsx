@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withRouter } from "../../../.storybook/with-router";
 import { expect, fn, waitFor, within } from "storybook/test";
-import { linksFor } from "@/model/nav";
+import { toolsFor } from "@/model/nav";
 import { AppShell } from "./app-shell";
 
 const directus = "https://directus.cycsail.team";
@@ -10,16 +10,18 @@ const staff = [
   { to: "/", label: "Home" },
   { to: "/plans", label: "Planning" },
   { to: "/roster", label: "Rosters" },
+  { to: "/links", label: "Links" },
 ];
+const links = staff[3]!;
 
 const meta = {
   component: AppShell,
-  decorators: [withRouter("/roster", ["/", "/plans"])],
+  decorators: [withRouter("/roster", ["/", "/plans", "/links"])],
   parameters: { layout: "fullscreen" },
   args: {
     name: "Robin Tiller",
     pages: staff,
-    links: linksFor("Crew", directus),
+    tools: toolsFor("Crew", directus),
     onSignOut: fn(),
     children: (
       <main className="p-card">
@@ -40,31 +42,44 @@ export const Staff: Story = {
   },
 };
 
-/** Opens Links, after More on a phone. */
-async function openLinks({ canvas, canvasElement, userEvent }: Parameters<NonNullable<Story["play"]>>[0]) {
+/** Opens the sidebar, after More on a phone. */
+async function openSidebar({ canvas, canvasElement, userEvent }: Parameters<NonNullable<Story["play"]>>[0]) {
   const body = within(canvasElement.ownerDocument.body);
+  // Hidden on a laptop, where the sidebar is always open.
   const more = canvas.queryByRole("button", { name: "More" });
   if (more) {
     await userEvent.click(more);
     await waitFor(async () => expect(await body.findByRole("dialog", { name: "Menu" })).toBeVisible());
   }
-  const links = (await body.findAllByRole("button", { name: "Links" })).find((button) => button.checkVisibility());
-  await userEvent.click(links!);
   return body;
 }
 
-const linkNames = (body: ReturnType<typeof within>) =>
-  body
-    .getAllByRole("link")
-    .filter((link: HTMLElement) => link.closest("#sidebar-links") && link.checkVisibility())
-    .map((link: HTMLElement) => link.textContent);
+/** Support, at the foot of the sidebar, emails the office. */
+export const Support: Story = {
+  play: async (context) => {
+    const body = await openSidebar(context);
+    const support = (await body.findAllByRole("link", { name: "Support" })).find((link) => link.checkVisibility());
+    await expect(support).toHaveAttribute("href", "mailto:info@cyccommunitysailing.org");
+  },
+};
 
-/** A family member sees the links everyone does: Google Calendar, and Support, an email link. */
-export const CommunityLinks: Story = {
+/** The tools in the account menu, which opens after More on a phone. */
+async function openToolNames(context: Parameters<NonNullable<Story["play"]>>[0]) {
+  const body = await openSidebar(context);
+  await context.userEvent.click(await body.findByRole("button", { name: context.args.name }));
+  await waitFor(async () => expect(await body.findByRole("menu")).toBeVisible());
+  return body
+    .getAllByRole("menuitem")
+    .filter((item: HTMLElement) => item.tagName === "A")
+    .map((item: HTMLElement) => item.textContent);
+}
+
+/** A family member gets no tools. */
+export const CommunityTools: Story = {
   args: {
     name: "Lee Halyard",
-    pages: [staff[0]!],
-    links: linksFor("Community", directus),
+    pages: [staff[0]!, links],
+    tools: toolsFor("Community", directus),
     children: (
       <main className="p-card">
         <h1 className="text-2xl font-semibold tracking-tight">Sail Team</h1>
@@ -72,51 +87,27 @@ export const CommunityLinks: Story = {
     ),
   },
   play: async (context) => {
-    const body = await openLinks(context);
-    await waitFor(() => expect(linkNames(body)).toEqual(["Google Calendar", "Support"]));
-    const support = body.getAllByRole("link", { name: "Support" }).find((link) => link.checkVisibility());
-    await expect(support).toHaveAttribute("href", "mailto:info@cyccommunitysailing.org");
+    await expect(await openToolNames(context)).toEqual([]);
   },
 };
 
-/** Crew also see the organization's Clubspot dashboard. */
-export const CrewLinks: Story = {
+/** Crew get the organization's Clubspot dashboard. */
+export const CrewTools: Story = {
   play: async (context) => {
-    const body = await openLinks(context);
-    await waitFor(() => expect(linkNames(body)).toEqual(["Clubspot dashboard", "Google Calendar", "Support"]));
+    await expect(await openToolNames(context)).toEqual(["Clubspot dashboard"]);
   },
 };
 
-/** Staff also see Directus. */
-export const StaffLinks: Story = {
-  args: { links: linksFor("Staff", directus) },
+/** Admins also get Directus, and where to sign in as someone. */
+export const AdminTools: Story = {
+  args: { tools: toolsFor("Admin", directus) },
   play: async (context) => {
-    const body = await openLinks(context);
-    await waitFor(() =>
-      expect(linkNames(body)).toEqual(["Clubspot dashboard", "Directus", "Google Calendar", "Support"]),
-    );
-  },
-};
-
-/** Admins also see where to sign in as someone. */
-export const AdminLinks: Story = {
-  args: { links: linksFor("Admin", directus) },
-  play: async (context) => {
-    const body = await openLinks(context);
-    await waitFor(() =>
-      expect(linkNames(body)).toEqual([
-        "Clubspot dashboard",
-        "Directus",
-        "Sign in as someone",
-        "Google Calendar",
-        "Support",
-      ]),
-    );
+    await expect(await openToolNames(context)).toEqual(["Clubspot dashboard", "Directus", "Sign in as someone"]);
   },
 };
 
 /** A parent on a team, who can open Rosters but not Planning. */
-export const TeamParent: Story = { args: { name: "Lee Halyard", pages: [staff[0]!, staff[2]!] } };
+export const TeamParent: Story = { args: { name: "Lee Halyard", pages: [staff[0]!, staff[2]!, links] } };
 
 /** A name too long for the sidebar is cut short, and the page never scrolls sideways. */
 export const LongName: Story = {
@@ -129,15 +120,9 @@ export const LongName: Story = {
 
 /** The account menu open. On a phone, More opens the sidebar first. */
 export const AccountMenuOpen: Story = {
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    const body = within(canvasElement.ownerDocument.body);
-    // Hidden on a laptop, where the sidebar is always open.
-    const more = canvas.queryByRole("button", { name: "More" });
-    if (more) {
-      await userEvent.click(more);
-      await waitFor(async () => expect(await body.findByRole("dialog", { name: "Menu" })).toBeVisible());
-    }
-    await userEvent.click(await body.findByRole("button", { name: "Robin Tiller" }));
+  play: async (context) => {
+    const body = await openSidebar(context);
+    await context.userEvent.click(await body.findByRole("button", { name: "Robin Tiller" }));
     await waitFor(async () => expect(await body.findByText("Signed in as Robin Tiller")).toBeVisible());
     await expect(body.getByRole("menuitem", { name: "Sign out" })).toBeVisible();
   },

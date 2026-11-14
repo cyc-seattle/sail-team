@@ -1,4 +1,4 @@
-import { CircleUserIcon, LogOutIcon } from "lucide-react";
+import { CircleUserIcon, ExternalLinkIcon, LogOutIcon } from "lucide-react";
 import { ThemeMenuItems } from "@/components/theme-menu-items";
 import {
   DropdownMenu,
@@ -10,12 +10,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+import type { ExternalLink } from "@/model/nav";
 
 /**
- * The signed-in person's menu, at the foot of the sidebar. A long name or email is cut short to fit. Sign out also ends
- * an admin's impersonation (platform's docs/access.md).
+ * The signed-in person's menu, at the foot of the sidebar, with the tools their role gets. A long name or email is cut
+ * short to fit. Sign out also ends an admin's impersonation (platform's docs/access.md).
  */
-export function AccountMenu({ name, onSignOut }: { name: string; onSignOut: () => void }) {
+export function AccountMenu({
+  name,
+  tools = [],
+  onSignOut,
+}: {
+  name: string;
+  tools?: ExternalLink[];
+  onSignOut: () => void;
+}) {
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -29,6 +38,19 @@ export function AccountMenu({ name, onSignOut }: { name: string; onSignOut: () =
               <DropdownMenuLabel className="break-all">Signed in as {name}</DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
+            {tools.length > 0 && (
+              <>
+                <DropdownMenuGroup>
+                  {tools.map((tool) => (
+                    <DropdownMenuItem key={tool.href} render={<a href={tool.href} />}>
+                      <ExternalLinkIcon aria-hidden />
+                      {tool.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+              </>
+            )}
             <ThemeMenuItems />
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onSignOut}>

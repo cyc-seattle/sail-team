@@ -1,5 +1,6 @@
 # sail-team on the cluster. The Gateway terminates TLS, so Caddy serves plain HTTP on 8080. There's no sign-in here:
 # Directus decides what each person sees (docs/design.md). DIRECTUS_ORIGIN is the only other origin the page may call.
+# Images may come from any https site, for each link's preview on the Links page.
 {
 	auto_https off
 	admin off
@@ -14,7 +15,7 @@
 	}
 
 	header {
-		Content-Security-Policy "default-src 'self'; connect-src 'self' {$DIRECTUS_ORIGIN}; img-src 'self' data:; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		Content-Security-Policy "default-src 'self'; connect-src 'self' {$DIRECTUS_ORIGIN}; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 		Strict-Transport-Security "max-age=31536000"
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
