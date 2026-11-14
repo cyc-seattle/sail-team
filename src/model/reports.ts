@@ -1,6 +1,7 @@
 // The shapes the Planning reports show, and how they're made from a Financial Plan's results and inputs.
 import type { PlanActivity, PlanOffering } from "@cyc-seattle/platform/planning";
 import type { Member, PlanLine, ResultWarning, Results } from "./financial-plans.ts";
+import { seasonName, seasonOf, type Season } from "./seasons.ts";
 
 /** Lines that are worked out the same way, added up, such as every offering's coach wages. */
 export interface LineAmount {
@@ -107,6 +108,8 @@ export interface ReportOffering {
   program: string;
   /** When it runs, as staff name it: Week 3 of summer, or Spring. */
   session: string;
+  /** The season it runs in, or null for one with none. */
+  season?: Season | null;
   /** Its own name, such as "Adult Learn to Sail Weekday Jul 2026". */
   name?: string;
   /** Its program's id and the color the catalog gives it, for the program's color on the Calendar. */
@@ -308,6 +311,7 @@ export function reportsOf(members: Member[]): { key: string; name: string }[] {
     { key: "overview", name: "Overview" },
     { key: "calendar", name: "Calendar" },
     { key: "rates", name: "Assumptions" },
+    { key: "storage", name: "Storage" },
     ...areas,
     { key: "non-program", name: "Non-program" },
     { key: "fundraising", name: "Fundraising and capital" },
@@ -593,6 +597,18 @@ export function onWaterMinutes(
  * An offering as its program area's report shows it: its session, or its name when it has none, its sailors, its days,
  * which are the dates it has an activity other than travel, and one sailor's hours on the water.
  */
+/**
+ * When an offering runs, as staff name it. A season is too broad for that, so it's the offering's name without its
+ * program's, such as Week 3 from "Guppies Week 3". A plan frozen before the season list keeps its own free text.
+ */
+function sessionOf(offering: { name: string; season_term: string | null; program: string }): string {
+  if (offering.season_term && !seasonOf(offering)) {
+    return offering.season_term;
+  }
+  const rest = offering.name.startsWith(`${offering.program} `) ? offering.name.slice(offering.program.length + 1) : "";
+  return rest || (offering.season_term ? seasonName(seasonOf(offering)!) : offering.name);
+}
+
 export function reportOffering(
   offering: Pick<
     PlanOffering,
@@ -608,7 +624,8 @@ export function reportOffering(
   return {
     key: offering.key,
     program: offering.program,
-    session: offering.season_term || offering.name,
+    session: sessionOf(offering),
+    season: seasonOf(offering),
     name: offering.name,
     program_id: offering.program_id ?? null,
     program_color: offering.program_color ?? null,
@@ -632,4 +649,55 @@ export interface Trip {
   nights: number | null;
   airfare_cents: number | null;
   miles: number | null;
+}
+
+/** Whether a line is storage: booked to the Storage account, under 7350 Occupancy/Rent (cyc-seattle/platform#251). */
+export const isStorage = (line: Pick<PlanLine, "account_number" | "account_name">) =>
+  line.account_number === "7351" || line.account_name === "Storage";
+
+/** One storage cost, and who pays it: a program area, every program through the shared costs, or none. */
+export interface StorageCost {
+  payer: string;
+  kind: "area" | "shared" | "unallocated";
+  name: string;
+  cents: number;
+}
+
+/**
+ * The year's storage costs, as the Storage tab shows them: what each program area pays, then what every program shares
+ * through the pools, then what no program pays. Results say only what each line came to, so a shared cost is named by
+ * its line, and its total is what reached every offering.
+ */
+export function storageOf(lines: (Line & Pick<PlanLine, "member">)[], members: Member[]): StorageCost[] {
+  const costs = new Map<string, StorageCost>();
+  const add = (cost: Omit<StorageCost, "cents">, cents: number) => {
+    const id = `${cost.kind}|${cost.payer}|${cost.name}`;
+    costs.set(id, { ...cost, cents: (costs.get(id)?.cents ?? 0) + cents });
+  };
+  const areaOf = new Map(members.filter((m) => m.kind === "program_area").map((m) => [m.id, reportName(m)]));
+  // What non-program sales cover of a pool (`offset:` lines) stays in the pool's share, as on Non-program.
+  for (const line of lines.filter((l) => !l.revenue && isStorage(l) && !l.key.startsWith("offset:"))) {
+    if (isShare(line)) {
+      add(
+        {
+          payer: `Shared (${poolOf(line)})`,
+          kind: "shared",
+          name: line.name.split(" share: ").slice(1).join(" share: ") || line.name,
+        },
+        line.amount_cents,
+      );
+      continue;
+    }
+    const area = line.member ? areaOf.get(line.member) : undefined;
+    add(
+      area
+        ? { payer: area, kind: "area", name: line.name }
+        : { payer: "No program", kind: "unallocated", name: line.name },
+      line.amount_cents,
+    );
+  }
+  const order = { area: 0, shared: 1, unallocated: 2 };
+  return [...costs.values()].sort(
+    (a, b) => order[a.kind] - order[b.kind] || a.payer.localeCompare(b.payer) || a.name.localeCompare(b.name),
+  );
 }

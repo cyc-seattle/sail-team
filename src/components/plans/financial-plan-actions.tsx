@@ -11,16 +11,43 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import type { FinancialPlanSummary } from "@/model/financial-plans";
+import { ActiveDateDialog } from "./active-date-dialog";
 import { PlanDetailsDialog, type PlanDetails } from "./plan-details-dialog";
 
 export interface FinancialPlanActionsProps {
   set: FinancialPlanSummary;
-  /** Whether the person can change Financial Plans, and start them. Directus still checks each request. */
-  canUpdate: boolean;
+  /**
+   * Whether the person can rename it and change its note, start a draft from it, and, on the finance committee, freeze
+   * it and make it active. Directus still checks each request.
+   */
+  canEdit: boolean;
   canCreate: boolean;
+  canApprove: boolean;
   onEdit: (details: PlanDetails) => Promise<void>;
   onStart: (details: PlanDetails) => Promise<void>;
-  onMove: (status: "saved" | "active") => Promise<void>;
+  onFreeze: () => Promise<void>;
+  /** Makes it active from `date`, `YYYY-MM-DD`. */
+  onActivate: (date: string) => Promise<void>;
+}
+
+/** The button that asks the finance committee for the day a plan is active from. */
+function ActiveDateButton({ set, onActivate }: Pick<FinancialPlanActionsProps, "set" | "onActivate">) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button onClick={() => setOpen(true)} variant={set.effective_from ? "outline" : "default"}>
+        {set.effective_from ? "Change active date" : "Make active"}
+      </Button>
+      <ActiveDateDialog
+        name={set.name}
+        year={set.fiscal_year}
+        current={set.effective_from}
+        open={open}
+        onOpenChange={setOpen}
+        onSubmit={onActivate}
+      />
+    </>
+  );
 }
 
 /** A button that asks before it does something that can't be undone. */
@@ -71,18 +98,23 @@ function ConfirmButton({
   );
 }
 
-/** A Financial Plan's buttons: edit its name and note, duplicate it as a new draft, and freeze it or mark it active. */
+/**
+ * A Financial Plan's buttons: edit its name and note, duplicate it as a new draft, and, for the finance committee,
+ * freeze it and make it active from a date.
+ */
 export function FinancialPlanActions({
   set,
-  canUpdate,
+  canEdit,
   canCreate,
+  canApprove,
   onEdit,
   onStart,
-  onMove,
+  onFreeze,
+  onActivate,
 }: FinancialPlanActionsProps) {
   return (
     <>
-      {canUpdate && (
+      {canEdit && (
         <PlanDetailsDialog
           trigger="Edit"
           title={`Edit ${set.name}`}
@@ -101,20 +133,13 @@ export function FinancialPlanActions({
           onSubmit={onStart}
         />
       )}
-      {canUpdate && set.status === "draft" && (
+      {canApprove && <ActiveDateButton set={set} onActivate={onActivate} />}
+      {canApprove && set.status === "draft" && (
         <ConfirmButton
           label="Freeze"
           title={`Freeze ${set.name}?`}
-          description="Once it's frozen, its plans and numbers never change. Its name and note still can."
-          onConfirm={() => onMove("saved")}
-        />
-      )}
-      {canUpdate && set.status === "saved" && (
-        <ConfirmButton
-          label="Mark active"
-          title={`Mark ${set.name} active?`}
-          description={`It becomes the active plan for ${set.fiscal_year}, in place of the one active now.`}
-          onConfirm={() => onMove("active")}
+          description="Once it's frozen, its plans and numbers never change. Its name, note, and the date it's active from still can."
+          onConfirm={onFreeze}
         />
       )}
     </>

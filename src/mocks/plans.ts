@@ -60,6 +60,9 @@ const accounts = {
   rent: account(32, "6310", "Clubhouse rent", "expense", "management"),
   events: account(33, "7010", "Event costs", "expense", "fundraising"),
   equipment: account(34, "1510", "Equipment", "asset", null),
+  occupancy: account(35, "7350", "Occupancy/Rent", "expense", null),
+  // The Storage sub-account the Storage tab reads (cyc-seattle/platform#251).
+  storageCosts: { ...account(36, "7351", "Storage", "expense", null), parent_id: id(35) },
 };
 
 const product = (n: number, name: string, kind: string, area: string | null, revenue: string | null = null) => ({
@@ -264,6 +267,17 @@ function operations(version: string): Copy {
   line("Insurance", accounts.insurance, 900_000, "pool", key("G&A"), { note: "Renews in March." });
   line("Audit", accounts.insurance, 400_000, "pool", key("G&A"), { excluded_from_mtdc: true });
   line("Clubhouse rent", accounts.rent, 600_000, "pool", key("G&A"));
+  // Each area's storage rent, charged to the area, and what's left for every program to share.
+  const storage = "Storage (dinghy float and dry storage, by area)";
+  line(`${storage}: Summer`, accounts.storageCosts, 980_000, "program_area", ids.summer, {
+    excluded_from_mtdc: true,
+    name: storage,
+  });
+  line(`${storage}: Doublehanded`, accounts.storageCosts, 700_000, "program_area", ids.doublehanded, {
+    excluded_from_mtdc: true,
+    name: storage,
+  });
+  line("Self storage facility", accounts.storageCosts, 172_800, "pool", key("G&A"));
   line("Spring gala gifts", accounts.gifts, 2_000_000, "org", null);
   line("Spring gala costs", accounts.events, 300_000, "org", null);
   const capital = (name: string, cents: number, sort: number, more: Row = {}) =>
@@ -308,7 +322,7 @@ const offering = (
   c: Copy,
   name: string,
   p: { id: string },
-  session: string,
+  season: string,
   starts_on: string,
   ends_on: string,
   fields: { capacity: number; target: number; price: number; cogs?: number; note?: string },
@@ -316,7 +330,7 @@ const offering = (
   c.add("plan_offerings", name, {
     product_id: p.id,
     name,
-    season_term: session,
+    season_term: season,
     starts_on,
     ends_on,
     capacity: fields.capacity,
@@ -466,7 +480,7 @@ function summer(version: string, instructors: number): Copy {
       .filter((camp) => camp.weeks.includes(week))
       .map((camp) => ({
         ...camp,
-        id: offering(c, `${camp.p.name} ${session}`, camp.p, session, monday, date(monday, 4), {
+        id: offering(c, `${camp.p.name} ${session}`, camp.p, "summer", monday, date(monday, 4), {
           capacity: camp.max,
           target: week === 1 && camp.p === products.guppies ? 6 : camp.target,
           price: camp.price,
@@ -506,11 +520,19 @@ function doublehanded(version: string): Copy {
     ["Spring", "2027-03-02", 12, 12],
     ["Fall", "2027-09-07", 10, 10],
   ] as const) {
-    const o = offering(c, `J-Pod ${session}`, products.jpod, session, first, date(first, 7 * (weeks - 1)), {
-      capacity: 16,
-      target,
-      price: 145_000,
-    });
+    const o = offering(
+      c,
+      `J-Pod ${session}`,
+      products.jpod,
+      session.toLowerCase(),
+      first,
+      date(first, 7 * (weeks - 1)),
+      {
+        capacity: 16,
+        target,
+        price: 145_000,
+      },
+    );
     if (session === "Fall") {
       c.add("plan_trips", "Fall regatta", {
         offering_id: o,
@@ -556,11 +578,13 @@ const set = (setId: string, fields: Row) => ({
   message: null,
   parent_id: null,
   archived_at: null,
+  effective_from: null,
   ...fields,
 });
 const budget = set(ids.budget, {
   name: "Budget",
-  status: "active",
+  status: "saved",
+  effective_from: "2026-07-01",
   message: "Reviewed with the board",
   saved_at: "2027-03-10T18:00:00Z",
   saved_by: ids.saver,
@@ -570,6 +594,7 @@ const parent = { id: ids.budget, name: "Budget" };
 const twoCoaches = set(ids.twoCoaches, {
   name: "Two coaches",
   status: "draft",
+  effective_from: "2027-09-01",
   parent_id: parent,
   message: "A fourth instructor on every summer morning.",
 });

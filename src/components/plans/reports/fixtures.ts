@@ -2,6 +2,7 @@
 import type { Bonus, FixedCost, OperationsAssumptions, StaffTime } from "@/model/assumptions";
 import type { ScheduleBlock, ScheduledActivity } from "@/model/schedule";
 import type { ListedPlan, Totals } from "@/model/financial-plans";
+import type { Season } from "@/model/seasons";
 import type {
   AccountAmount,
   CapitalItem,
@@ -167,6 +168,7 @@ const season = (
   key: `${program}-${session}`,
   program,
   session,
+  season: session.toLowerCase() as Season,
   starts_on,
   ends_on,
   fee_cents: 145_000,
@@ -599,6 +601,7 @@ const planSummary = (
   fields: Partial<Omit<ListedPlan, "net_cents">> & Pick<ListedPlan, "id" | "name" | "status">,
 ): ListedPlan => ({
   year: 2027,
+  in_force: null,
   saved_at: null,
   saved_by: null,
   parent: null,
@@ -612,12 +615,16 @@ const planSummary = (
   net_cents: (fields.revenue_cents ?? 49_900_000) - (fields.expense_cents ?? 44_600_000),
 });
 
-/** Two years of Financial Plans: each year's active one, drafts including one from the planning agent, older frozen ones, and an archived one. */
+/**
+ * Two years of Financial Plans: each year's plan in force, a draft made active from a later date, drafts including one
+ * from the planning agent, an older frozen one that was in force, and an archived one.
+ */
 export const planningPlans: ListedPlan[] = [
   planSummary({
     id: "budget",
     name: "Budget",
-    status: "active",
+    status: "saved",
+    in_force: { when: "now", from: "2026-07-01", to: "2027-08-31" },
     saved_at: "2027-03-10T18:00:00Z",
     saved_by: "Morgan Keel",
     platform: "1.38.1",
@@ -634,8 +641,9 @@ export const planningPlans: ListedPlan[] = [
   }),
   planSummary({
     id: "two-coaches",
-    name: "Two more coaches",
+    name: "Fall re-plan",
     status: "draft",
+    in_force: { when: "later", from: "2027-09-01", to: null },
     parent: { id: "budget", name: "Budget" },
     note: "What a second full-time coach would cost.",
     expense_cents: 47_800_000,
@@ -644,6 +652,7 @@ export const planningPlans: ListedPlan[] = [
     id: "board",
     name: "Board review",
     status: "saved",
+    in_force: { when: "past", from: "2026-03-01", to: "2026-06-30" },
     saved_at: "2027-02-02T18:00:00Z",
     saved_by: "Sam Halyard",
     platform: "1.36.0",
@@ -661,7 +670,8 @@ export const planningPlans: ListedPlan[] = [
     id: "2026",
     name: "2026 Budget",
     year: 2026,
-    status: "active",
+    status: "saved",
+    in_force: { when: "now", from: "2025-07-01", to: null },
     saved_at: "2026-03-04T18:00:00Z",
     revenue_cents: 45_200_000,
     expense_cents: 42_900_000,

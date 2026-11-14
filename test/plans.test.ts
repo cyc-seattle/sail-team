@@ -12,6 +12,7 @@ import {
   planWarnings,
   sharedCostsOf,
   statementOf,
+  storageOf,
   totalOf,
 } from "../src/model/reports.ts";
 import { patternsOf } from "../src/model/schedule.ts";
@@ -32,13 +33,15 @@ describe("reading Financial Plans from Directus", () => {
   it("lists every Financial Plan with its totals and warnings, once they're worked out", async () => {
     const plans = await run<ListedPlan[]>(financialPlansQuery);
     expect(plans.map((p) => [p.name, p.status, p.parent?.name ?? null])).toEqual([
-      ["Budget", "active", null],
+      ["Budget", "saved", null],
       ["Two coaches", "draft", "Budget"],
       ["Three coaches", "draft", "Budget"],
       ["First pass", "saved", null],
     ]);
     const [budget, two, three, first] = plans;
     expect([budget!.archived, first!.archived]).toEqual([false, true]);
+    // A draft can be active from a later date. Which is in force depends on today, which tests of inForce pin.
+    expect([budget, two, three].map((p) => p!.in_force?.from ?? null)).toEqual(["2026-07-01", "2027-09-01", null]);
     expect(budget!.net_cents).toBe(budget!.revenue_cents! - budget!.expense_cents!);
     // Operating only: fundraising and capital stay out.
     const { results } = await plan(ids.budget);
@@ -71,7 +74,12 @@ describe("reading Financial Plans from Directus", () => {
 
   it("reads a plan's results, each row with the plan it's charged in", async () => {
     const { set, members, results } = await plan(ids.budget);
-    expect(set).toMatchObject({ name: "Budget", status: "active", message: "Reviewed with the board" });
+    expect(set).toMatchObject({
+      name: "Budget",
+      status: "saved",
+      effective_from: "2026-07-01",
+      message: "Reviewed with the board",
+    });
     expect(results?.calculated_at).toBe("2027-03-10T18:00:00Z");
     const summer = results!.lines.filter((l) => l.member === ids.summerMember);
     expect(summer.find((l) => l.revenue)).toMatchObject({ account_number: "4100", account_name: "Summer tuition" });
@@ -278,5 +286,18 @@ describe("a Financial Plan's reports", () => {
     const areas = new Set(planWarnings(results!.warnings, members).map((w) => w.area));
     expect(areas).toContain(ids.summerPlan);
     expect(areas).toContain(ids.doublehandedPlan);
+  });
+});
+
+describe("the Storage tab", () => {
+  it("shows each area's storage, then what every program shares", async () => {
+    const { members, results } = await plan(ids.budget);
+    const costs = storageOf(results!.lines, members);
+    expect(costs.map((c) => [c.kind, c.payer, c.name])).toEqual([
+      ["area", "Doublehanded", "Storage (dinghy float and dry storage, by area)"],
+      ["area", "Summer", "Storage (dinghy float and dry storage, by area)"],
+      ["shared", "Shared (G&A)", "Self storage facility"],
+    ]);
+    expect(costs.filter((c) => c.kind === "area").map((c) => c.cents)).toEqual([700_000, 980_000]);
   });
 });

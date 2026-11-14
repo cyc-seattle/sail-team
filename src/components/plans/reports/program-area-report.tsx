@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Fragment, type ReactNode } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { formatShare, type FixedCost, type StaffTime } from "@/model/assumptions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -11,6 +11,7 @@ import {
   type Trip,
 } from "@/model/reports";
 import { cn } from "@/lib/utils";
+import { SEASONS, seasonName, type Season } from "@/model/seasons";
 import { BudgetLines, StaffTimeTable } from "../assumptions";
 import { Money } from "../money";
 import { NoteInfo } from "../note-info";
@@ -18,6 +19,7 @@ import { CollapsibleSection } from "./collapsible-section";
 import { OfferingName } from "./offering-name";
 import { ReportSection } from "./report-page";
 import { RulesList } from "./rules-list";
+import { SegmentedControl } from "./segmented-control";
 import { SessionGrid } from "./session-grid";
 import { StatementTable } from "./statement-table";
 import { WarningsSection } from "./warnings-section";
@@ -130,8 +132,11 @@ export function ProgramAreaReport({
   fixedCosts,
   staffTime,
 }: ProgramAreaReportProps) {
-  const groups = numberedOfferings(offerings);
-  const labels = new Map(groups.flatMap((g) => g.offerings.map((o) => [o.key, o.label])));
+  const [season, setSeason] = useState<Season | "all">("all");
+  // An offering with no season, such as Adult Learn to Sail, shows only under All.
+  const shown = season === "all" ? offerings : offerings.filter((o) => o.season === season);
+  const groups = numberedOfferings(shown);
+  const labels = new Map(numberedOfferings(offerings).flatMap((g) => g.offerings.map((o) => [o.key, o.label])));
   return (
     <>
       <div className="grid gap-2">
@@ -150,8 +155,31 @@ export function ProgramAreaReport({
         />
       </ReportSection>
 
+      <div className="grid gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <span aria-hidden className="text-sm font-medium">
+            Season
+          </span>
+          <SegmentedControl
+            label="Season"
+            value={season}
+            options={[{ value: "all", label: "All" }, ...SEASONS.map((s) => ({ value: s, label: seasonName(s) }))]}
+            onChange={setSeason}
+          />
+        </div>
+        {season !== "all" && (
+          <p className="text-sm text-muted-foreground">
+            Showing {seasonName(season).toLowerCase()} offerings. Revenue and expenses above are for the whole year.
+          </p>
+        )}
+      </div>
+
       <ReportSection id="enrollment" title="Enrollment">
-        <SessionGrid offerings={offerings} />
+        {shown.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No offerings this season.</p>
+        ) : (
+          <SessionGrid offerings={shown} />
+        )}
       </ReportSection>
 
       <ReportSection

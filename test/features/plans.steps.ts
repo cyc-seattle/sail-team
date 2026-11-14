@@ -500,14 +500,35 @@ Then("Planning no longer lists {string}", async ({ page }, name: string) => {
   await expect(page.locator(`a[href$="/plans/financial/${named.get(name)}"]`)).toHaveCount(0);
 });
 
-When("I mark it active", async ({ page }) => {
-  await page.getByRole("button", { name: "Mark active" }).click();
+When("I make it active from {word} {int}, {int}", async ({ page }, month: string, day: number, year: number) => {
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+  const date = `${year}-${String(months.indexOf(month) + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  await page.getByRole("button", { name: "Make active" }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByRole("button", { name: "Mark active" }).click();
+  await dialog.getByLabel("Active from").fill(date);
+  await dialog.getByRole("button", { name: "Make active" }).click();
   await expect(dialog).toBeHidden({ timeout: 30_000 });
 });
 
-Then("it's marked active", async ({ page }) => {
-  await expect(page.getByText("Active", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Mark active" })).toHaveCount(0);
+Then("it's in force since {string}", async ({ page }, when: string) => {
+  await expect(page.getByText(`In force since ${when}`)).toBeVisible({ timeout: 30_000 });
+});
+
+Then("I see no way to freeze it or make it active", async ({ page }) => {
+  await expect(page.getByRole("button", { name: "Duplicate" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Freeze" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Make active" })).toHaveCount(0);
 });

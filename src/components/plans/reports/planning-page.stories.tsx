@@ -11,9 +11,10 @@ const meta = {
   args: {
     plans: planningPlans,
     actions: {
-      canUpdate: true,
+      canApprove: true,
       canDelete: true,
-      onMove: fn(async () => {}),
+      onFreeze: fn(async () => {}),
+      onActivate: fn(async () => {}),
       onArchive: fn(async () => {}),
       onDelete: fn(async () => {}),
     },
@@ -34,8 +35,8 @@ export const Drafts: Story = {
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("combobox", { name: "Status" }));
     await userEvent.click(await screen.findByRole("option", { name: "Draft" }));
-    await waitFor(() => expect(canvas.queryByText("Active")).toBeNull());
-    await expect(canvas.getByRole("link", { name: "Two more coaches" })).toBeVisible();
+    await waitFor(() => expect(canvas.queryByRole("link", { name: "Budget" })).toBeNull());
+    await expect(canvas.getByRole("link", { name: "Fall re-plan" })).toBeVisible();
   },
 };
 
@@ -68,11 +69,11 @@ export const DeletingTheAgentsDraft: Story = {
 /** Freezing a draft asks first, then freezes it. */
 export const FreezingADraft: Story = {
   play: async ({ args, canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "Actions for Two more coaches" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Actions for Fall re-plan" }));
     await userEvent.click(await screen.findByRole("menuitem", { name: "Freeze" }));
     await userEvent.click(await screen.findByRole("button", { name: "Freeze" }));
     await waitFor(() =>
-      expect(args.actions.onMove).toHaveBeenCalledWith(expect.objectContaining({ id: "two-coaches" }), "saved"),
+      expect(args.actions.onFreeze).toHaveBeenCalledWith(expect.objectContaining({ id: "two-coaches" })),
     );
   },
 };
@@ -106,16 +107,96 @@ export const Archived: Story = {
   },
 };
 
-/** The active plan can't be archived. */
-export const ActivePlanStays: Story = {
+/** The plan in force is listed first, with when it's in force, and a draft can be active from a later date. */
+export const InForce: Story = {
+  play: async ({ canvas }) => {
+    const rows = canvas.getAllByRole("row");
+    await expect(rows[1]).toHaveTextContent("Budget");
+    await expect(rows[1]).toHaveTextContent("In force since Jul 1, 2026");
+    await expect(canvas.getByRole("row", { name: /Fall re-plan/ })).toHaveTextContent("Active from Sep 1, 2027");
+    await userEvent.click(canvas.getByRole("combobox", { name: "Status" }));
+    await userEvent.click(await screen.findByRole("option", { name: "In force" }));
+    await waitFor(() => expect(canvas.queryByRole("link", { name: "Fall re-plan" })).toBeNull());
+    await expect(canvas.getByRole("link", { name: "Budget" })).toBeVisible();
+  },
+};
+
+/** The plan in force can't be archived or deleted, though its date can change. */
+export const PlanInForceStays: Story = {
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Actions for Budget" }));
+    await waitFor(async () =>
+      expect(await screen.findByRole("menuitem", { name: "Change active date" })).toBeVisible(),
+    );
+    await expect(screen.queryByRole("menuitem", { name: "Archive" })).toBeNull();
+  },
+};
+
+/** Making a frozen plan active asks for the date it's active from. */
+export const MakingAPlanActive: Story = {
+  play: async ({ args, canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Actions for Board review" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Change active date" }));
+    const date = await screen.findByLabelText("Active from");
+    await userEvent.clear(date);
+    await userEvent.type(date, "2027-10-01");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(args.actions.onActivate).toHaveBeenCalledWith(expect.objectContaining({ id: "board" }), "2027-10-01"),
+    );
+  },
+};
+
+/** When platform refuses a date, the dialog says why. */
+export const RefusedDate: Story = {
+  args: {
+    actions: {
+      canApprove: true,
+      canDelete: true,
+      onFreeze: fn(),
+      onActivate: fn(async () => {
+        throw {
+          errors: [
+            {
+              message: "Another Financial Plan for the year is already active from that date.",
+              extensions: { code: "INVALID_PAYLOAD" },
+            },
+          ],
+        };
+      }),
+      onArchive: fn(),
+      onDelete: fn(),
+    },
+  },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Actions for 2027 allocations, Nov 9" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Make active" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Make active" }));
+    await expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Another Financial Plan for the year is already active from that date.",
+    );
+  },
+};
+
+/** A program director starts and deletes drafts, but leaves freezing, making active, and archiving to the committee. */
+export const ProgramDirector: Story = {
+  args: {
+    actions: { canApprove: false, canDelete: true, onFreeze: fn(), onActivate: fn(), onArchive: fn(), onDelete: fn() },
+  },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("button", { name: "Actions for Budget" })).toBeNull();
+    await userEvent.click(canvas.getByRole("button", { name: "Actions for 2027 allocations, Nov 9" }));
+    await waitFor(async () => expect(await screen.findByRole("menuitem", { name: "Delete" })).toBeVisible());
+    await expect(screen.queryByRole("menuitem", { name: "Freeze" })).toBeNull();
+    await expect(screen.queryByRole("menuitem", { name: "Make active" })).toBeNull();
   },
 };
 
 /** A planner who can only read plans has no actions. */
 export const ReadOnly: Story = {
-  args: { actions: { canUpdate: false, canDelete: false, onMove: fn(), onArchive: fn(), onDelete: fn() } },
+  args: {
+    actions: { canApprove: false, canDelete: false, onFreeze: fn(), onActivate: fn(), onArchive: fn(), onDelete: fn() },
+  },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("button", { name: /Actions for/ })).toBeNull();
   },
@@ -129,6 +210,6 @@ export const NumbersPending: Story = {
     ),
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("row", { name: /Two more coaches/ })).toHaveTextContent("—");
+    await expect(canvas.getByRole("row", { name: /Fall re-plan/ })).toHaveTextContent("—");
   },
 };
