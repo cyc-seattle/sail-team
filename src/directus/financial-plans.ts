@@ -124,6 +124,8 @@ async function readResults(setId: string): Promise<Results | null> {
       "enrollment",
       "days",
       "sailor_days",
+      "allocation_holds",
+      "breakeven_enrollment",
       "version_set_member_id",
     ]),
     readAll<{

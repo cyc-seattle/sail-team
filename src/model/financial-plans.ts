@@ -111,6 +111,10 @@ export interface PnlRow {
   enrollment: number;
   days: number;
   sailor_days: number;
+  /** The most sailors an offering's blocks can take. Null for a product or program area. */
+  allocation_holds: number | null;
+  /** The fewest sailors at which an offering pays for itself. Null when it doesn't even when full. */
+  breakeven_enrollment: number | null;
   member: string | null;
 }
 
