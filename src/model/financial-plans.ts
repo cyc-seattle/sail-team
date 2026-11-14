@@ -101,10 +101,19 @@ export interface PlanLine {
   member: string | null;
 }
 
-/** One offering's, product's, or program area's P&L, with the member it's charged in. */
+/** The seasons an offering can run in, in the order a year has them. */
+export const SEASONS = ["winter", "spring", "summer", "fall"] as const;
+export type Season = (typeof SEASONS)[number];
+
+/**
+ * One offering's, product's, or program area's P&L, with the member it's charged in. A `program_area_season` row is an
+ * area's offerings in one season, or in none.
+ */
 export interface PnlRow {
-  level: Pnl["level"];
+  level: Pnl["level"] | "program_area_season";
   subject_key: string;
+  /** For a `program_area_season`, its season, or null for its offerings in no season. */
+  season: Season | null;
   name: string;
   revenue_cents: number;
   expense_cents: number;
@@ -138,6 +147,22 @@ export interface CapitalResult {
   funded: boolean;
 }
 
+/**
+ * A bonus for one season, or for the offerings in no season, on the year. Each season's stands alone, so a season that
+ * loses money pays nothing and doesn't lower another's (cyc-seattle/platform#255).
+ */
+export interface BonusResult {
+  /** The bonus's role, such as Director. */
+  name: string;
+  season: Season | null;
+  /** The net it's figured on, which can be below zero. */
+  net_cents: number;
+  bonus_cents: number;
+  bonus_owner_key: string;
+  /** The program area of all its programs, or null when they're in more than one. */
+  program_area_key: string | null;
+}
+
 export interface Results {
   calculated_at: string | null;
   totals: Totals;
@@ -146,6 +171,8 @@ export interface Results {
   warnings: ResultWarning[];
   /** None in results worked out before capital was ranked. */
   capital: CapitalResult[];
+  /** None in results worked out before bonuses were paid per season. */
+  bonuses: BonusResult[];
 }
 
 /** How long a Financial Plan's numbers may be missing before the page says they couldn't be worked out. */

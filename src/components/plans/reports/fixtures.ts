@@ -12,6 +12,7 @@ import type {
   Product,
   ProgramSettings,
   ReportOffering,
+  SeasonsReport,
   Trip,
   SharedCost,
 } from "@/model/reports";
@@ -249,6 +250,25 @@ export const doublehandedPrograms: ProgramSettings[] = [
   { name: "K-Pod", staff_level: "Level 3 Coach", sailors_per_coach: 10, rules: null },
   { name: "L-Pod", staff_level: "Level 4 Coach", sailors_per_coach: 12, rules: "Most sailors bring their own 420s." },
 ];
+
+/** Doublehanded by season, adding up to its year: summer loses money, so its bonus is nothing, and doesn't lower spring's or fall's. */
+export const doublehandedSeasons: SeasonsReport = {
+  bonuses: ["Program Director"],
+  rows: [
+    { season: "spring", revenue_cents: 3_800_000, expense_cents: 3_100_000, bonuses: [70_000] },
+    { season: "summer", revenue_cents: 3_000_000, expense_cents: 3_300_000, bonuses: [0] },
+    { season: "fall", revenue_cents: 2_500_000, expense_cents: 2_100_000, bonuses: [40_000] },
+  ],
+};
+
+/** Summer's camps are all in the summer, and its adult classes in no season, whose bonus is worked out on the year. */
+export const summerSeasons: SeasonsReport = {
+  bonuses: ["Program Director"],
+  rows: [
+    { season: "summer", revenue_cents: 19_200_000, expense_cents: 15_800_000, bonuses: [340_000] },
+    { season: null, revenue_cents: 2_300_000, expense_cents: 2_000_000, bonuses: [30_000] },
+  ],
+};
 
 export const doublehandedStatement = {
   revenue: [account("4130", "Doublehanded tuition", 9_500_000), account("4900", "Scholarships", -200_000)],

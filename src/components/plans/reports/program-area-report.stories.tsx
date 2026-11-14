@@ -4,10 +4,12 @@ import {
   doublehandedOfferings,
   doublehandedPrograms,
   doublehandedRules,
+  doublehandedSeasons,
   doublehandedStatement,
   summerOfferings,
   summerPrograms,
   summerRules,
+  summerSeasons,
   doublehandedTrips,
   summerFixedCosts,
   summerStaffTime,
@@ -27,6 +29,7 @@ const meta = {
     rules: doublehandedRules,
     warnings: warnings.filter((w) => w.area === "doublehanded"),
     statement: doublehandedStatement,
+    seasons: doublehandedSeasons,
     programs: doublehandedPrograms,
     offerings: doublehandedOfferings,
     trips: doublehandedTrips,
@@ -61,6 +64,7 @@ export const Summer: Story = {
     rules: summerRules,
     warnings: warnings.filter((w) => w.area === "summer"),
     statement: summerStatement,
+    seasons: summerSeasons,
     programs: summerPrograms,
     offerings: summerOfferings,
     areaKey: "summer",
@@ -86,5 +90,26 @@ export const DoublehandedTrips: Story = {
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByText("Trips", { selector: "h2" }));
     await expect(canvas.getByRole("row", { name: /Nationals/ })).toHaveTextContent("NationalsK-Pod Summer5$450—");
+  },
+};
+
+/** Each season's bonus stands alone: summer loses money and pays no bonus. */
+export const BySeason: Story = {
+  play: async ({ canvas }) => {
+    const table = canvas.getByRole("table", { name: "By season" });
+    const rows = [...table.querySelectorAll("tbody tr")].map((r) =>
+      [...r.querySelectorAll("td")].map((c) => c.textContent),
+    );
+    await expect(rows.map((r) => r[0])).toEqual(["Spring", "Summer", "Fall"]);
+    await expect(rows[1]).toEqual(["Summer", "$30,000", "$33,000", "−$3,000", "$0"]);
+    await expect(canvas.getByRole("columnheader", { name: "Program Director's bonus" })).toBeVisible();
+  },
+};
+
+/** An area with no seasons shows no season table, since its year says the same. */
+export const NoSeasons: Story = {
+  args: { seasons: { bonuses: [], rows: [] } },
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByRole("table", { name: "By season" })).toBeNull();
   },
 };

@@ -8,6 +8,7 @@ import {
   type PlanWarning,
   type ProgramSettings,
   type ReportOffering,
+  type SeasonsReport,
   type Trip,
 } from "@/model/reports";
 import { cn } from "@/lib/utils";
@@ -93,6 +94,43 @@ function AreaAssumptions({
   );
 }
 
+const seasonName = (season: string | null) =>
+  season === null ? "No season" : season[0]!.toUpperCase() + season.slice(1);
+
+/** Each season's revenue, expenses, and net, and each bonus paid on it, since bonuses are paid per season. */
+function Seasons({ seasons }: { seasons: SeasonsReport }) {
+  return (
+    <Table aria-label="By season">
+      <TableHeader>
+        <TableRow>
+          <TableHead className={pinned}>Season</TableHead>
+          <TableHead className="text-right">Revenue</TableHead>
+          <TableHead className="text-right">Expenses</TableHead>
+          <TableHead className="text-right">Net</TableHead>
+          {seasons.bonuses.map((role) => (
+            <TableHead key={role} className="text-right">
+              {role}&apos;s bonus
+            </TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {seasons.rows.map((row) => (
+          <TableRow key={row.season ?? "none"}>
+            <TableCell className={pinned}>{seasonName(row.season)}</TableCell>
+            <Amount cents={row.revenue_cents} whole />
+            <Amount cents={row.expense_cents} whole />
+            <Amount cents={row.revenue_cents - row.expense_cents} whole />
+            {row.bonuses.map((cents, i) => (
+              <Amount key={seasons.bonuses[i]} cents={cents} whole />
+            ))}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
 const offeringHead = ["Fee", "Fee per day", "Sailors", "Sailor-days", "Fee per hour", "Sailor-hours", "Cost of goods"];
 
 export interface ProgramAreaReportProps {
@@ -102,6 +140,8 @@ export interface ProgramAreaReportProps {
   rules: string | null;
   warnings: PlanWarning[];
   statement: { revenue: AccountAmount[]; direct: AccountAmount[]; indirect: AccountAmount[] };
+  /** Its P&L for each season, with each bonus. Empty when none of its offerings has a season. */
+  seasons: SeasonsReport;
   programs: ProgramSettings[];
   offerings: ReportOffering[];
   /** The Financial Plan's id and this area's report key, for its link to the Calendar. */
@@ -122,6 +162,7 @@ export function ProgramAreaReport({
   rules,
   warnings,
   statement,
+  seasons,
   programs,
   offerings,
   setId,
@@ -149,6 +190,12 @@ export function ProgramAreaReport({
           ]}
         />
       </ReportSection>
+
+      {seasons.rows.length > 0 && (
+        <ReportSection id="seasons" title="By season">
+          <Seasons seasons={seasons} />
+        </ReportSection>
+      )}
 
       <ReportSection id="enrollment" title="Enrollment">
         <SessionGrid offerings={offerings} />
