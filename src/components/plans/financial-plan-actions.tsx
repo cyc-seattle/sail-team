@@ -17,12 +17,12 @@ import { PlanDetailsDialog, type PlanDetails } from "./plan-details-dialog";
 export interface FinancialPlanActionsProps {
   set: FinancialPlanSummary;
   /**
-   * Whether the person can rename it and change its note, start a draft from it, and, on the finance committee, freeze
+   * Whether the person can rename it and change its note, start a draft from it, and, as a Plan Admin, freeze
    * it and make it active. Directus still checks each request.
    */
   canEdit: boolean;
   canCreate: boolean;
-  canApprove: boolean;
+  canAdmin: boolean;
   onEdit: (details: PlanDetails) => Promise<void>;
   onStart: (details: PlanDetails) => Promise<void>;
   onFreeze: () => Promise<void>;
@@ -30,7 +30,7 @@ export interface FinancialPlanActionsProps {
   onActivate: (date: string) => Promise<void>;
 }
 
-/** The button that asks the finance committee for the day a plan is active from. */
+/** The button that asks a Plan Admin for the day a plan is active from. */
 function ActiveDateButton({ set, onActivate }: Pick<FinancialPlanActionsProps, "set" | "onActivate">) {
   const [open, setOpen] = useState(false);
   return (
@@ -99,14 +99,14 @@ function ConfirmButton({
 }
 
 /**
- * A Financial Plan's buttons: edit its name and note, duplicate it as a new draft, and, for the finance committee,
+ * A Financial Plan's buttons: edit its name and note, duplicate it as a new draft, and, for a Plan Admin,
  * freeze it and make it active from a date.
  */
 export function FinancialPlanActions({
   set,
   canEdit,
   canCreate,
-  canApprove,
+  canAdmin,
   onEdit,
   onStart,
   onFreeze,
@@ -133,8 +133,8 @@ export function FinancialPlanActions({
           onSubmit={onStart}
         />
       )}
-      {canApprove && <ActiveDateButton set={set} onActivate={onActivate} />}
-      {canApprove && set.status === "draft" && (
+      {canAdmin && <ActiveDateButton set={set} onActivate={onActivate} />}
+      {canAdmin && set.status === "draft" && (
         <ConfirmButton
           label="Freeze"
           title={`Freeze ${set.name}?`}

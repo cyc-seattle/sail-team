@@ -35,7 +35,7 @@ const meta = {
     set: twoCoaches,
     canEdit: true,
     canCreate: true,
-    canApprove: true,
+    canAdmin: true,
     onEdit: fn(async () => {}),
     onStart: fn(async () => {}),
     onFreeze: fn(async () => {}),
@@ -111,9 +111,9 @@ export const RenameFrozen: Story = {
   },
 };
 
-/** A program director can rename a plan and duplicate it, but freezing it and making it active are the committee's. */
+/** A Plan Writer can rename a plan and duplicate it, but freezing it and making it active are a Plan Admin's. */
 export const ProgramDirector: Story = {
-  args: { canApprove: false },
+  args: { canAdmin: false },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: "Duplicate" })).toBeVisible();
     await expect(canvas.queryByRole("button", { name: "Freeze" })).toBeNull();
@@ -123,7 +123,7 @@ export const ProgramDirector: Story = {
 
 /** Someone who can only read plans gets no buttons. */
 export const ReadOnly: Story = {
-  args: { set: budget, canEdit: false, canCreate: false, canApprove: false },
+  args: { set: budget, canEdit: false, canCreate: false, canAdmin: false },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).queryAllByRole("button")).toHaveLength(0);
   },

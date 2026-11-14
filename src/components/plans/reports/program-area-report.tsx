@@ -11,7 +11,8 @@ import {
   type Trip,
 } from "@/model/reports";
 import { cn } from "@/lib/utils";
-import { SEASONS, seasonName, type Season } from "@/model/seasons";
+import type { Term } from "@/model/terms";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BudgetLines, StaffTimeTable } from "../assumptions";
 import { Money } from "../money";
 import { NoteInfo } from "../note-info";
@@ -19,12 +20,14 @@ import { CollapsibleSection } from "./collapsible-section";
 import { OfferingName } from "./offering-name";
 import { ReportSection } from "./report-page";
 import { RulesList } from "./rules-list";
-import { SegmentedControl } from "./segmented-control";
 import { SessionGrid } from "./session-grid";
 import { StatementTable } from "./statement-table";
 import { WarningsSection } from "./warnings-section";
 
 const pinned = "sticky left-0 z-10 bg-background";
+const ALL = "all";
+// No term's key is this, since a term's key is a UUID.
+const NO_TERM = "none";
 const count = (n: number) => n.toLocaleString("en-US");
 const none = <span className="text-muted-foreground">—</span>;
 
@@ -106,6 +109,8 @@ export interface ProgramAreaReportProps {
   statement: { revenue: AccountAmount[]; direct: AccountAmount[]; indirect: AccountAmount[] };
   programs: ProgramSettings[];
   offerings: ReportOffering[];
+  /** The Financial Plan's terms, by start date, which its offerings can be in. */
+  terms: Term[];
   /** The Financial Plan's id and this area's report key, for its link to the Calendar. */
   setId: string;
   areaKey: string;
@@ -126,15 +131,22 @@ export function ProgramAreaReport({
   statement,
   programs,
   offerings,
+  terms,
   setId,
   areaKey,
   trips,
   fixedCosts,
   staffTime,
 }: ProgramAreaReportProps) {
-  const [season, setSeason] = useState<Season | "all">("all");
-  // An offering with no season, such as Adult Learn to Sail, shows only under All.
-  const shown = season === "all" ? offerings : offerings.filter((o) => o.season === season);
+  const [term, setTerm] = useState<string>(ALL);
+  const shown =
+    term === ALL ? offerings : offerings.filter((o) => (term === NO_TERM ? !o.term_key : o.term_key === term));
+  const termItems = [
+    { value: ALL, label: "All" },
+    ...terms.map((t) => ({ value: t.key, label: t.name })),
+    ...(offerings.some((o) => !o.term_key) ? [{ value: NO_TERM, label: "No term" }] : []),
+  ];
+  const picked = termItems.find((t) => t.value === term)?.label;
   const groups = numberedOfferings(shown);
   const labels = new Map(numberedOfferings(offerings).flatMap((g) => g.offerings.map((o) => [o.key, o.label])));
   return (
@@ -158,25 +170,35 @@ export function ProgramAreaReport({
       <div className="grid gap-2">
         <div className="flex flex-wrap items-center gap-3">
           <span aria-hidden className="text-sm font-medium">
-            Season
+            Term
           </span>
-          <SegmentedControl
-            label="Season"
-            value={season}
-            options={[{ value: "all", label: "All" }, ...SEASONS.map((s) => ({ value: s, label: seasonName(s) }))]}
-            onChange={setSeason}
-          />
+          <Select items={termItems} value={term} onValueChange={(v) => setTerm(String(v ?? ALL))}>
+            <SelectTrigger
+              aria-label="Term"
+              className="w-full data-[size=default]:h-tap md:w-56 md:data-[size=default]:h-8"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {termItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        {season !== "all" && (
+        {term !== ALL && (
           <p className="text-sm text-muted-foreground">
-            Showing {seasonName(season).toLowerCase()} offerings. Revenue and expenses above are for the whole year.
+            {term === NO_TERM ? "Showing offerings in no term." : `Showing ${picked} offerings.`} Revenue and expenses
+            above are for the whole year.
           </p>
         )}
       </div>
 
       <ReportSection id="enrollment" title="Enrollment">
         {shown.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No offerings this season.</p>
+          <p className="text-sm text-muted-foreground">No offerings in this term.</p>
         ) : (
           <SessionGrid offerings={shown} />
         )}
@@ -219,6 +241,7 @@ export function ProgramAreaReport({
                     <TableCell className={cn(pinned, "pl-6")}>
                       <span className="inline-flex items-center gap-1">
                         <OfferingName offering={o} />
+                        {o.term && <span className="text-xs text-muted-foreground">{o.term}</span>}
                         <NoteInfo note={o.note} />
                       </span>
                     </TableCell>

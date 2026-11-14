@@ -132,6 +132,8 @@ const plans = [
 
 /** Keys stay the same in every copy, as platform keeps them, so rows that name others by key match across copies. */
 const key = (name: string) => `key:${name}`;
+/** A term's row name in the Operations Plan, such as "Term Summer 2027", which its key comes from. */
+const termRow = (name: string) => `Term ${name}`;
 
 /** Rows of a plan copy, each with an id of its own, its copy, and its key. */
 class Copy {
@@ -302,10 +304,17 @@ function operations(version: string): Copy {
   line("Storage dock upkeep", accounts.boats, 300_000, "offering", key("Boat storage"));
   laborLine(c, "Winter boat repairs", "Level 1 Instructor", 120, "pool", key("Program admin"), accounts.boats);
   c.add("plan_closed_dates", "Fourth of July", { date: "2027-07-05", name: "Independence Day, observed" });
+  for (const [name, starts_on, ends_on] of [
+    ["Spring 2027", "2027-03-01", "2027-06-15"],
+    ["Summer 2027", "2027-06-16", "2027-08-31"],
+    ["Fall 2027", "2027-09-01", "2027-11-30"],
+  ]) {
+    c.add("plan_terms", termRow(name!), { name, starts_on, ends_on });
+  }
   c.add("plan_offerings", "Boat storage", {
     product_id: products.storage.id,
     name: "Boat storage 2027",
-    season_term: null,
+    term_key: null,
     starts_on: "2027-01-01",
     ends_on: "2027-12-31",
     capacity: 40,
@@ -322,7 +331,7 @@ const offering = (
   c: Copy,
   name: string,
   p: { id: string },
-  season: string,
+  term: string | null,
   starts_on: string,
   ends_on: string,
   fields: { capacity: number; target: number; price: number; cogs?: number; note?: string },
@@ -330,7 +339,7 @@ const offering = (
   c.add("plan_offerings", name, {
     product_id: p.id,
     name,
-    season_term: season,
+    term_key: term && key(termRow(term)),
     starts_on,
     ends_on,
     capacity: fields.capacity,
@@ -480,7 +489,7 @@ function summer(version: string, instructors: number): Copy {
       .filter((camp) => camp.weeks.includes(week))
       .map((camp) => ({
         ...camp,
-        id: offering(c, `${camp.p.name} ${session}`, camp.p, "summer", monday, date(monday, 4), {
+        id: offering(c, `${camp.p.name} ${session}`, camp.p, "Summer 2027", monday, date(monday, 4), {
           capacity: camp.max,
           target: week === 1 && camp.p === products.guppies ? 6 : camp.target,
           price: camp.price,
@@ -507,7 +516,7 @@ function summer(version: string, instructors: number): Copy {
   return c;
 }
 
-/** Doublehanded: J-Pod's spring and fall seasons, one practice a week. Its last fall practice has no block yet. */
+/** Doublehanded: J-Pod's spring and fall terms, one practice a week. Its last fall practice has no block yet. */
 function doublehanded(version: string): Copy {
   const c = new Copy(version);
   c.add("plan_programs", "J-Pod settings", {
@@ -520,19 +529,11 @@ function doublehanded(version: string): Copy {
     ["Spring", "2027-03-02", 12, 12],
     ["Fall", "2027-09-07", 10, 10],
   ] as const) {
-    const o = offering(
-      c,
-      `J-Pod ${session}`,
-      products.jpod,
-      session.toLowerCase(),
-      first,
-      date(first, 7 * (weeks - 1)),
-      {
-        capacity: 16,
-        target,
-        price: 145_000,
-      },
-    );
+    const o = offering(c, `J-Pod ${session}`, products.jpod, `${session} 2027`, first, date(first, 7 * (weeks - 1)), {
+      capacity: 16,
+      target,
+      price: 145_000,
+    });
     if (session === "Fall") {
       c.add("plan_trips", "Fall regatta", {
         offering_id: o,
@@ -642,6 +643,7 @@ const versioned = [
   "plan_bonus_owner_products",
   "plan_closed_dates",
   "plan_capital_items",
+  "plan_terms",
 ] as const;
 
 const rowsOf = (versions: string[], table: string) => versions.flatMap((v) => copies[v]?.rows[table] ?? []);

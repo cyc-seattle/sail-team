@@ -2,7 +2,7 @@ import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { PlanningPage } from "@/components/plans/reports/planning-page";
 import { NoAccess } from "@/components/shell/no-access";
-import { canApprovePlans, canRead, canWrite } from "@/directus/access";
+import { canAdminPlans, canRead, canWrite } from "@/directus/access";
 import { deleteFinancialPlan, financialPlansQuery, updateFinancialPlan } from "@/directus/financial-plans";
 import { useSession } from "@/directus/use-session";
 
@@ -28,7 +28,7 @@ function AllPlans() {
     <PlanningPage
       plans={data}
       actions={{
-        canApprove: canApprovePlans(permissions),
+        canAdmin: canAdminPlans(permissions),
         canDelete: canWrite(permissions, "version_sets", "delete"),
         onFreeze: async (plan) => {
           await updateFinancialPlan(plan.id, { status: "saved" });

@@ -1,7 +1,6 @@
 // The shapes the Planning reports show, and how they're made from a Financial Plan's results and inputs.
 import type { PlanActivity, PlanOffering } from "@cyc-seattle/platform/planning";
 import type { Member, PlanLine, ResultWarning, Results } from "./financial-plans.ts";
-import { seasonName, seasonOf, type Season } from "./seasons.ts";
 
 /** Lines that are worked out the same way, added up, such as every offering's coach wages. */
 export interface LineAmount {
@@ -108,8 +107,10 @@ export interface ReportOffering {
   program: string;
   /** When it runs, as staff name it: Week 3 of summer, or Spring. */
   session: string;
-  /** The season it runs in, or null for one with none. */
-  season?: Season | null;
+  /** The key of the term it's in, or null for one in none. */
+  term_key?: string | null;
+  /** The term's name, such as Summer 2027, or null. */
+  term?: string | null;
   /** Its own name, such as "Adult Learn to Sail Weekday Jul 2026". */
   name?: string;
   /** Its program's id and the color the catalog gives it, for the program's color on the Calendar. */
@@ -598,22 +599,22 @@ export function onWaterMinutes(
  * which are the dates it has an activity other than travel, and one sailor's hours on the water.
  */
 /**
- * When an offering runs, as staff name it. A season is too broad for that, so it's the offering's name without its
- * program's, such as Week 3 from "Guppies Week 3". A plan frozen before the season list keeps its own free text.
+ * When an offering runs, as staff name it: the offering's name without its program's, such as Week 3 from "Guppies
+ * Week 3". A term is too broad for that, since a summer term holds every week of camp.
  */
-function sessionOf(offering: { name: string; season_term: string | null; program: string }): string {
-  if (offering.season_term && !seasonOf(offering)) {
-    return offering.season_term;
-  }
+function sessionOf(offering: { name: string; program: string }): string {
   const rest = offering.name.startsWith(`${offering.program} `) ? offering.name.slice(offering.program.length + 1) : "";
-  return rest || (offering.season_term ? seasonName(seasonOf(offering)!) : offering.name);
+  return rest || offering.name;
 }
 
 export function reportOffering(
   offering: Pick<
     PlanOffering,
-    "key" | "name" | "season_term" | "starts_on" | "ends_on" | "price_cents" | "capacity" | "cogs_rate" | "note"
+    "key" | "name" | "starts_on" | "ends_on" | "price_cents" | "capacity" | "cogs_rate" | "note"
   > & {
+    /** Platform's `plan_offerings.term_key`, which the published types don't have yet. */
+    term_key?: string | null;
+    term?: string | null;
     program: string;
     program_id?: string | null;
     program_color?: string | null;
@@ -625,7 +626,8 @@ export function reportOffering(
     key: offering.key,
     program: offering.program,
     session: sessionOf(offering),
-    season: seasonOf(offering),
+    term_key: offering.term_key ?? null,
+    term: offering.term ?? null,
     name: offering.name,
     program_id: offering.program_id ?? null,
     program_color: offering.program_color ?? null,

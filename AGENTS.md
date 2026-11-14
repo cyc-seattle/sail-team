@@ -69,15 +69,15 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   plan's indirect costs, and everything else of its own is direct. `/plans` lists every Financial Plan, with when
   each is in force: a plan is active from its `effective_from`, and the one in force on a day is its year's with the
   latest date on or before it (`inForce` in `src/model/financial-plans.ts`, cyc-seattle/platform#251). There, a Plan
-  Writer (a program director) deletes a draft, and a Plan Approver (the finance committee) freezes a draft (saves it, as
+  Writer deletes a draft, and a Plan Admin freezes a draft (saves it, as
   `status` says), makes a draft or frozen plan active from a date, or archives one (`archived_at`), which hides it until
-  the status filter asks for archived ones. The menus follow `/permissions/me`: `canApprovePlans` in `access.ts`. `/plans/financial/<set>` is its Overview, and
+  the status filter asks for archived ones. The menus follow `/permissions/me`: `canAdminPlans` in `access.ts`. `/plans/financial/<set>` is its Overview, and
   `/plans/financial/<set>/<report>` its other reports: `calendar`, `rates` (Assumptions), `storage`, a Program Plan's
   id, `non-program`, or `fundraising`. Storage lists the lines on the Storage account, 7351 under 7350 Occupancy/Rent:
-  what each area pays, then what every program shares. A program area's report filters its offerings by season
-  (`plan_offerings.season_term`: winter, spring, summer, or fall). The Calendar keeps the one program area it shows and its day in the address
+  what each area pays, then what every program shares. A program area's report filters its offerings by term: the
+  Operations Plan's `plan_terms`, which an offering names by `term_key`. The Calendar keeps the one program area it shows and its day in the address
   (`?area=<report>&day=<date>`), and each area's report links to it with its own area. Each report's header is where a
-  Plan Writer renames it, changes its note, or duplicates it, and a Plan Approver freezes a draft or makes it active
+  Plan Writer renames it, changes its note, or duplicates it, and a Plan Admin freezes a draft or makes it active
   from a date. A club plan's
   old address, `/plans/club/<set>`, sends people to its
   Financial Plan.
@@ -105,8 +105,8 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   put real club data there.
 - `mise run integration` runs the journeys against dev, as your ADC login (deploy-dev in Actions), with
   `PULUMI_STACK=dev`. Each scenario's visitor is made up for it (`test/features/visitors.ts`): a Directus user on the
-  Community role and, for a planner, a person in a group that gives their Plan policies (Plan Reader; Plan Writer for
-  a program director; Plan Writer and Plan Approver for the finance committee), the way the club gives policies.
+  Community role and, for a planner, a person in a group that gives their Plan policies (Plan Reader; Plan Writer; or Plan
+  Writer and Plan Admin), the way the club gives policies.
   The sign-in journeys sign in through Authentik's emailed link, which dev's Authentik sends to Mailpit, one at a
   time. Every other journey gives its visitor a password and signs in to Directus directly, three scenarios at a
   time. A plans scenario also makes a made-up organization (`test/features/club.ts`): its accounts, a program area and

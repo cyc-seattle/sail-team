@@ -1,9 +1,9 @@
 Feature: Seeing the Financial Plans
   A Financial Plan is the organization's plan for one year. It holds one Operations Plan and a Program Plan for any
   of the organization's program areas, and the P&L they make together. Planners work on it as a whole, through their
-  AI: it starts as a draft, and when it's ready the finance committee freezes it. A draft's numbers are worked out again after every
+  AI: it starts as a draft, and when it's ready a Plan Admin freezes it. A draft's numbers are worked out again after every
   change to it, wherever the change is made. A frozen Financial Plan's plans and numbers never change, though its name,
-  note, and the date it's active from can. The finance committee makes a Financial Plan active from a date, a draft or
+  note, and the date it's active from can. A Plan Admin makes a Financial Plan active from a date, a draft or
   a frozen one. The plan in force on a day is the one for its year with the latest date on or before it. To change the plan after that, a planner duplicates it, and the copy begins as a draft. A plan no one
   needs any more can be archived, which takes it off Planning's list until someone asks to see archived plans. A year can have several drafts at once, so planners can weigh options, such as
   two drafts started from the same Financial Plan, one with two coaches and one with three. Each Financial Plan has a
@@ -17,8 +17,8 @@ Feature: Seeing the Financial Plans
   Planning is where planners, and anyone else who can read plans, see the Financial Plans as a set of reports: an
   Overview, the Assumptions, one for each program area, Non-program, and Fundraising and capital. A program area's
   report includes its coaches' wages, its RIBs, and its share of the shared costs, such as the office, worked out with
-  the other plans in the same Financial Plan. A program director can rename any Financial Plan, change its note,
-  duplicate one, and delete a draft here. The finance committee can also freeze a draft, make one active from a date,
+  the other plans in the same Financial Plan. A Plan Writer can rename any Financial Plan, change its note,
+  duplicate one, and delete a draft here. A Plan Admin can also freeze a draft, make one active from a date,
   and archive one. Everything else about a plan is changed through their AI. Every plan and number here is made up for
   the run.
 
@@ -137,10 +137,10 @@ Feature: Seeing the Financial Plans
       And I open its warnings
       Then a warning says the practice falls on a closed day, on that day
 
-  Rule: A program director can rename a Financial Plan, note it, duplicate it, and delete a draft
+  Rule: A Plan Writer can rename a Financial Plan, note it, duplicate it, and delete a draft
 
     Scenario: Renaming a draft and noting it
-      Given I'm a program director
+      Given I'm a Plan Writer
       And a draft Financial Plan named "Two coaches"
       And I've signed in
       When I open "Two coaches"
@@ -149,7 +149,7 @@ Feature: Seeing the Financial Plans
       And Planning shows "Two coaches, more boats" with the note "For the board"
 
     Scenario: Duplicating a frozen Financial Plan
-      Given I'm a program director
+      Given I'm a Plan Writer
       And a frozen Financial Plan for 2027 named "Budget"
       And I've signed in
       When I open "Budget" and duplicate it as "Budget, three coaches"
@@ -165,24 +165,24 @@ Feature: Seeing the Financial Plans
       And Planning has no actions for "Budget"
 
     Scenario: Deleting a draft from Planning
-      Given I'm a program director
+      Given I'm a Plan Writer
       And a draft Financial Plan named "Two coaches"
       And I've signed in
       When I open Planning for 2027
       And I delete "Two coaches"
       Then Planning no longer lists "Two coaches"
 
-    Scenario: A program director can't freeze a Financial Plan, make it active, or archive it
-      Given I'm a program director
+    Scenario: A Plan Writer can't freeze a Financial Plan, make it active, or archive it
+      Given I'm a Plan Writer
       And a draft Financial Plan named "Two coaches"
       And I've signed in
       When I open "Two coaches"
       Then I see no way to freeze it or make it active
 
-  Rule: The finance committee can freeze a Financial Plan, make it active from a date, and archive it
+  Rule: A Plan Admin can freeze a Financial Plan, make it active from a date, and archive it
 
     Scenario: Freezing a draft
-      Given I'm on the finance committee
+      Given I'm a Plan Admin
       And a draft Financial Plan named "Two coaches"
       And I've signed in
       When I open "Two coaches"
@@ -190,7 +190,7 @@ Feature: Seeing the Financial Plans
       Then it's marked frozen
 
     Scenario: Archiving a frozen Financial Plan
-      Given I'm on the finance committee
+      Given I'm a Plan Admin
       And a frozen Financial Plan for 2027 named "Budget"
       And I've signed in
       When I open Planning for 2027
@@ -199,7 +199,7 @@ Feature: Seeing the Financial Plans
       And Planning lists "Budget" when I ask to see archived plans
 
     Scenario: Making a frozen Financial Plan active from a date
-      Given I'm on the finance committee
+      Given I'm a Plan Admin
       And a frozen Financial Plan for 2027 named "Budget"
       And I've signed in
       When I open "Budget"

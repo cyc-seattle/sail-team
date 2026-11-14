@@ -2,7 +2,7 @@
 import type { Bonus, FixedCost, OperationsAssumptions, StaffTime } from "@/model/assumptions";
 import type { ScheduleBlock, ScheduledActivity } from "@/model/schedule";
 import type { ListedPlan, Totals } from "@/model/financial-plans";
-import type { Season } from "@/model/seasons";
+import type { Term } from "@/model/terms";
 import type {
   AccountAmount,
   CapitalItem,
@@ -158,7 +158,15 @@ export const summerOfferings: ReportOffering[] = [
   ...[1, 4, 7].map((n) => camp("Race Camp", n, 61_000, 8, 12, 35)),
 ];
 
-const season = (
+/** Doublehanded's terms, in the Operations Plan. */
+export const doublehandedTerms: Term[] = [
+  { key: "term-spring", name: "Spring 2027", starts_on: "2027-03-01", ends_on: "2027-06-15" },
+  { key: "term-summer", name: "Summer 2027", starts_on: "2027-06-16", ends_on: "2027-08-31" },
+  { key: "term-fall", name: "Fall 2027", starts_on: "2027-09-01", ends_on: "2027-11-30" },
+  { key: "term-winter", name: "Winter 2027", starts_on: "2027-12-01", ends_on: "2028-02-28" },
+];
+
+const termOffering = (
   program: string,
   session: string,
   starts_on: string,
@@ -168,7 +176,8 @@ const season = (
   key: `${program}-${session}`,
   program,
   session,
-  season: session.toLowerCase() as Season,
+  term_key: `term-${session.toLowerCase()}`,
+  term: `${session} 2027`,
   starts_on,
   ends_on,
   fee_cents: 145_000,
@@ -182,14 +191,14 @@ const season = (
 
 // Spring and fall interleaved, as the old pages listed them.
 export const doublehandedOfferings: ReportOffering[] = [
-  season("J-Pod", "Spring", "2027-03-01", "2027-06-11", 12),
-  season("J-Pod", "Fall", "2027-09-07", "2027-11-19", 10),
-  season("K-Pod", "Spring", "2027-03-02", "2027-06-12", 14),
-  season("L-Pod", "Spring", "2027-03-04", "2027-06-10", 8),
-  season("K-Pod", "Fall", "2027-09-08", "2027-11-20", 12),
-  season("L-Pod", "Fall", "2027-09-09", "2027-11-18", 10),
-  season("J-Pod", "Summer", "2027-06-22", "2027-08-12", 9),
-  season("K-Pod", "Summer", "2027-06-23", "2027-08-13", 11),
+  termOffering("J-Pod", "Spring", "2027-03-01", "2027-06-11", 12),
+  termOffering("J-Pod", "Fall", "2027-09-07", "2027-11-19", 10),
+  termOffering("K-Pod", "Spring", "2027-03-02", "2027-06-12", 14),
+  termOffering("L-Pod", "Spring", "2027-03-04", "2027-06-10", 8),
+  termOffering("K-Pod", "Fall", "2027-09-08", "2027-11-20", 12),
+  termOffering("L-Pod", "Fall", "2027-09-09", "2027-11-18", 10),
+  termOffering("J-Pod", "Summer", "2027-06-22", "2027-08-12", 9),
+  termOffering("K-Pod", "Summer", "2027-06-23", "2027-08-13", 11),
 ];
 
 const offering = (
@@ -637,7 +646,7 @@ export const planningPlans: ListedPlan[] = [
     parent: { id: "budget", name: "Budget" },
     warnings: 4,
     expense_cents: 44_100_000,
-    note: "Allocated every summer week and the spring and fall seasons. 4 warnings left",
+    note: "Allocated every summer week and the spring and fall terms. 4 warnings left",
   }),
   planSummary({
     id: "two-coaches",

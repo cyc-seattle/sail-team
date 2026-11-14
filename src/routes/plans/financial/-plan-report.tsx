@@ -13,7 +13,7 @@ import { StorageReport } from "@/components/plans/reports/storage-report";
 import { NoAccess } from "@/components/shell/no-access";
 import { NoticePage } from "@/components/shell/notice-page";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { canApprovePlans, canRead, canUpdateFields, canWrite } from "@/directus/access";
+import { canAdminPlans, canRead, canUpdateFields, canWrite } from "@/directus/access";
 import { startFinancialPlan, updateFinancialPlan, type FinancialPlan } from "@/directus/financial-plans";
 import { planInputsQuery, type PlanInputs } from "@/directus/plan-inputs";
 import { useSession } from "@/directus/use-session";
@@ -171,6 +171,7 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
       statement={statementOf(results.lines.filter((l) => l.member === member.id))}
       programs={inputs.programs[report] ?? []}
       offerings={inputs.offerings[report] ?? []}
+      terms={inputs.terms}
       setId={set.id}
       areaKey={report}
       trips={inputs.trips[report] ?? []}
@@ -210,7 +211,7 @@ function Actions({ plan }: { plan: FinancialPlan }) {
       set={set}
       canEdit={canUpdateFields(permissions, "version_sets", ["name", "message"])}
       canCreate={canWrite(permissions, "version_sets", "create")}
-      canApprove={canApprovePlans(permissions)}
+      canAdmin={canAdminPlans(permissions)}
       onEdit={async ({ name, message }) => {
         await updateFinancialPlan(set.id, { name, message });
         await refresh();

@@ -12,7 +12,7 @@ export interface FinancialPlanSummary {
   /** A draft's plans change; a saved one's never do, though its name, note, and active date can. */
   status: "draft" | "saved";
   /**
-   * The day the finance committee made it active from, or none. The plan in force on a day is the one for its year with
+   * The day a Plan Admin made it active from, or none. The plan in force on a day is the one for its year with
    * the latest date on or before it (cyc-seattle/platform#251). A draft can be active.
    */
   effective_from: string | null;

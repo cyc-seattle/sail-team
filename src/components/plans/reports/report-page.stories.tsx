@@ -6,6 +6,7 @@ import {
   assumptionsRules,
   capital,
   doublehandedOfferings,
+  doublehandedTerms,
   doublehandedPrograms,
   doublehandedRules,
   doublehandedStatement,
@@ -83,6 +84,7 @@ export const Summer: Story = {
         statement={summerStatement}
         programs={summerPrograms}
         offerings={summerOfferings}
+        terms={doublehandedTerms}
         setId="budget"
         areaKey="summer"
         trips={[]}
@@ -115,6 +117,7 @@ export const Doublehanded: Story = {
         statement={doublehandedStatement}
         programs={doublehandedPrograms}
         offerings={doublehandedOfferings}
+        terms={doublehandedTerms}
         setId="budget"
         areaKey="doublehanded"
         trips={doublehandedTrips}

@@ -1,8 +1,8 @@
 Feature: Tracking the year
-  Tracking shows a program area's directors how the year is going against its plan. It compares each planned
+  Tracking shows planners how a program area's year is going against its plan. It compares each planned
   offering with what has happened in Clubspot: how many sailors have registered, and how much money has come in. It
-  covers one program area for the year of the plan in force, the one the finance committee made active from the
-  latest date. There are no terms or seasons, because not every program has them, so the offerings are listed by date.
+  covers one program area for the year of the plan in force, the one a Plan Admin made active from the
+  latest date. Offerings are listed by date, since not every program is in a term.
 
   A catalog offering is a named offering of a program, such as Guppies Summer, kept in the catalog rather than in any
   one Financial Plan. A planned offering is a catalog offering in the active Financial Plan, with its price and the
@@ -44,7 +44,7 @@ Feature: Tracking the year
 
     @fixme
     Scenario: A planner links a Clubspot offering from the list of those not in the plan
-      Given I'm a program director
+      Given I'm a Plan Writer
       And a catalog offering, Guppies Summer, that Youth Racing's active Financial Plan includes
       And a Clubspot offering, Guppies week 3, with 4 sailors, that isn't linked to anything
       And I've signed in

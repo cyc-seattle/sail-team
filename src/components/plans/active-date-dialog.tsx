@@ -27,7 +27,7 @@ export interface ActiveDateDialogProps {
 }
 
 /**
- * Asks the finance committee for the day a Financial Plan is in force from, today unless it has a date already. A
+ * Asks a Plan Admin for the day a Financial Plan is in force from, today unless it has a date already. A
  * draft can be active, and stays a draft.
  */
 export function ActiveDateDialog({ name, year, current, open, onOpenChange, onSubmit }: ActiveDateDialogProps) {

@@ -1,10 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, userEvent } from "storybook/test";
+import { expect, screen, userEvent } from "storybook/test";
 import {
   doublehandedOfferings,
   doublehandedPrograms,
   doublehandedRules,
   doublehandedStatement,
+  doublehandedTerms,
   summerOfferings,
   summerPrograms,
   summerRules,
@@ -29,6 +30,7 @@ const meta = {
     statement: doublehandedStatement,
     programs: doublehandedPrograms,
     offerings: doublehandedOfferings,
+    terms: doublehandedTerms,
     trips: doublehandedTrips,
     fixedCosts: [],
     staffTime: [],
@@ -47,16 +49,18 @@ export const Doublehanded: Story = {
   },
 };
 
-/** The season filter narrows the offerings to one season, and the year's money stays as it is. */
+/** The term filter narrows the offerings to one of the plan's terms, and the year's money stays as it is. */
 export const FallOnly: Story = {
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "Fall" }));
+    await userEvent.click(canvas.getByRole("combobox", { name: "Term" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Fall 2027" }));
     const table = canvas.getByRole("table", { name: "Offerings" });
     const names = [...table.querySelectorAll("tbody button")].map((b) => b.textContent);
     await expect(names).toEqual(["J-Pod Fall", "K-Pod Fall", "L-Pod Fall"]);
     await expect(canvas.getByText(/Revenue and expenses above are for the whole year/)).toBeVisible();
-    await userEvent.click(canvas.getByRole("button", { name: "Winter" }));
-    await expect(canvas.getByText("No offerings this season.")).toBeVisible();
+    await userEvent.click(canvas.getByRole("combobox", { name: "Term" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Winter 2027" }));
+    await expect(canvas.getByText("No offerings in this term.")).toBeVisible();
   },
 };
 

@@ -30,10 +30,10 @@ import { PlanStatus } from "../version-badge";
 
 export interface PlanningActions {
   /**
-   * Whether the person is on the finance committee, who freeze, make active, and archive Financial Plans, and whether
+   * Whether the person is a Plan Admin, who freezes, makes active, and archives Financial Plans, and whether
    * they can delete a draft. Directus still checks each request.
    */
-  canApprove: boolean;
+  canAdmin: boolean;
   canDelete: boolean;
   onFreeze: (plan: ListedPlan) => Promise<void>;
   /** Makes it active from `date`, `YYYY-MM-DD`. */
@@ -92,21 +92,21 @@ const confirmations = (plan: ListedPlan): Record<Confirmed, { label: string; tit
 });
 
 /**
- * What can be done to a plan. The finance committee freezes a draft, makes a draft or frozen plan active from a date,
+ * What can be done to a plan. A Plan Admin freezes a draft, makes a draft or frozen plan active from a date,
  * and archives one that isn't in force and won't be. A draft that's never been active can be deleted.
  */
-function actionsFor(plan: ListedPlan, { canApprove, canDelete }: PlanningActions): Action[] {
+function actionsFor(plan: ListedPlan, { canAdmin, canDelete }: PlanningActions): Action[] {
   if (plan.archived) {
-    return canApprove ? ["unarchive"] : [];
+    return canAdmin ? ["unarchive"] : [];
   }
   const archivable = !plan.in_force || plan.in_force.when === "past";
-  const approvals: Action[] = [
+  const adminActions: Action[] = [
     ...(plan.status === "draft" ? (["save"] as const) : []),
     "activate",
     ...(archivable ? (["archive"] as const) : []),
   ];
   const deletable = canDelete && plan.status === "draft" && !plan.in_force;
-  return [...(canApprove ? approvals : []), ...(deletable ? (["delete"] as const) : [])];
+  return [...(canAdmin ? adminActions : []), ...(deletable ? (["delete"] as const) : [])];
 }
 
 /**

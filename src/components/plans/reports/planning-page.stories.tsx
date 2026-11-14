@@ -11,7 +11,7 @@ const meta = {
   args: {
     plans: planningPlans,
     actions: {
-      canApprove: true,
+      canAdmin: true,
       canDelete: true,
       onFreeze: fn(async () => {}),
       onActivate: fn(async () => {}),
@@ -151,7 +151,7 @@ export const MakingAPlanActive: Story = {
 export const RefusedDate: Story = {
   args: {
     actions: {
-      canApprove: true,
+      canAdmin: true,
       canDelete: true,
       onFreeze: fn(),
       onActivate: fn(async () => {
@@ -178,10 +178,10 @@ export const RefusedDate: Story = {
   },
 };
 
-/** A program director starts and deletes drafts, but leaves freezing, making active, and archiving to the committee. */
+/** A Plan Writer starts and deletes drafts, but leaves freezing, making active, and archiving to a Plan Admin. */
 export const ProgramDirector: Story = {
   args: {
-    actions: { canApprove: false, canDelete: true, onFreeze: fn(), onActivate: fn(), onArchive: fn(), onDelete: fn() },
+    actions: { canAdmin: false, canDelete: true, onFreeze: fn(), onActivate: fn(), onArchive: fn(), onDelete: fn() },
   },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("button", { name: "Actions for Budget" })).toBeNull();
@@ -195,7 +195,7 @@ export const ProgramDirector: Story = {
 /** A planner who can only read plans has no actions. */
 export const ReadOnly: Story = {
   args: {
-    actions: { canApprove: false, canDelete: false, onFreeze: fn(), onActivate: fn(), onArchive: fn(), onDelete: fn() },
+    actions: { canAdmin: false, canDelete: false, onFreeze: fn(), onActivate: fn(), onArchive: fn(), onDelete: fn() },
   },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("button", { name: /Actions for/ })).toBeNull();

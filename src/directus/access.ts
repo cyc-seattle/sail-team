@@ -23,7 +23,7 @@ export function canWrite(
 
 /**
  * Whether the user can update every one of `fields` on some row of `collection`, such as a Financial Plan's status, which
- * only a Plan Approver sets. As with `canRead`, Directus still checks every write.
+ * only a Plan Admin sets. As with `canRead`, Directus still checks every write.
  */
 export function canUpdateFields(permissions: Permissions | undefined, collection: string, fields: string[]): boolean {
   const update = permissions?.[collection]?.update;
@@ -34,8 +34,8 @@ export function canUpdateFields(permissions: Permissions | undefined, collection
   return !allowed || allowed.includes("*") || fields.every((field) => allowed.includes(field));
 }
 
-/** Whether the user is on the finance committee: they save Financial Plans, make them active, and archive them. */
-export const canApprovePlans = (permissions: Permissions | undefined) =>
+/** Whether the user is a Plan Admin: they save Financial Plans, make them active, and archive them. */
+export const canAdminPlans = (permissions: Permissions | undefined) =>
   canUpdateFields(permissions, "version_sets", ["status", "effective_from", "archived_at"]);
 
 /**
