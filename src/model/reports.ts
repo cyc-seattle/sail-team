@@ -125,6 +125,8 @@ export interface ReportOffering {
   room?: number | null;
   /** The fewest sailors at which it pays for itself, from the results. Null when it doesn't even when full. */
   breakeven?: number | null;
+  /** The name of its term, such as Summer 2027, from the results. Null when it's in none. */
+  term?: string | null;
   days: number;
   /** Hours on the water for one sailor, across the whole offering. */
   hours: number;
@@ -136,7 +138,7 @@ export interface ReportOffering {
 /** An offering with its name, its program and session, such as "J-Pod Spring" or "Guppies Week 3". */
 export type NumberedOffering = ReportOffering & { label: string };
 
-const byStart = (offerings: ReportOffering[]) =>
+const byStart = <T extends ReportOffering>(offerings: T[]): T[] =>
   [...offerings].sort(
     (a, b) =>
       a.starts_on.localeCompare(b.starts_on) ||
@@ -185,23 +187,33 @@ export function numberedOfferings(offerings: ReportOffering[]): { program: strin
   });
 }
 
+export type EnrollmentBy = "session" | "program";
+
+/** How a program area's Budget, Enrollment and Fees group their rows. */
+export type Grouping = "term" | "program";
+
 /**
- * Each program's offerings by session: the sessions in the order they first start, and for each program, its offering
- * in each session, if it has one.
+ * Offerings under their program, or under their term, in the order the terms start, with the offerings in no term
+ * last. Each keeps its name with its program, such as Guppies Week 3, either way.
  */
-export function sessionGrid(offerings: ReportOffering[]): {
-  sessions: string[];
-  rows: { program: string; cells: (NumberedOffering | undefined)[] }[];
-} {
-  const sessions = [...new Set(byStart(offerings).map((o) => o.session))];
-  const rows = numberedOfferings(offerings).map(({ program, offerings: own }) => ({
-    program,
-    cells: sessions.map((session) => own.find((o) => o.session === session)),
+export function offeringGroups(
+  offerings: ReportOffering[],
+  by: Grouping,
+): { name: string; offerings: NumberedOffering[] }[] {
+  const programs = numberedOfferings(offerings);
+  if (by === "program") {
+    return programs.map((g) => ({ name: g.program, offerings: g.offerings }));
+  }
+  const sorted = byStart(programs.flatMap((g) => g.offerings));
+  const terms = [...new Set(sorted.map((o) => o.term ?? null))].sort((a, b) => Number(a === null) - Number(b === null));
+  return terms.map((term) => ({
+    name: term ?? "No term",
+    offerings: sorted.filter((o) => (o.term ?? null) === term),
   }));
-  return { sessions, rows };
 }
 
-export type EnrollmentBy = "session" | "program";
+/** Whether any of the offerings is in a term, so grouping by term says something. */
+export const hasTerms = (offerings: ReportOffering[]) => offerings.some((o) => o.term != null);
 
 /** The groups offerings fall in: programs A to Z, or sessions in the order they first start. */
 function groupsOf(offerings: ReportOffering[], by: EnrollmentBy): { name: string; offerings: ReportOffering[] }[] {

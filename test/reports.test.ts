@@ -13,7 +13,6 @@ import {
   fees,
   functionalExpenses,
   rulesOf,
-  sessionGrid,
   sortRows,
   type OverviewRow,
   type ReportOffering,
@@ -109,21 +108,6 @@ describe("numberedOfferings", () => {
       offering("Guppies", "Summer", "2027-07-05"),
     ]);
     expect(groups[0]?.offerings.map((o) => o.label)).toEqual(["Guppies Jul 5", "Guppies Jul 12"]);
-  });
-});
-
-describe("sessionGrid", () => {
-  it("puts sessions in the order they start, with a gap where a program skips one", () => {
-    const { sessions, rows } = sessionGrid([
-      offering("Race Camp", "Week 2", "2027-06-28"),
-      offering("Guppies", "Week 2", "2027-06-28"),
-      offering("Guppies", "Week 1", "2027-06-21"),
-    ]);
-    expect(sessions).toEqual(["Week 1", "Week 2"]);
-    expect(rows.map((r) => [r.program, r.cells.map((c) => c?.label ?? null)])).toEqual([
-      ["Guppies", ["Guppies Week 1", "Guppies Week 2"]],
-      ["Race Camp", [null, "Race Camp Week 2"]],
-    ]);
   });
 });
 

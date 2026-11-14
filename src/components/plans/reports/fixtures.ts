@@ -197,6 +197,40 @@ export const doublehandedOfferings: ReportOffering[] = [
   season("K-Pod", "Summer", "2027-06-23", "2027-08-13", 11),
 ];
 
+/** Each Doublehanded offering's Tuesday and Thursday practices, J-Pod on Tuesdays and the rest on Thursdays. */
+export const doublehandedSchedule: ScheduleBlock[] = doublehandedOfferings.flatMap((o) => {
+  const out: ScheduleBlock[] = [];
+  for (
+    let d = new Date(`${o.starts_on}T00:00:00Z`);
+    d <= new Date(`${o.ends_on}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + 1)
+  ) {
+    if (d.getUTCDay() !== (o.program === "J-Pod" ? 2 : 4)) {
+      continue;
+    }
+    const date = d.toISOString().slice(0, 10);
+    out.push({
+      key: `${o.key} ${date}`,
+      date,
+      name: null,
+      activities: [
+        {
+          key: `${o.key} ${date}`,
+          offering_key: o.key,
+          kind: "practice",
+          start_time: "16:00:00",
+          end_time: "19:00:00",
+          setup_minutes: 30,
+          putaway_minutes: 30,
+          on_water_minutes: 150,
+        },
+      ],
+      parts: ["2 Level 3 Coaches", "2 RIBs"],
+    });
+  }
+  return out;
+});
+
 const offering = (
   program: string,
   session: string,

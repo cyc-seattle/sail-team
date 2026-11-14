@@ -1,10 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PlanReport } from "../-plan-report";
 
-/** On the Calendar, the one program area shown and the day, kept in the address. */
+/**
+ * On the Calendar, the one program area shown and the day, kept in the address; on a program area's report, its
+ * calendar's day, and `by=program` when it groups by program.
+ */
 export interface CalendarSearch {
   area?: string;
   day?: string;
+  by?: "program";
 }
 
 const isDay = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
@@ -13,6 +17,7 @@ export const Route = createFileRoute("/plans/financial/$setId/$planId")({
   validateSearch: (search: Record<string, unknown>): CalendarSearch => ({
     ...(typeof search["area"] === "string" && search["area"] && { area: search["area"] }),
     ...(isDay(search["day"]) && { day: search["day"] }),
+    ...(search["by"] === "program" && { by: "program" as const }),
   }),
   component: Report,
 });

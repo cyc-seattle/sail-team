@@ -1,7 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent, within } from "storybook/test";
 import {
+  closedDays,
   doublehandedOfferings,
+  doublehandedSchedule,
+  summerSchedule,
   doublehandedPrograms,
   doublehandedRules,
   doublehandedStatement,
@@ -21,8 +24,9 @@ const meta = {
   component: ProgramAreaReport,
   decorators: [withRouter("/plans/financial/budget/doublehanded", ["/plans/financial/$setId/$planId"])],
   args: {
-    setId: "budget",
     areaKey: "doublehanded",
+    schedule: doublehandedSchedule,
+    closedDays,
     area: "Doublehanded",
     rules: doublehandedRules,
     warnings: warnings.filter((w) => w.area === "doublehanded"),
@@ -40,7 +44,7 @@ type Story = StoryObj<typeof meta>;
 /** Each program's spring comes before its fall, whatever order they were planned in. */
 export const Doublehanded: Story = {
   play: async ({ canvas }) => {
-    const table = canvas.getByRole("table", { name: "Offering fees" });
+    const table = canvas.getByRole("table", { name: "Fees" });
     const names = [...table.querySelectorAll("tbody button")].map((b) => b.textContent);
     await expect(names.slice(0, 2)).toEqual(["J-Pod Spring", "J-Pod Summer"]);
     await expect(canvas.getByRole("list", { name: "J-Pod rules" })).not.toBeVisible();
@@ -84,6 +88,7 @@ export const Summer: Story = {
     programs: summerPrograms,
     offerings: summerOfferings,
     areaKey: "summer",
+    schedule: summerSchedule,
     trips: [],
     fixedCosts: summerFixedCosts,
     staffTime: summerStaffTime,

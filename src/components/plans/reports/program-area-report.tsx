@@ -1,10 +1,13 @@
-import { Link } from "@tanstack/react-router";
 import { TriangleAlertIcon } from "lucide-react";
-import { Fragment, type ReactNode } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { formatShare, type FixedCost, type StaffTime } from "@/model/assumptions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import type { ScheduleBlock } from "@/model/schedule";
 import {
+  hasTerms,
   numberedOfferings,
+  offeringGroups,
+  type Grouping,
   type AccountAmount,
   type PlanWarning,
   type ProgramSettings,
@@ -19,7 +22,8 @@ import { CollapsibleSection } from "./collapsible-section";
 import { OfferingName } from "./offering-name";
 import { ReportSection } from "./report-page";
 import { RulesList } from "./rules-list";
-import { SessionGrid } from "./session-grid";
+import { PlanCalendar } from "./plan-calendar";
+import { SegmentedControl } from "./segmented-control";
 import { StatementTable } from "./statement-table";
 import { WarningsSection } from "./warnings-section";
 
@@ -140,7 +144,7 @@ const enrollmentHead: Column[] = [
 ];
 const feeHead: Column[] = [{ name: "Fee" }, { name: "Per day" }, { name: "Per hour" }, { name: "COGS" }];
 
-/** Each program's offerings, under the program's name, with the offering's name first and then `cells`. */
+/** Offerings under their program's or term's name, each with its name first and then `cells`. */
 function OfferingTable({
   label,
   head,
@@ -149,7 +153,7 @@ function OfferingTable({
 }: {
   label: string;
   head: Column[];
-  groups: ReturnType<typeof numberedOfferings>;
+  groups: ReturnType<typeof offeringGroups>;
   cells: (o: ReportOffering) => ReactNode;
 }) {
   return (
@@ -168,10 +172,10 @@ function OfferingTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {groups.map(({ program, offerings: own }) => (
-          <Fragment key={program}>
+        {groups.map(({ name, offerings: own }) => (
+          <Fragment key={name}>
             <TableRow className="hover:bg-transparent">
-              <TableCell className={cn(pinned, "pt-4 font-medium")}>{program}</TableCell>
+              <TableCell className={cn(pinned, "pt-4 font-medium")}>{name}</TableCell>
               <TableCell colSpan={head.length} />
             </TableRow>
             {own.map((o) => (
@@ -201,9 +205,16 @@ export interface ProgramAreaReportProps {
   statement: { revenue: AccountAmount[]; direct: AccountAmount[]; indirect: AccountAmount[] };
   programs: ProgramSettings[];
   offerings: ReportOffering[];
-  /** The Financial Plan's id and this area's report key, for its link to the Calendar. */
-  setId: string;
+  /** This area's report key. */
   areaKey: string;
+  /** Its activity blocks, for its calendar, and the days CSC is closed. */
+  schedule: ScheduleBlock[];
+  closedDays: { date: string; name: string }[];
+  /** The calendar's day, and how Enrollment and Fees group their rows. Kept by the report when not given. */
+  day?: string | null;
+  onDayChange?: (day: string) => void;
+  by?: Grouping;
+  onByChange?: (by: Grouping) => void;
   trips: Trip[];
   /** The area plan's own fixed costs and staff time outside its programs. */
   fixedCosts: FixedCost[];
@@ -211,8 +222,8 @@ export interface ProgramAreaReportProps {
 }
 
 /**
- * One program area: its warnings and its assumptions, both closed at first, its revenue and expenses by account, then its sailors by
- * session and each offering's fee and size, by program and start date, the figures used to compare with other centers.
+ * One program area: its warnings and its assumptions, both closed at first, its calendar, its revenue and expenses by
+ * account, then each offering's enrollment and fees, grouped by term or by program.
  */
 export function ProgramAreaReport({
   area,
@@ -221,20 +232,51 @@ export function ProgramAreaReport({
   statement,
   programs,
   offerings,
-  setId,
   areaKey,
+  schedule,
+  closedDays,
+  day,
+  onDayChange,
+  by,
+  onByChange,
   trips,
   fixedCosts,
   staffTime,
 }: ProgramAreaReportProps) {
-  const groups = numberedOfferings(offerings);
-  const labels = new Map(groups.flatMap((g) => g.offerings.map((o) => [o.key, o.label])));
+  const [ownDay, setOwnDay] = useState<string | null>(null);
+  const terms = hasTerms(offerings);
+  const [ownBy, setOwnBy] = useState<Grouping>("term");
+  const grouping = terms ? (by ?? ownBy) : "program";
+  const groups = offeringGroups(offerings, grouping);
+  const labels = new Map(numberedOfferings(offerings).flatMap((g) => g.offerings.map((o) => [o.key, o.label])));
+  const toggle = terms && (
+    <SegmentedControl
+      label="Group by"
+      value={grouping}
+      options={[
+        { value: "term", label: "By term" },
+        { value: "program", label: "By program" },
+      ]}
+      onChange={onByChange ?? setOwnBy}
+    />
+  );
   return (
     <>
       <div className="grid gap-2">
         <WarningsSection warnings={warnings} />
         <AreaAssumptions area={area} rules={rules} programs={programs} fixedCosts={fixedCosts} staffTime={staffTime} />
       </div>
+
+      <ReportSection id="calendar" title="Calendar">
+        <PlanCalendar
+          areas={[{ key: areaKey, name: area, blocks: schedule, offerings }]}
+          closedDays={closedDays}
+          area={null}
+          day={day === undefined ? ownDay : day}
+          onAreaChange={() => {}}
+          onDayChange={onDayChange ?? setOwnDay}
+        />
+      </ReportSection>
 
       <ReportSection id="revenue-and-expenses" title="Revenue and expenses">
         <StatementTable
@@ -247,21 +289,7 @@ export function ProgramAreaReport({
         />
       </ReportSection>
 
-      <ReportSection
-        id="enrollment"
-        title="Enrollment"
-        actions={
-          <Link
-            to="/plans/financial/$setId/$planId"
-            params={{ setId, planId: "calendar" }}
-            search={{ area: areaKey }}
-            className="text-sm text-link underline-offset-4 hover:underline"
-          >
-            See on the calendar
-          </Link>
-        }
-      >
-        <SessionGrid offerings={offerings} />
+      <ReportSection id="enrollment" title="Enrollment" actions={toggle}>
         <OfferingTable
           label="Enrollment"
           head={enrollmentHead}
@@ -279,9 +307,9 @@ export function ProgramAreaReport({
         />
       </ReportSection>
 
-      <ReportSection id="offering-fees" title="Offering fees">
+      <ReportSection id="fees" title="Fees">
         <OfferingTable
-          label="Offering fees"
+          label="Fees"
           head={feeHead}
           groups={groups}
           cells={(o) => (

@@ -25,6 +25,9 @@ import {
   summerStatement,
   totals,
   warnings,
+  closedDays,
+  doublehandedSchedule,
+  summerSchedule,
 } from "./fixtures";
 import { FundraisingCapitalReport } from "./fundraising-capital-report";
 import { NonProgramReport } from "./non-program-report";
@@ -75,8 +78,9 @@ export const Summer: Story = {
         statement={summerStatement}
         programs={summerPrograms}
         offerings={summerOfferings}
-        setId="budget"
         areaKey="summer"
+        schedule={summerSchedule}
+        closedDays={closedDays}
         trips={[]}
         fixedCosts={summerFixedCosts}
         staffTime={summerStaffTime}
@@ -107,8 +111,9 @@ export const Doublehanded: Story = {
         statement={doublehandedStatement}
         programs={doublehandedPrograms}
         offerings={doublehandedOfferings}
-        setId="budget"
         areaKey="doublehanded"
+        schedule={doublehandedSchedule}
+        closedDays={closedDays}
         trips={doublehandedTrips}
         fixedCosts={[]}
         staffTime={[]}

@@ -33,7 +33,7 @@ export interface PlanCalendarProps {
   areas: CalendarArea[];
   /** The days CSC is closed. */
   closedDays: { date: string; name: string }[];
-  /** The one area shown, or every area. */
+  /** The one area shown, or every area. With only one area, there's nothing to choose. */
   area: string | null;
   /** The day shown, or the first with an activity. */
   day: string | null;
@@ -156,7 +156,7 @@ export function PlanCalendar({ areas, closedDays, area, day, onAreaChange, onDay
   if (!today || weeks.length === 0) {
     return (
       <div className="grid gap-4">
-        <div>{filter}</div>
+        {sorted.length > 1 && <div>{filter}</div>}
         <p className="text-sm text-muted-foreground">No activities yet</p>
       </div>
     );
@@ -195,7 +195,7 @@ export function PlanCalendar({ areas, closedDays, area, day, onAreaChange, onDay
 
   return (
     <div className="grid gap-6">
-      <div>{filter}</div>
+      {sorted.length > 1 && <div>{filter}</div>}
       <div className="grid gap-2">
         <SpanGrid
           label="Year"
