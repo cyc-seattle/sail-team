@@ -19,7 +19,7 @@ import {
   type OverviewRow,
   type ReportOffering,
 } from "../src/model/reports.ts";
-import type { BonusResult, PnlRow, ResultTerm } from "../src/model/financial-plans.ts";
+import type { PnlRow, ResultTerm } from "../src/model/financial-plans.ts";
 
 const row = (name: string, revenue: number, offerings = 1): OverviewRow => ({
   report: name,
@@ -403,35 +403,16 @@ describe("termsOf", () => {
     sailor_days: 0,
     member: "m",
   });
-  const bonus = (t: ResultTerm, cents: number, key = "director", name = "Director"): BonusResult => ({
-    name,
-    ...t,
-    net_cents: cents * 10,
-    bonus_cents: cents,
-    bonus_owner_key: key,
-    program_area_key: "area",
-  });
-
-  it("lists the area's terms in the order they start, then no term, each with its bonuses", () => {
-    const report = termsOf(
-      {
-        pnl: [pnl(term(null), 5), pnl(fall, 4), pnl(spring, 3), pnl(spring, 9, "other")],
-        bonuses: [bonus(spring, 30), bonus(term(null), 50), bonus(fall, 0), bonus(fall, 7, "coach", "Head Coach")],
-      },
-      "area",
-    );
-    expect(report.bonuses).toEqual(["Director", "Head Coach"]);
-    expect(report.rows.map((r) => [r.term, r.revenue_cents, r.bonuses])).toEqual([
-      ["Spring 2027", 3, [30, null]],
-      ["Fall 2027", 4, [0, 7]],
-      [null, 5, [50, null]],
+  it("lists the area's terms in the order they start, then no term", () => {
+    const rows = termsOf([pnl(term(null), 5), pnl(fall, 4), pnl(spring, 3), pnl(spring, 9, "other")], "area");
+    expect(rows.map((r) => [r.term, r.revenue_cents])).toEqual([
+      ["Spring 2027", 3],
+      ["Fall 2027", 4],
+      [null, 5],
     ]);
   });
 
   it("is empty when none of the area's offerings is in a term", () => {
-    expect(termsOf({ pnl: [pnl(term(null), 5)], bonuses: [bonus(term(null), 50)] }, "area")).toEqual({
-      bonuses: [],
-      rows: [],
-    });
+    expect(termsOf([pnl(term(null), 5)], "area")).toEqual([]);
   });
 });

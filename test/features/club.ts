@@ -85,7 +85,6 @@ export class Club {
       ["coachWages", "expense", "program"],
       ["payrollTax", "expense", "program"],
       ["donations", "revenue", "fundraising"],
-      ["bonus", "expense", "program"],
     ] as const) {
       this.accounts[name] = (
         await this.create("accounts", {
@@ -239,19 +238,6 @@ export class Club {
       ends_on: `${this.year}-${ends}`,
     });
     return term["key"] as string;
-  }
-
-  /** A bonus in the Operations Plan's `copy` for `role`, of `rate` of the net of Youth Racing's program. */
-  async bonus(copy: string, role: string, rate: number): Promise<void> {
-    const owner = await this.versioned("plan_bonus_owners", copy, {
-      role_name: role,
-      bonus_rate: rate,
-      account_id: this.accounts["bonus"],
-    });
-    await this.versioned("plan_bonus_owner_products", copy, {
-      bonus_owner_id: owner["id"],
-      product_id: this.productId,
-    });
   }
 
   /**

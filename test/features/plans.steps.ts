@@ -205,17 +205,11 @@ Given("its only Program Plan has an offering with a coach on every practice, 100
   // Ten days of camp from 8am to 6pm, each in a block with one coach, made with the Financial Plan above.
 });
 
-// Bonuses by term.
-let bonusPlans: { operations: string; youth: string } | undefined;
-Given("a Financial Plan that pays Youth Racing's director 10% of each term's net", async ({ club }) => {
-  bonusPlans = await plansWithCopies(club);
-  await club.bonus(bonusPlans.operations, "Director", 0.1);
-});
-
+// A program area's P&L by term.
 Given(
-  "Youth Racing makes $20,000 in {string} and loses $5,000 in {string}, and the Financial Plan is frozen",
+  "a frozen Financial Plan whose Youth Racing makes $20,000 in {string} and loses $5,000 in {string}",
   async ({ club }, summer: string, fall: string) => {
-    const { operations, youth } = bonusPlans!;
+    const { operations, youth } = await plansWithCopies(club);
     const inSummer = await club.term(operations, summer, "07-01", "08-31");
     const inFall = await club.term(operations, fall, "09-01", "11-30");
     await club.offering(youth, `${OFFERING} summer`, 1, 2_000_000, 0, { term_key: inSummer });
@@ -226,22 +220,21 @@ Given(
 );
 
 Then(
-  "{string} shows a $2,000 bonus for the director, and {string} shows none",
+  "{string} shows a net of $20,000, and {string} a net of −$5,000",
   async ({ page }, summer: string, fall: string) => {
     const terms = page.getByRole("table", { name: "By term" });
-    await expect(terms.getByRole("columnheader", { name: "Director's bonus" })).toBeVisible();
     await expect(
       terms
         .getByRole("row", { name: new RegExp(`^${summer}`) })
         .getByRole("cell")
         .last(),
-    ).toHaveText("$2,000");
+    ).toHaveText("$20,000");
     await expect(
       terms
         .getByRole("row", { name: new RegExp(`^${fall}`) })
         .getByRole("cell")
         .last(),
-    ).toHaveText("$0");
+    ).toHaveText("−$5,000");
   },
 );
 

@@ -161,7 +161,7 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
       rules={inputs.rules[report] ?? null}
       warnings={warnings.filter((w) => w.area === report)}
       statement={statementOf(results.lines.filter((l) => l.member === member.id))}
-      terms={termsOf(results, member.program_area_id)}
+      terms={termsOf(results.pnl, member.program_area_id)}
       programs={inputs.programs[report] ?? []}
       offerings={inputs.offerings[report] ?? []}
       setId={set.id}

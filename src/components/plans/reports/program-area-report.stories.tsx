@@ -93,7 +93,7 @@ export const DoublehandedTrips: Story = {
   },
 };
 
-/** Each term's bonus stands alone: summer loses money and pays no bonus. */
+/** Each term's revenue, expenses and net, in the order the terms start. */
 export const ByTerm: Story = {
   play: async ({ canvas }) => {
     const table = canvas.getByRole("table", { name: "By term" });
@@ -101,14 +101,13 @@ export const ByTerm: Story = {
       [...r.querySelectorAll("td")].map((c) => c.textContent),
     );
     await expect(rows.map((r) => r[0])).toEqual(["Spring 2027", "Summer 2027", "Fall 2027"]);
-    await expect(rows[1]).toEqual(["Summer 2027", "$30,000", "$33,000", "−$3,000", "$0"]);
-    await expect(canvas.getByRole("columnheader", { name: "Program Director's bonus" })).toBeVisible();
+    await expect(rows[1]).toEqual(["Summer 2027", "$30,000", "$33,000", "−$3,000"]);
   },
 };
 
 /** An area with no terms shows no term table, since its year says the same. */
 export const NoTerms: Story = {
-  args: { terms: { bonuses: [], rows: [] } },
+  args: { terms: [] },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("table", { name: "By term" })).toBeNull();
   },

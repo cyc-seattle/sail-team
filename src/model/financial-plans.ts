@@ -150,21 +150,6 @@ export interface CapitalResult {
   funded: boolean;
 }
 
-/**
- * A bonus for one term, or for the offerings in no term, on the year. Each term's stands alone, so a term that loses
- * money pays nothing and doesn't lower another's (cyc-seattle/platform#255).
- */
-export interface BonusResult extends ResultTerm {
-  /** The bonus's role, such as Director. */
-  name: string;
-  /** The net it's figured on, which can be below zero. */
-  net_cents: number;
-  bonus_cents: number;
-  bonus_owner_key: string;
-  /** The program area of all its programs, or null when they're in more than one. */
-  program_area_key: string | null;
-}
-
 export interface Results {
   calculated_at: string | null;
   totals: Totals;
@@ -173,8 +158,6 @@ export interface Results {
   warnings: ResultWarning[];
   /** None in results worked out before capital was ranked. */
   capital: CapitalResult[];
-  /** None in results worked out before bonuses were paid per term. */
-  bonuses: BonusResult[];
 }
 
 /** How long a Financial Plan's numbers may be missing before the page says they couldn't be worked out. */

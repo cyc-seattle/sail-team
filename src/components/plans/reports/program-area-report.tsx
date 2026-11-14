@@ -8,7 +8,7 @@ import {
   type PlanWarning,
   type ProgramSettings,
   type ReportOffering,
-  type TermsReport,
+  type TermRow,
   type Trip,
 } from "@/model/reports";
 import { cn } from "@/lib/utils";
@@ -94,8 +94,8 @@ function AreaAssumptions({
   );
 }
 
-/** Each term's revenue, expenses, and net, and each bonus paid on it, since bonuses are paid per term. */
-function Terms({ terms }: { terms: TermsReport }) {
+/** Each term's revenue, expenses, and net. */
+function Terms({ terms }: { terms: TermRow[] }) {
   return (
     <Table aria-label="By term">
       <TableHeader>
@@ -104,23 +104,15 @@ function Terms({ terms }: { terms: TermsReport }) {
           <TableHead className="text-right">Revenue</TableHead>
           <TableHead className="text-right">Expenses</TableHead>
           <TableHead className="text-right">Net</TableHead>
-          {terms.bonuses.map((role) => (
-            <TableHead key={role} className="text-right">
-              {role}&apos;s bonus
-            </TableHead>
-          ))}
         </TableRow>
       </TableHeader>
       <TableBody>
-        {terms.rows.map((row) => (
+        {terms.map((row) => (
           <TableRow key={row.term ?? ""}>
             <TableCell className={pinned}>{row.term ?? "No term"}</TableCell>
             <Amount cents={row.revenue_cents} whole />
             <Amount cents={row.expense_cents} whole />
             <Amount cents={row.revenue_cents - row.expense_cents} whole />
-            {row.bonuses.map((cents, i) => (
-              <Amount key={terms.bonuses[i]} cents={cents} whole />
-            ))}
           </TableRow>
         ))}
       </TableBody>
@@ -137,8 +129,8 @@ export interface ProgramAreaReportProps {
   rules: string | null;
   warnings: PlanWarning[];
   statement: { revenue: AccountAmount[]; direct: AccountAmount[]; indirect: AccountAmount[] };
-  /** Its P&L for each term, with each bonus. Empty when none of its offerings is in a term. */
-  terms: TermsReport;
+  /** Its P&L for each term. Empty when none of its offerings is in a term. */
+  terms: TermRow[];
   programs: ProgramSettings[];
   offerings: ReportOffering[];
   /** The Financial Plan's id and this area's report key, for its link to the Calendar. */
@@ -188,7 +180,7 @@ export function ProgramAreaReport({
         />
       </ReportSection>
 
-      {terms.rows.length > 0 && (
+      {terms.length > 0 && (
         <ReportSection id="terms" title="By term">
           <Terms terms={terms} />
         </ReportSection>

@@ -2,7 +2,6 @@ import { createItem, customEndpoint, deleteItem, updateItem } from "@directus/sd
 import { queryOptions } from "@tanstack/react-query";
 import {
   platformRelease,
-  type BonusResult,
   type CapitalResult,
   type FinancialPlanSummary,
   type ListedPlan,
@@ -114,7 +113,7 @@ async function readMembers(setId: string): Promise<Member[]> {
  */
 async function readResults(setId: string): Promise<Results | null> {
   const bySet = { version_set_id: { _eq: setId } };
-  const [totals, pnl, lines, warnings, capital, bonuses] = await Promise.all([
+  const [totals, pnl, lines, warnings, capital] = await Promise.all([
     readAll<Totals & { calculated_at: string | null }>("plan_results", bySet, totalFields),
     readAll<Omit<PnlRow, "member"> & { version_set_member_id: string | null }>("plan_result_pnl", bySet, [
       "level",
@@ -168,16 +167,6 @@ async function readResults(setId: string): Promise<Results | null> {
       "running_cents",
       "funded",
     ]),
-    readAll<BonusResult>("plan_result_bonuses", bySet, [
-      "name",
-      "term_key",
-      "term_name",
-      "term_starts_on",
-      "net_cents",
-      "bonus_cents",
-      "bonus_owner_key",
-      "program_area_key",
-    ]),
   ]);
   if (!totals[0]) {
     return null;
@@ -204,7 +193,6 @@ async function readResults(setId: string): Promise<Results | null> {
     })),
     warnings: warnings.map(({ version_set_member_id, ...w }) => ({ ...w, member: version_set_member_id })),
     capital: capital.map(({ item_key, ...c }) => ({ ...c, key: item_key })).sort((a, b) => a.rank - b.rank),
-    bonuses,
   };
 }
 
