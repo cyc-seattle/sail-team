@@ -4,7 +4,7 @@ Feature: Seeing the Financial Plans
   AI: it starts as a draft, and when it's ready a Plan Admin freezes it. A draft's numbers are worked out again after every
   change to it, wherever the change is made. A frozen Financial Plan's plans and numbers never change, though its name,
   note, and the date it's active from can. A Plan Admin makes a Financial Plan active from a date, a draft or
-  a frozen one. The plan in force on a day is the one for its year with the latest date on or before it. To change the plan after that, a planner duplicates it, and the copy begins as a draft. A plan no one
+  a frozen one. The plan active on a day is the one for its year with the latest date on or before it. To change the plan after that, a planner duplicates it, and the copy begins as a draft. A plan no one
   needs any more can be archived, which takes it off Planning's list until someone turns on archived plans. A year can have several drafts at once, so planners can weigh options, such as
   two drafts started from the same Financial Plan, one with two coaches and one with three. Each Financial Plan has a
   name, and a short note that says what it was for, such as "Reviewed with the board", which can link to the
