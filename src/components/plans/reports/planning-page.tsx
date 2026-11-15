@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useId, useState, type FormEvent, type ReactElement } from "react";
 import { InlineMarkdown } from "@/components/inline-markdown";
+import { LabeledSwitch } from "@/components/labeled-switch";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -30,7 +31,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { refusalOf } from "@/directus/financial-plans";
@@ -386,16 +386,6 @@ function PlanDetails({ plan }: { plan: ListedPlan }) {
   );
 }
 
-function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (on: boolean) => void }) {
-  const id = useId();
-  return (
-    <span className="flex min-h-tap items-center gap-2 md:min-h-8">
-      <Switch id={id} checked={checked} onCheckedChange={onChange} />
-      <Label htmlFor={id}>{label}</Label>
-    </span>
-  );
-}
-
 /** An amount, or a dash while platform is still working it out. */
 function Amount({ cents, colored = false }: { cents: number | null; colored?: boolean }) {
   return (
@@ -426,8 +416,8 @@ export function PlanningPage({ plans, actions }: { plans: ListedPlan[]; actions:
     <main className="mx-auto grid max-w-6xl gap-6 p-card">
       <PageHeader title="Planning" />
       <div className="flex flex-wrap gap-x-6">
-        <Toggle label="Show drafts" checked={showDrafts} onChange={setShowDrafts} />
-        <Toggle label="Show archived" checked={showArchived} onChange={setShowArchived} />
+        <LabeledSwitch label="Show drafts" checked={showDrafts} onChange={setShowDrafts} />
+        <LabeledSwitch label="Show archived" checked={showArchived} onChange={setShowArchived} />
       </div>
       {shown.length === 0 ? (
         <p className="text-sm text-muted-foreground">No plans match.</p>

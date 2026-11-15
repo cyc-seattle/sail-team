@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { FormField } from "./form-field";
+import { FormField } from "@/components/form-field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { refusalOf } from "@/directus/financial-plans";
 import {
@@ -203,7 +203,7 @@ function AssetForm({
       <DialogFooter>
         <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
         <Button type="submit" disabled={state.kind === "saving" || badValue || (boat && !classId)}>
-          {state.kind === "saving" ? "Working…" : asset ? "Save" : "Add"}
+          {state.kind === "saving" ? "Working…" : asset ? "Save" : "Add asset"}
         </Button>
       </DialogFooter>
     </form>

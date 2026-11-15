@@ -22,6 +22,6 @@ export const OnAPhone: Story = {
   args: { current: "storage" },
   globals: { viewport: { value: "phone" } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("combobox", { name: "Inventory page" })).toHaveTextContent("Storage");
+    await expect(canvas.getByRole("combobox", { name: "Inventory page" })).toHaveTextContent("Dry storage");
   },
 };

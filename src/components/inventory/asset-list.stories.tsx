@@ -63,12 +63,12 @@ export const AddASailboat: Story = {
   play: async ({ canvas, args }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Add asset" }));
     await screen.findByRole("dialog", { name: "Add asset" });
-    await expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
+    await expect(screen.getByRole("button", { name: "Add asset" })).toBeDisabled();
     await userEvent.click(screen.getByRole("combobox", { name: "Boat class" }));
     await userEvent.click(await screen.findByRole("option", { name: "Opti" }));
     await userEvent.type(screen.getByRole("textbox", { name: "Sail number" }), "2001");
     await userEvent.type(screen.getByRole("textbox", { name: "Value" }), "3,600");
-    await userEvent.click(screen.getByRole("button", { name: "Add" }));
+    await userEvent.click(screen.getByRole("button", { name: "Add asset" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull(), { timeout: 3000 });
     await expect(args.actions.onCreate).toHaveBeenCalledWith(
       expect.objectContaining({

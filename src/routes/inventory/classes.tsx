@@ -29,6 +29,7 @@ function AllClasses() {
       <BoatClassList
         classes={data.classes}
         accounts={data.accounts}
+        defaultAccountId={data.defaultAccountId}
         counts={boatsInService(data.assets, today())}
         rates={rates.data ?? null}
         canReadRates={canReadRates && rates.isSuccess}

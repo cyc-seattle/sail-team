@@ -24,14 +24,26 @@ const assetFields = [
 
 type AssetRow = Omit<Asset, "boat"> & { boats: NonNullable<Asset["boat"]>[] };
 
-/** Every asset, each with its boat details, every boat class, and the expense accounts a class can book to. */
+/**
+ * Every asset, each with its boat details, every boat class, the expense accounts a class can book to, and the one it
+ * books to by default.
+ */
 export const inventoryQuery = queryOptions({
   queryKey: ["inventory"],
-  queryFn: async (): Promise<{ assets: Asset[]; classes: BoatClass[]; accounts: Account[] }> => {
-    const [assets, classes, accounts] = await Promise.all([
+  queryFn: async (): Promise<{
+    assets: Asset[];
+    classes: BoatClass[];
+    accounts: Account[];
+    defaultAccountId: string | null;
+  }> => {
+    const [assets, classes, accounts, costAccounts] = await Promise.all([
       readAll<AssetRow>("assets", undefined, assetFields),
       readAll<BoatClass>("boat_classes", undefined, ["id", "name", "max_capacity", "footprint_sq_ft", "account_id"]),
       readAll<Account>("accounts", { type: { _eq: "expense" } }, ["id", "number", "name"]),
+      // Where a class with no account of its own books its boats' upkeep.
+      readAll<{ account_id: string }>("organization_cost_accounts", { cost_type: { _eq: "boat_maintenance" } }, [
+        "account_id",
+      ]),
     ]);
     return {
       assets: assets.map(({ boats, ...asset }) => ({ ...asset, boat: boats?.[0] ?? null })),
@@ -41,6 +53,7 @@ export const inventoryQuery = queryOptions({
         footprint_sq_ft: c.footprint_sq_ft === null ? null : Number(c.footprint_sq_ft),
       })),
       accounts: accounts.sort((a, b) => a.number.localeCompare(b.number)),
+      defaultAccountId: costAccounts[0]?.account_id ?? null,
     };
   },
 });

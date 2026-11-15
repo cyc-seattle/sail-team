@@ -1,12 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { PencilIcon, PlusIcon } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import { FormField } from "@/components/form-field";
+import { RateTable } from "@/components/plans/assumptions";
 import { Money } from "@/components/plans/money";
 import { ReportSection } from "@/components/plans/reports/report-page";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { FormField } from "./form-field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -25,13 +26,14 @@ const pinned = "sticky left-0 z-10 bg-background";
 const DEFAULT_ACCOUNT = "default";
 
 /**
- * Every boat class: how many sailors one boat takes, the dry storage it takes, the account its fuel and upkeep are
- * booked to, and how many CSC has now. Under it, what each class costs in the active plan, which a Plan Admin sets in
- * the plan. A Catalog Writer adds and edits classes here.
+ * Every boat class: the account its boats' fuel and upkeep are booked to, how many sailors one boat takes, the dry
+ * storage one takes, and how many CSC has now. Under it, each class's rates in the active plan, read only. A Catalog
+ * Writer adds and edits classes here.
  */
 export function BoatClassList({
   classes,
   accounts,
+  defaultAccountId,
   counts,
   rates,
   canReadRates,
@@ -39,6 +41,8 @@ export function BoatClassList({
 }: {
   classes: BoatClass[];
   accounts: Account[];
+  /** Where a class with no account of its own books its boats' upkeep. */
+  defaultAccountId: string | null;
   /** Boats of each class CSC has now, by class id. */
   counts: Map<string, number>;
   /** The active plan's rates, or null when no plan is active. */
@@ -49,7 +53,7 @@ export function BoatClassList({
 }) {
   const [editing, setEditing] = useState<BoatClass | "new" | null>(null);
   const sorted = sortClasses(classes);
-  const accountOf = (id: string | null) => accounts.find((a) => a.id === id);
+  const accountOf = (c: BoatClass) => accounts.find((a) => a.id === (c.account_id ?? defaultAccountId));
   return (
     <>
       <ReportSection
@@ -70,10 +74,13 @@ export function BoatClassList({
           <Table aria-label="Boat classes">
             <TableHeader>
               <TableRow>
-                <TableHead className={pinned}>Class</TableHead>
-                <TableHead>Account</TableHead>
-                <TableHead className="text-right">Sailors</TableHead>
-                <TableHead className="text-right">Sq ft</TableHead>
+                <TableHead className={pinned}>Boat class</TableHead>
+                <TableHead className="w-16">Account</TableHead>
+                <TableHead>
+                  <span className="sr-only">Account name</span>
+                </TableHead>
+                <TableHead className="text-right">Sailors per boat</TableHead>
+                <TableHead className="text-right">Sq ft each</TableHead>
                 <TableHead className="text-right">Boats</TableHead>
                 {actions.canUpdate && (
                   <TableHead>
@@ -84,20 +91,12 @@ export function BoatClassList({
             </TableHeader>
             <TableBody>
               {sorted.map((c) => {
-                const account = accountOf(c.account_id);
+                const account = accountOf(c);
                 return (
                   <TableRow key={c.id}>
                     <TableCell className={pinned + " font-medium"}>{c.name}</TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      {account ? (
-                        <>
-                          <span className="mr-2 text-muted-foreground tabular-nums">{account.number}</span>
-                          {account.name}
-                        </>
-                      ) : (
-                        <span className="text-muted-foreground">Boat maintenance</span>
-                      )}
-                    </TableCell>
+                    <TableCell className="text-muted-foreground tabular-nums">{account?.number}</TableCell>
+                    <TableCell className="whitespace-nowrap">{account?.name}</TableCell>
                     <TableCell className="text-right tabular-nums">{c.max_capacity}</TableCell>
                     <TableCell className="text-right tabular-nums">{c.footprint_sq_ft ?? "—"}</TableCell>
                     <TableCell className="text-right tabular-nums">{counts.get(c.id) ?? 0}</TableCell>
@@ -128,10 +127,11 @@ export function BoatClassList({
           </Table>
         )}
       </ReportSection>
-      {canReadRates && <RatesSection classes={sorted} rates={rates} />}
+      {canReadRates && <BoatRates classes={sorted} rates={rates} />}
       <BoatClassDialog
         boatClass={editing}
         accounts={accounts}
+        defaultAccount={accounts.find((a) => a.id === defaultAccountId) ?? null}
         onClose={() => setEditing(null)}
         onSave={(input) =>
           editing === "new" || editing === null ? actions.onCreate(input) : actions.onUpdate(editing, input)
@@ -141,22 +141,22 @@ export function BoatClassList({
   );
 }
 
-/** What each class costs in the active plan. Read here; a Plan Admin changes them in a draft's Operations Plan. */
-function RatesSection({ classes, rates }: { classes: BoatClass[]; rates: ActiveRates | null }) {
+/** Each class's rates in the active plan, named and ordered as the plan's Assumptions show them. */
+function BoatRates({ classes, rates }: { classes: BoatClass[]; rates: ActiveRates | null }) {
   if (!rates) {
     return (
-      <ReportSection id="rates" title="Rates">
-        <p className="text-sm text-muted-foreground">No plan is active today, so there are no rates to show.</p>
+      <ReportSection id="boat-rates" title="Boat rates">
+        <p className="text-sm text-muted-foreground">No plan is active today.</p>
       </ReportSection>
     );
   }
   const priced = classes.filter((c) => rates.rates.has(c.id));
-  const cents = (value: number | null | undefined) =>
-    value == null ? <span className="text-muted-foreground">—</span> : <Money cents={value} />;
+  const cents = (value: number | null | undefined, whole = false) =>
+    value == null ? <span className="text-muted-foreground">—</span> : <Money cents={value} whole={whole} />;
   return (
     <ReportSection
-      id="rates"
-      title="Rates"
+      id="boat-rates"
+      title="Boat rates"
       actions={
         <Link
           to="/plans/financial/$setId/$planId"
@@ -168,31 +168,21 @@ function RatesSection({ classes, rates }: { classes: BoatClass[]; rates: ActiveR
       }
     >
       {priced.length === 0 ? (
-        <p className="text-sm text-muted-foreground">The active plan sets no boat rates.</p>
+        <p className="text-sm text-muted-foreground">The active plan has no boat rates.</p>
       ) : (
-        <Table aria-label="Rates">
-          <TableHeader>
-            <TableRow>
-              <TableHead className={pinned}>Class</TableHead>
-              <TableHead className="text-right">Upkeep/hour</TableHead>
-              <TableHead className="text-right">Fuel/hour</TableHead>
-              <TableHead className="text-right">Charter/day</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {priced.map((c) => {
-              const rate = rates.rates.get(c.id)!;
-              return (
-                <TableRow key={c.id}>
-                  <TableCell className={pinned + " font-medium"}>{c.name}</TableCell>
-                  <TableCell className="text-right">{cents(rate.maintenance_per_boat_hour_cents)}</TableCell>
-                  <TableCell className="text-right">{cents(rate.fuel_per_hour_cents)}</TableCell>
-                  <TableCell className="text-right">{cents(rate.charter_per_day_cents)}</TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        <RateTable label="Boat rates" head={["Boat class", "Fuel per hour", "Upkeep per hour", "Charter per day"]}>
+          {priced.map((c) => {
+            const rate = rates.rates.get(c.id)!;
+            return (
+              <TableRow key={c.id}>
+                <TableCell>{c.name}</TableCell>
+                <TableCell className="text-right">{cents(rate.fuel_per_hour_cents)}</TableCell>
+                <TableCell className="text-right">{cents(rate.maintenance_per_boat_hour_cents)}</TableCell>
+                <TableCell className="text-right">{cents(rate.charter_per_day_cents, true)}</TableCell>
+              </TableRow>
+            );
+          })}
+        </RateTable>
       )}
     </ReportSection>
   );
@@ -201,11 +191,13 @@ function RatesSection({ classes, rates }: { classes: BoatClass[]; rates: ActiveR
 function BoatClassDialog({
   boatClass,
   accounts,
+  defaultAccount,
   onClose,
   onSave,
 }: {
   boatClass: BoatClass | "new" | null;
   accounts: Account[];
+  defaultAccount: Account | null;
   onClose: () => void;
   onSave: (input: BoatClassInput) => Promise<void>;
 }) {
@@ -216,6 +208,7 @@ function BoatClassDialog({
           <BoatClassForm
             boatClass={boatClass === "new" ? null : boatClass}
             accounts={accounts}
+            defaultAccount={defaultAccount}
             onSave={onSave}
             onDone={onClose}
           />
@@ -228,25 +221,28 @@ function BoatClassDialog({
 function BoatClassForm({
   boatClass,
   accounts,
+  defaultAccount,
   onSave,
   onDone,
 }: {
   boatClass: BoatClass | null;
   accounts: Account[];
+  defaultAccount: Account | null;
   onSave: (input: BoatClassInput) => Promise<void>;
   onDone: () => void;
 }) {
   const [name, setName] = useState(boatClass?.name ?? "");
   const [sailors, setSailors] = useState(String(boatClass?.max_capacity ?? ""));
-  const [footprint, setFootprint] = useState(
-    boatClass?.footprint_sq_ft === null ? "" : String(boatClass?.footprint_sq_ft ?? ""),
-  );
+  const [footprint, setFootprint] = useState(String(boatClass?.footprint_sq_ft ?? ""));
   const [account, setAccount] = useState(boatClass?.account_id ?? DEFAULT_ACCOUNT);
   const [state, setState] = useState<{ kind: "idle" | "saving" } | { kind: "failed"; reason: string }>({
     kind: "idle",
   });
   const accountItems = [
-    { value: DEFAULT_ACCOUNT, label: "Boat maintenance" },
+    {
+      value: DEFAULT_ACCOUNT,
+      label: defaultAccount ? `Default, ${defaultAccount.number} ${defaultAccount.name}` : "Default",
+    },
     ...accounts.map((a) => ({ value: a.id, label: `${a.number} ${a.name}` })),
   ];
   const submit = async (event: FormEvent) => {
@@ -273,10 +269,7 @@ function BoatClassForm({
         {(id) => <Input id={id} value={name} onChange={(e) => setName(e.target.value)} required />}
       </FormField>
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField
-          label="Sailors"
-          hint={<p className="text-xs text-muted-foreground">The most one boat can safely take. 0 for a coach boat.</p>}
-        >
+        <FormField label="Sailors per boat">
           {(id) => (
             <Input
               id={id}
@@ -289,10 +282,7 @@ function BoatClassForm({
             />
           )}
         </FormField>
-        <FormField
-          label="Footprint, sq ft"
-          hint={<p className="text-xs text-muted-foreground">Dry storage one boat takes.</p>}
-        >
+        <FormField label="Sq ft each">
           {(id) => (
             <Input
               id={id}
@@ -305,14 +295,7 @@ function BoatClassForm({
           )}
         </FormField>
       </div>
-      <FormField
-        label="Account"
-        hint={
-          <p className="text-xs text-muted-foreground">
-            Where the fuel and upkeep of CSC&apos;s boats of the class go.
-          </p>
-        }
-      >
+      <FormField label="Account">
         {(id) => (
           <Select items={accountItems} value={account} onValueChange={(v) => setAccount(String(v ?? DEFAULT_ACCOUNT))}>
             <SelectTrigger id={id} className="w-full">
@@ -336,7 +319,7 @@ function BoatClassForm({
       <DialogFooter>
         <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
         <Button type="submit" disabled={state.kind === "saving" || !name.trim() || sailors === ""}>
-          {state.kind === "saving" ? "Working…" : boatClass ? "Save" : "Add"}
+          {state.kind === "saving" ? "Working…" : boatClass ? "Save" : "Add boat class"}
         </Button>
       </DialogFooter>
     </form>

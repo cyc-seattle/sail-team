@@ -9,7 +9,7 @@ Feature: Inventory
     When I open Inventory
     And I add a sailboat of that class with sail number 77
     Then the asset list shows it under Sailboats
-    And Storage counts 50 square feet for the class
+    And Dry storage counts 50 square feet for the class
 
   Scenario: A Catalog Reader reads the asset list but can't change it
     Given I'm a Catalog Reader

@@ -3,7 +3,7 @@ import { expect, fn, screen, userEvent, waitFor } from "storybook/test";
 import { withRouter } from "../../../.storybook/with-router";
 import { boatsInService } from "@/model/inventory";
 import { BoatClassList } from "./boat-class-list";
-import { accounts, assets, classes, day } from "./fixtures";
+import { accounts, assets, classes, day, defaultAccountId } from "./fixtures";
 
 const id = (name: string) => classes.find((c) => c.name === name)!.id;
 
@@ -21,6 +21,7 @@ const meta = {
   args: {
     classes,
     accounts,
+    defaultAccountId,
     counts: boatsInService(assets, day),
     rates,
     canReadRates: true,
@@ -39,7 +40,7 @@ type Story = StoryObj<typeof meta>;
 export const WithRates: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("link", { name: "Budget assumptions" })).toBeVisible();
-    await expect(canvas.getByRole("table", { name: "Rates" })).toHaveTextContent("$100.00");
+    await expect(canvas.getByRole("table", { name: "Boat rates" })).toHaveTextContent("$100");
   },
 };
 
@@ -47,7 +48,7 @@ export const WithRates: Story = {
 export const EditFootprint: Story = {
   play: async ({ canvas, args }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Edit Keelboat" }));
-    await userEvent.type(await screen.findByRole("spinbutton", { name: "Footprint, sq ft" }), "180");
+    await userEvent.type(await screen.findByRole("spinbutton", { name: "Sq ft each" }), "180");
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     await expect(args.actions.onUpdate).toHaveBeenCalledWith(expect.objectContaining({ name: "Keelboat" }), {
@@ -69,7 +70,7 @@ export const ReadOnly: Story = {
     actions: { canCreate: false, canUpdate: false, onCreate: fn(), onUpdate: fn() },
   },
   play: async ({ canvas }) => {
-    await expect(canvas.queryByRole("table", { name: "Rates" })).not.toBeInTheDocument();
+    await expect(canvas.queryByRole("table", { name: "Boat rates" })).not.toBeInTheDocument();
     await expect(canvas.queryByRole("button")).not.toBeInTheDocument();
   },
 };

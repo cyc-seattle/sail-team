@@ -1,5 +1,6 @@
 import { MoreHorizontalIcon, PlusIcon, SearchIcon } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
+import { LabeledSwitch } from "@/components/labeled-switch";
 import { NoteInfo } from "@/components/plans/note-info";
 import { Money } from "@/components/plans/money";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,6 @@ import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { refusalOf } from "@/directus/financial-plans";
@@ -54,16 +54,6 @@ export interface AssetActions {
 
 const ALL = "all";
 const pinned = "sticky left-0 z-10 bg-background";
-
-function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (on: boolean) => void }) {
-  const id = useId();
-  return (
-    <span className="flex min-h-tap items-center gap-2 md:min-h-8">
-      <Switch id={id} checked={checked} onCheckedChange={onChange} />
-      <Label htmlFor={id}>{label}</Label>
-    </span>
-  );
-}
 
 function Filter({
   label,
@@ -169,7 +159,7 @@ export function AssetList({
           value={classId}
           onChange={setClassId}
         />
-        <Toggle label="Show disposed" checked={showDisposed} onChange={setShowDisposed} />
+        <LabeledSwitch label="Show disposed" checked={showDisposed} onChange={setShowDisposed} />
         {actions.canCreate && (
           <Button className="h-tap md:ml-auto md:h-8" onClick={() => setPending({ kind: "add" })}>
             <PlusIcon aria-hidden />
@@ -407,7 +397,6 @@ function DisposeDialog({
         <form onSubmit={submit} className="grid gap-4">
           <DialogHeader>
             <DialogTitle>Dispose of {name}?</DialogTitle>
-            <DialogDescription>Planning stops counting it from this day.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">
             <Label htmlFor={id}>Sold, scrapped, or given away on</Label>
@@ -456,10 +445,7 @@ function DeleteDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Delete {name}?</DialogTitle>
-          <DialogDescription>
-            Only for an asset added by mistake. For one CSC no longer has, use Dispose of instead. This can&apos;t be
-            undone.
-          </DialogDescription>
+          <DialogDescription>Use Dispose of for one CSC no longer has. This can&apos;t be undone.</DialogDescription>
         </DialogHeader>
         {state === "failed" && (
           <p role="alert" className="text-sm text-destructive">

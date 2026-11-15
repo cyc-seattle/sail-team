@@ -32,7 +32,7 @@ When("I add a sailboat of that class with sail number {int}", async ({ page, fle
   await dialog.getByRole("combobox", { name: "Boat class" }).click();
   await page.getByRole("option", { name: fleet.className }).click();
   await dialog.getByRole("textbox", { name: "Sail number" }).fill(String(sailNumber));
-  await dialog.getByRole("button", { name: "Add" }).click();
+  await dialog.getByRole("button", { name: "Add asset" }).click();
   await expect(dialog).toBeHidden();
 });
 
@@ -43,8 +43,8 @@ Then("the asset list shows it under Sailboats", async ({ page, fleet }) => {
   await expect(table.getByRole("row").filter({ hasText: `${fleet.className} 77` })).toBeVisible();
 });
 
-Then("Storage counts {int} square feet for the class", async ({ page, fleet }, sqFt: number) => {
-  await page.getByRole("link", { name: "Storage" }).click();
+Then("Dry storage counts {int} square feet for the class", async ({ page, fleet }, sqFt: number) => {
+  await page.getByRole("link", { name: "Dry storage" }).click();
   const row = page.getByRole("table", { name: "Dry storage" }).getByRole("row").filter({ hasText: fleet.className });
   await expect(row.getByRole("cell")).toHaveText([fleet.className, "1", String(sqFt), String(sqFt)]);
 });
