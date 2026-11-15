@@ -96,6 +96,11 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   how many boats CSC has today. A Catalog Writer adds and edits them in the app; an asset that leaves is disposed of
   (`disposed_on`), and Bring back clears it. An asset and its boat details are written in one request, so they never
   disagree. Boat rates belong to each plan, on its Assumptions, not here. Anyone who reads `assets` sees Inventory.
+- `src/directus/catalog.ts` reads the catalog for `/catalog`, read only, for anyone who reads `accounts`: Programs
+  (each product under its program area, with the revenue account it's booked to, and a program's team, color, and
+  Google Group), Offerings (`catalog_offerings`, under their program), Accounts (the chart of accounts by type, and
+  where each cost the planning engine works out is booked, `organization_cost_accounts`), and Qualifications, each with
+  the others it also meets. It reads only the tables the person can read.
 - `src/directus/announcements.ts` reads `announcements`, which everyone who signs in reads: a title, a Markdown body,
   drawn without its raw HTML, and the day it was posted (`published_on`). The
   [`weekly-announcement`](.agents/skills/weekly-announcement/SKILL.md) skill writes the week's roundup.

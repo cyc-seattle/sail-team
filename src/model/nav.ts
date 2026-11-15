@@ -12,6 +12,8 @@ const sections: (NavItem & { shown: (permissions: Permissions) => boolean })[] =
   { to: "/inventory", label: "Inventory", shown: (p) => canRead(p, "assets") },
   { to: "/roster", label: "Rosters", shown: canSeeRosters },
   { to: "/household", label: "Household", shown: canSeeHousehold },
+  // Accounts, not products, which a team's household reads too.
+  { to: "/catalog", label: "Catalog", shown: (p) => canRead(p, "accounts") },
 ];
 
 /** Where to ask for help, at the foot of the sidebar. */

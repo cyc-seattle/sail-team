@@ -1,9 +1,20 @@
 import * as React from "react";
 import { cn } from "cn";
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+/**
+ * A table that scrolls sideways inside its container when it's too wide. `focusable` lets a keyboard reach the
+ * container to scroll it, for a table with nothing inside to focus.
+ */
+function Table({ className, focusable = false, ...props }: React.ComponentProps<"table"> & { focusable?: boolean }) {
   return (
-    <div data-slot="table-container" className="relative w-full overflow-x-auto">
+    <div
+      data-slot="table-container"
+      tabIndex={focusable ? 0 : undefined}
+      className={cn(
+        "relative w-full overflow-x-auto",
+        focusable && "rounded-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+      )}
+    >
       <table data-slot="table" className={cn("w-full caption-bottom text-sm", className)} {...props} />
     </div>
   );

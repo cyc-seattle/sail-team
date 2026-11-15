@@ -72,6 +72,14 @@ export const plannerPermissions: Permissions = {
   boats: write(),
   boat_classes: write(),
   accounts: read("full"),
+  program_areas: read("full"),
+  products: read("full"),
+  programs: read("full"),
+  google_groups: read("full"),
+  catalog_offerings: read("full"),
+  organization_cost_accounts: read("full"),
+  qualifications: read("full"),
+  qualification_covers: read("full"),
 };
 
 /** A Catalog Reader, who reads the inventory but changes none of it, and reads no plans. */
