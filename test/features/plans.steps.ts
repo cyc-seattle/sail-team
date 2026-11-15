@@ -90,8 +90,8 @@ Then("Planning lists {string}", async ({ page }, name: string) => {
 Then(
   "I see {string}, marked frozen, and {string}, marked as a draft",
   async ({ page }, frozen: string, draft: string) => {
-    await expect(planRow(page, frozen)).toContainText("Frozen");
-    await expect(planRow(page, draft)).toContainText("Draft");
+    await expect(planRow(page, frozen).getByRole("img", { name: "Frozen" })).toBeVisible();
+    await expect(planRow(page, draft).getByRole("img", { name: "Draft" })).toBeVisible();
   },
 );
 
@@ -516,23 +516,24 @@ Then("Planning has no actions for {string}", async ({ page }, name: string) => {
   const row = planRow(page, name);
   await expect(row).toBeVisible();
   await expect(row.getByRole("button", { name: `More for ${name}` })).toHaveCount(0);
-  await expect(row.getByRole("combobox")).toHaveCount(0);
   await expect(row.getByRole("button", { name: /^Active date of/ })).toHaveCount(0);
 });
 
 Then("Planning has no way to freeze {string} or make it active", async ({ page }, name: string) => {
   await openPlanning(page);
   const row = planRow(page, name);
-  await expect(row).toContainText("Draft");
-  await expect(row.getByRole("combobox")).toHaveCount(0);
+  await expect(row.getByRole("img", { name: "Draft" })).toBeVisible();
   await expect(row.getByRole("button", { name: /^Active date of/ })).toHaveCount(0);
+  await row.getByRole("button", { name: `More for ${name}` }).click();
+  await expect(page.getByRole("menuitem", { name: "Delete" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Freeze" })).toHaveCount(0);
 });
 
 When("I freeze {string} there", async ({ page }, name: string) => {
   await planRow(page, name)
-    .getByRole("combobox", { name: `Status of ${name}` })
+    .getByRole("button", { name: `More for ${name}` })
     .click();
-  await page.getByRole("option", { name: "Frozen" }).click();
+  await page.getByRole("menuitem", { name: "Freeze" }).click();
   const dialog = page.getByRole("dialog", { name: `Freeze ${name}?` });
   await dialog.getByRole("button", { name: "Freeze" }).click();
   await expect(dialog).toBeHidden({ timeout: 30_000 });
@@ -540,8 +541,10 @@ When("I freeze {string} there", async ({ page }, name: string) => {
 
 Then("Planning marks {string} frozen, for good", async ({ page }, name: string) => {
   const row = planRow(page, name);
-  await expect(row).toContainText("Frozen", { timeout: 30_000 });
-  await expect(row.getByRole("combobox")).toHaveCount(0);
+  await expect(row.getByRole("img", { name: "Frozen" })).toBeVisible({ timeout: 30_000 });
+  await row.getByRole("button", { name: `More for ${name}` }).click();
+  await expect(page.getByRole("menuitem", { name: "Archive" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Freeze" })).toHaveCount(0);
 });
 
 When(
@@ -557,8 +560,9 @@ When(
   },
 );
 
-Then("Planning shows {string} active since {string}", async ({ page }, name: string, when: string) => {
-  await expect(planRow(page, name)).toContainText(`Since ${when}`, { timeout: 30_000 });
+Then("Planning shows {string} active from {string}", async ({ page }, name: string, when: string) => {
+  const date = planRow(page, name).getByRole("button", { name: `Active date of ${name}: ${when}` });
+  await expect(date).toBeVisible({ timeout: 30_000 });
 });
 
 When("I freeze it", async ({ page }) => {

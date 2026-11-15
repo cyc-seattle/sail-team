@@ -1,6 +1,15 @@
 import { Link } from "@tanstack/react-router";
-import { InfoIcon, MoreHorizontalIcon, PencilIcon, TriangleAlertIcon } from "lucide-react";
-import { useId, useState, type FormEvent } from "react";
+import {
+  ArchiveIcon,
+  CircleDashedIcon,
+  InfoIcon,
+  MoreHorizontalIcon,
+  PencilIcon,
+  SnowflakeIcon,
+  TriangleAlertIcon,
+  type LucideIcon,
+} from "lucide-react";
+import { useId, useState, type FormEvent, type ReactElement } from "react";
 import { InlineMarkdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,17 +30,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { refusalOf } from "@/directus/financial-plans";
 import { cn } from "@/lib/utils";
-import { formatDate } from "@/model/dates";
-import { inForceText, today, type ListedPlan } from "@/model/financial-plans";
+import { formatDate, formatDay } from "@/model/dates";
+import { today, type ListedPlan } from "@/model/financial-plans";
 import { Money } from "../money";
 import { PageHeader } from "../page-header";
-import { VersionBadge } from "../version-badge";
 
 export interface PlanningActions {
   /**
@@ -47,98 +54,71 @@ export interface PlanningActions {
   onDelete: (plan: ListedPlan) => Promise<void>;
 }
 
-const statusItems = [
-  { value: "draft", label: "Draft" },
-  { value: "saved", label: "Frozen" },
-];
-
 /** The day that dates a plan: when it's active from, or else when it was saved. Undated drafts are the newest. */
 const dated = (plan: ListedPlan) => plan.in_force?.from ?? plan.saved_at?.slice(0, 10) ?? "9999-12-31";
 const newestFirst = (a: ListedPlan, b: ListedPlan) =>
   b.year - a.year || dated(b).localeCompare(dated(a)) || a.name.localeCompare(b.name);
 
-/** A draft's status, which a Plan Admin changes to frozen from the table, once it's confirmed. Freezing is for good. */
-function StatusCell({ plan, actions }: { plan: ListedPlan; actions: PlanningActions }) {
-  const [confirming, setConfirming] = useState(false);
-  const [state, setState] = useState<"idle" | "working" | "failed">("idle");
-  if (!actions.canAdmin || plan.archived || plan.status !== "draft") {
-    return <VersionBadge state={plan.status} />;
-  }
-  const freeze = async () => {
-    setState("working");
-    try {
-      await actions.onFreeze(plan);
-      setConfirming(false);
-      setState("idle");
-    } catch {
-      setState("failed");
-    }
-  };
+/** An icon-only control's name, as its tooltip, on hover or focus. */
+function Tip({ label, children }: { label: string; children: ReactElement }) {
   return (
-    <>
-      <Select
-        items={statusItems}
-        value={plan.status}
-        onValueChange={(value) => {
-          if (String(value) === "saved") {
-            setConfirming(true);
-          }
-        }}
-      >
-        <SelectTrigger
-          aria-label={`Status of ${plan.name}`}
-          className="w-28 data-[size=default]:h-tap md:data-[size=default]:h-8"
-        >
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {statusItems.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
-              {item.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Dialog
-        open={confirming}
-        onOpenChange={(next) => {
-          setConfirming(next);
-          setState("idle");
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Freeze {plan.name}?</DialogTitle>
-            <DialogDescription>
-              Once it&apos;s frozen, its plans and numbers never change, and it can&apos;t go back to a draft. Its name,
-              note, and the date it&apos;s active from still can.
-            </DialogDescription>
-          </DialogHeader>
-          {state === "failed" && (
-            <p role="alert" className="text-sm text-destructive">
-              That didn&apos;t work. Try again.
-            </p>
-          )}
-          <DialogFooter>
-            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
-            <Button onClick={freeze} disabled={state === "working"}>
-              {state === "working" ? "Working…" : "Freeze"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    <Tooltip>
+      <TooltipTrigger render={children} />
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
   );
 }
 
-/** When a plan is active, the plan active now in bold. */
-function ActiveText({ plan }: { plan: ListedPlan }) {
+const statuses: Record<"draft" | "saved" | "archived", { icon: LucideIcon; label: string }> = {
+  draft: { icon: CircleDashedIcon, label: "Draft" },
+  saved: { icon: SnowflakeIcon, label: "Frozen" },
+  archived: { icon: ArchiveIcon, label: "Archived" },
+};
+
+/** Whether a plan is a draft, frozen, or archived, as an icon with its name in a tooltip. */
+function StatusIcon({ plan }: { plan: ListedPlan }) {
+  const { icon: Icon, label } = statuses[plan.archived ? "archived" : plan.status];
+  const name = plan.archived ? `${label}, ${statuses[plan.status].label.toLowerCase()}` : label;
+  return (
+    <Tip label={name}>
+      <span role="img" tabIndex={0} aria-label={name} className="inline-flex size-6 items-center justify-center">
+        <Icon aria-hidden className="size-4 text-muted-foreground" />
+      </span>
+    </Tip>
+  );
+}
+
+/** How many warnings platform's engine left on a plan, or an empty slot when none, so the icons line up. */
+function Warnings({ count }: { count: number }) {
+  if (count === 0) {
+    return <span aria-hidden className="w-10" />;
+  }
+  const label = count === 1 ? "1 warning" : `${count} warnings`;
+  return (
+    <Tip label={label}>
+      <span
+        role="img"
+        tabIndex={0}
+        aria-label={label}
+        className="inline-flex w-10 items-center gap-1 text-xs text-muted-foreground tabular-nums"
+      >
+        <TriangleAlertIcon aria-hidden className="size-4 text-warning" />
+        {count}
+      </span>
+    </Tip>
+  );
+}
+
+/** The day a plan is active from, the plan active now in bold. */
+function ActiveDate({ plan }: { plan: ListedPlan }) {
   if (!plan.in_force) {
-    return <span className="text-muted-foreground">Not active</span>;
+    return null;
   }
   return (
-    <span className={cn("whitespace-nowrap", plan.in_force.when === "now" ? "font-medium" : "text-muted-foreground")}>
-      {inForceText(plan.in_force)}
+    <span
+      className={cn("whitespace-nowrap tabular-nums", plan.in_force.when === "now" ? "font-semibold" : "font-normal")}
+    >
+      {formatDay(plan.in_force.from)}
     </span>
   );
 }
@@ -154,7 +134,7 @@ function ActiveCell({ plan, actions }: { plan: ListedPlan; actions: PlanningActi
   const inputId = useId();
   const errorId = useId();
   if (!actions.canAdmin || plan.archived) {
-    return <ActiveText plan={plan} />;
+    return <ActiveDate plan={plan} />;
   }
   const save = async (next: string | null) => {
     setState({ kind: "saving" });
@@ -181,18 +161,20 @@ function ActiveCell({ plan, actions }: { plan: ListedPlan; actions: PlanningActi
         setOpen(next);
       }}
     >
-      <PopoverTrigger
-        render={
-          <Button
-            variant="ghost"
-            className="-ml-2.5 h-tap md:h-8"
-            aria-label={`Active date of ${plan.name}: ${plan.in_force ? inForceText(plan.in_force) : "not active"}`}
-          />
-        }
-      >
-        <ActiveText plan={plan} />
-        <PencilIcon aria-hidden className="text-muted-foreground" />
-      </PopoverTrigger>
+      <Tip label={current ? "Change active date" : "Set active date"}>
+        <PopoverTrigger
+          render={
+            <Button
+              variant="ghost"
+              className="-ml-2.5 h-tap md:h-8"
+              aria-label={`Active date of ${plan.name}: ${current ? formatDay(current) : "none"}`}
+            />
+          }
+        >
+          <PencilIcon aria-hidden className="text-muted-foreground" />
+          <ActiveDate plan={plan} />
+        </PopoverTrigger>
+      </Tip>
       <PopoverContent align="start" className="w-72" aria-label={`When ${plan.name} is active`}>
         <form onSubmit={submit} className="grid gap-3">
           <div className="grid gap-2">
@@ -235,25 +217,49 @@ function ActiveCell({ plan, actions }: { plan: ListedPlan; actions: PlanningActi
   );
 }
 
-type Action = "archive" | "unarchive" | "delete";
-const labels: Record<Action, string> = { archive: "Archive", unarchive: "Unarchive", delete: "Delete" };
+type Action = "freeze" | "archive" | "unarchive" | "delete";
+const labels: Record<Action, string> = {
+  freeze: "Freeze",
+  archive: "Archive",
+  unarchive: "Unarchive",
+  delete: "Delete",
+};
 
 /**
- * What else can be done to a plan. A Plan Admin archives one that isn't active and won't be, and brings one back. A
- * draft that's never been active can be deleted.
+ * What can be done to a plan besides its date. A Plan Admin freezes a draft, archives a plan that isn't active and
+ * won't be, and brings one back. A draft that's never been active can be deleted.
  */
 function actionsFor(plan: ListedPlan, { canAdmin, canDelete }: PlanningActions): Action[] {
   if (plan.archived) {
     return canAdmin ? ["unarchive"] : [];
   }
+  const freezable = canAdmin && plan.status === "draft";
   const archivable = canAdmin && (!plan.in_force || plan.in_force.when === "past");
   const deletable = canDelete && plan.status === "draft" && !plan.in_force;
-  return [...(archivable ? (["archive"] as const) : []), ...(deletable ? (["delete"] as const) : [])];
+  return [
+    ...(freezable ? (["freeze"] as const) : []),
+    ...(archivable ? (["archive"] as const) : []),
+    ...(deletable ? (["delete"] as const) : []),
+  ];
 }
 
-/** A plan's other actions, behind its ⋯ button. Deleting asks first; archiving can be undone, so it doesn't. */
+type Confirmed = "freeze" | "delete";
+
+/** What freezing and deleting ask first, since neither can be undone. */
+const confirmations = (plan: ListedPlan): Record<Confirmed, { title: string; description: string }> => ({
+  freeze: {
+    title: `Freeze ${plan.name}?`,
+    description:
+      "Once it's frozen, its plans and numbers never change, and it can't go back to a draft. Its name, note, and the date it's active from still can.",
+  },
+  delete: { title: `Delete ${plan.name}?`, description: "Its plans and numbers go with it. This can't be undone." },
+});
+
+/** A plan's actions, behind its ⋯ button. Freezing and deleting ask first; archiving can be undone, so it doesn't. */
 function PlanMenu({ plan, actions }: { plan: ListedPlan; actions: PlanningActions }) {
-  const [deleting, setDeleting] = useState(false);
+  // The action stays set while its dialog closes, so the dialog keeps its words as it fades.
+  const [pending, setPending] = useState<Confirmed>("freeze");
+  const [confirming, setConfirming] = useState(false);
   const [state, setState] = useState<"idle" | "working" | "failed">("idle");
   const [archiveFailed, setArchiveFailed] = useState<string | null>(null);
   const items = actionsFor(plan, actions);
@@ -261,11 +267,11 @@ function PlanMenu({ plan, actions }: { plan: ListedPlan; actions: PlanningAction
     return null;
   }
   const label = `More for ${plan.name}`;
-  const confirmDelete = async () => {
+  const confirm = async () => {
     setState("working");
     try {
-      await actions.onDelete(plan);
-      setDeleting(false);
+      await (pending === "delete" ? actions.onDelete(plan) : actions.onFreeze(plan));
+      setConfirming(false);
       setState("idle");
     } catch {
       setState("failed");
@@ -279,26 +285,22 @@ function PlanMenu({ plan, actions }: { plan: ListedPlan; actions: PlanningAction
         </span>
       )}
       <DropdownMenu>
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <DropdownMenuTrigger
-                render={<Button variant="ghost" size="icon" className="size-tap md:size-8" aria-label={label} />}
-              />
-            }
+        <Tip label={label}>
+          <DropdownMenuTrigger
+            render={<Button variant="ghost" size="icon" className="size-tap md:size-8" aria-label={label} />}
           >
             <MoreHorizontalIcon aria-hidden />
-          </TooltipTrigger>
-          <TooltipContent>{label}</TooltipContent>
-        </Tooltip>
+          </DropdownMenuTrigger>
+        </Tip>
         <DropdownMenuContent align="end">
           {items.map((item) => (
             <DropdownMenuItem
               key={item}
               variant={item === "delete" ? "destructive" : "default"}
               onClick={() => {
-                if (item === "delete") {
-                  setDeleting(true);
+                if (item === "freeze" || item === "delete") {
+                  setPending(item);
+                  setConfirming(true);
                   return;
                 }
                 setArchiveFailed(null);
@@ -311,16 +313,16 @@ function PlanMenu({ plan, actions }: { plan: ListedPlan; actions: PlanningAction
         </DropdownMenuContent>
       </DropdownMenu>
       <Dialog
-        open={deleting}
+        open={confirming}
         onOpenChange={(next) => {
-          setDeleting(next);
+          setConfirming(next);
           setState("idle");
         }}
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete {plan.name}?</DialogTitle>
-            <DialogDescription>Its plans and numbers go with it. This can&apos;t be undone.</DialogDescription>
+            <DialogTitle>{confirmations(plan)[pending].title}</DialogTitle>
+            <DialogDescription>{confirmations(plan)[pending].description}</DialogDescription>
           </DialogHeader>
           {state === "failed" && (
             <p role="alert" className="text-sm text-destructive">
@@ -329,8 +331,12 @@ function PlanMenu({ plan, actions }: { plan: ListedPlan; actions: PlanningAction
           )}
           <DialogFooter>
             <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
-            <Button variant="destructive" onClick={confirmDelete} disabled={state === "working"}>
-              {state === "working" ? "Working…" : "Delete"}
+            <Button
+              variant={pending === "delete" ? "destructive" : "default"}
+              onClick={confirm}
+              disabled={state === "working"}
+            >
+              {state === "working" ? "Working…" : labels[pending]}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -342,7 +348,7 @@ function PlanMenu({ plan, actions }: { plan: ListedPlan; actions: PlanningAction
 /** When and by whom a plan was frozen, what it started from, the platform version that worked it out, and its note, on hover or a tap. */
 function PlanDetails({ plan }: { plan: ListedPlan }) {
   if (!plan.saved_at && !plan.parent && !plan.note) {
-    return null;
+    return <span aria-hidden className="size-tap md:size-6" />;
   }
   return (
     <Popover>
@@ -402,8 +408,9 @@ function Amount({ cents, colored = false }: { cents: number | null; colored?: bo
 }
 
 /**
- * Planning's first page: every Financial Plan in one table, newest first. One line a plan: its details and note on
- * hover, and its status and active date, which a Plan Admin changes in place. Drafts show unless turned off, and
+ * Planning's first page: every Financial Plan in one table, under its year, newest first. One line a plan: its status,
+ * details, and warnings as icons in fixed places, so they line up, and the date it's active from, which a Plan Admin
+ * changes in place. Freezing, archiving, and deleting are in its ⋯ menu. Drafts show unless turned off, and
  * archived plans only when turned on.
  */
 export function PlanningPage({ plans, actions }: { plans: ListedPlan[]; actions: PlanningActions }) {
@@ -412,6 +419,7 @@ export function PlanningPage({ plans, actions }: { plans: ListedPlan[]; actions:
   const shown = plans
     .filter((p) => (showDrafts || p.status !== "draft") && (showArchived || !p.archived))
     .sort(newestFirst);
+  const years = [...new Set(shown.map((p) => p.year))];
   return (
     <main className="mx-auto grid max-w-6xl gap-6 p-card">
       <PageHeader title="Planning" />
@@ -425,56 +433,57 @@ export function PlanningPage({ plans, actions }: { plans: ListedPlan[]; actions:
         <Table aria-label="Financial Plans">
           <TableHeader>
             <TableRow>
-              <TableHead>Year</TableHead>
-              <TableHead>Plan</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Active</TableHead>
+              <TableHead>Plan</TableHead>
               <TableHead className="text-right">Revenue</TableHead>
               <TableHead className="text-right">Expenses</TableHead>
               <TableHead className="text-right">Net</TableHead>
               <TableHead>
-                <span className="sr-only">More</span>
+                <span className="sr-only">Actions</span>
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
-            {shown.map((p) => (
-              <TableRow key={p.id} className={cn(p.archived && "text-muted-foreground")}>
-                <TableCell className="tabular-nums">{p.year}</TableCell>
-                <TableCell>
-                  <span className="flex items-center gap-1">
-                    <Link
-                      to="/plans/financial/$setId"
-                      params={{ setId: p.id }}
-                      className="font-medium text-link underline"
-                    >
-                      {p.name}
-                    </Link>
-                    <PlanDetails plan={p} />
-                    {p.warnings > 0 && (
-                      <span className="inline-flex items-center gap-1 text-muted-foreground">
-                        <TriangleAlertIcon aria-hidden className="size-4 text-warning" />
-                        <span className="sr-only">Warnings:</span>
-                        {p.warnings}
-                      </span>
-                    )}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <StatusCell plan={p} actions={actions} />
-                </TableCell>
-                <TableCell>
-                  <ActiveCell plan={p} actions={actions} />
-                </TableCell>
-                <Amount cents={p.revenue_cents} />
-                <Amount cents={p.expense_cents} />
-                <Amount cents={p.net_cents} colored />
-                <TableCell className="text-right">
-                  <PlanMenu plan={p} actions={actions} />
-                </TableCell>
+          {years.map((year) => (
+            <TableBody key={year}>
+              <TableRow className="bg-muted/50 hover:bg-muted/50">
+                <TableHead scope="rowgroup" colSpan={7} className="tabular-nums">
+                  {year}
+                </TableHead>
               </TableRow>
-            ))}
-          </TableBody>
+              {shown
+                .filter((p) => p.year === year)
+                .map((p) => (
+                  <TableRow key={p.id} className={cn(p.archived && "text-muted-foreground")}>
+                    <TableCell>
+                      <span className="flex items-center gap-1">
+                        <StatusIcon plan={p} />
+                        <PlanDetails plan={p} />
+                        <Warnings count={p.warnings} />
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <ActiveCell plan={p} actions={actions} />
+                    </TableCell>
+                    <TableCell>
+                      <Link
+                        to="/plans/financial/$setId"
+                        params={{ setId: p.id }}
+                        className="font-medium text-link underline"
+                      >
+                        {p.name}
+                      </Link>
+                    </TableCell>
+                    <Amount cents={p.revenue_cents} />
+                    <Amount cents={p.expense_cents} />
+                    <Amount cents={p.net_cents} colored />
+                    <TableCell className="text-right">
+                      <PlanMenu plan={p} actions={actions} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          ))}
         </Table>
       )}
     </main>

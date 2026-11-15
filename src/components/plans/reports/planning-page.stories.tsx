@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, fn, screen, userEvent, waitFor } from "storybook/test";
+import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test";
 import { withRouter } from "../../../../.storybook/with-router";
 import { planningPlans } from "./fixtures";
 import { PlanningPage, type PlanningActions } from "./planning-page";
@@ -14,6 +14,10 @@ const allowed = (fields: Partial<PlanningActions> = {}): PlanningActions => ({
   ...fields,
 });
 
+/** The table's row for a plan, by its exact name. */
+const rowFor = (canvas: { getAllByRole: (role: "row") => HTMLElement[] }, name: string) =>
+  canvas.getAllByRole("row").find((row) => row.querySelector("a")?.textContent === name)!;
+
 const meta = {
   component: PlanningPage,
   decorators: [withRouter("/plans", ["/plans", "/plans/financial/$setId"])],
@@ -24,12 +28,13 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /**
- * Every year's plans, newest first: the newest year, then within it the drafts not yet active, then by the date each
- * is active from. Archived plans are left out.
+ * Every year's plans under its year, newest first: within a year, the drafts not yet active, then by the date each is
+ * active from. Archived plans are left out.
  */
 export const NewestFirst: Story = {
   play: async ({ canvas }) => {
-    const rows = canvas.getAllByRole("row").slice(1);
+    await expect(canvas.getAllByRole("rowheader").map((th) => th.textContent)).toEqual(["2027", "2026"]);
+    const rows = canvas.getAllByRole("row").filter((row) => row.querySelector("a"));
     await expect(rows.map((row) => row.querySelector("a")?.textContent)).toEqual([
       "2027 allocations, Nov 9",
       "Fall re-plan",
@@ -40,13 +45,26 @@ export const NewestFirst: Story = {
   },
 };
 
-/** When a plan is active, the plan active now in bold. */
+/** The day each plan is active from, the plan active now in bold, and nothing for one that's never been active. */
 export const Active: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("row", { name: /^2027 Budget/ })).toHaveTextContent("Since Jul 1, 2026");
-    await expect(canvas.getByRole("row", { name: /Fall re-plan/ })).toHaveTextContent("From Sep 1, 2027");
-    await expect(canvas.getByRole("row", { name: /Board review/ })).toHaveTextContent("Mar 1, 2026 to Jun 30, 2026");
-    await expect(canvas.getByRole("row", { name: /2027 allocations/ })).toHaveTextContent("Not active");
+    await expect(rowFor(canvas, "Budget")).toHaveTextContent("Jul 1, 2026");
+    await expect(rowFor(canvas, "Fall re-plan")).toHaveTextContent("Sep 1, 2027");
+    await expect(rowFor(canvas, "Board review")).toHaveTextContent("Mar 1, 2026");
+    await expect(
+      within(rowFor(canvas, "2027 allocations, Nov 9")).getByRole("button", { name: /Active date of/ }),
+    ).toHaveAccessibleName("Active date of 2027 allocations, Nov 9: none");
+  },
+};
+
+/** Each plan's status is an icon, named in its tooltip, beside its details and warnings. */
+export const StatusIcons: Story = {
+  play: async ({ canvas }) => {
+    await expect(within(rowFor(canvas, "Fall re-plan")).getByRole("img", { name: "Draft" })).toBeVisible();
+    await expect(within(rowFor(canvas, "Budget")).getByRole("img", { name: "Frozen" })).toBeVisible();
+    await expect(within(rowFor(canvas, "Budget")).getByRole("img", { name: "2 warnings" })).toBeVisible();
+    await userEvent.hover(within(rowFor(canvas, "Budget")).getByRole("img", { name: "Frozen" }));
+    await waitFor(() => expect(document.querySelector('[data-slot="tooltip-content"]')).toHaveTextContent("Frozen"));
   },
 };
 
@@ -65,6 +83,7 @@ export const Archived: Story = {
     await expect(canvas.queryByRole("link", { name: "First pass" })).toBeNull();
     await userEvent.click(canvas.getByRole("switch", { name: "Show archived" }));
     await waitFor(() => expect(canvas.getByRole("link", { name: "First pass" })).toBeVisible());
+    await expect(within(rowFor(canvas, "First pass")).getByRole("img", { name: "Archived, frozen" })).toBeVisible();
     await userEvent.click(canvas.getByRole("button", { name: "More for First pass" }));
     await userEvent.click(await screen.findByRole("menuitem", { name: "Unarchive" }));
     await waitFor(() =>
@@ -93,11 +112,11 @@ export const FrozenPlansDetails: Story = {
   },
 };
 
-/** A Plan Admin freezes a draft from its Status column. It can't be undone, so it asks first. */
+/** A Plan Admin freezes a draft from its ⋯ menu. It can't be undone, so it asks first. */
 export const FreezingADraft: Story = {
   play: async ({ args, canvas }) => {
-    await userEvent.click(canvas.getByRole("combobox", { name: "Status of Fall re-plan" }));
-    await userEvent.click(await screen.findByRole("option", { name: "Frozen" }));
+    await userEvent.click(canvas.getByRole("button", { name: "More for Fall re-plan" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Freeze" }));
     await expect(await screen.findByText(/can't go back to a draft/)).toBeVisible();
     await userEvent.click(screen.getByRole("button", { name: "Freeze" }));
     await waitFor(() =>
@@ -106,11 +125,12 @@ export const FreezingADraft: Story = {
   },
 };
 
-/** A frozen plan stays frozen: its status is a label, not a choice. */
+/** A frozen plan stays frozen: its menu has no Freeze. */
 export const FrozenStaysFrozen: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.queryByRole("combobox", { name: "Status of Budget" })).toBeNull();
-    await expect(canvas.getByRole("row", { name: /^2027 Budget/ })).toHaveTextContent("Frozen");
+    await userEvent.click(canvas.getByRole("button", { name: "More for Board review" }));
+    await waitFor(async () => expect(await screen.findByRole("menuitem", { name: "Archive" })).toBeVisible());
+    await expect(screen.queryByRole("menuitem", { name: "Freeze" })).toBeNull();
   },
 };
 
@@ -199,12 +219,12 @@ export const PlanActiveNowStays: Story = {
 export const ProgramDirector: Story = {
   args: { actions: allowed({ canAdmin: false }) },
   play: async ({ canvas }) => {
-    await expect(canvas.queryByRole("combobox")).toBeNull();
     await expect(canvas.queryByRole("button", { name: /Active date of/ })).toBeNull();
     await expect(canvas.queryByRole("button", { name: "More for Board review" })).toBeNull();
     await userEvent.click(canvas.getByRole("button", { name: "More for 2027 allocations, Nov 9" }));
     await waitFor(async () => expect(await screen.findByRole("menuitem", { name: "Delete" })).toBeVisible());
     await expect(screen.queryByRole("menuitem", { name: "Archive" })).toBeNull();
+    await expect(screen.queryByRole("menuitem", { name: "Freeze" })).toBeNull();
   },
 };
 
@@ -213,7 +233,7 @@ export const ReadOnly: Story = {
   args: { actions: allowed({ canAdmin: false, canDelete: false }) },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("button", { name: /More for/ })).toBeNull();
-    await expect(canvas.queryByRole("combobox")).toBeNull();
+    await expect(canvas.queryByRole("button", { name: /Active date of/ })).toBeNull();
   },
 };
 
@@ -225,7 +245,7 @@ export const NumbersPending: Story = {
     ),
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("row", { name: /Fall re-plan/ })).toHaveTextContent("—");
+    await expect(rowFor(canvas, "Fall re-plan")).toHaveTextContent("—");
   },
 };
 

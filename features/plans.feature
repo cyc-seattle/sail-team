@@ -23,7 +23,7 @@ Feature: Seeing the Financial Plans
   and archive one, from its report or right in Planning's list. Everything else about a plan is changed through their AI. Every plan and number here is made up for
   the run.
 
-  Rule: Planning lists every Financial Plan in one table, newest first
+  Rule: Planning lists every Financial Plan in one table, under its year, newest first
 
     Scenario: A frozen Financial Plan and a draft started from it
       Given I'm a planner who can read plans
@@ -248,7 +248,7 @@ Feature: Seeing the Financial Plans
       And I've signed in
       When I open Planning
       And I make "Budget" active from July 1, 2026 there
-      Then Planning shows "Budget" active since "Jul 1, 2026"
+      Then Planning shows "Budget" active from "Jul 1, 2026"
 
   Rule: Only someone who can read plans can see them
 
