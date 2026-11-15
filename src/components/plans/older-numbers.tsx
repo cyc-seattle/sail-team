@@ -27,7 +27,8 @@ export function OlderNumbers({ onWorkOut }: OlderNumbersProps) {
       </AlertDescription>
       {onWorkOut && (
         <Button variant="outline" size="sm" disabled={state === "working"} onClick={workOut}>
-          {state === "working" ? "Recalculating…" : "Recalculate"}
+          {/* An easter egg the maintainer chose, so keep it even though the Words guide would flag it. */}
+          {state === "working" ? "Reticulating splines…" : "Recalculate"}
         </Button>
       )}
     </Alert>
