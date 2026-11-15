@@ -487,16 +487,17 @@ export interface SharedCost {
   pool: string;
   total_cents: number;
   /**
-   * The part the programs' indirect cost rates recover. The organization keeps the rest, or has a credit when they
-   * recover more.
+   * The part the programs' indirect cost rates allocate. The rest is unallocated, and the organization keeps it, or
+   * has a credit when they over-allocate.
    */
   allocated_cents: number;
 }
 
 /** What the organization keeps of a pooled line, and how its name joins the pool to the line. */
 const KEPT: Record<string, RegExp> = {
-  // cyc-seattle/platform#296: what the indirect cost rates don't recover.
-  "unrecovered:": / (?:not recovered|over-recovered): /,
+  // cyc-seattle/platform#296: what the indirect cost rates leave unallocated. Platform 2.2.0 named these "not
+  // recovered" and "over-recovered", which results it calculated keep.
+  "unrecovered:": / (?:unallocated|over-allocated|not recovered|over-recovered): /,
   // Results from before #296: what non-program's net covered (cyc-seattle/platform#242).
   "offset:": / covered by non-program: /,
 };
@@ -545,13 +546,13 @@ export interface Product {
   direct_cents: number;
 }
 
-/** The row for what the indirect cost rates don't recover of the shared costs (cyc-seattle/platform#296). */
-const UNRECOVERED = "Indirect costs not recovered";
+/** The row for what the indirect cost rates leave unallocated of the shared costs (cyc-seattle/platform#296). */
+const UNALLOCATED = "Unallocated indirect costs";
 
 /**
  * What the Operations Plan sells, by product, from its offerings' lines, leaving out their shares of the pools. Its
  * costs that are no offering's, such as a salary's rest charged to the organization, are a row of their own, and what
- * the indirect cost rates don't recover is one more, last.
+ * the indirect cost rates leave unallocated is one more, last.
  */
 export function productsOf(
   lines: (Line & Pick<PlanLine, "cost_center_key">)[],
@@ -561,7 +562,7 @@ export function productsOf(
   const products = new Map<string, Product>();
   for (const line of operating(lines).filter((l) => !isShare(l))) {
     const name = line.key.startsWith("unrecovered:")
-      ? UNRECOVERED
+      ? UNALLOCATED
       : ((line.cost_center_key && productOf.get(line.cost_center_key)) ?? "Organization");
     const product = products.get(name) ?? { name, revenue_cents: 0, direct_cents: 0 };
     products.set(name, {
@@ -570,10 +571,10 @@ export function productsOf(
       direct_cents: product.direct_cents + (line.revenue ? 0 : line.amount_cents),
     });
   }
-  const last = (p: Product) => (p.name === UNRECOVERED ? 2 : p.name === "Organization" ? 1 : 0);
+  const last = (p: Product) => (p.name === UNALLOCATED ? 2 : p.name === "Organization" ? 1 : 0);
   return [...products.values()]
     .sort((a, b) => last(a) - last(b) || a.name.localeCompare(b.name))
-    .map((p) => (p.name === UNRECOVERED && p.direct_cents < 0 ? { ...p, name: "Indirect costs over-recovered" } : p));
+    .map((p) => (p.name === UNALLOCATED && p.direct_cents < 0 ? { ...p, name: "Over-allocated indirect costs" } : p));
 }
 
 /** Fundraising's revenue and costs by account. */

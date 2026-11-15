@@ -338,7 +338,7 @@ describe("productsOf", () => {
     ]);
   });
 
-  it("puts what the indirect cost rates don't recover in a row of its own, last", () => {
+  it("puts the unallocated indirect costs in a row of their own, last", () => {
     const products = (cents: number) =>
       productsOf([line("salary", null, 500), line("unrecovered:ga:insurance", null, cents)], []).map((p) => [
         p.name,
@@ -346,11 +346,11 @@ describe("productsOf", () => {
       ]);
     expect(products(700)).toEqual([
       ["Organization", 500],
-      ["Indirect costs not recovered", 700],
+      ["Unallocated indirect costs", 700],
     ]);
     expect(products(-200)).toEqual([
       ["Organization", 500],
-      ["Indirect costs over-recovered", -200],
+      ["Over-allocated indirect costs", -200],
     ]);
   });
 });
