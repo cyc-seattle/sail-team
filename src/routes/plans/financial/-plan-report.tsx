@@ -9,10 +9,11 @@ import { ProgramAreaReport, type ProgramAreaReportProps } from "@/components/pla
 import { PlanCalendar, type PlanCalendarProps } from "@/components/plans/reports/plan-calendar";
 import { RatesReport } from "@/components/plans/reports/rates-report";
 import { ReportPage } from "@/components/plans/reports/report-page";
+import { StorageReport } from "@/components/plans/reports/storage-report";
 import { NoAccess } from "@/components/shell/no-access";
 import { NoticePage } from "@/components/shell/notice-page";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { canRead, canWrite } from "@/directus/access";
+import { canAdminPlans, canRead, canUpdateFields, canWrite } from "@/directus/access";
 import { startFinancialPlan, updateFinancialPlan, type FinancialPlan } from "@/directus/financial-plans";
 import { planInputsQuery, type PlanInputs } from "@/directus/plan-inputs";
 import { useSession } from "@/directus/use-session";
@@ -31,9 +32,13 @@ import {
   statementOf,
   withResults,
   areaTotal,
+  storageOf,
 } from "@/model/reports";
 
-/** One report of a Financial Plan, by its key: `overview`, `rates`, a Program Plan's id, `non-program` or `fundraising`. */
+/**
+ * One report of a Financial Plan, by its key: `overview`, `calendar`, `rates`, `storage`, a Program Plan's id,
+ * `non-program` or `fundraising`.
+ */
 export function PlanReport({ setId, report }: { setId: string; report: string }) {
   const session = useSession();
   if (session.kind !== "signed-in" || !canRead(session.permissions, "plans")) {
@@ -64,6 +69,7 @@ function Found({ data, stuck, report }: { data: FinancialPlan; stuck: boolean; r
       setId={setId}
       name={data.set.name}
       status={data.set.status}
+      inForce={data.inForce}
       reports={reports}
       current={report}
       actions={<Actions plan={data} />}
@@ -136,6 +142,9 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
       <p className="text-sm text-muted-foreground">This Financial Plan has no Operations Plan yet.</p>
     );
   }
+  if (report === "storage") {
+    return <StorageReport costs={storageOf(results.lines, members)} />;
+  }
   if (report === "fundraising") {
     return (
       <FundraisingCapitalReport
@@ -207,7 +216,7 @@ function CalendarReport(props: Pick<PlanCalendarProps, "areas" | "closedDays">) 
   );
 }
 
-/** The plan's buttons: edit its name and note, duplicate it, and freeze it or mark it active. */
+/** The plan's buttons: edit its name and note, duplicate it, freeze it, and make it active from a date. */
 function Actions({ plan }: { plan: FinancialPlan }) {
   const session = useSession();
   const queryClient = useQueryClient();
@@ -218,8 +227,9 @@ function Actions({ plan }: { plan: FinancialPlan }) {
   return (
     <FinancialPlanActions
       set={set}
-      canUpdate={canWrite(permissions, "version_sets", "update")}
+      canEdit={canUpdateFields(permissions, "version_sets", ["name", "message"])}
       canCreate={canWrite(permissions, "version_sets", "create")}
+      canAdmin={canAdminPlans(permissions)}
       onEdit={async ({ name, message }) => {
         await updateFinancialPlan(set.id, { name, message });
         await refresh();
@@ -229,8 +239,12 @@ function Actions({ plan }: { plan: FinancialPlan }) {
         await refresh();
         await navigate({ to: "/plans/financial/$setId", params: { setId: id } });
       }}
-      onMove={async (status) => {
-        await updateFinancialPlan(set.id, { status });
+      onFreeze={async () => {
+        await updateFinancialPlan(set.id, { status: "saved" });
+        await refresh();
+      }}
+      onActivate={async (date) => {
+        await updateFinancialPlan(set.id, { effective_from: date });
         await refresh();
       }}
     />

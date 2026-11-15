@@ -221,7 +221,6 @@ describe("reportOffering", () => {
   const offering = {
     key: "camp",
     name: "Camp, week 1",
-    season_term: null,
     starts_on: "2027-07-05",
     ends_on: "2027-07-09",
     price_cents: 50_000,
@@ -238,6 +237,13 @@ describe("reportOffering", () => {
     start_time: "09:00:00",
     end_time: "12:00:00",
     on_water_minutes: null,
+  });
+
+  it("names its session by its own name without its program's, and keeps its term", () => {
+    expect(
+      reportOffering({ ...offering, name: "Camp Week 3", term_key: "summer", term: "Summer 2027" }, []),
+    ).toMatchObject({ session: "Week 3", term_key: "summer", term: "Summer 2027" });
+    expect(reportOffering(offering, [])).toMatchObject({ session: "Camp, week 1", term_key: null, term: null });
   });
 
   it("counts the dates it has an activity other than travel, and one sailor's hours on the water", () => {
@@ -272,7 +278,7 @@ describe("withResults", () => {
     note: null,
   });
 
-  it("gives each offering its room and breakeven from its own P&L row, and none without one", () => {
+  it("gives each offering its room, breakeven and money from its own P&L row, and none without one", () => {
     const pnl = [
       {
         level: "offering" as const,
@@ -296,8 +302,8 @@ describe("withResults", () => {
       },
     ];
     expect(withResults([offering("w1"), offering("w2")], pnl)).toMatchObject([
-      { key: "w1", room: 12, breakeven: 6, term: "Summer 2027", revenue_cents: 500, expense_cents: 300 },
-      { key: "w2", room: null, breakeven: null, term: null, revenue_cents: 0, expense_cents: 0 },
+      { key: "w1", room: 12, breakeven: 6, revenue_cents: 500, expense_cents: 300 },
+      { key: "w2", room: null, breakeven: null, revenue_cents: 0, expense_cents: 0 },
     ]);
   });
 });

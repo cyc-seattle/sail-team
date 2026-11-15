@@ -3,7 +3,10 @@ import { OperationsAssumptionsView } from "../assumptions";
 import { ReportSection } from "./report-page";
 import { RulesList } from "./rules-list";
 
-/** The rules the planning agent follows across every program, then the rates every plan in a Financial Plan uses. */
+/**
+ * The rules the planning agent follows across every program, then the rates every plan in a Financial Plan uses, which
+ * only a Plan Admin changes.
+ */
 export function RatesReport({ assumptions, rules }: { assumptions: OperationsAssumptions; rules: string | null }) {
   return (
     <>
