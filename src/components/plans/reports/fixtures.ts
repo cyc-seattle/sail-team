@@ -476,10 +476,15 @@ export const summerStaffTime: StaffTime[] = [
 /** The Operations Plan's rates for the year, with each bonus on the salaried position it pays. */
 export const reportAssumptions: OperationsAssumptions = {
   rates: {
-    payroll_tax_rate: 0.1,
     lodging_per_night_cents: 15_000,
     mileage_rate_cents: 70,
   },
+  payrollTaxes: [
+    { key: "ss", name: "Social Security", wage_share: 0.062, hourly_cents: null },
+    { key: "medicare", name: "Medicare", wage_share: 0.0145, hourly_cents: null },
+    { key: "suta", name: "WA unemployment", wage_share: 0.0027, hourly_cents: null },
+    { key: "li", name: "L&I", wage_share: null, hourly_cents: 45.235 },
+  ],
   staffLevels: [
     { id: "jr", name: "Junior Instructor", hourly_rate_cents: 0 },
     { id: "l1", name: "Instructor", hourly_rate_cents: 2_200 },

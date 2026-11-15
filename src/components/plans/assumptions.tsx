@@ -12,7 +12,7 @@ import {
   type StaffTime,
 } from "@/model/assumptions";
 import { formatDay } from "@/model/dates";
-import { formatCents } from "@/model/money";
+import { formatCents, formatExactCents } from "@/model/money";
 import { cn } from "@/lib/utils";
 import { AccountTable, type AccountTableGroup } from "./account-table";
 import { NoteInfo } from "./note-info";
@@ -177,10 +177,6 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
         <TableSection title="Rates" level={2}>
           <RateTable label="Rates" head={["Rate", "Amount"]}>
             <TableRow>
-              <TableCell>Payroll tax, as a share of wages</TableCell>
-              <Num>{share(a.rates.payroll_tax_rate)}</Num>
-            </TableRow>
-            <TableRow>
               <TableCell>Lodging, per night</TableCell>
               <Num>{money(a.rates.lodging_per_night_cents, true)}</Num>
             </TableRow>
@@ -188,6 +184,24 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
               <TableCell>Mileage, per mile</TableCell>
               <Num>{money(a.rates.mileage_rate_cents)}</Num>
             </TableRow>
+          </RateTable>
+        </TableSection>
+      )}
+      {a.payrollTaxes.length > 0 && (
+        <TableSection title="Payroll taxes" level={2}>
+          <RateTable label="Payroll taxes" head={["Tax", "Rate"]}>
+            {a.payrollTaxes.map((t) => (
+              <TableRow key={t.key}>
+                <TableCell>{t.name}</TableCell>
+                <Num>
+                  {t.wage_share !== null
+                    ? `${formatShare(t.wage_share)} of wages`
+                    : t.hourly_cents !== null
+                      ? `${formatExactCents(t.hourly_cents)} an hour worked`
+                      : none}
+                </Num>
+              </TableRow>
+            ))}
           </RateTable>
         </TableSection>
       )}

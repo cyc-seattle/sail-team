@@ -140,7 +140,13 @@ describe("reading a Financial Plan's inputs from Directus", () => {
 
   it("reads the Operations Plan's rates, with each bonus on the position it pays, and each boat class's rates", async () => {
     const { operations, products } = await inputs(ids.budget);
-    expect(operations?.rates?.payroll_tax_rate).toBe(0.1);
+    expect(operations?.rates?.mileage_rate_cents).toBe(70);
+    expect(operations?.payrollTaxes.map((t) => [t.name, t.wage_share ?? t.hourly_cents])).toEqual([
+      ["Social Security", 0.062],
+      ["Medicare", 0.0145],
+      ["WA unemployment", 0.0027],
+      ["L&I", 45.235],
+    ]);
     expect(operations?.positions.map((p) => [p.name, p.bonuses.map((b) => b.bonus_rate)])).toEqual([
       ["Executive Director", []],
       ["Program Director", [0.05]],
