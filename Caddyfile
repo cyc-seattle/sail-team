@@ -1,5 +1,5 @@
 # sail-team on the cluster. The Gateway terminates TLS, so Caddy serves plain HTTP on 8080. There's no sign-in here:
-# Directus decides what each person sees (docs/design.md). DIRECTUS_ORIGIN is the only other origin the page may call.
+# Directus decides what each person sees (AGENTS.md). DIRECTUS_ORIGIN is the only other origin the page may call.
 # Images may come from any https site, for each link's preview on the Links page.
 {
 	auto_https off

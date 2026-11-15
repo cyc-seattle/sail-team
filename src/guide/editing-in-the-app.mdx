@@ -1,0 +1,16 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Style guide/Editing in the app" />
+
+# Editing in the app
+
+People edit in Sail Team. Directus's Data Studio is only for breaking glass, when something has gone wrong and Staff
+have to reach the data directly. Don't assume anyone will use it otherwise.
+
+- Anything a person is expected to change has a screen in the app, for every role that may change it. A feature isn't
+  done while one of its fields can only be set in the Data Studio.
+- Never send people to the Data Studio: no link, button, or message that says to fix something there. The one exception
+  is the Directus item in Staff's account menu (`toolsFor` in `src/model/nav.ts`).
+- What a person can do follows their permissions from `/permissions/me` (`src/directus/access.ts`). Hide or disable what
+  they can't do; don't show a button that fails.
+- Agents may change data over MCP for advanced edits, but a screen is still owed for anything people do routinely.

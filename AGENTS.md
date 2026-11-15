@@ -48,8 +48,12 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   signed-in page: the sidebar on a laptop, and the tab bar on a phone, whose More opens the sidebar. Support, at the
   sidebar's foot, emails the office, and the account menu holds the tools a role gets, such as Directus for Staff
   (`toolsFor` in `src/model/nav.ts`).
-  `src/styles/tokens.css` holds the design tokens. Read [docs/design.md](docs/design.md) before changing any of
-  them, or use the [`design`](.agents/skills/design/SKILL.md) skill.
+  `src/styles/tokens.css` holds the design tokens. Read the style guide's
+  [Color and type](https://cyc-seattle.github.io/sail-team/?path=/docs/style-guide-color-and-type--docs) before changing
+  any of them, or use the [`design`](.agents/skills/design/SKILL.md) skill.
+- `src/guide/` holds the style guide, as MDX pages in Storybook: words, layout, color and type, notes and descriptions,
+  editing in the app, and the shared components. Each push to `main` publishes it with Storybook, at
+  [cyc-seattle.github.io/sail-team](https://cyc-seattle.github.io/sail-team/?path=/docs/style-guide-introduction--docs).
 - `src/directus/` talks to Directus. `client.ts` makes a client that sends the browser's Directus session cookie, and
   `app.ts` is the app's own, at `directus.<the app's hostname>`. `sign-in.ts` sends a visitor with no session to
   Directus's sign-in, and stops instead of looping if they come straight back without one (`session.ts`).
@@ -130,7 +134,7 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   the app behaves for a club member, so write it in their words. A scenario tagged `@fixme` is agreed but not built
   yet: a features PR adds it, and the PR that builds it removes the tag.
 - `test/` holds the unit tests, `*.test.ts` or `*.test.tsx`. `mise run test` also runs every story as a test in
-  Chromium, with axe (docs/design.md).
+  Chromium, with axe (the style guide's Shared components).
 
 Claude Code reads skills only from `.claude/skills`, so link them there once:
 `mkdir -p .claude && ln -s ../.agents/skills .claude/skills`.
@@ -189,6 +193,11 @@ that changes a page or component shows them there:
   commit's SHA so the link never changes. Never put them on the PR's own branch, or only in `.plans/`.
 - Storybook or Playwright's `page.screenshot()` can take them. Storybook's Laptop and Phone viewports use these sizes,
   the story tests run at both, and the journeys run at the laptop's (`playwright.config.ts`).
+
+Before asking for review, run the [`ux-review`](.agents/skills/ux-review/SKILL.md) skill on the change, and fix what it
+finds. It checks the change against the
+[style guide](https://cyc-seattle.github.io/sail-team/?path=/docs/style-guide-introduction--docs): shared components,
+words, layout, notes and descriptions, and editing in the app.
 
 ## Code style
 

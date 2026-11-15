@@ -1,0 +1,137 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Style guide/Words" />
+
+# Words
+
+Every word a person reads in the app follows the
+[`ui-copy`](https://github.com/cyc-seattle/agent-skills/blob/main/skills/ui-copy/SKILL.md) skill: plain words a staffer
+would say out loud, the name people already know, no invented terms, sentence case, buttons that say what they do. This
+page adds what Sail Team has settled on top of it.
+
+## Say less
+
+A label is the shortest name people already use for the thing. If a header wraps, the words are too long, not the
+column too narrow.
+
+- "Program fees", not "What a sailor pays".
+- "Enrollment", not "Sailors and days" or "Sailors by session".
+- "Staff levels", not "Coach and staff pay".
+- "Duplicate", not "Start a draft from this".
+- "Allocated" and "Unallocated", not "To programs" and "No program pays".
+
+No parentheticals in a label or a line's name. "Card fees", not "Card fees paid (ASSUMPTIONS)". If the bracket repeats
+the name, drop it. If it says something new, it belongs in a note.
+
+A label or a line's name never says where its numbers came from, such as the treasurer's spreadsheet or a column in
+it. A note may, and a note that links to the spreadsheet a plan came from is welcome.
+
+## No filler
+
+A page has a title and no subtitle. A section has a heading and no sentence under it explaining the section. A dialog
+asks its question and stops. Cut sentences such as "Its numbers never change" or "Each year's Financial Plans: the
+Operations Plan and Program Plans, and the P&L they make together": they describe what's already on screen.
+
+## One word for one thing
+
+Once a thing has a name, it has that name on every page, in every table header, filter, menu, badge, and message. Two
+names make a reader think there are two things. Before you name something, search `src/` for what it's already called.
+
+For example, a plan has one date it's active from. It is "Active" in the list's column, in its filter, in its badge, and
+in the menu item that sets it, never "In force since" in one place and "Active" in another.
+
+Name things the way the people who run them do. A staff level is a "staff level", not a "coach level", because an
+instructor and a coach are different staff levels. Offerings are numbered the way the Overview numbers them, such as
+"Guppies 3", with their term and dates on hover, never "J-Pod 1" with nothing to say which one it is.
+
+## Words we've settled
+
+<table>
+  <thead>
+    <tr>
+      <th>Use</th>
+      <th>Not</th>
+      <th>Where</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Planning</td>
+      <td>Plans</td>
+      <td>The nav item and the page that lists every plan</td>
+    </tr>
+    <tr>
+      <td>Draft</td>
+      <td>Working copy, Unsaved</td>
+      <td>A plan that can still change</td>
+    </tr>
+    <tr>
+      <td>Freeze, Frozen</td>
+      <td>Save, Saved, Lock, Locked</td>
+      <td>Fixing a draft's numbers for good, and the status it then has</td>
+    </tr>
+    <tr>
+      <td>Active, with its date</td>
+      <td>In force, In force since, Current</td>
+      <td>The plan in use from a date</td>
+    </tr>
+    <tr>
+      <td>Archive, Archived</td>
+      <td>Hide, Hidden, Delete</td>
+      <td>Taking a plan out of the list without deleting it</td>
+    </tr>
+    <tr>
+      <td>Duplicate</td>
+      <td>Start a draft from this, Copy, Clone</td>
+      <td>Starting a new draft from a plan</td>
+    </tr>
+    <tr>
+      <td>Assumptions</td>
+      <td>Settings and rules, Settings, Inputs</td>
+      <td>The numbers and rules a plan is worked out from</td>
+    </tr>
+    <tr>
+      <td>Staff level</td>
+      <td>Coach level, Pay level</td>
+      <td>A level on the staff pay scale</td>
+    </tr>
+    <tr>
+      <td>Term</td>
+      <td>Session, Season</td>
+      <td>The part of the year an offering runs in</td>
+    </tr>
+    <tr>
+      <td>Direct costs, Indirect costs</td>
+      <td>Overhead, Shared share</td>
+      <td>The two kinds of cost on a P&amp;L</td>
+    </tr>
+    <tr>
+      <td>Warnings</td>
+      <td>Issues, Problems, Errors, Alerts</td>
+      <td>What the planning engine found to check</td>
+    </tr>
+    <tr>
+      <td>Note, Notes</td>
+      <td>Comment, Memo, Rules</td>
+      <td>Short text about a thing, or a list of them (Notes and descriptions)</td>
+    </tr>
+    <tr>
+      <td>Description</td>
+      <td>Details, Body</td>
+      <td>Longer text about a thing (Notes and descriptions)</td>
+    </tr>
+    <tr>
+      <td>Coach, boats</td>
+      <td>Staff capacity, Fleet allocation</td>
+      <td>People and boats, by their everyday names</td>
+    </tr>
+    <tr>
+      <td>Sign in, Sign out</td>
+      <td>Log in, Login, Log out</td>
+      <td>The account menu and the sign-in pages</td>
+    </tr>
+  </tbody>
+</table>
+
+The table is a record of decisions, not the whole of the rules. A word that isn't in it still follows the sections
+above.

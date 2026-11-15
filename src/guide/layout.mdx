@@ -1,0 +1,53 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Style guide/Layout" />
+
+# Layout
+
+## Pages
+
+- Every page someone can open is in the sidebar, always open beside the page on a laptop. On a phone, the first four
+  are tabs along the bottom, and More opens the same sidebar as a sheet. Support and the account menu sit at the
+  sidebar's foot.
+- A page has a title and no subtitle. Its status, such as a plan's Draft badge, sits beside the title, at the title's
+  size, not among the buttons.
+- Actions go on the right, where a thumb reaches them on a phone.
+- Sections are stacked, one under the next, with room between them. Don't set dense sections side by side.
+- Headings follow the page: a page's sections are its top headings. Don't wrap every section in one heading such as
+  "Rates".
+- Underline tabs (`TabsList variant="line"`) for named sections. `SegmentedControl` only for a two-way view switch, such
+  as per year or per day. A switch that changes several tables applies to all of them, and is remembered.
+
+## Showing and hiding
+
+- Don't hide what people read every time behind a toggle or a collapsed section. `CollapsibleSection` is for what's
+  checked now and then, such as warnings and assumptions, and once opened it shows everything inside, with no second
+  toggle.
+- An account with one line doesn't open to show that line again.
+
+## Tables
+
+- Every table has a default sort that makes sense for it: offerings by start date, money by size, high to low, and
+  alphabetical when nothing else fits.
+- A chart-of-accounts number sits in its own column on the left, before the account's name, so numbers and names line
+  up. Everywhere an amount maps to an account, show it the way the program area pages do (`AccountTable`).
+- Numbers are right-aligned in tabular figures, with totals in the table footer. A group of rows that adds up gets a
+  subtotal. A table that doesn't add up, such as fees, gets none.
+- One kind of unit to a table: dollars, or counts, or days, not a mix.
+- Where revenue, costs, and net appear, every step between them is on the page, so the reader can add it up.
+- Headers don't wrap. Shorten the words, or drop a column whose value is the same in every row.
+- A table too wide for a phone scrolls inside its card instead of widening the page.
+
+## Lists and forms
+
+- An inline "Add \{thing\}" row goes at the top of a list, never below it.
+- One way to save a form: explicit Save and Discard, with a warning before leaving unsaved changes.
+- Edit a value where it's shown, in its own column, when that's simple. Otherwise, a row's actions go in a menu behind
+  a kebab button at the row's end.
+- A list of short notes, such as a plan's, is a real list, one note to a bullet (`RulesList`).
+
+## Icons, charts, and color
+
+- An icon-only button has an `aria-label` and a tooltip with the same name, and each action keeps one icon everywhere.
+- A chart sits beside the table of the same numbers, never on its own.
+- A color means one thing. Don't shade it darker to mean "more"; use one consistent color and say the number.

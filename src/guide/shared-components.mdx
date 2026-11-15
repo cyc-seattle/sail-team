@@ -1,0 +1,167 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Style guide/Shared components" />
+
+# Shared components
+
+Search `src/components/` before building anything. A page that builds its own version of something a component already
+does will look a little different from every other page, and drift further each change.
+
+- Change a component in place rather than wrapping it or making a near-copy.
+- Ask before adding a new variant, or a new component that overlaps one that exists. Say what the existing ones can't
+  do.
+- `src/components/ui/` holds shadcn's components on Base UI, adapted here. Add another with
+  `pnpm dlx shadcn@latest add <name>`, then give it a story. `src/components/` holds the club's own, built from them.
+
+## When you build this, use that
+
+<table>
+  <thead>
+    <tr>
+      <th>When you show</th>
+      <th>Use</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>An amount of money</td>
+      <td>
+        <code>Money</code> (<code>plans/money.tsx</code>)
+      </td>
+    </tr>
+    <tr>
+      <td>Amounts by account, with lines under each</td>
+      <td>
+        <code>AccountTable</code> with <code>accountRow</code> (<code>plans/</code>)
+      </td>
+    </tr>
+    <tr>
+      <td>Revenue down to net, step by step</td>
+      <td>
+        <code>StatementTable</code> (<code>plans/reports/</code>)
+      </td>
+    </tr>
+    <tr>
+      <td>A note</td>
+      <td>
+        <code>NoteInfo</code> (<code>plans/note-info.tsx</code>)
+      </td>
+    </tr>
+    <tr>
+      <td>An offering's name</td>
+      <td>
+        <code>OfferingName</code> (<code>plans/reports/</code>)
+      </td>
+    </tr>
+    <tr>
+      <td>A section that starts closed</td>
+      <td>
+        <code>CollapsibleSection</code> (<code>plans/reports/</code>)
+      </td>
+    </tr>
+    <tr>
+      <td>The planning engine's warnings</td>
+      <td>
+        <code>WarningsSection</code> (<code>plans/reports/</code>)
+      </td>
+    </tr>
+    <tr>
+      <td>A list of short notes</td>
+      <td>
+        <code>RulesList</code> (<code>plans/reports/</code>)
+      </td>
+    </tr>
+    <tr>
+      <td>A page's title, badge, back link, and actions</td>
+      <td>
+        <code>PageHeader</code> (<code>plans/page-header.tsx</code>)
+      </td>
+    </tr>
+    <tr>
+      <td>A Financial Plan's status</td>
+      <td>
+        <code>VersionBadge</code> and <code>PlanStatus</code> (<code>plans/</code>)
+      </td>
+    </tr>
+    <tr>
+      <td>A two-way view switch</td>
+      <td>
+        <code>SegmentedControl</code> (<code>plans/reports/</code>)
+      </td>
+    </tr>
+    <tr>
+      <td>Spans over weeks or days, such as a calendar</td>
+      <td>
+        <code>SpanGrid</code> (<code>plans/reports/span-grid.tsx</code>)
+      </td>
+    </tr>
+    <tr>
+      <td>A whole-page message: no access, an error</td>
+      <td>
+        <code>NoticePage</code> (<code>shell/notice-page.tsx</code>)
+      </td>
+    </tr>
+    <tr>
+      <td>A phone number to enter</td>
+      <td>
+        <code>PhoneField</code> (<code>phone-field.tsx</code>)
+      </td>
+    </tr>
+    <tr>
+      <td>Named sections of a page</td>
+      <td>
+        <code>Tabs</code> with <code>TabsList variant="line"</code> (<code>ui/</code>)
+      </td>
+    </tr>
+    <tr>
+      <td>A table</td>
+      <td>
+        <code>Table</code> (<code>ui/table.tsx</code>)
+      </td>
+    </tr>
+    <tr>
+      <td>A label for an icon-only button</td>
+      <td>
+        <code>Tooltip</code> (<code>ui/tooltip.tsx</code>)
+      </td>
+    </tr>
+    <tr>
+      <td>A choice from a long list, with search</td>
+      <td>
+        <code>Combobox</code> (<code>ui/combobox.tsx</code>)
+      </td>
+    </tr>
+    <tr>
+      <td>A message in a page, such as a warning</td>
+      <td>
+        <code>Alert</code> (<code>ui/alert.tsx</code>)
+      </td>
+    </tr>
+    <tr>
+      <td>A confirmation, or a short form over the page</td>
+      <td>
+        <code>Dialog</code> (<code>ui/dialog.tsx</code>)
+      </td>
+    </tr>
+    <tr>
+      <td>A row's or a page's actions</td>
+      <td>
+        <code>DropdownMenu</code> (<code>ui/dropdown-menu.tsx</code>)
+      </td>
+    </tr>
+    <tr>
+      <td>Something loading</td>
+      <td>
+        <code>Skeleton</code> (<code>ui/skeleton.tsx</code>)
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+Paths are under `src/components/`. Each component's story, in this Storybook, shows its states.
+
+## Stories are tests
+
+Each component has a `*.stories.tsx` beside it, with made-up sailing data. `mise run test` renders every story in
+Chromium twice, light at a laptop's size and dark at a phone's, and runs axe on each. An accessibility violation fails
+CI. A story with a `play` function also checks what it does: an overlay story opens the overlay, so axe checks it open.
