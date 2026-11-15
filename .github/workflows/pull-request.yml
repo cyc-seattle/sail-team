@@ -19,13 +19,13 @@ permissions:
 jobs:
   ci:
     if: github.ref != 'refs/heads/main'
-    uses: cyc-seattle/.github/.github/workflows/ci.yml@v3.2.0
+    uses: cyc-seattle/.github/.github/workflows/ci.yml@v3.3.0
   dev:
     needs: ci
     if: >-
       !cancelled() && (needs.ci.result == 'success' || needs.ci.result == 'skipped') &&
       (github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch')
-    uses: cyc-seattle/.github/.github/workflows/deploy.yml@v3.2.0
+    uses: cyc-seattle/.github/.github/workflows/deploy.yml@v3.3.0
     permissions:
       id-token: write
       contents: read
@@ -57,7 +57,7 @@ jobs:
     if: >-
       !cancelled() && github.ref == 'refs/heads/main' &&
       (needs.dev.result == 'success' || needs.dev.result == 'skipped')
-    uses: cyc-seattle/.github/.github/workflows/deploy.yml@v3.2.0
+    uses: cyc-seattle/.github/.github/workflows/deploy.yml@v3.3.0
     permissions:
       id-token: write
       contents: read
@@ -71,7 +71,7 @@ jobs:
     if: >-
       !cancelled() && needs.prod-preview.result == 'success' &&
       needs.prod-preview.outputs.changes == 'true'
-    uses: cyc-seattle/.github/.github/workflows/deploy.yml@v3.2.0
+    uses: cyc-seattle/.github/.github/workflows/deploy.yml@v3.3.0
     permissions:
       id-token: write
       contents: read
