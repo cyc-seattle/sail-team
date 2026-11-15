@@ -16,7 +16,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Each area in its order with what's kept there and the area its boats use, then what has no location. */
+/** Each area by name, with what's kept there and the area its boats use, then what has no location. */
 export const ByArea: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getAllByRole("rowheader").map((th) => th.textContent)).toEqual([
