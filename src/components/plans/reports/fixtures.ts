@@ -119,6 +119,7 @@ export const summerPrograms: ProgramSettings[] = [
     name: "Guppies",
     staff_level: "Level 1 Instructor",
     sailors_per_coach: 10,
+    indirect_cost_rate: 0.15,
     notes: [
       "If there are more than 12 Guppies, add a **Junior Instructor**.",
       "Guppies sail Sailqubes. The Harpoon can take up to 10 instead.",
@@ -128,9 +129,10 @@ export const summerPrograms: ProgramSettings[] = [
     name: "Opti Camp",
     staff_level: "Level 2 Instructor",
     sailors_per_coach: 8,
+    indirect_cost_rate: 0.15,
     notes: ["About a third bring their own Optis.", "Never fewer than 2 coaches on the water."],
   },
-  { name: "Race Camp", staff_level: "Level 3 Coach", sailors_per_coach: 10, notes: null },
+  { name: "Race Camp", staff_level: "Level 3 Coach", sailors_per_coach: 10, indirect_cost_rate: 0.15, notes: null },
 ];
 
 const week = (n: number) => {
@@ -293,9 +295,21 @@ export const areaOfferings: Record<string, ReportOffering[]> = {
 };
 
 export const doublehandedPrograms: ProgramSettings[] = [
-  { name: "J-Pod", staff_level: "Level 3 Coach", sailors_per_coach: 8, notes: ["Travel regattas take two coaches."] },
+  {
+    name: "J-Pod",
+    staff_level: "Level 3 Coach",
+    sailors_per_coach: 8,
+    indirect_cost_rate: 0.2,
+    notes: ["Travel regattas take two coaches."],
+  },
   { name: "K-Pod", staff_level: "Level 3 Coach", sailors_per_coach: 10, notes: null },
-  { name: "L-Pod", staff_level: "Level 4 Coach", sailors_per_coach: 12, notes: ["Most sailors bring their own 420s."] },
+  {
+    name: "L-Pod",
+    staff_level: "Level 4 Coach",
+    sailors_per_coach: 12,
+    indirect_cost_rate: 0.2,
+    notes: ["Most sailors bring their own 420s."],
+  },
 ];
 
 export const doublehandedStatement = {
