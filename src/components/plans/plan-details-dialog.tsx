@@ -12,12 +12,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 
 export interface PlanDetails {
   name: string;
-  message: string | null;
+  note: string | null;
 }
+
+/** The longest note platform keeps. */
+const NOTE_LENGTH = 280;
 
 export interface PlanDetailsDialogProps {
   /** What the button that opens it says. */
@@ -42,13 +44,13 @@ export function PlanDetailsDialog({
 }: PlanDetailsDialogProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(initial.name);
-  const [message, setMessage] = useState(initial.message ?? "");
+  const [note, setNote] = useState(initial.note ?? "");
   const [state, setState] = useState<"idle" | "saving" | "failed">("idle");
 
   const onOpenChange = (next: boolean) => {
     if (next) {
       setName(initial.name);
-      setMessage(initial.message ?? "");
+      setNote(initial.note ?? "");
       setState("idle");
     }
     setOpen(next);
@@ -58,7 +60,7 @@ export function PlanDetailsDialog({
     event.preventDefault();
     setState("saving");
     try {
-      await onSubmit({ name: name.trim(), message: message.trim() || null });
+      await onSubmit({ name: name.trim(), note: note.trim() || null });
       setOpen(false);
       setState("idle");
     } catch {
@@ -81,16 +83,7 @@ export function PlanDetailsDialog({
           </div>
           <div className="grid gap-2">
             <Label htmlFor="plan-note">Note</Label>
-            <Textarea
-              id="plan-note"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              maxLength={280}
-              aria-describedby="plan-note-hint"
-            />
-            <p id="plan-note-hint" className="text-xs text-muted-foreground">
-              Up to 280 characters. **Bold**, *italic*, and [links](https://…) work.
-            </p>
+            <Input id="plan-note" value={note} maxLength={NOTE_LENGTH} onChange={(e) => setNote(e.target.value)} />
           </div>
           {state === "failed" && (
             <p role="alert" className="text-sm text-destructive">

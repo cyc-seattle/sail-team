@@ -10,7 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useId, useState, type FormEvent, type ReactElement } from "react";
-import { InlineMarkdown } from "@/components/markdown";
+import { InlineMarkdown } from "@/components/inline-markdown";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -54,8 +54,8 @@ export interface PlanningActions {
   onDelete: (plan: ListedPlan) => Promise<void>;
 }
 
-/** The day that dates a plan: when it's active from, or else when it was saved. Undated drafts are the newest. */
-const dated = (plan: ListedPlan) => plan.in_force?.from ?? plan.saved_at?.slice(0, 10) ?? "9999-12-31";
+/** The day that dates a plan: when it's active from, or else when it was frozen. Undated drafts are the newest. */
+const dated = (plan: ListedPlan) => plan.in_force?.from ?? plan.frozen_at?.slice(0, 10) ?? "9999-12-31";
 const newestFirst = (a: ListedPlan, b: ListedPlan) =>
   b.year - a.year || dated(b).localeCompare(dated(a)) || a.name.localeCompare(b.name);
 
@@ -69,9 +69,9 @@ function Tip({ label, children }: { label: string; children: ReactElement }) {
   );
 }
 
-const statuses: Record<"draft" | "saved" | "archived", { icon: LucideIcon; label: string }> = {
+const statuses: Record<"draft" | "frozen" | "archived", { icon: LucideIcon; label: string }> = {
   draft: { icon: CircleDashedIcon, label: "Draft" },
-  saved: { icon: SnowflakeIcon, label: "Frozen" },
+  frozen: { icon: SnowflakeIcon, label: "Frozen" },
   archived: { icon: ArchiveIcon, label: "Archived" },
 };
 
@@ -347,7 +347,7 @@ function PlanMenu({ plan, actions }: { plan: ListedPlan; actions: PlanningAction
 
 /** When and by whom a plan was frozen, what it started from, the platform version that worked it out, and its note, on hover or a tap. */
 function PlanDetails({ plan }: { plan: ListedPlan }) {
-  if (!plan.saved_at && !plan.parent && !plan.note) {
+  if (!plan.frozen_at && !plan.parent && !plan.note) {
     return <span aria-hidden className="size-tap md:size-6" />;
   }
   return (
@@ -362,8 +362,10 @@ function PlanDetails({ plan }: { plan: ListedPlan }) {
       </PopoverTrigger>
       <PopoverContent align="start" aria-label={`About ${plan.name}`} className="w-80">
         <p className="text-xs text-muted-foreground">
-          {plan.saved_at ? `Frozen ${formatDate(plan.saved_at)}${plan.saved_by ? ` by ${plan.saved_by}` : ""}` : null}
-          {plan.saved_at && plan.parent ? ". " : null}
+          {plan.frozen_at
+            ? `Frozen ${formatDate(plan.frozen_at)}${plan.frozen_by ? ` by ${plan.frozen_by}` : ""}`
+            : null}
+          {plan.frozen_at && plan.parent ? ". " : null}
           {plan.parent && (
             <>
               Started from{" "}
@@ -376,7 +378,7 @@ function PlanDetails({ plan }: { plan: ListedPlan }) {
         {plan.platform && <p className="text-xs text-muted-foreground">Platform {plan.platform}</p>}
         {plan.note && (
           <p>
-            <InlineMarkdown>{plan.note}</InlineMarkdown>
+            <InlineMarkdown text={plan.note} />
           </p>
         )}
       </PopoverContent>

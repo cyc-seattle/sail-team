@@ -59,25 +59,25 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   Sign out, in the person's menu, ends the Directus session, then Authentik's (`signOutUrl`), which also ends an
   admin's impersonation.
   `access.ts` reads `/permissions/me` to decide what to show; Directus still checks every request.
-- `src/directus/financial-plans.ts` reads Financial Plans (`version_sets`): the organization's plan for a year, holding
-  a copy of the Operations Plan and of each Program Plan (`version_set_members`). Every one shows the results platform
-  worked out (`plan_results`, `plan_result_*`): a saved one's once, when it was saved, and a draft's about a second
-  after every change to it, wherever it's made. The app never calculates them. Each result row names the member it's
-  charged in (`version_set_member_id`), so one plan's full P&L, with its wages and its share of the shared costs, is
-  one filter. An open draft is read again every few seconds, and a plan with no results yet every two, until they
+- `src/directus/financial-plans.ts` reads Financial Plans (`financial_plans`): the organization's plan for a year,
+  holding an Operations Plan and a Program Plan for each of its program areas (`plans`, by `financial_plan_id`). Every
+  one shows the results platform worked out (`plan_results`, `plan_result_*`): a frozen one's once, when it was
+  frozen, and a draft's about a second after every change to it, wherever it's made. The app never calculates them.
+  Each result row names the plan it's charged in (`plan_id`), so one plan's full P&L, with its wages and its share of
+  the shared costs, is one filter. An open draft is read again every few seconds, and a plan with no results yet every two, until they
   arrive; after 30 seconds the page says they couldn't be worked out (`src/hooks/use-financial-plan.ts`). The reports
-  also read what planners entered in its copies (`src/directus/plan-inputs.ts`): each copy's rules, each program's
+  also read what planners entered in its plans (`src/directus/plan-inputs.ts`): each plan's notes, each program's
   settings, each offering with its activities, and the Operations Plan's rates, with each bonus on the position it
   pays. `src/model/reports.ts` makes each report from those and the results: shares of a pool (`pool:` lines) are a
   plan's indirect costs, and everything else of its own is direct. `/plans` lists every Financial Plan under its year,
   newest first, with the day each is active from: a plan is active from its `effective_from`, and the one in force on a day is its year's
   with the latest date on or before it (`inForce` in `src/model/financial-plans.ts`, cyc-seattle/platform#251). Its
-  note, at most 280 characters of inline Markdown (`src/components/markdown.tsx`), shows behind its ⓘ. Show drafts and
+  note, at most 280 characters of inline Markdown (`src/components/inline-markdown.tsx`), shows behind its ⓘ. Show drafts and
   Show archived narrow the list. Its status, details, and warnings are icons in fixed places, so they line up. There,
-  a Plan Admin sets or clears the date it's active from in its Active column. Its ⋯ menu freezes a draft (saves it,
-  as `status` says) for good and archives it (`archived_at`), for a Plan Admin, and deletes a draft, for a Plan Writer. The menus follow `/permissions/me`: `canAdminPlans` in `access.ts`. `/plans/financial/<set>` is its Overview, and
+  a Plan Admin sets or clears the date it's active from in its Active column. Its ⋯ menu freezes a draft (`status`) for
+  good and archives it (`archived_at`), for a Plan Admin, and deletes a draft, for a Plan Writer. The menus follow `/permissions/me`: `canAdminPlans` in `access.ts`. `/plans/financial/<set>` is its Overview, and
   `/plans/financial/<set>/<report>` its other reports: `calendar`, `rates` (Assumptions), `storage`, a Program Plan's
-  id, `non-program`, or `fundraising`. Storage lists the lines on the Storage account, 7351 under 7350 Occupancy/Rent:
+  program area id, the same in every Financial Plan, `non-program`, or `fundraising`. Storage lists the lines on the Storage account, 7351 under 7350 Occupancy/Rent:
   what each area pays, then what every program shares. A program area's report shows each offering's term: one of the
   Operations Plan's `plan_terms`, which an offering names by `term_key`. The Calendar keeps the one program area it shows and its day in the address
   (`?area=<report>&day=<date>`), and each area's report links to it with its own area. Each report's header is where a
@@ -120,11 +120,10 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   The sign-in journeys sign in through Authentik's emailed link, which dev's Authentik sends to Mailpit, one at a
   time. Every other journey gives its visitor a password and signs in to Directus directly, three scenarios at a
   time. A plans scenario also makes a made-up organization (`test/features/club.ts`): its accounts, a program area and
-  product, an Operations Plan and an area's plan with its program's settings and blocks, and Financial Plans holding
-  copies of them, saved the way a Plan
-  Writer saves them, so platform works out their results. A rosters scenario makes a team, its divisions, and
+  product, and Financial Plans, each holding an Operations Plan and an area's plan with its program's settings and
+  blocks, frozen the way a Plan Admin freezes them, so platform works out their results. A rosters scenario makes a team, its divisions, and
   households (`test/features/squad.ts`), with the Clubspot rows
-  clubspot-sync would read them from, and waits for platform's hook to move a parent on a team to the Team role. Dev's `backend:savedVersionsDeletable` lets its admin delete them afterwards; prod refuses it. Everything is deleted when
+  clubspot-sync would read them from, and waits for platform's hook to move a parent on a team to the Team role. Dev's `backend:frozenPlansDeletable` lets its admin delete them afterwards; prod refuses it. Everything is deleted when
   the scenario ends, and a later run deletes what an earlier one left. The steps refuse any environment but dev, and
   never touch prod's users.
 - `features/` holds the journeys in Gherkin, with their steps in `test/features/`. Each is living documentation of how

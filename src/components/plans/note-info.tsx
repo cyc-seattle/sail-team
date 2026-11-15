@@ -1,9 +1,10 @@
 import { InfoIcon } from "lucide-react";
+import { InlineMarkdown } from "@/components/inline-markdown";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 /**
- * A note, behind an info icon beside what it's about: shown on hover, or on a tap on a phone. Nothing when there's no
+ * A note, in inline markdown, behind an info icon beside what it's about: shown on hover, or on a tap on a phone. Nothing when there's no
  * note.
  */
 export function NoteInfo({
@@ -32,7 +33,7 @@ export function NoteInfo({
         <InfoIcon aria-hidden className="size-3.5" />
       </PopoverTrigger>
       <PopoverContent side="top" className="w-auto max-w-xs whitespace-normal" aria-label={label}>
-        {note}
+        <InlineMarkdown text={note} />
       </PopoverContent>
     </Popover>
   );

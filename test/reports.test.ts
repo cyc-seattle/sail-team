@@ -12,7 +12,7 @@ import {
   reportOffering,
   fees,
   functionalExpenses,
-  rulesOf,
+  notesOf,
   sortRows,
   type OverviewRow,
   type ReportOffering,
@@ -189,13 +189,13 @@ describe("enrollment", () => {
   });
 });
 
-describe("rulesOf", () => {
-  it("reads one rule a line, dropping blank lines", () => {
-    expect(rulesOf("Two coaches on the water.\n\n  Keep a RIB ashore.  ")).toEqual([
+describe("notesOf", () => {
+  it("trims each note, dropping blank ones", () => {
+    expect(notesOf(["Two coaches on the water.", "  ", "  Keep a RIB ashore.  "])).toEqual([
       "Two coaches on the water.",
       "Keep a RIB ashore.",
     ]);
-    expect(rulesOf(null)).toEqual([]);
+    expect(notesOf(null)).toEqual([]);
   });
 });
 
@@ -381,7 +381,7 @@ describe("capitalList", () => {
     capital: true,
     function: null,
     explanation: null,
-    member: null,
+    plan: null,
   });
   const totals = {
     operating_revenue_cents: 0,

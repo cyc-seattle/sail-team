@@ -128,7 +128,7 @@ export function FinancialPlanActions({
           trigger="Duplicate"
           title={`Duplicate ${set.name}`}
           description={`The copy is a draft, for ${set.fiscal_year}. ${set.name} doesn't change.`}
-          initial={{ name: `${set.name} copy`, message: null }}
+          initial={{ name: `${set.name} copy`, note: null }}
           submitLabel="Duplicate"
           onSubmit={onStart}
         />

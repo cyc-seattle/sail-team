@@ -67,6 +67,5 @@ const write = () => ({
 export const plannerPermissions: Permissions = {
   ...teamPermissions,
   plans: read("full"),
-  plan_versions: read("full"),
-  version_sets: write(),
+  financial_plans: write(),
 };

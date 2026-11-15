@@ -92,18 +92,9 @@ export interface Account {
 /** An account as people know it: its number and name. */
 export const accountName = (a: Account) => (a.number ? `${a.number} ${a.name}` : a.name);
 
-/** The sailors an offering plans for, as the engine counts them: its target, or its capacity at its fill rate. */
-export function plannedEnrollment(
-  offering: Pick<PlanOffering, "target_enrollment" | "capacity" | "fill_rate">,
-): number | null {
-  if (offering.target_enrollment !== null) {
-    return offering.target_enrollment;
-  }
-  if (offering.capacity !== null && offering.fill_rate !== null) {
-    return Math.round(offering.capacity * offering.fill_rate);
-  }
-  return null;
-}
+/** The sailors an offering plans for, as the engine counts them: its target enrollment. */
+export const plannedEnrollment = (offering: Pick<PlanOffering, "target_enrollment">): number | null =>
+  offering.target_enrollment;
 
 const percent = new Intl.NumberFormat("en-US", { style: "percent", maximumFractionDigits: 2 });
 

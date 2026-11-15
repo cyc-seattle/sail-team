@@ -52,15 +52,13 @@ function Loaded({ setId, report }: { setId: string; report: string }) {
   if (!data) {
     return <NoticePage title="There's no such Financial Plan" />;
   }
-  // The Operations Plan's old address, by its plan's id, is Non-program's now.
-  const operations = data.members.find((m) => m.kind === "operations" && m.plan_id === report);
-  return <Found data={data} stuck={stuck} report={operations ? "non-program" : report} />;
+  return <Found data={data} stuck={stuck} report={report} />;
 }
 
 function Found({ data, stuck, report }: { data: FinancialPlan; stuck: boolean; report: string }) {
-  const { data: inputs } = useQuery(planInputsQuery(data.set, data.members));
+  const { data: inputs } = useQuery(planInputsQuery(data.set, data.plans));
   const setId = data.set.id;
-  const reports = reportsOf(data.members);
+  const reports = reportsOf(data.plans);
   if (!reports.some((r) => r.key === report)) {
     return <NoticePage title="There's no such report in this Financial Plan" />;
   }
@@ -103,12 +101,12 @@ function PendingNumbers({ stuck }: { stuck: boolean }) {
 }
 
 function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInputs; report: string }): ReactNode {
-  const { set, members } = plan;
+  const { set, plans } = plan;
   const results = plan.results!;
-  const warnings = planWarnings(results.warnings, members);
-  const operations = members.find((m) => m.kind === "operations");
+  const warnings = planWarnings(results.warnings, plans);
+  const operations = plans.find((p) => p.kind === "operations");
   if (report === "overview") {
-    const rows = overviewRows(members, results.lines, inputs.offerings);
+    const rows = overviewRows(plans, results.lines, inputs.offerings);
     return (
       <OverviewReport
         setId={set.id}
@@ -123,7 +121,7 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
   if (report === "calendar") {
     return (
       <CalendarReport
-        areas={members
+        areas={plans
           .filter((m) => m.kind === "program_area")
           .map((m) => ({
             key: reportKey(m),
@@ -137,13 +135,13 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
   }
   if (report === "rates") {
     return inputs.operations ? (
-      <RatesReport assumptions={inputs.operations} rules={inputs.rules["rates"] ?? null} />
+      <RatesReport assumptions={inputs.operations} notes={inputs.notes["rates"] ?? null} />
     ) : (
       <p className="text-sm text-muted-foreground">This Financial Plan has no Operations Plan yet.</p>
     );
   }
   if (report === "storage") {
-    return <StorageReport costs={storageOf(results.lines, members)} />;
+    return <StorageReport costs={storageOf(results.lines, plans)} />;
   }
   if (report === "fundraising") {
     return (
@@ -157,22 +155,22 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
     return (
       <NonProgramReport
         products={productsOf(
-          results.lines.filter((l) => l.member === operations?.id),
+          results.lines.filter((l) => l.plan === operations?.id),
           inputs.products,
         )}
         shared={sharedCostsOf(results.lines, operations?.id ?? null)}
       />
     );
   }
-  const member = members.find((m) => m.kind === "program_area" && reportKey(m) === report)!;
+  const area = plans.find((p) => p.kind === "program_area" && reportKey(p) === report)!;
   const offerings = withResults(inputs.offerings[report] ?? [], results.pnl);
   return (
     <AreaReport
-      area={reportName(member)}
-      rules={inputs.rules[report] ?? null}
+      area={reportName(area)}
+      notes={inputs.notes[report] ?? null}
       warnings={warnings.filter((w) => w.area === report)}
-      statement={statementOf(results.lines.filter((l) => l.member === member.id))}
-      total={areaTotal(results.pnl, member.program_area_id)}
+      statement={statementOf(results.lines.filter((l) => l.plan === area.id))}
+      total={areaTotal(results.pnl, area.program_area_id)}
       programs={inputs.programs[report] ?? []}
       offerings={offerings}
       areaKey={report}
@@ -227,11 +225,11 @@ function Actions({ plan }: { plan: FinancialPlan }) {
   return (
     <FinancialPlanActions
       set={set}
-      canEdit={canUpdateFields(permissions, "version_sets", ["name", "message"])}
-      canCreate={canWrite(permissions, "version_sets", "create")}
+      canEdit={canUpdateFields(permissions, "financial_plans", ["name", "note"])}
+      canCreate={canWrite(permissions, "financial_plans", "create")}
       canAdmin={canAdminPlans(permissions)}
-      onEdit={async ({ name, message }) => {
-        await updateFinancialPlan(set.id, { name, message });
+      onEdit={async ({ name, note }) => {
+        await updateFinancialPlan(set.id, { name, note });
         await refresh();
       }}
       onStart={async (details) => {
@@ -240,7 +238,7 @@ function Actions({ plan }: { plan: FinancialPlan }) {
         await navigate({ to: "/plans/financial/$setId", params: { setId: id } });
       }}
       onFreeze={async () => {
-        await updateFinancialPlan(set.id, { status: "saved" });
+        await updateFinancialPlan(set.id, { status: "frozen" });
         await refresh();
       }}
       onActivate={async (date) => {
