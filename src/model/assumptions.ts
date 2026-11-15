@@ -4,6 +4,7 @@ import type {
   PlanClosedDate,
   PlanLaborLine,
   PlanOffering,
+  PlanPayrollTax,
   PlanRates,
   PlanRevenueCharge,
   PlanSalariedPosition,
@@ -12,7 +13,9 @@ import type {
 
 /** The rates the Operations Plan sets for the year, which every plan's numbers come from. */
 export interface OperationsAssumptions {
-  rates: Pick<PlanRates, "payroll_tax_rate" | "lodging_per_night_cents" | "mileage_rate_cents"> | null;
+  rates: Pick<PlanRates, "lodging_per_night_cents" | "mileage_rate_cents"> | null;
+  /** Each payroll tax, in the plan's order: a share of wages, or an amount for each hour worked, such as L&I. */
+  payrollTaxes: Pick<PlanPayrollTax, "key" | "name" | "wage_share" | "hourly_cents">[];
   /** Each staff level's rate, by role, then grade. A volunteer's is 0. */
   staffLevels: (Pick<PlanStaffLevel, "hourly_rate_cents"> & { id: string; name: string })[];
   positions: (Pick<

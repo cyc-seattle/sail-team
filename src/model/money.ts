@@ -12,6 +12,18 @@ export function formatCents(cents: number, whole = false): string {
   return cents < 0 ? `−${text}` : text;
 }
 
+const exactDollars = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 6,
+});
+
+/** Cents as dollars, keeping any fraction of a cent, for a rate such as L&I's: `45.235` → `$0.45235`. */
+export function formatExactCents(cents: number): string {
+  return exactDollars.format(cents / 100);
+}
+
 /** Which color a net amount takes: only the amount is colored, never its row's label. */
 export function toneOf(cents: number): MoneyTone {
   return cents > 0 ? "positive" : cents < 0 ? "negative" : "zero";

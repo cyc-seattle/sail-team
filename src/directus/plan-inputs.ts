@@ -8,6 +8,7 @@ import type {
   PlanLaborLine,
   PlanOffering,
   PlanProgram,
+  PlanPayrollTax,
   PlanRates,
   PlanRevenueCharge,
   PlanSalariedPosition,
@@ -96,11 +97,12 @@ async function operationsAssumptions(
   operations: string,
   planIds: string[],
 ): Promise<Omit<OperationsAssumptions, "fixedCosts" | "staffTime">> {
-  const [rates, staffLevels, positions, charges, boatRates, bonuses, bonusProducts, bookings, closed] =
+  const [rates, payrollTaxes, staffLevels, positions, charges, boatRates, bonuses, bonusProducts, bookings, closed] =
     await Promise.all([
       // Every field, since platform drops rib_resource_kind_id (cyc-seattle/platform#126), and Directus refuses a
       // field it doesn't have.
       rowsOf<PlanRates>("plan_rates", [operations]),
+      rowsOf<PlanPayrollTax>("plan_payroll_taxes", [operations], ["key", "name", "wage_share", "hourly_cents", "sort"]),
       rowsOf<StaffLevelRow>(
         "plan_staff_levels",
         [operations],
@@ -179,11 +181,13 @@ async function operationsAssumptions(
   return {
     rates: rate
       ? {
-          payroll_tax_rate: rate.payroll_tax_rate,
           lodging_per_night_cents: rate.lodging_per_night_cents,
           mileage_rate_cents: rate.mileage_rate_cents,
         }
       : null,
+    payrollTaxes: [...payrollTaxes]
+      .sort((a, b) => (a.sort ?? Infinity) - (b.sort ?? Infinity) || a.name.localeCompare(b.name))
+      .map(({ key, name, wage_share, hourly_cents }) => ({ key, name, wage_share, hourly_cents })),
     staffLevels: staffLevelsInOrder(staffLevels),
     positions: byName(positions).map(({ remainder_pool_id, ...p }) => ({
       ...p,

@@ -228,10 +228,15 @@ const laborLine = (
 function operations(plan: string): Copy {
   const c = new Copy(plan);
   c.add("plan_rates", "rates", {
-    payroll_tax_rate: 0.1,
     lodging_per_night_cents: 15_000,
     mileage_rate_cents: 70,
   });
+  const tax = (name: string, sort: number, fields: Row) =>
+    c.add("plan_payroll_taxes", name, { name, wage_share: null, hourly_cents: null, sort, ...fields });
+  tax("Social Security", 1, { wage_share: 0.062 });
+  tax("Medicare", 2, { wage_share: 0.0145 });
+  tax("WA unemployment", 3, { wage_share: 0.0027 });
+  tax("L&I", 4, { hourly_cents: 45.235 });
   const level = (name: string, cents: number) =>
     c.add("plan_staff_levels", name, { staff_level_id: levelId(name), hourly_rate_cents: cents });
   level("Junior Instructor", 0);
@@ -645,6 +650,7 @@ const rowTables = [
   "plan_labor_lines",
   "plan_budget_lines",
   "plan_rates",
+  "plan_payroll_taxes",
   "plan_revenue_charges",
   "plan_staff_levels",
   "plan_salaried_positions",
