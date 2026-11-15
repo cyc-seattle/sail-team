@@ -2,13 +2,13 @@ import type { ReactNode } from "react";
 import { SectionPage } from "@/components/section-page";
 
 const pages = [
-  { key: "programs", name: "Programs", to: "/catalog" },
+  { key: "products", name: "Products", to: "/catalog" },
   { key: "offerings", name: "Offerings", to: "/catalog/offerings" },
   { key: "accounts", name: "Accounts", to: "/catalog/accounts" },
   { key: "qualifications", name: "Qualifications", to: "/catalog/qualifications" },
 ];
 
-export type CatalogPageKey = "programs" | "offerings" | "accounts" | "qualifications";
+export type CatalogPageKey = "products" | "offerings" | "accounts" | "qualifications";
 
 /** One page of the Catalog. */
 export function CatalogPage({ current, children }: { current: CatalogPageKey; children: ReactNode }) {

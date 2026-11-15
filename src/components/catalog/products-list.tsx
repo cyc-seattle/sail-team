@@ -1,6 +1,8 @@
+import { programColor } from "@cyc-seattle/platform/planning";
 import { AccountCells, AccountHeads } from "@/components/account-cells";
 import { ReportSection } from "@/components/plans/reports/report-page";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { groupUrl } from "@/model/roster";
 import {
   kindLabels,
   productsByArea,
@@ -13,9 +15,10 @@ const pinned = "sticky left-0 z-10 bg-background";
 
 /**
  * Every product the club sells, under its program area, with the revenue account its sales are booked to: the area's,
- * or the product's own when it's in none. A program shows whether it's a team, its color, and its Google Group.
+ * or the product's own when it's in none. A program shows its color, whether it has a roster (a team), and its Google
+ * Group.
  */
-export function ProgramsList({
+export function ProductsList({
   areas,
   products,
   accounts,
@@ -27,16 +30,16 @@ export function ProgramsList({
   const groups = productsByArea(areas, products);
   const accountOf = (id: string | null) => accounts.find((a) => a.id === id);
   return (
-    <ReportSection id="products" title="Programs and products">
+    <ReportSection id="products" title="Products">
       {groups.length === 0 ? (
         <p className="text-sm text-muted-foreground">No products yet.</p>
       ) : (
-        <Table aria-label="Programs and products" focusable>
+        <Table aria-label="Products" focusable>
           <TableHeader>
             <TableRow>
               <TableHead className={pinned}>Name</TableHead>
               <TableHead>Kind</TableHead>
-              <TableHead>Team</TableHead>
+              <TableHead>Roster</TableHead>
               <TableHead>Google Group</TableHead>
               <AccountHeads label="Revenue" />
             </TableRow>
@@ -55,21 +58,21 @@ export function ProgramsList({
                   <TableRow key={product.id}>
                     <TableCell className={pinned + " font-medium"}>
                       <span className="inline-flex items-center gap-2">
-                        {program?.color && (
+                        {program && (
                           <span
                             aria-hidden
                             className="size-3 shrink-0 rounded-full"
-                            style={{ backgroundColor: program.color }}
+                            style={{ backgroundColor: programColor({ id: program.id, color: program.color }) }}
                           />
                         )}
                         {product.name}
                       </span>
                     </TableCell>
                     <TableCell>{kindLabels[product.kind]}</TableCell>
-                    <TableCell>{program?.team ? "Team" : ""}</TableCell>
+                    <TableCell>{program?.team ? "Yes" : ""}</TableCell>
                     <TableCell className="whitespace-nowrap">
                       {program?.google_group && (
-                        <a href={`mailto:${program.google_group.email}`} className="text-link underline">
+                        <a href={groupUrl(program.google_group.email)} className="text-link underline">
                           {program.google_group.email}
                         </a>
                       )}

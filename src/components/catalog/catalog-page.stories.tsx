@@ -9,14 +9,14 @@ const meta = {
     withRouter("/catalog", ["/catalog", "/catalog/offerings", "/catalog/accounts", "/catalog/qualifications"]),
   ],
   parameters: { layout: "fullscreen" },
-  args: { current: "programs", children: <p>The page.</p> },
+  args: { current: "products", children: <p>The page.</p> },
 } satisfies Meta<typeof CatalogPage>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const OnPrograms: Story = {
+export const OnProducts: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("link", { name: "Programs" })).toHaveAttribute("aria-current", "page");
+    await expect(canvas.getByRole("link", { name: "Products" })).toHaveAttribute("aria-current", "page");
   },
 };
 

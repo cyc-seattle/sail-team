@@ -61,15 +61,15 @@ export interface CostAccount {
 
 export const accountTypes: { type: CatalogAccount["type"]; label: string }[] = [
   { type: "revenue", label: "Revenue" },
-  { type: "expense", label: "Expense" },
+  { type: "expense", label: "Expenses" },
   { type: "asset", label: "Assets" },
   { type: "liability", label: "Liabilities" },
   { type: "net_assets", label: "Net assets" },
 ];
 
 export const functionLabels: Record<NonNullable<CatalogAccount["default_function"]>, string> = {
-  program: "Program",
-  management: "Management",
+  program: "Program services",
+  management: "Management and general",
   fundraising: "Fundraising",
 };
 

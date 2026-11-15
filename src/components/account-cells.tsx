@@ -7,7 +7,7 @@ export function AccountHeads({ label = "Account" }: { label?: string }) {
     <>
       <TableHead className="w-16">{label}</TableHead>
       <TableHead>
-        <span className="sr-only">{label} name</span>
+        <span className="sr-only">{label === "Account" ? "Account name" : `${label}: name`}</span>
       </TableHead>
     </>
   );

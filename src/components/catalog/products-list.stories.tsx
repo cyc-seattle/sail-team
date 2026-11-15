@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect } from "storybook/test";
 import { catalog } from "./fixtures";
-import { ProgramsList } from "./programs-list";
+import { ProductsList } from "./products-list";
 
 const meta = {
-  component: ProgramsList,
+  component: ProductsList,
   args: { areas: catalog.areas, products: catalog.products, accounts: catalog.accounts },
-} satisfies Meta<typeof ProgramsList>;
+} satisfies Meta<typeof ProductsList>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
@@ -20,7 +20,7 @@ export const ByArea: Story = {
     ]);
     await expect(canvas.getByRole("link", { name: "jpod@example.org" })).toHaveAttribute(
       "href",
-      "mailto:jpod@example.org",
+      "https://groups.google.com/a/example.org/g/jpod",
     );
   },
 };
