@@ -55,7 +55,8 @@ describe("reading Financial Plans from Directus", () => {
     expect(budget!.warnings).toBeGreaterThan(0);
     expect(two!.note).toBe("A fourth instructor on every **summer morning**.");
     expect([budget!.frozen_by, two!.frozen_by]).toEqual(["Morgan Keel", null]);
-    expect([budget!.platform, two!.platform]).toEqual(["1.38.1", null]);
+    // Every plan with results shows the release that worked them out, draft or frozen.
+    expect([budget!.platform, two!.platform, three!.platform]).toEqual(["1.38.1", "1.38.1", null]);
     expect(three).toMatchObject({ revenue_cents: null, expense_cents: null, net_cents: null, warnings: 0 });
   });
 

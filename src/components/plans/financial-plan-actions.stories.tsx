@@ -14,7 +14,6 @@ const budget: FinancialPlanSummary = {
   effective_from: "2026-07-01",
   frozen_at: "2027-03-10T18:00:00Z",
   frozen_by: null,
-  platform_version: null,
   parent: null,
   archived_at: null,
 };

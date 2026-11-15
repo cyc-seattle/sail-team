@@ -591,7 +591,6 @@ const set = (setId: string, fields: Row) => ({
   fiscal_year: 2027,
   frozen_at: null,
   frozen_by: null,
-  platform_version: null,
   note: null,
   parent_id: null,
   archived_at: null,
@@ -605,7 +604,6 @@ const budget = set(ids.budget, {
   note: "Reviewed with the board",
   frozen_at: "2027-03-10T18:00:00Z",
   frozen_by: ids.saver,
-  platform_version: "1.38.1+engine.0a1b2c3d4e5f",
 });
 const parent = { id: ids.budget, name: "Budget" };
 const twoCoaches = set(ids.twoCoaches, {
@@ -622,7 +620,6 @@ const firstPass = set(ids.firstPass, {
   status: "frozen",
   frozen_at: "2027-02-14T18:00:00Z",
   frozen_by: ids.saver,
-  platform_version: "1.37.0+engine.0a1b2c3d4e5f",
   archived_at: "2027-03-10T18:05:00Z",
 });
 
@@ -771,15 +768,19 @@ function results(setRow: Row, calculatedAt: string, platformVersion: string | nu
 // Budget's results, as platform worked them out when it was frozen, and Two coaches', after its latest change, before
 // platform's engine changed. Three coaches' are still being worked out.
 const worked = [
-  results(budget, "2027-03-10T18:00:00Z", budget.platform_version),
-  results(twoCoaches, "2027-04-02T23:05:00Z", "1.38.1+engine.0a1b2c3d4e5f"),
+  results(budget, "2027-03-10T18:00:00Z", "1.38.1+engine.9f8e7d6c5b4a"),
+  results(twoCoaches, "2027-04-02T23:05:00Z", "1.38.1+engine.9f8e7d6c5b4a"),
 ];
 const resultTables = Object.fromEntries(
   ["plan_results", "plan_result_lines", "plan_result_pnl", "plan_result_warnings", "plan_result_capital"].map(
     (table) => [table, worked.flatMap((r) => r[table] ?? [])],
   ),
 );
-resultTables["plan_results"]!.push({ ...worked[0]!["plan_results"]![0]!, financial_plan_id: ids.firstPass });
+resultTables["plan_results"]!.push({
+  ...worked[0]!["plan_results"]![0]!,
+  financial_plan_id: ids.firstPass,
+  platform_version: "1.37.0+engine.9f8e7d6c5b4a",
+});
 
 const planIds = Object.keys(copies);
 /** A row's staff level, expanded as the app asks for it. */
