@@ -1,16 +1,13 @@
 name: pull-request
 
-# Dev is one shared environment, so only the merge queue deploys to it, a batch at a time, and a PR's
-# push runs only CI (cyc-seattle/platform#69, cyc-seattle/platform#80). The queue builds and tests the
-# image for the commit that lands on main, so main's push goes straight to prod.
+# A PR runs only CI. Main's push deploys dev, starts the journeys there in integration.yml, then
+# previews prod and deploys it once a maintainer approves (cyc-seattle/platform#280).
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  merge_group:
   push:
     branches: [main]
-  # From a branch, `gh workflow run pull-request.yml --ref <branch>` deploys it to dev early. From
-  # main, it deploys dev, then prod, for a commit that didn't come through the queue.
+  # Retries main's deploys.
   workflow_dispatch:
 
 permissions:
@@ -18,46 +15,32 @@ permissions:
 
 jobs:
   ci:
-    if: github.ref != 'refs/heads/main'
-    uses: cyc-seattle/.github/.github/workflows/ci.yml@v3.3.0
+    if: github.event_name == 'pull_request'
+    uses: cyc-seattle/.github/.github/workflows/ci.yml@v3.4.0
   dev:
-    needs: ci
-    if: >-
-      !cancelled() && (needs.ci.result == 'success' || needs.ci.result == 'skipped') &&
-      (github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch')
-    uses: cyc-seattle/.github/.github/workflows/deploy.yml@v3.3.0
+    if: github.ref == 'refs/heads/main'
+    uses: cyc-seattle/.github/.github/workflows/deploy.yml@v3.4.0
     permissions:
       id-token: write
       contents: read
     with:
       environment: dev
       task: deploy
-      # The queue only deploys, and the nightly run tests dev (cyc-seattle/platform#161). A manual
-      # deploy still runs the journeys.
-      integration: ${{ github.event_name != 'merge_group' }}
-  # The check the queue requires, so it waits for dev. A skipped reusable workflow reports under
-  # another name, so this job always runs. A PR passes it, and a queued PR passes only if dev passed.
-  dev-passed:
+  # A run started with GITHUB_TOKEN may start only a workflow_dispatch, so the tests run in a
+  # workflow of their own, which keeps them out of this run.
+  integration:
     needs: dev
-    if: always()
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
     steps:
-      - shell: bash
-        run: |
-          if [[ "$EVENT" == merge_group && "$DEV" != success ]]; then
-            echo "::error::The dev deploy's result is $DEV, so this PR can't merge. Fix it and queue it again."
-            exit 1
-          fi
+      - run: gh workflow run integration.yml -R "$GITHUB_REPOSITORY" --ref main
         env:
-          EVENT: ${{ github.event_name }}
-          DEV: ${{ needs.dev.result }}
+          GH_TOKEN: ${{ github.token }}
   # Runs merged code with prod credentials before anyone approves, which is safe only because main requires a PR.
   prod-preview:
     needs: dev
-    if: >-
-      !cancelled() && github.ref == 'refs/heads/main' &&
-      (needs.dev.result == 'success' || needs.dev.result == 'skipped')
-    uses: cyc-seattle/.github/.github/workflows/deploy.yml@v3.3.0
+    uses: cyc-seattle/.github/.github/workflows/deploy.yml@v3.4.0
     permissions:
       id-token: write
       contents: read
@@ -67,11 +50,8 @@ jobs:
   # Skipped when the preview shows no changes, so a no-op deploy never asks for approval.
   prod:
     needs: prod-preview
-    # !cancelled(): main's run skips ci and dev, and a skipped job further up would otherwise skip this one too.
-    if: >-
-      !cancelled() && needs.prod-preview.result == 'success' &&
-      needs.prod-preview.outputs.changes == 'true'
-    uses: cyc-seattle/.github/.github/workflows/deploy.yml@v3.3.0
+    if: needs.prod-preview.outputs.changes == 'true'
+    uses: cyc-seattle/.github/.github/workflows/deploy.yml@v3.4.0
     permissions:
       id-token: write
       contents: read
