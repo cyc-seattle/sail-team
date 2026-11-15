@@ -213,7 +213,7 @@ export function OverviewReport({ setId, rows, offerings, warnings, totals, funct
   };
   const allFees = feeOf("All programs", every);
   const expenses = functions.program_cents + functions.management_cents + functions.fundraising_cents;
-  const group = by === "session" ? "Season" : "Program";
+  const group = by === "session" ? "Session" : "Program";
   return (
     <>
       <div className="flex justify-end">
@@ -222,7 +222,7 @@ export function OverviewReport({ setId, rows, offerings, warnings, totals, funct
           value={by}
           onChange={setBy}
           options={[
-            { value: "session", label: "By season" },
+            { value: "session", label: "By session" },
             { value: "program", label: "By program" },
           ]}
         />

@@ -2,6 +2,7 @@ import { http, HttpResponse } from "msw";
 import type { Permissions } from "@/directus/access";
 import type { Me } from "@/directus/sign-in";
 import { planner, plannerPermissions } from "./fixtures";
+import { homeTables } from "./home";
 import { tables } from "./plans";
 import { rosterTables } from "./roster";
 
@@ -86,7 +87,8 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
     http.get(`${directusUrl}/items/:table`, ({ params, request }) => {
       const query = new URL(request.url).searchParams;
       const filter = query.get("filter");
-      const rows = (tables[params["table"] as string] ?? rosterTables[params["table"] as string] ?? []).filter(
+      const table = params["table"] as string;
+      const rows = (tables[table] ?? rosterTables[table] ?? homeTables[table] ?? []).filter(
         (r) => !filter || matches(r, JSON.parse(filter), session.me?.id),
       );
       return HttpResponse.json({ data: rows.map((r) => shape(r, query.get("fields"))) });
@@ -112,6 +114,8 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
       const row: Row = {
         saved_at: null,
         saved_by: null,
+        effective_from: null,
+        archived_at: null,
         ...body,
         status: "draft",
         parent_id: parent ? { id: parent["id"], name: parent["name"] } : null,

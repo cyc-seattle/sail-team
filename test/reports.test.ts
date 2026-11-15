@@ -13,10 +13,12 @@ import {
   fees,
   functionalExpenses,
   rulesOf,
-  sessionGrid,
   sortRows,
   type OverviewRow,
   type ReportOffering,
+  withResults,
+  byTermAndProgram,
+  chargedToArea,
 } from "../src/model/reports.ts";
 
 const row = (name: string, revenue: number, offerings = 1): OverviewRow => ({
@@ -108,21 +110,6 @@ describe("numberedOfferings", () => {
       offering("Guppies", "Summer", "2027-07-05"),
     ]);
     expect(groups[0]?.offerings.map((o) => o.label)).toEqual(["Guppies Jul 5", "Guppies Jul 12"]);
-  });
-});
-
-describe("sessionGrid", () => {
-  it("puts sessions in the order they start, with a gap where a program skips one", () => {
-    const { sessions, rows } = sessionGrid([
-      offering("Race Camp", "Week 2", "2027-06-28"),
-      offering("Guppies", "Week 2", "2027-06-28"),
-      offering("Guppies", "Week 1", "2027-06-21"),
-    ]);
-    expect(sessions).toEqual(["Week 1", "Week 2"]);
-    expect(rows.map((r) => [r.program, r.cells.map((c) => c?.label ?? null)])).toEqual([
-      ["Guppies", ["Guppies Week 1", "Guppies Week 2"]],
-      ["Race Camp", [null, "Race Camp Week 2"]],
-    ]);
   });
 });
 
@@ -234,7 +221,6 @@ describe("reportOffering", () => {
   const offering = {
     key: "camp",
     name: "Camp, week 1",
-    season_term: null,
     starts_on: "2027-07-05",
     ends_on: "2027-07-09",
     price_cents: 50_000,
@@ -253,6 +239,13 @@ describe("reportOffering", () => {
     on_water_minutes: null,
   });
 
+  it("names its session by its own name without its program's, and keeps its term", () => {
+    expect(
+      reportOffering({ ...offering, name: "Camp Week 3", term_key: "summer", term: "Summer 2027" }, []),
+    ).toMatchObject({ session: "Week 3", term_key: "summer", term: "Summer 2027" });
+    expect(reportOffering(offering, [])).toMatchObject({ session: "Camp, week 1", term_key: null, term: null });
+  });
+
   it("counts the dates it has an activity other than travel, and one sailor's hours on the water", () => {
     expect(
       reportOffering(offering, [day("2027-07-05"), day("2027-07-05"), day("2027-07-06"), day("2027-07-04", "travel")]),
@@ -260,7 +253,58 @@ describe("reportOffering", () => {
   });
 
   it("names its session by its name when it has none, and takes its sailors as its max when it has no capacity", () => {
-    expect(reportOffering(offering, [])).toMatchObject({ session: "Camp, week 1", max: 8, fee_cents: 50_000 });
+    expect(reportOffering(offering, [])).toMatchObject({
+      session: "Camp, week 1",
+      max: 8,
+      max_set: false,
+      fee_cents: 50_000,
+    });
+  });
+});
+
+describe("withResults", () => {
+  const offering = (key: string) => ({
+    key,
+    program: "Guppies",
+    session: key,
+    starts_on: "2027-07-05",
+    ends_on: "2027-07-09",
+    fee_cents: 0,
+    estimated: 8,
+    max: 10,
+    days: 5,
+    hours: 15,
+    cogs_rate: null,
+    note: null,
+  });
+
+  it("gives each offering its room, breakeven and money from its own P&L row, and none without one", () => {
+    const pnl = [
+      {
+        level: "offering" as const,
+        subject_key: "w1",
+        allocation_holds: 12,
+        breakeven_enrollment: 6,
+        revenue_cents: 500,
+        expense_cents: 300,
+        term_key: "t",
+        term_name: "Summer 2027",
+      },
+      {
+        level: "product" as const,
+        subject_key: "w2",
+        allocation_holds: 99,
+        breakeven_enrollment: 99,
+        revenue_cents: 99,
+        expense_cents: 99,
+        term_key: null,
+        term_name: null,
+      },
+    ];
+    expect(withResults([offering("w1"), offering("w2")], pnl)).toMatchObject([
+      { key: "w1", room: 12, breakeven: 6, revenue_cents: 500, expense_cents: 300 },
+      { key: "w2", room: null, breakeven: null, revenue_cents: 0, expense_cents: 0 },
+    ]);
   });
 });
 
@@ -378,5 +422,49 @@ describe("capitalList", () => {
       [null, "Coach boat", 5_000, true],
       [null, "Sails", 7_000, false],
     ]);
+  });
+});
+
+describe("byTermAndProgram", () => {
+  const at = (program: string, session: string, starts_on: string, term: string | null) => ({
+    ...offering(program, session, starts_on),
+    term,
+  });
+
+  it("groups by term in the order they start, no term last, then by program, then by start date", () => {
+    const groups = byTermAndProgram([
+      at("K-Pod", "Fall", "2027-09-02", "Fall"),
+      at("Race Camp", "Week 2", "2027-07-01", null),
+      at("J-Pod", "Fall", "2027-09-01", "Fall"),
+      at("J-Pod", "Spring", "2027-03-01", "Spring"),
+      at("J-Pod", "Fall 2", "2027-10-01", "Fall"),
+    ]);
+    expect(groups.map((g) => [g.term, g.programs.map((p) => [p.program, p.offerings.map((o) => o.session)])])).toEqual([
+      ["Spring", [["J-Pod", ["Spring"]]]],
+      [
+        "Fall",
+        [
+          ["J-Pod", ["Fall", "Fall 2"]],
+          ["K-Pod", ["Fall"]],
+        ],
+      ],
+      [null, [["Race Camp", ["Week 2"]]]],
+    ]);
+  });
+});
+
+describe("chargedToArea", () => {
+  const offerings = [
+    { ...offering("J-Pod", "Spring", "2027-03-01"), revenue_cents: 100, expense_cents: 60 },
+    { ...offering("K-Pod", "Spring", "2027-03-01"), revenue_cents: 80, expense_cents: 70 },
+  ];
+
+  it("is the area's total less its offerings', or nothing when they match", () => {
+    expect(chargedToArea(offerings, { revenue_cents: 180, expense_cents: 170 })).toEqual({
+      revenue_cents: 0,
+      expense_cents: 40,
+    });
+    expect(chargedToArea(offerings, { revenue_cents: 180, expense_cents: 130 })).toBeNull();
+    expect(chargedToArea(offerings, null)).toBeNull();
   });
 });

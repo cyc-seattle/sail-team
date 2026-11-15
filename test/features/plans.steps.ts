@@ -205,6 +205,47 @@ Given("its only Program Plan has an offering with a coach on every practice, 100
   // Ten days of camp from 8am to 6pm, each in a block with one coach, made with the Financial Plan above.
 });
 
+// A program area's P&L by term.
+Given(
+  "a frozen Financial Plan whose Youth Racing makes $20,000 in {string} and loses $5,000 in {string}",
+  async ({ club }, summer: string, fall: string) => {
+    const { operations, youth } = await plansWithCopies(club);
+    const inSummer = await club.term(operations, summer, "07-01", "08-31");
+    const inFall = await club.term(operations, fall, "09-01", "11-30");
+    await club.offering(youth, `${OFFERING} summer`, 1, 2_000_000, 0, { term_key: inSummer });
+    await club.offering(youth, `${OFFERING} fall`, 1, 0, 500_000, { term_key: inFall });
+    opened.set = await club.financialPlan("Budget", [operations, youth]);
+    await club.save(opened.set);
+  },
+);
+
+Then(
+  "{string} shows a net of $20,000, and {string} a net of −$5,000",
+  async ({ page }, summer: string, fall: string) => {
+    const terms = page.getByRole("table", { name: "Budget" });
+    await expect(
+      terms
+        .getByRole("row", { name: new RegExp(`^${summer}`) })
+        .getByRole("cell")
+        .last(),
+    ).toHaveText("$20,000");
+    await expect(
+      terms
+        .getByRole("row", { name: new RegExp(`^${fall}`) })
+        .getByRole("cell")
+        .last(),
+    ).toHaveText("−$5,000");
+  },
+);
+
+Then("its program shows a net of $20,000 in {string}", async ({ page, club }, term: string) => {
+  // The program's subtotal row comes right after its term's.
+  const rows = page.getByRole("table", { name: "Budget" }).getByRole("row");
+  const names = await rows.evaluateAll((all) => all.map((r) => r.querySelector("td")?.textContent ?? ""));
+  const program = names.indexOf(`Beginner camp ${club.run}`, names.indexOf(term));
+  await expect(rows.nth(program).getByRole("cell").last()).toHaveText("$20,000");
+});
+
 When(/^I open Youth Racing's report in (?:that Financial Plan|the draft)$/, async ({ page, club }) => {
   await page.goto(`${await app()}/plans/financial/${opened.set}/${club.areaPlan}`);
 });
@@ -303,10 +344,6 @@ Given(
   },
 );
 
-When("I see it on the calendar", async ({ page }) => {
-  await page.getByRole("link", { name: "See on the calendar" }).click();
-});
-
 Then("the calendar shows the offering's 10 sailors across both weeks", async ({ page }) => {
   await expect(page.getByRole("group", { name: "Year" })).toContainText("10/10");
 });
@@ -323,14 +360,15 @@ Then("it has no staff, coach boats or boats yet, where the other days have 1 Lea
   await expect(block).toContainText("Usually 1 Lead coach");
 });
 
-Then("its offering shows a fee of $1,000 and 10 sailors", async ({ page, club }) => {
-  // Its row, named for its program and its session (with no season, its own name), not the program's own row above it.
-  const cells = page
-    .getByRole("table", { name: "Offerings" })
-    .getByRole("row", { name: `Beginner camp ${club.run} ${OFFERING}` })
-    .getByRole("cell");
-  await expect(cells.nth(1)).toHaveText("$1,000");
-  await expect(cells.nth(3)).toHaveText("10");
+Then("its offering's enrollment shows a target of 10 sailors, and its fees a fee of $1,000", async ({ page, club }) => {
+  // Its row, named for its program and its session (with no program in its name, its own name), not the program's own row above it.
+  const cells = (table: string) =>
+    page
+      .getByRole("table", { name: table, exact: true })
+      .getByRole("row", { name: `Beginner camp ${club.run} ${OFFERING}` })
+      .getByRole("cell");
+  await expect(cells("Enrollment").nth(4)).toHaveText("10");
+  await expect(cells("Fees").nth(1)).toHaveText("$1,000");
 });
 
 Then(
@@ -500,14 +538,35 @@ Then("Planning no longer lists {string}", async ({ page }, name: string) => {
   await expect(page.locator(`a[href$="/plans/financial/${named.get(name)}"]`)).toHaveCount(0);
 });
 
-When("I mark it active", async ({ page }) => {
-  await page.getByRole("button", { name: "Mark active" }).click();
+When("I make it active from {word} {int}, {int}", async ({ page }, month: string, day: number, year: number) => {
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+  const date = `${year}-${String(months.indexOf(month) + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  await page.getByRole("button", { name: "Make active" }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByRole("button", { name: "Mark active" }).click();
+  await dialog.getByLabel("Active from").fill(date);
+  await dialog.getByRole("button", { name: "Make active" }).click();
   await expect(dialog).toBeHidden({ timeout: 30_000 });
 });
 
-Then("it's marked active", async ({ page }) => {
-  await expect(page.getByText("Active", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Mark active" })).toHaveCount(0);
+Then("it's in force since {string}", async ({ page }, when: string) => {
+  await expect(page.getByText(`In force since ${when}`)).toBeVisible({ timeout: 30_000 });
+});
+
+Then("I see no way to freeze it or make it active", async ({ page }) => {
+  await expect(page.getByRole("button", { name: "Duplicate" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Freeze" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Make active" })).toHaveCount(0);
 });

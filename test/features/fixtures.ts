@@ -4,13 +4,14 @@ import { mkdir, rmdir } from "node:fs/promises";
 import { expect, type Page } from "@playwright/test";
 import { test as base } from "playwright-bdd";
 import { Club } from "./club";
+import { Posts } from "./posts";
 import { Squad } from "./squad";
 import { asAdmin, authentikLock, devPlatform, proxyOk } from "./support";
 import { cleanUp, newVisitor, type Visitor } from "./visitors";
 
 // What every journey's steps share: the scenario's made-up visitor, and its made-up club's plans on dev.
 
-export const test = base.extend<{ visitor: Visitor; club: Club; squad: Squad }>({
+export const test = base.extend<{ visitor: Visitor; club: Club; squad: Squad; posts: Posts }>({
   visitor: [
     // eslint-disable-next-line no-empty-pattern -- Playwright reads a fixture's dependencies from this pattern.
     async ({}, use) => {
@@ -47,6 +48,18 @@ export const test = base.extend<{ visitor: Visitor; club: Club; squad: Squad }>(
       }
     },
     { timeout: 180_000 },
+  ],
+  posts: [
+    // eslint-disable-next-line no-empty-pattern -- Playwright reads a fixture's dependencies from this pattern.
+    async ({}, use) => {
+      const posts = new Posts();
+      try {
+        await use(posts);
+      } finally {
+        await posts.cleanUp();
+      }
+    },
+    { timeout: 60_000 },
   ],
 });
 

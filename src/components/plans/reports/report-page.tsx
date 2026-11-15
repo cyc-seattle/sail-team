@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
+import type { InForce } from "@/model/financial-plans";
 import { PageHeader } from "../page-header";
-import { VersionBadge, type VersionState } from "../version-badge";
+import { PlanStatus, type VersionState } from "../version-badge";
 import { ReportNav, type Report } from "./report-nav";
 
 export interface ReportPageProps {
@@ -8,6 +9,8 @@ export interface ReportPageProps {
   /** The Financial Plan's name, such as Budget. */
   name: string;
   status: VersionState;
+  /** When it's in force, or null when it's never been made active. */
+  inForce?: InForce | null;
   reports: Report[];
   current: string;
   /** The plan's buttons, on the right. */
@@ -16,12 +19,21 @@ export interface ReportPageProps {
 }
 
 /** One report of a Financial Plan: its name with its status beside it, its buttons, the report switcher, then the report's sections. */
-export function ReportPage({ setId, name, status, reports, current, actions, children }: ReportPageProps) {
+export function ReportPage({
+  setId,
+  name,
+  status,
+  inForce = null,
+  reports,
+  current,
+  actions,
+  children,
+}: ReportPageProps) {
   return (
     <main className="mx-auto grid max-w-6xl gap-6 p-card">
       <PageHeader
         title={name}
-        badge={<VersionBadge state={status} />}
+        badge={<PlanStatus state={status} inForce={inForce} />}
         back={{ to: "/plans", label: "Planning" }}
         actions={actions}
       />

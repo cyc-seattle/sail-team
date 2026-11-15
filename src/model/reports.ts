@@ -1,6 +1,6 @@
 // The shapes the Planning reports show, and how they're made from a Financial Plan's results and inputs.
 import type { PlanActivity, PlanOffering } from "@cyc-seattle/platform/planning";
-import type { Member, PlanLine, ResultWarning, Results } from "./financial-plans.ts";
+import type { Member, PlanLine, PnlRow, ResultWarning, Results } from "./financial-plans.ts";
 
 /** Lines that are worked out the same way, added up, such as every offering's coach wages. */
 export interface LineAmount {
@@ -107,6 +107,10 @@ export interface ReportOffering {
   program: string;
   /** When it runs, as staff name it: Week 3 of summer, or Spring. */
   session: string;
+  /** The key of the term it's in, or null for one in none. */
+  term_key?: string | null;
+  /** The term's name, such as Summer 2027, or null. */
+  term?: string | null;
   /** Its own name, such as "Adult Learn to Sail Weekday Jul 2026". */
   name?: string;
   /** Its program's id and the color the catalog gives it, for the program's color on the Calendar. */
@@ -119,6 +123,15 @@ export interface ReportOffering {
   /** How many sailors the plan expects. */
   estimated: number;
   max: number;
+  /** Whether the plan sets its max, rather than taking the sailors expected. */
+  max_set?: boolean;
+  /** The most sailors its blocks can take, from the results. Null when nothing limits it. */
+  room?: number | null;
+  /** The fewest sailors at which it pays for itself, from the results. Null when it doesn't even when full. */
+  breakeven?: number | null;
+  /** What it takes in and spends, from the results. */
+  revenue_cents?: number;
+  expense_cents?: number;
   days: number;
   /** Hours on the water for one sailor, across the whole offering. */
   hours: number;
@@ -130,7 +143,7 @@ export interface ReportOffering {
 /** An offering with its name, its program and session, such as "J-Pod Spring" or "Guppies Week 3". */
 export type NumberedOffering = ReportOffering & { label: string };
 
-const byStart = (offerings: ReportOffering[]) =>
+const byStart = <T extends ReportOffering>(offerings: T[]): T[] =>
   [...offerings].sort(
     (a, b) =>
       a.starts_on.localeCompare(b.starts_on) ||
@@ -179,23 +192,69 @@ export function numberedOfferings(offerings: ReportOffering[]): { program: strin
   });
 }
 
-/**
- * Each program's offerings by session: the sessions in the order they first start, and for each program, its offering
- * in each session, if it has one.
- */
-export function sessionGrid(offerings: ReportOffering[]): {
-  sessions: string[];
-  rows: { program: string; cells: (NumberedOffering | undefined)[] }[];
-} {
-  const sessions = [...new Set(byStart(offerings).map((o) => o.session))];
-  const rows = numberedOfferings(offerings).map(({ program, offerings: own }) => ({
-    program,
-    cells: sessions.map((session) => own.find((o) => o.session === session)),
-  }));
-  return { sessions, rows };
+export type EnrollmentBy = "session" | "program";
+
+/** A term's offerings, by program, each program's in the order they start. A null term holds the offerings in none. */
+export interface TermGroup {
+  term: string | null;
+  programs: { program: string; offerings: NumberedOffering[] }[];
 }
 
-export type EnrollmentBy = "session" | "program";
+/**
+ * Offerings by term, in the order the terms start, with the offerings in no term last, then by program, in the order
+ * each starts in the term, then by start date. Each keeps its name with its program, such as Guppies Week 3.
+ */
+export function byTermAndProgram(offerings: ReportOffering[]): TermGroup[] {
+  const sorted = byStart(numberedOfferings(offerings).flatMap((g) => g.offerings));
+  const terms = [...new Set(sorted.map((o) => o.term ?? null))].sort((a, b) => Number(a === null) - Number(b === null));
+  return terms.map((term) => {
+    const own = sorted.filter((o) => (o.term ?? null) === term);
+    return {
+      term,
+      programs: [...new Set(own.map((o) => o.program))].map((program) => ({
+        program,
+        offerings: own.filter((o) => o.program === program),
+      })),
+    };
+  });
+}
+
+/** Revenue and expenses, in cents. */
+export interface InAndOut {
+  revenue_cents: number;
+  expense_cents: number;
+}
+
+/** What `offerings` take in and spend, from the results. */
+export const moneyOf = (offerings: ReportOffering[]): InAndOut => ({
+  revenue_cents: offerings.reduce((t, o) => t + (o.revenue_cents ?? 0), 0),
+  expense_cents: offerings.reduce((t, o) => t + (o.expense_cents ?? 0), 0),
+});
+
+/** A program area's total revenue and expenses, from its P&L row. Null when it has none. */
+export function areaTotal(
+  pnl: Pick<PnlRow, "level" | "subject_key" | "revenue_cents" | "expense_cents">[],
+  areaId: string | null,
+): InAndOut | null {
+  const row = pnl.find((p) => p.level === "program_area" && p.subject_key === areaId);
+  return row ? { revenue_cents: row.revenue_cents, expense_cents: row.expense_cents } : null;
+}
+
+/**
+ * What's charged to a program area itself rather than to any of its offerings, such as its director's time: the
+ * area's total less its offerings'. Null when there's nothing, or no total to compare.
+ */
+export function chargedToArea(offerings: ReportOffering[], area: InAndOut | null): InAndOut | null {
+  if (!area) {
+    return null;
+  }
+  const own = moneyOf(offerings);
+  const rest = {
+    revenue_cents: area.revenue_cents - own.revenue_cents,
+    expense_cents: area.expense_cents - own.expense_cents,
+  };
+  return rest.revenue_cents === 0 && rest.expense_cents === 0 ? null : rest;
+}
 
 /** The groups offerings fall in: programs A to Z, or sessions in the order they first start. */
 function groupsOf(offerings: ReportOffering[], by: EnrollmentBy): { name: string; offerings: ReportOffering[] }[] {
@@ -308,6 +367,7 @@ export function reportsOf(members: Member[]): { key: string; name: string }[] {
     { key: "overview", name: "Overview" },
     { key: "calendar", name: "Calendar" },
     { key: "rates", name: "Assumptions" },
+    { key: "storage", name: "Storage" },
     ...areas,
     { key: "non-program", name: "Non-program" },
     { key: "fundraising", name: "Fundraising and capital" },
@@ -593,11 +653,23 @@ export function onWaterMinutes(
  * An offering as its program area's report shows it: its session, or its name when it has none, its sailors, its days,
  * which are the dates it has an activity other than travel, and one sailor's hours on the water.
  */
+/**
+ * When an offering runs, as staff name it: the offering's name without its program's, such as Week 3 from "Guppies
+ * Week 3". A term is too broad for that, since a summer term holds every week of camp.
+ */
+function sessionOf(offering: { name: string; program: string }): string {
+  const rest = offering.name.startsWith(`${offering.program} `) ? offering.name.slice(offering.program.length + 1) : "";
+  return rest || offering.name;
+}
+
 export function reportOffering(
   offering: Pick<
     PlanOffering,
-    "key" | "name" | "season_term" | "starts_on" | "ends_on" | "price_cents" | "capacity" | "cogs_rate" | "note"
+    "key" | "name" | "starts_on" | "ends_on" | "price_cents" | "capacity" | "cogs_rate" | "note"
   > & {
+    /** Platform's `plan_offerings.term_key`, which the published types don't have yet. */
+    term_key?: string | null;
+    term?: string | null;
     program: string;
     program_id?: string | null;
     program_color?: string | null;
@@ -608,7 +680,9 @@ export function reportOffering(
   return {
     key: offering.key,
     program: offering.program,
-    session: offering.season_term || offering.name,
+    session: sessionOf(offering),
+    term_key: offering.term_key ?? null,
+    term: offering.term ?? null,
     name: offering.name,
     program_id: offering.program_id ?? null,
     program_color: offering.program_color ?? null,
@@ -617,11 +691,33 @@ export function reportOffering(
     fee_cents: offering.price_cents ?? 0,
     estimated: offering.estimated,
     max: offering.capacity ?? offering.estimated,
+    max_set: offering.capacity !== null,
     days: new Set(activities.filter((a) => a.kind !== "travel").map((a) => a.date)).size,
     hours: activities.reduce((total, a) => total + onWaterMinutes(a), 0) / 60,
     cogs_rate: offering.cogs_rate,
     note: offering.note,
   };
+}
+
+/** Offerings with the room their blocks have and the sailors they need to pay for themselves, from the results. */
+export function withResults(
+  offerings: ReportOffering[],
+  pnl: Pick<
+    PnlRow,
+    "level" | "subject_key" | "revenue_cents" | "expense_cents" | "allocation_holds" | "breakeven_enrollment"
+  >[],
+): ReportOffering[] {
+  const rows = new Map(pnl.filter((p) => p.level === "offering").map((p) => [p.subject_key, p]));
+  return offerings.map((o) => {
+    const row = rows.get(o.key);
+    return {
+      ...o,
+      room: row?.allocation_holds ?? null,
+      breakeven: row?.breakeven_enrollment ?? null,
+      revenue_cents: row?.revenue_cents ?? 0,
+      expense_cents: row?.expense_cents ?? 0,
+    };
+  });
 }
 
 /** A regatta trip, with what each coach's travel costs. */
@@ -632,4 +728,55 @@ export interface Trip {
   nights: number | null;
   airfare_cents: number | null;
   miles: number | null;
+}
+
+/** Whether a line is storage: booked to the Storage account, under 7350 Occupancy/Rent (cyc-seattle/platform#251). */
+export const isStorage = (line: Pick<PlanLine, "account_number" | "account_name">) =>
+  line.account_number === "7351" || line.account_name === "Storage";
+
+/** One storage cost, and who pays it: a program area, every program through the shared costs, or none. */
+export interface StorageCost {
+  payer: string;
+  kind: "area" | "shared" | "unallocated";
+  name: string;
+  cents: number;
+}
+
+/**
+ * The year's storage costs, as the Storage tab shows them: what each program area pays, then what every program shares
+ * through the pools, then what no program pays. Results say only what each line came to, so a shared cost is named by
+ * its line, and its total is what reached every offering.
+ */
+export function storageOf(lines: (Line & Pick<PlanLine, "member">)[], members: Member[]): StorageCost[] {
+  const costs = new Map<string, StorageCost>();
+  const add = (cost: Omit<StorageCost, "cents">, cents: number) => {
+    const id = `${cost.kind}|${cost.payer}|${cost.name}`;
+    costs.set(id, { ...cost, cents: (costs.get(id)?.cents ?? 0) + cents });
+  };
+  const areaOf = new Map(members.filter((m) => m.kind === "program_area").map((m) => [m.id, reportName(m)]));
+  // What non-program sales cover of a pool (`offset:` lines) stays in the pool's share, as on Non-program.
+  for (const line of lines.filter((l) => !l.revenue && isStorage(l) && !l.key.startsWith("offset:"))) {
+    if (isShare(line)) {
+      add(
+        {
+          payer: `Shared (${poolOf(line)})`,
+          kind: "shared",
+          name: line.name.split(" share: ").slice(1).join(" share: ") || line.name,
+        },
+        line.amount_cents,
+      );
+      continue;
+    }
+    const area = line.member ? areaOf.get(line.member) : undefined;
+    add(
+      area
+        ? { payer: area, kind: "area", name: line.name }
+        : { payer: "No program", kind: "unallocated", name: line.name },
+      line.amount_cents,
+    );
+  }
+  const order = { area: 0, shared: 1, unallocated: 2 };
+  return [...costs.values()].sort(
+    (a, b) => order[a.kind] - order[b.kind] || a.payer.localeCompare(b.payer) || a.name.localeCompare(b.name),
+  );
 }

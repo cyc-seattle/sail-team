@@ -1,50 +1,15 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { expect, userEvent } from "storybook/test";
-import type { ScheduleBlock } from "@/model/schedule";
-import { closedDays, doublehandedOfferings, summerOfferings, summerSchedule } from "./fixtures";
+import { closedDays, doublehandedOfferings, doublehandedSchedule, summerOfferings, summerSchedule } from "./fixtures";
 import { PlanCalendar } from "./plan-calendar";
-
-/** Each Doublehanded offering's Tuesday and Thursday practices, J-Pod on Tuesdays and the rest on Thursdays. */
-const doublehanded: ScheduleBlock[] = doublehandedOfferings.flatMap((o) => {
-  const out: ScheduleBlock[] = [];
-  for (
-    let d = new Date(`${o.starts_on}T00:00:00Z`);
-    d <= new Date(`${o.ends_on}T00:00:00Z`);
-    d.setUTCDate(d.getUTCDate() + 1)
-  ) {
-    if (d.getUTCDay() !== (o.program === "J-Pod" ? 2 : 4)) {
-      continue;
-    }
-    const date = d.toISOString().slice(0, 10);
-    out.push({
-      key: `${o.key} ${date}`,
-      date,
-      name: null,
-      activities: [
-        {
-          key: `${o.key} ${date}`,
-          offering_key: o.key,
-          kind: "practice",
-          start_time: "16:00:00",
-          end_time: "19:00:00",
-          setup_minutes: 30,
-          putaway_minutes: 30,
-          on_water_minutes: 150,
-        },
-      ],
-      parts: ["2 Level 3 Coaches", "2 RIBs"],
-    });
-  }
-  return out;
-});
 
 const meta = {
   component: PlanCalendar,
   args: {
     areas: [
       { key: "summer", name: "Summer", blocks: summerSchedule, offerings: summerOfferings },
-      { key: "doublehanded", name: "Doublehanded", blocks: doublehanded, offerings: doublehandedOfferings },
+      { key: "doublehanded", name: "Doublehanded", blocks: doublehandedSchedule, offerings: doublehandedOfferings },
     ],
     closedDays,
     area: null,

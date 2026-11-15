@@ -4,6 +4,7 @@ import type { ScheduleBlock, ScheduledActivity } from "@/model/schedule";
 import type { ListedPlan, Totals } from "@/model/financial-plans";
 import type {
   AccountAmount,
+  InAndOut,
   CapitalItem,
   FunctionalExpenses,
   LineAmount,
@@ -144,6 +145,12 @@ const camp = (program: string, n: number, fee: number, estimated: number, max: n
   fee_cents: fee,
   estimated,
   max,
+  max_set: true,
+  // Race Camp runs outside the summer term, as a one-off.
+  term: program === "Race Camp" ? null : "Summer 2027",
+  // Week 5's Opti Camp is short a coach, and Race Camp needs more sailors than it expects.
+  room: program === "Opti Camp" && n === 4 ? 12 : max,
+  breakeven: program === "Race Camp" ? 9 : program === "Guppies" ? 7 : 10,
   days: 5,
   hours,
   cogs_rate: program === "Race Camp" ? 0.08 : null,
@@ -157,7 +164,7 @@ export const summerOfferings: ReportOffering[] = [
   ...[1, 4, 7].map((n) => camp("Race Camp", n, 61_000, 8, 12, 35)),
 ];
 
-const season = (
+const termOffering = (
   program: string,
   session: string,
   starts_on: string,
@@ -167,11 +174,16 @@ const season = (
   key: `${program}-${session}`,
   program,
   session,
+  term_key: `term-${session.toLowerCase()}`,
+  term: `${session} 2027`,
   starts_on,
   ends_on,
   fee_cents: 145_000,
   estimated,
   max: 16,
+  max_set: true,
+  room: 16,
+  breakeven: session === "Summer" ? null : 9,
   days: 22,
   hours: 66,
   cogs_rate: null,
@@ -180,15 +192,49 @@ const season = (
 
 // Spring and fall interleaved, as the old pages listed them.
 export const doublehandedOfferings: ReportOffering[] = [
-  season("J-Pod", "Spring", "2027-03-01", "2027-06-11", 12),
-  season("J-Pod", "Fall", "2027-09-07", "2027-11-19", 10),
-  season("K-Pod", "Spring", "2027-03-02", "2027-06-12", 14),
-  season("L-Pod", "Spring", "2027-03-04", "2027-06-10", 8),
-  season("K-Pod", "Fall", "2027-09-08", "2027-11-20", 12),
-  season("L-Pod", "Fall", "2027-09-09", "2027-11-18", 10),
-  season("J-Pod", "Summer", "2027-06-22", "2027-08-12", 9),
-  season("K-Pod", "Summer", "2027-06-23", "2027-08-13", 11),
+  termOffering("J-Pod", "Spring", "2027-03-01", "2027-06-11", 12),
+  termOffering("J-Pod", "Fall", "2027-09-07", "2027-11-19", 10),
+  termOffering("K-Pod", "Spring", "2027-03-02", "2027-06-12", 14),
+  termOffering("L-Pod", "Spring", "2027-03-04", "2027-06-10", 8),
+  termOffering("K-Pod", "Fall", "2027-09-08", "2027-11-20", 12),
+  termOffering("L-Pod", "Fall", "2027-09-09", "2027-11-18", 10),
+  termOffering("J-Pod", "Summer", "2027-06-22", "2027-08-12", 9),
+  termOffering("K-Pod", "Summer", "2027-06-23", "2027-08-13", 11),
 ];
+
+/** Each Doublehanded offering's Tuesday and Thursday practices, J-Pod on Tuesdays and the rest on Thursdays. */
+export const doublehandedSchedule: ScheduleBlock[] = doublehandedOfferings.flatMap((o) => {
+  const out: ScheduleBlock[] = [];
+  for (
+    let d = new Date(`${o.starts_on}T00:00:00Z`);
+    d <= new Date(`${o.ends_on}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + 1)
+  ) {
+    if (d.getUTCDay() !== (o.program === "J-Pod" ? 2 : 4)) {
+      continue;
+    }
+    const date = d.toISOString().slice(0, 10);
+    out.push({
+      key: `${o.key} ${date}`,
+      date,
+      name: null,
+      activities: [
+        {
+          key: `${o.key} ${date}`,
+          offering_key: o.key,
+          kind: "practice",
+          start_time: "16:00:00",
+          end_time: "19:00:00",
+          setup_minutes: 30,
+          putaway_minutes: 30,
+          on_water_minutes: 150,
+        },
+      ],
+      parts: ["2 Level 3 Coaches", "2 RIBs"],
+    });
+  }
+  return out;
+});
 
 const offering = (
   program: string,
@@ -262,6 +308,40 @@ export const doublehandedStatement = {
   ],
   indirect: [account(null, "G&A", 1_700_000), account(null, "Program admin", 500_000), account(null, "Space", 200_000)],
 };
+
+/** An area's revenue and expenses, from its statement. */
+const totalOf = (statement: { revenue: AccountAmount[]; direct: AccountAmount[]; indirect: AccountAmount[] }) => ({
+  revenue_cents: statement.revenue.reduce((t, a) => t + a.cents, 0),
+  expense_cents: [...statement.direct, ...statement.indirect].reduce((t, a) => t + a.cents, 0),
+});
+
+/**
+ * Shares an area's total out among its offerings, revenue by what their sailors pay and expenses by how big they're
+ * planned, all but `charged`, which is the area's own, so the Budget adds up to the statement.
+ */
+function fit(offerings: ReportOffering[], total: InAndOut, charged: number): void {
+  const share = (cents: number, weight: (o: ReportOffering) => number) => {
+    const all = offerings.reduce((t, o) => t + weight(o), 0);
+    let left = cents;
+    return offerings.map((o, i) => {
+      const part = i === offerings.length - 1 ? left : Math.round((cents * weight(o)) / all);
+      left -= part;
+      return part;
+    });
+  };
+  const revenue = share(total.revenue_cents, (o) => o.fee_cents * o.estimated);
+  // Summer's coaches cost more than its sailors pay.
+  const expenses = share(total.expense_cents - charged, (o) => o.fee_cents * o.max * (o.session === "Summer" ? 2 : 1));
+  offerings.forEach((o, i) => Object.assign(o, { revenue_cents: revenue[i], expense_cents: expenses[i] }));
+}
+
+/** Doublehanded's total, with $7,000 of coaching charged to the area itself. */
+export const doublehandedTotal = totalOf(doublehandedStatement);
+fit(doublehandedOfferings, doublehandedTotal, 700_000);
+
+/** Summer's total, with $9,000 of its director's time charged to the area itself. */
+export const summerTotal = totalOf(summerStatement);
+fit(summerOfferings, summerTotal, 900_000);
 
 /** What CSC sells outside the programs. */
 export const products: Product[] = [
@@ -600,6 +680,7 @@ const planSummary = (
   fields: Partial<Omit<ListedPlan, "net_cents">> & Pick<ListedPlan, "id" | "name" | "status">,
 ): ListedPlan => ({
   year: 2027,
+  in_force: null,
   saved_at: null,
   saved_by: null,
   parent: null,
@@ -613,12 +694,16 @@ const planSummary = (
   net_cents: (fields.revenue_cents ?? 49_900_000) - (fields.expense_cents ?? 44_600_000),
 });
 
-/** Two years of Financial Plans: each year's active one, drafts including one from the planning agent, older frozen ones, and an archived one. */
+/**
+ * Two years of Financial Plans: each year's plan in force, a draft made active from a later date, drafts including one
+ * from the planning agent, an older frozen one that was in force, and an archived one.
+ */
 export const planningPlans: ListedPlan[] = [
   planSummary({
     id: "budget",
     name: "Budget",
-    status: "active",
+    status: "saved",
+    in_force: { when: "now", from: "2026-07-01", to: "2027-08-31" },
     saved_at: "2027-03-10T18:00:00Z",
     saved_by: "Morgan Keel",
     platform: "1.38.1",
@@ -631,12 +716,13 @@ export const planningPlans: ListedPlan[] = [
     parent: { id: "budget", name: "Budget" },
     warnings: 4,
     expense_cents: 44_100_000,
-    note: "Allocated every summer week and the spring and fall seasons. 4 warnings left",
+    note: "Allocated every summer week and the spring and fall terms. 4 warnings left",
   }),
   planSummary({
     id: "two-coaches",
-    name: "Two more coaches",
+    name: "Fall re-plan",
     status: "draft",
+    in_force: { when: "later", from: "2027-09-01", to: null },
     parent: { id: "budget", name: "Budget" },
     note: "What a second full-time coach would cost.",
     expense_cents: 47_800_000,
@@ -645,6 +731,7 @@ export const planningPlans: ListedPlan[] = [
     id: "board",
     name: "Board review",
     status: "saved",
+    in_force: { when: "past", from: "2026-03-01", to: "2026-06-30" },
     saved_at: "2027-02-02T18:00:00Z",
     saved_by: "Sam Halyard",
     platform: "1.36.0",
@@ -662,7 +749,8 @@ export const planningPlans: ListedPlan[] = [
     id: "2026",
     name: "2026 Budget",
     year: 2026,
-    status: "active",
+    status: "saved",
+    in_force: { when: "now", from: "2025-07-01", to: null },
     saved_at: "2026-03-04T18:00:00Z",
     revenue_cents: 45_200_000,
     expense_cents: 42_900_000,

@@ -14,6 +14,7 @@ import type {
   PlanStaffLevel,
   PlanTrip,
 } from "@cyc-seattle/platform/planning";
+import { byStart, type Term } from "@/model/terms";
 import { queryOptions } from "@tanstack/react-query";
 import {
   plannedEnrollment,
@@ -228,6 +229,8 @@ export interface PlanInputs {
   rules: Record<string, string | null>;
   /** Each program area's offerings, by its report's key. */
   offerings: Record<string, ReportOffering[]>;
+  /** The Operations Plan's terms, by start date. */
+  terms: Term[];
   /** What each of the Operations Plan's offerings sells, such as boat storage. */
   products: { key: string; product: string }[];
   /** Each program area's programs' settings, by its report's key. */
@@ -264,15 +267,17 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         trips,
         blocks,
         capitalItems,
+        termRows,
       ] = await Promise.all([
         versions.length
           ? readAll<{ id: string; rules: string | null }>("plan_versions", { id: { _in: versions } }, ["id", "rules"])
           : [],
-        rowsOf<PlanOffering & { product_id: { name: string; programs: { id: string; color: string | null }[] } }>(
-          "plan_offerings",
-          versions,
-          ["*", "product_id.name", "product_id.programs.id", "product_id.programs.color"],
-        ),
+        rowsOf<
+          PlanOffering & {
+            term_key?: string | null;
+            product_id: { name: string; programs: { id: string; color: string | null }[] };
+          }
+        >("plan_offerings", versions, ["*", "product_id.name", "product_id.programs.id", "product_id.programs.color"]),
         rowsOf<PlanActivity>("plan_activities", versions, [
           "id",
           "key",
@@ -337,7 +342,10 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
           ops ? [ops.version_id] : [],
           ["key", "note", "link"],
         ),
+        rowsOf<Term>("plan_terms", ops ? [ops.version_id] : [], ["key", "name", "starts_on", "ends_on"]),
       ]);
+      const terms = byStart(termRows);
+      const termName = new Map(terms.map((t) => [t.key, t.name]));
       const levelName = new Map(operations?.staffLevels.map((l) => [l.key, l.name]));
       const keyOf = new Map(members.map((m) => [m.version_id, m.kind === "operations" ? "rates" : reportKey(m)]));
       const byReport = <T>(rows: (T & { version_id: string })[]) => {
@@ -405,6 +413,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
       ];
       return {
         rules: Object.fromEntries(copies.map((c) => [keyOf.get(c.id) ?? c.id, c.rules])),
+        terms,
         offerings: byReport(
           offerings
             .filter((o) => o.version_id !== ops?.version_id)
@@ -413,6 +422,9 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
               ...reportOffering(
                 {
                   ...o,
+                  // An offering whose term isn't in the Operations Plan is in none.
+                  term_key: (o.term_key && termName.has(o.term_key) && o.term_key) || null,
+                  term: (o.term_key && termName.get(o.term_key)) ?? null,
                   program: o.product_id.name,
                   program_id: o.product_id.programs[0]?.id ?? null,
                   program_color: o.product_id.programs[0]?.color ?? null,

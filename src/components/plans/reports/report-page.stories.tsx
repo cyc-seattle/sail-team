@@ -8,6 +8,7 @@ import {
   doublehandedOfferings,
   doublehandedPrograms,
   doublehandedRules,
+  doublehandedTotal,
   doublehandedStatement,
   functions,
   fundraising,
@@ -22,9 +23,13 @@ import {
   doublehandedTrips,
   summerFixedCosts,
   summerStaffTime,
+  summerTotal,
   summerStatement,
   totals,
   warnings,
+  closedDays,
+  doublehandedSchedule,
+  summerSchedule,
 } from "./fixtures";
 import { FundraisingCapitalReport } from "./fundraising-capital-report";
 import { NonProgramReport } from "./non-program-report";
@@ -40,7 +45,15 @@ const meta = {
     withRouter("/plans/financial/budget", ["/plans/financial/$setId", "/plans/financial/$setId/$planId", "/plans"]),
   ],
   parameters: { layout: "fullscreen" },
-  args: { setId: "budget", name: "Budget", status: "active", reports, current: "overview", children: null },
+  args: {
+    setId: "budget",
+    name: "Budget",
+    status: "saved",
+    inForce: { when: "now", from: "2026-07-01", to: null },
+    reports,
+    current: "overview",
+    children: null,
+  },
 } satisfies Meta<typeof ReportPage>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -73,10 +86,12 @@ export const Summer: Story = {
         rules={summerRules}
         warnings={warnings.filter((w) => w.area === "summer")}
         statement={summerStatement}
+        total={summerTotal}
         programs={summerPrograms}
         offerings={summerOfferings}
-        setId="budget"
         areaKey="summer"
+        schedule={summerSchedule}
+        closedDays={closedDays}
         trips={[]}
         fixedCosts={summerFixedCosts}
         staffTime={summerStaffTime}
@@ -105,10 +120,12 @@ export const Doublehanded: Story = {
         rules={doublehandedRules}
         warnings={warnings.filter((w) => w.area === "doublehanded")}
         statement={doublehandedStatement}
+        total={doublehandedTotal}
         programs={doublehandedPrograms}
         offerings={doublehandedOfferings}
-        setId="budget"
         areaKey="doublehanded"
+        schedule={doublehandedSchedule}
+        closedDays={closedDays}
         trips={doublehandedTrips}
         fixedCosts={[]}
         staffTime={[]}

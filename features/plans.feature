@@ -1,9 +1,10 @@
 Feature: Seeing the Financial Plans
   A Financial Plan is the organization's plan for one year. It holds one Operations Plan and a Program Plan for any
   of the organization's program areas, and the P&L they make together. Planners work on it as a whole, through their
-  AI: it starts as a draft, and when it's ready a planner freezes it. A draft's numbers are worked out again after every
-  change to it, wherever the change is made. A frozen Financial Plan's plans and numbers never change, though its name
-  and note can. To change the plan after that, a planner duplicates it, and the copy begins as a draft. A plan no one
+  AI: it starts as a draft, and when it's ready a Plan Admin freezes it. A draft's numbers are worked out again after every
+  change to it, wherever the change is made. A frozen Financial Plan's plans and numbers never change, though its name,
+  note, and the date it's active from can. A Plan Admin makes a Financial Plan active from a date, a draft or
+  a frozen one. The plan in force on a day is the one for its year with the latest date on or before it. To change the plan after that, a planner duplicates it, and the copy begins as a draft. A plan no one
   needs any more can be archived, which takes it off Planning's list until someone asks to see archived plans. A year can have several drafts at once, so planners can weigh options, such as
   two drafts started from the same Financial Plan, one with two coaches and one with three. Each Financial Plan has a
   name, and a note that says what it was for, such as "Reviewed with the board".
@@ -16,9 +17,10 @@ Feature: Seeing the Financial Plans
   Planning is where planners, and anyone else who can read plans, see the Financial Plans as a set of reports: an
   Overview, the Assumptions, one for each program area, Non-program, and Fundraising and capital. A program area's
   report includes its coaches' wages, its RIBs, and its share of the shared costs, such as the office, worked out with
-  the other plans in the same Financial Plan. A planner who can change plans can rename any Financial Plan, change its
-  note, freeze a draft, delete one, mark a frozen one active, archive one, and duplicate one here. Everything else about
-  a plan is changed through their AI. Every plan and number here is made up for the run.
+  the other plans in the same Financial Plan. A Plan Writer can rename any Financial Plan, change its note,
+  duplicate one, and delete a draft here. A Plan Admin can also freeze a draft, make one active from a date,
+  and archive one. Everything else about a plan is changed through their AI. Every plan and number here is made up for
+  the run.
 
   Rule: Planning lists every Financial Plan in one table, by year and status
 
@@ -70,6 +72,16 @@ Feature: Seeing the Financial Plans
       Then it shows $3,000 of coaches' wages
       And it shows the $1,000 of the office
 
+  Rule: A program area's budget shows revenue, expenses and net for each term, and each program within it
+
+    Scenario: A term that loses money
+      Given I'm a planner who can read plans
+      And a frozen Financial Plan whose Youth Racing makes $20,000 in "Summer 2027" and loses $5,000 in "Fall 2027"
+      And I've signed in
+      When I open Youth Racing's report in that Financial Plan
+      Then "Summer 2027" shows a net of $20,000, and "Fall 2027" a net of −$5,000
+      And its program shows a net of $20,000 in "Summer 2027"
+
   Rule: A frozen Financial Plan shows the P&L it was frozen with, and never recalculates it
 
     Scenario: A Financial Plan started from it doesn't change its numbers
@@ -90,15 +102,15 @@ Feature: Seeing the Financial Plans
       And a planner's AI raises the offering's price to $1,200
       Then it shows $12,000 of revenue, without my reloading the page
 
-  Rule: A program area's report shows its programs' settings and rules, and each offering's fee and sailors
+  Rule: A program area's report shows its programs' settings and rules, and each offering's enrollment and fees
 
-    Scenario: An offering's fee and sailors, and its program's settings
+    Scenario: An offering's target and fee, and its program's settings
       Given I'm a planner who can read plans
       And a draft Financial Plan whose Youth Racing plan has one offering of 10 sailors at $1,000 each
       And its program is led by a Lead coach, at 5 sailors per coach, with the rule "Sail in pairs"
       And I've signed in
       When I open Youth Racing's report in the draft
-      Then its offering shows a fee of $1,000 and 10 sailors
+      Then its offering's enrollment shows a target of 10 sailors, and its fees a fee of $1,000
       And its assumptions show the program's Lead coach, 5 sailors per coach, and the rule "Sail in pairs"
 
   Rule: Assumptions show the rules every program follows and the rates every plan uses
@@ -112,7 +124,7 @@ Feature: Seeing the Financial Plans
       Then I see the rule "No more than 4 RIBs on the water"
       And I see the coach's pay of $30.00 an hour
 
-  Rule: The Calendar shows each program area's offerings over the year, then a day's activity blocks at their times
+  Rule: A program area's calendar shows its offerings over the year, then a day's activity blocks at their times
 
     Scenario: A day's practice that differs from the others
       Given I'm a planner who can read plans
@@ -120,7 +132,6 @@ Feature: Seeing the Financial Plans
       And it practices each weekday morning for two weeks with a Lead coach, but the last day has no coach yet
       And I've signed in
       When I open Youth Racing's report in the draft
-      And I see it on the calendar
       Then the calendar shows the offering's 10 sailors across both weeks
       When I open the practice on Jul 16
       Then it has no staff, coach boats or boats yet, where the other days have 1 Lead coach
@@ -135,10 +146,10 @@ Feature: Seeing the Financial Plans
       And I open its warnings
       Then a warning says the practice falls on a closed day, on that day
 
-  Rule: A planner who can change plans can rename a Financial Plan, note it, freeze it, delete it, mark it active, archive it, and duplicate it
+  Rule: A Plan Writer can rename a Financial Plan, note it, duplicate it, and delete a draft
 
     Scenario: Renaming a draft and noting it
-      Given I'm a planner who can change plans
+      Given I'm a Plan Writer
       And a draft Financial Plan named "Two coaches"
       And I've signed in
       When I open "Two coaches"
@@ -147,7 +158,7 @@ Feature: Seeing the Financial Plans
       And Planning shows "Two coaches, more boats" with the note "For the board"
 
     Scenario: Duplicating a frozen Financial Plan
-      Given I'm a planner who can change plans
+      Given I'm a Plan Writer
       And a frozen Financial Plan for 2027 named "Budget"
       And I've signed in
       When I open "Budget" and duplicate it as "Budget, three coaches"
@@ -162,24 +173,33 @@ Feature: Seeing the Financial Plans
       Then I see no way to edit it or duplicate it
       And Planning has no actions for "Budget"
 
-    Scenario: Freezing a draft
-      Given I'm a planner who can change plans
-      And a draft Financial Plan named "Two coaches"
-      And I've signed in
-      When I open "Two coaches"
-      And I freeze it
-      Then it's marked frozen
-
     Scenario: Deleting a draft from Planning
-      Given I'm a planner who can change plans
+      Given I'm a Plan Writer
       And a draft Financial Plan named "Two coaches"
       And I've signed in
       When I open Planning for 2027
       And I delete "Two coaches"
       Then Planning no longer lists "Two coaches"
 
+    Scenario: A Plan Writer can't freeze a Financial Plan, make it active, or archive it
+      Given I'm a Plan Writer
+      And a draft Financial Plan named "Two coaches"
+      And I've signed in
+      When I open "Two coaches"
+      Then I see no way to freeze it or make it active
+
+  Rule: A Plan Admin can freeze a Financial Plan, make it active from a date, and archive it
+
+    Scenario: Freezing a draft
+      Given I'm a Plan Admin
+      And a draft Financial Plan named "Two coaches"
+      And I've signed in
+      When I open "Two coaches"
+      And I freeze it
+      Then it's marked frozen
+
     Scenario: Archiving a frozen Financial Plan
-      Given I'm a planner who can change plans
+      Given I'm a Plan Admin
       And a frozen Financial Plan for 2027 named "Budget"
       And I've signed in
       When I open Planning for 2027
@@ -187,13 +207,13 @@ Feature: Seeing the Financial Plans
       Then Planning no longer lists "Budget"
       And Planning lists "Budget" when I ask to see archived plans
 
-    Scenario: Marking a frozen Financial Plan active
-      Given I'm a planner who can change plans
+    Scenario: Making a frozen Financial Plan active from a date
+      Given I'm a Plan Admin
       And a frozen Financial Plan for 2027 named "Budget"
       And I've signed in
       When I open "Budget"
-      And I mark it active
-      Then it's marked active
+      And I make it active from July 1, 2026
+      Then it's in force since "Jul 1, 2026"
 
   Rule: Only someone who can read plans can see them
 
