@@ -34,13 +34,13 @@ describe("fromOlderEngine", () => {
   const draft = { status: "draft" as const };
   const frozen = { status: "frozen" as const };
 
-  it("tells a draft whose numbers came from another planner, or from before platform recorded one", () => {
+  it("tells a draft whose numbers came from another engine, or from before platform recorded one", () => {
     expect(fromOlderEngine({ set: draft, results: { platform_version: "1.38.1+engine.old" } }, today)).toBe(true);
     expect(fromOlderEngine({ set: draft, results: { platform_version: null } }, today)).toBe(true);
     expect(fromOlderEngine({ set: draft, results: { platform_version: today } }, today)).toBe(false);
   });
 
-  it("never tells a frozen plan, one with no numbers yet, or any while platform's planner is unknown", () => {
+  it("never tells a frozen plan, one with no numbers yet, or any while platform's engine is unknown", () => {
     expect(fromOlderEngine({ set: frozen, results: { platform_version: "1.38.1+engine.old" } }, today)).toBe(false);
     expect(fromOlderEngine({ set: draft, results: null }, today)).toBe(false);
     expect(fromOlderEngine({ set: draft, results: { platform_version: null } }, null)).toBe(false);

@@ -331,7 +331,7 @@ export function refusalOf(error: unknown): string {
 }
 
 /**
- * The planner platform works out numbers with now, to tell a draft's older numbers. Null when platform doesn't say,
+ * The engine platform works out numbers with now, to tell a draft's older numbers. Null when platform doesn't say,
  * such as before it could.
  */
 export const engineQuery = queryOptions({
@@ -350,7 +350,7 @@ export const engineQuery = queryOptions({
   staleTime: 5 * 60_000,
 });
 
-/** Has platform work out a draft's numbers again now, with the planner it runs today, and waits until it has. */
+/** Has platform work out a draft's numbers again now, with the engine it runs today, and waits until it has. */
 export async function workOutAgain(setId: string): Promise<void> {
   await appDirectus().client.request(
     customEndpoint({ path: `/frozen-plans/drafts/${encodeURIComponent(setId)}/results`, method: "POST" }),

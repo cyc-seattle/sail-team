@@ -642,7 +642,7 @@ const rowTables = [
 const rowsOf = (planIds: string[], table: string) => planIds.flatMap((p) => copies[p]?.rows[table] ?? []);
 
 /** A Financial Plan's results, as platform's hook works them out and writes them. */
-/** The planner platform runs now. */
+/** The engine platform runs now. */
 export const engine = "1.39.0+engine.0a1b2c3d4e5f";
 
 function results(setRow: Row, calculatedAt: string, platformVersion: string | null): Record<string, Row[]> {
@@ -747,7 +747,7 @@ function results(setRow: Row, calculatedAt: string, platformVersion: string | nu
 }
 
 // Budget's results, as platform worked them out when it was frozen, and Two coaches', after its latest change, before
-// platform's planner changed. Three coaches' are still being worked out.
+// platform's engine changed. Three coaches' are still being worked out.
 const worked = [
   results(budget, "2027-03-10T18:00:00Z", budget.platform_version),
   results(twoCoaches, "2027-04-02T23:05:00Z", "1.38.1+engine.0a1b2c3d4e5f"),

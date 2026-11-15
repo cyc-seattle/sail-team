@@ -225,7 +225,7 @@ export interface CapitalResult {
 
 export interface Results {
   calculated_at: string | null;
-  /** The planner (platform's engine) that worked them out. None in results from before platform recorded it. */
+  /** The engine that worked them out. None in results from before platform recorded it. */
   platform_version: string | null;
   totals: Totals;
   pnl: PnlRow[];
@@ -236,7 +236,7 @@ export interface Results {
 }
 
 /**
- * Whether a draft's numbers came from another planner than the one platform runs now, such as before a new one
+ * Whether a draft's numbers came from another engine than the one platform runs now, such as before a new one
  * deployed. Platform never works them out again on its own, and a frozen plan's never change. False while `engine` is
  * unknown.
  */

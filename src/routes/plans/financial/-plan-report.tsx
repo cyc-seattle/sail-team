@@ -94,7 +94,7 @@ function Found({ data, stuck, report }: { data: FinancialPlan; stuck: boolean; r
   );
 }
 
-/** Says a draft's numbers came from an older planner, and lets someone who can edit it work them out again. */
+/** Says a draft's numbers came from an older engine, and lets someone who can edit it recalculate them. */
 function Older({ plan }: { plan: FinancialPlan }) {
   const session = useSession();
   const queryClient = useQueryClient();

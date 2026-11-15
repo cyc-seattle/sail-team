@@ -108,7 +108,7 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
       return HttpResponse.json({ data: row });
     }),
     http.get(`${directusUrl}/frozen-plans/engine`, () => HttpResponse.json({ platform_version: engine })),
-    // A draft's numbers worked out again with today's planner. Made up, they come out the same.
+    // A draft recalculated with today's engine. Made up, they come out the same.
     http.post(`${directusUrl}/frozen-plans/drafts/:id/results`, ({ params }) => {
       const set = tables["financial_plans"]!.find((s) => s["id"] === params["id"]);
       if (set?.["status"] !== "draft") {
