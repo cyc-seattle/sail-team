@@ -165,7 +165,7 @@ export interface PlanLine {
   capital: boolean;
   /** What the money is for: running programs, managing the club, or fundraising. */
   function: "program" | "management" | "fundraising" | null;
-  /** How the engine worked it out, such as "Guppies: hours × Level 1 Instructor's rate". */
+  /** How the engine worked it out, such as "Guppies: hours × Instructor's rate". */
   explanation: string | null;
   plan: string | null;
 }

@@ -27,6 +27,7 @@ export class Club {
   private readonly made: { collection: string; id: string }[] = [];
   private organizationId?: string;
   private accounts: Record<string, string> = {};
+  private roleId?: string;
   productId?: string;
   /** Youth Racing's program area, which names its report in every Financial Plan. */
   areaId?: string;
@@ -197,7 +198,7 @@ export class Club {
   }
 
   /**
-   * A practice of `offering` on each of `dates`, from `start` to `end`. Given a staff level's key, each is in a block of
+   * A practice of `offering` on each of `dates`, from `start` to `end`. Given a staff level's id, each is in a block of
    * its own with one coach at that level; without one, it's in no block.
    */
   async practices(
@@ -212,7 +213,7 @@ export class Club {
       let block: string | null = null;
       if (coach) {
         block = (await this.inPlan("plan_activity_blocks", plan, { date, name: `Practice ${date}` }))["id"] as string;
-        await this.inPlan("plan_block_staff", plan, { block_id: block, staff_level_key: coach, count: 1 });
+        await this.inPlan("plan_block_staff", plan, { block_id: block, staff_level_id: coach, count: 1 });
       }
       await this.inPlan("plan_activities", plan, {
         offering_id: offering,
@@ -230,7 +231,7 @@ export class Club {
   async program(plan: string, level: string, sailorsPerCoach: number, notes: string[] | null): Promise<void> {
     await this.inPlan("plan_programs", plan, {
       product_id: this.productId,
-      staff_level_key: level,
+      staff_level_id: level,
       sailors_per_coach: sailorsPerCoach,
       notes,
     });
@@ -246,15 +247,17 @@ export class Club {
     await this.inPlan("plan_closed_dates", operations, { date, name });
   }
 
-  /** A coach's hourly rate, in an Operations Plan. Returns the level's key, for a block or program to name. */
+  /**
+   * A coach's staff level, with its hourly rate in an Operations Plan. Returns the level's id, for a block or program
+   * to name.
+   */
   async coachRate(operations: string, cents: number, name = `Coach ${this.run}`): Promise<string> {
-    return (
-      await this.inPlan("plan_staff_levels", operations, {
-        name,
-        pay_type: "hourly",
-        hourly_rate_cents: cents,
-      })
-    )["key"] as string;
+    this.roleId ??= (await this.create("staff_roles", { name: `Coach ${this.run}`, sort: 1 }))["id"] as string;
+    const level = (await this.create("staff_levels", { name, role_id: this.roleId, grade: "standard" }))[
+      "id"
+    ] as string;
+    await this.inPlan("plan_staff_levels", operations, { staff_level_id: level, hourly_rate_cents: cents });
+    return level;
   }
 
   /** The office, in an Operations Plan's plan: `cents` a year, shared among every offering. */
