@@ -36,8 +36,13 @@ describe("fromOlderEngine", () => {
 
   it("tells a draft whose numbers came from another engine, or from before platform recorded one", () => {
     expect(fromOlderEngine({ set: draft, results: { platform_version: "1.38.1+engine.old" } }, today)).toBe(true);
+    expect(fromOlderEngine({ set: draft, results: { platform_version: "1.39.0+engine.old" } }, today)).toBe(true);
     expect(fromOlderEngine({ set: draft, results: { platform_version: null } }, today)).toBe(true);
     expect(fromOlderEngine({ set: draft, results: { platform_version: today } }, today)).toBe(false);
+  });
+
+  it("doesn't tell a draft whose engine is the same in an older release", () => {
+    expect(fromOlderEngine({ set: draft, results: { platform_version: "1.38.1+engine.new" } }, today)).toBe(false);
   });
 
   it("never tells a frozen plan, one with no numbers yet, or any while platform's engine is unknown", () => {
@@ -48,13 +53,12 @@ describe("fromOlderEngine", () => {
 });
 
 describe("platformRelease", () => {
-  it("gives a frozen plan's package version, without the engine's hash", () => {
-    expect(platformRelease({ status: "frozen", platform_version: "1.38.1+engine.0a1b2c3d4e5f" })).toBe("1.38.1");
+  it("gives the release, without the engine's hash", () => {
+    expect(platformRelease("3.0.0+engine.0a1b2c3d4e5f")).toBe("3.0.0");
   });
 
-  it("gives nothing for a draft, or a plan with no version", () => {
-    expect(platformRelease({ status: "draft", platform_version: "1.38.1+engine.0a1b2c3d4e5f" })).toBeNull();
-    expect(platformRelease({ status: "frozen", platform_version: null })).toBeNull();
+  it("gives nothing for results with no version", () => {
+    expect(platformRelease(null)).toBeNull();
   });
 });
 

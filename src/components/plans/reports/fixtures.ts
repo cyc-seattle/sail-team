@@ -747,6 +747,7 @@ export const planningPlans: ListedPlan[] = [
     in_force: { when: "later", from: "2027-09-01", to: null },
     parent: { id: "budget", name: "Budget" },
     note: "What a second full-time coach would cost.",
+    platform: "1.39.0",
     expense_cents: 47_800_000,
   }),
   planSummary({
