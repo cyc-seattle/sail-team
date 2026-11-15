@@ -48,8 +48,12 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   signed-in page: the sidebar on a laptop, and the tab bar on a phone, whose More opens the sidebar. Support, at the
   sidebar's foot, emails the office, and the account menu holds the tools a role gets, such as Directus for Staff
   (`toolsFor` in `src/model/nav.ts`).
-  `src/styles/tokens.css` holds the design tokens. Read [docs/design.md](docs/design.md) before changing any of
-  them, or use the [`design`](.agents/skills/design/SKILL.md) skill.
+  `src/styles/tokens.css` holds the design tokens. Read the style guide's
+  [Color and type](https://cyc-seattle.github.io/sail-team/?path=/docs/style-guide-color-and-type--docs) before changing
+  any of them, or use the [`design`](.agents/skills/design/SKILL.md) skill.
+- `src/guide/` holds the style guide, as MDX pages in Storybook: words, layout, color and type, notes and descriptions,
+  editing in the app, and the shared components. Each push to `main` publishes it with Storybook, at
+  [cyc-seattle.github.io/sail-team](https://cyc-seattle.github.io/sail-team/?path=/docs/style-guide-introduction--docs).
 - `src/directus/` talks to Directus. `client.ts` makes a client that sends the browser's Directus session cookie, and
   `app.ts` is the app's own, at `directus.<the app's hostname>`. `sign-in.ts` sends a visitor with no session to
   Directus's sign-in, and stops instead of looping if they come straight back without one (`session.ts`).
@@ -130,7 +134,7 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   the app behaves for a club member, so write it in their words. A scenario tagged `@fixme` is agreed but not built
   yet: a features PR adds it, and the PR that builds it removes the tag.
 - `test/` holds the unit tests, `*.test.ts` or `*.test.tsx`. `mise run test` also runs every story as a test in
-  Chromium, with axe (docs/design.md).
+  Chromium, with axe (the style guide's Shared components).
 
 Claude Code reads skills only from `.claude/skills`, so link them there once:
 `mkdir -p .claude && ln -s ../.agents/skills .claude/skills`.
@@ -144,25 +148,22 @@ point `PLAYWRIGHT_BROWSERS_PATH` at a matching set of browsers in a git-ignored 
 domain. The image is Caddy serving `dist/` (`Dockerfile`, `Caddyfile`), with a content security
 policy that lets the page call only itself and Directus.
 
-- PRs merge through the merge queue, which squashes them. A PR's push runs only CI. The queue deploys the PRs queued together to
-  dev, at `https://dev.cycsail.team/plans`, as one batch. The batch merges only
-  if the deploy passes (the `dev-passed` check). The queue doesn't run the journeys (cyc-seattle/platform#161); a
-  nightly run does. A push to `main` skips dev, which the queue already ran on that commit, previews
-  prod, and applies prod once a maintainer approves. Prod runs the image dev built for the same commit. All of it goes
-  through the org's `deploy.yml` (`.github/workflows/pull-request.yml`). When the journeys fail in a run that runs them, it uploads
-  `test-results/` as the `test-results-dev` artifact, kept 7 days: each failed scenario's page snapshot
-  (`error-context.md`) and trace.
-- The queue is batched, and dev is one shared environment, so the queue deploys one batch at a time.
-- `nightly.yml` deploys `main` to dev each night and runs the journeys, under the same dev lock as the queues. A failed
-  night opens or comments on the `Nightly integration run failed` issue, assigned to the maintainer, and a green night
-  closes it. Run it early with `gh workflow run nightly.yml`.
-- Never force-push. To bring a branch up to date, merge `origin/main` into it. A queued branch can't be pushed until
-  it's dequeued, so take the PR out of the queue first.
-- `gh workflow run pull-request.yml --ref <branch>` deploys a branch to dev and runs the journeys before it's queued.
-  Run it only when no other dev run is going (`gh run list --workflow pull-request.yml`). A commit that reached `main`
-  without the queue, such as an admin's merge commit, has no image yet: `gh workflow run pull-request.yml --ref main`
-  deploys it to dev, then prod.
-- When a queue run fails, reproduce the failure locally against dev before you push a fix:
+- A PR's push runs only CI, and once CI passes a maintainer merges it, squashed.
+  Contributors push branches and open PRs; only maintainers merge. A push to `main` deploys it to dev, at
+  `https://dev.cycsail.team/plans`, previews prod, and applies prod once a maintainer approves. Prod runs the image dev
+  built for the same commit. All of it goes through the org's `deploy.yml` (`.github/workflows/pull-request.yml`).
+  `gh workflow run pull-request.yml --ref main` retries main's deploys. Only `main` deploys to dev; a branch can't.
+- After each dev deploy, `main`'s run starts `integration.yml`, which runs the journeys against what's on dev. Deploys
+  take dev's lock first, so the tests may run on a newer commit than the one that started them, and a run skips itself
+  when nothing new is on dev since the last one. A failed run opens or comments on the
+  `Integration tests failed on dev` issue, assigned to the maintainer, naming the commits merged since the last green
+  run, and a green run closes it. When the journeys fail, the run uploads `test-results/` as the `test-results-dev` artifact, kept 7 days: each
+  failed scenario's page snapshot (`error-context.md`) and trace.
+- `nightly.yml` is the backstop: it deploys `main` to dev each night and runs the journeys, under the same dev lock. A
+  failed night opens or comments on the `Nightly integration run failed` issue, and a green night closes it. Run it
+  early with `gh workflow run nightly.yml`.
+- Never force-push. To bring a branch up to date, merge `origin/main` into it.
+- When the journeys fail on dev, reproduce the failure locally against dev before you push a fix:
   `PULUMI_STACK=dev mise run integration`.
 - `mise run preview` and `mise run deploy` act on `$PULUMI_STACK`, which defaults to `prod`. Locally, set
   `PULUMI_STACK=dev`, and preview before every apply. Local deploys are only for breaking glass.
@@ -189,6 +190,11 @@ that changes a page or component shows them there:
   commit's SHA so the link never changes. Never put them on the PR's own branch, or only in `.plans/`.
 - Storybook or Playwright's `page.screenshot()` can take them. Storybook's Laptop and Phone viewports use these sizes,
   the story tests run at both, and the journeys run at the laptop's (`playwright.config.ts`).
+
+Before asking for review, run the [`ux-review`](.agents/skills/ux-review/SKILL.md) skill on the change, and fix what it
+finds. It checks the change against the
+[style guide](https://cyc-seattle.github.io/sail-team/?path=/docs/style-guide-introduction--docs): shared components,
+words, layout, notes and descriptions, and editing in the app.
 
 ## Code style
 
