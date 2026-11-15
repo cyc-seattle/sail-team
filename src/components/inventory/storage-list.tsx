@@ -43,7 +43,7 @@ export function StorageList({
           <Table aria-label="Dry storage">
             <TableHeader>
               <TableRow>
-                <TableHead className={pinned}>Class</TableHead>
+                <TableHead className={pinned}>Boat class</TableHead>
                 <TableHead className="text-right">Boats</TableHead>
                 <TableHead className="text-right">Sq ft each</TableHead>
                 <TableHead className="text-right">Sq ft</TableHead>

@@ -174,7 +174,7 @@ export function AssetList({
           <TableHeader>
             <TableRow>
               <TableHead className={pinned}>Name</TableHead>
-              <TableHead>Class</TableHead>
+              <TableHead>Boat class</TableHead>
               <TableHead>Sail no.</TableHead>
               <TableHead>Make</TableHead>
               <TableHead>Model</TableHead>
