@@ -2,6 +2,7 @@ import { http, HttpResponse } from "msw";
 import type { Permissions } from "@/directus/access";
 import type { Me } from "@/directus/sign-in";
 import { planner, plannerPermissions } from "./fixtures";
+import { catalogTables } from "./catalog";
 import { homeTables } from "./home";
 import { inventoryTables } from "./inventory";
 import { engine, tables } from "./plans";
@@ -80,7 +81,7 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
     ),
     http.get(`${directusUrl}/items/:table/:id`, ({ params, request }) => {
       const table = params["table"] as string;
-      const row = (inventoryTables[table] ?? tables[table] ?? rosterTables[table])?.find(
+      const row = (inventoryTables[table] ?? catalogTables[table] ?? tables[table] ?? rosterTables[table])?.find(
         (r) => r["id"] === params["id"],
       );
       return row
@@ -91,14 +92,19 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
       const query = new URL(request.url).searchParams;
       const filter = query.get("filter");
       const table = params["table"] as string;
-      const rows = (inventoryTables[table] ?? tables[table] ?? rosterTables[table] ?? homeTables[table] ?? []).filter(
-        (r) => !filter || matches(r, JSON.parse(filter), session.me?.id),
-      );
+      const rows = (
+        inventoryTables[table] ??
+        catalogTables[table] ??
+        tables[table] ??
+        rosterTables[table] ??
+        homeTables[table] ??
+        []
+      ).filter((r) => !filter || matches(r, JSON.parse(filter), session.me?.id));
       return HttpResponse.json({ data: rows.map((r) => shape(r, query.get("fields"))) });
     }),
     http.patch(`${directusUrl}/items/:table/:id`, async ({ params, request }) => {
       const table = params["table"] as string;
-      const row = (inventoryTables[table] ?? tables[table] ?? rosterTables[table])?.find(
+      const row = (inventoryTables[table] ?? catalogTables[table] ?? tables[table] ?? rosterTables[table])?.find(
         (r) => r["id"] === params["id"],
       );
       if (!row) {

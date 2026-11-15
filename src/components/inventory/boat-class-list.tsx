@@ -1,5 +1,6 @@
 import { PencilIcon, PlusIcon } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import { AccountCells, AccountHeads } from "@/components/account-cells";
 import { FormField } from "@/components/form-field";
 import { ReportSection } from "@/components/plans/reports/report-page";
 import { Button } from "@/components/ui/button";
@@ -65,10 +66,7 @@ export function BoatClassList({
             <TableHeader>
               <TableRow>
                 <TableHead className={pinned}>Boat class</TableHead>
-                <TableHead className="w-16">Account</TableHead>
-                <TableHead>
-                  <span className="sr-only">Account name</span>
-                </TableHead>
+                <AccountHeads />
                 <TableHead className="text-right">Capacity</TableHead>
                 <TableHead className="text-right">Area (ft²)</TableHead>
                 <TableHead className="text-right">Boats</TableHead>
@@ -85,8 +83,7 @@ export function BoatClassList({
                 return (
                   <TableRow key={c.id}>
                     <TableCell className={pinned + " font-medium"}>{c.name}</TableCell>
-                    <TableCell className="text-muted-foreground tabular-nums">{account?.number}</TableCell>
-                    <TableCell className="whitespace-nowrap">{account?.name}</TableCell>
+                    <AccountCells account={account} />
                     <TableCell className="text-right tabular-nums">{c.max_capacity}</TableCell>
                     <TableCell className="text-right tabular-nums">{c.footprint_sq_ft ?? "—"}</TableCell>
                     <TableCell className="text-right tabular-nums">{counts.get(c.id) ?? 0}</TableCell>
