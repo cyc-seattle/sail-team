@@ -70,15 +70,15 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   Each result row names the plan it's charged in (`plan_id`), so one plan's full P&L, with its wages and its share of
   the shared costs, is one filter. An open draft is read again every few seconds, and a plan with no results yet every two, until they
   arrive; after 30 seconds the page says they couldn't be calculated (`src/hooks/use-financial-plan.ts`). Platform never works a draft's out again when its engine changes (cyc-seattle/platform#284), so a draft whose
-  results record another `platform_version` than `GET /frozen-plans/engine` says it was calculated with an older
-  engine, and someone who can edit it can recalculate it (`POST /frozen-plans/drafts/<id>/results`). The reports
+  results record another engine hash in `platform_version` than `GET /frozen-plans/engine` says it was calculated
+  with an older engine, though a new release with the same engine doesn't, and someone who can edit it can recalculate it (`POST /frozen-plans/drafts/<id>/results`). The reports
   also read what planners entered in its plans (`src/directus/plan-inputs.ts`): each plan's notes, each program's
   settings, each offering with its activities, and the Operations Plan's rates, with each bonus on the position it
   pays. `src/model/reports.ts` makes each report from those and the results: shares of a pool (`pool:` lines) are a
   plan's indirect costs, and everything else of its own is direct. `/plans` lists every Financial Plan under its year,
   newest first, with the day each is active from: a plan is active from its `effective_from`, and the one in force on a day is its year's
   with the latest date on or before it (`inForce` in `src/model/financial-plans.ts`, cyc-seattle/platform#251). Its
-  note, at most 280 characters of inline Markdown (`src/components/inline-markdown.tsx`), shows behind its ⓘ. Show drafts and
+  note, at most 280 characters of inline Markdown (`src/components/inline-markdown.tsx`), shows behind its ⓘ, with the release that calculated its results, from their `platform_version`. Show drafts and
   Show archived narrow the list. Its status, details, and warnings are icons in fixed places, so they line up. There,
   a Plan Admin sets or clears the date it's active from in its Active column. Its ⋯ menu freezes a draft (`status`) for
   good and archives it (`archived_at`), for a Plan Admin, and deletes a draft, for a Plan Writer. The menus follow `/permissions/me`: `canAdminPlans` in `access.ts`. `/plans/financial/<set>` is its Overview, and

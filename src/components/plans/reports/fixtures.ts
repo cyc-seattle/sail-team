@@ -117,8 +117,9 @@ export const summerStatement = {
 export const summerPrograms: ProgramSettings[] = [
   {
     name: "Guppies",
-    staff_level: "Level 1 Instructor",
+    staff_level: "Instructor",
     sailors_per_coach: 10,
+    indirect_cost_rate: 0.15,
     notes: [
       "If there are more than 12 Guppies, add a **Junior Instructor**.",
       "Guppies sail Sailqubes. The Harpoon can take up to 10 instead.",
@@ -126,11 +127,12 @@ export const summerPrograms: ProgramSettings[] = [
   },
   {
     name: "Opti Camp",
-    staff_level: "Level 2 Instructor",
+    staff_level: "Senior Instructor",
     sailors_per_coach: 8,
+    indirect_cost_rate: 0.15,
     notes: ["About a third bring their own Optis.", "Never fewer than 2 coaches on the water."],
   },
-  { name: "Race Camp", staff_level: "Level 3 Coach", sailors_per_coach: 10, notes: null },
+  { name: "Race Camp", staff_level: "Coach", sailors_per_coach: 10, indirect_cost_rate: 0.15, notes: null },
 ];
 
 const week = (n: number) => {
@@ -232,7 +234,7 @@ export const doublehandedSchedule: ScheduleBlock[] = doublehandedOfferings.flatM
           on_water_minutes: 150,
         },
       ],
-      parts: ["2 Level 3 Coaches", "2 RIBs"],
+      parts: ["2 Coaches", "2 RIBs"],
     });
   }
   return out;
@@ -293,9 +295,21 @@ export const areaOfferings: Record<string, ReportOffering[]> = {
 };
 
 export const doublehandedPrograms: ProgramSettings[] = [
-  { name: "J-Pod", staff_level: "Level 3 Coach", sailors_per_coach: 8, notes: ["Travel regattas take two coaches."] },
-  { name: "K-Pod", staff_level: "Level 3 Coach", sailors_per_coach: 10, notes: null },
-  { name: "L-Pod", staff_level: "Level 4 Coach", sailors_per_coach: 12, notes: ["Most sailors bring their own 420s."] },
+  {
+    name: "J-Pod",
+    staff_level: "Coach",
+    sailors_per_coach: 8,
+    indirect_cost_rate: 0.2,
+    notes: ["Travel regattas take two coaches."],
+  },
+  { name: "K-Pod", staff_level: "Coach", sailors_per_coach: 10, notes: null },
+  {
+    name: "L-Pod",
+    staff_level: "Head Coach",
+    sailors_per_coach: 12,
+    indirect_cost_rate: 0.2,
+    notes: ["Most sailors bring their own 420s."],
+  },
 ];
 
 export const doublehandedStatement = {
@@ -451,7 +465,7 @@ export const summerStaffTime: StaffTime[] = [
   {
     key: "setup",
     name: "Camp setup",
-    staff_level: "Level 1 Instructor",
+    staff_level: "Instructor",
     hours: 40,
     account: { number: "5010", name: "Coach wages" },
     charged_to: "Summer",
@@ -467,11 +481,11 @@ export const reportAssumptions: OperationsAssumptions = {
     mileage_rate_cents: 70,
   },
   staffLevels: [
-    { key: "jr", name: "Junior Instructor", pay_type: "hourly", hourly_rate_cents: 1_900 },
-    { key: "l1", name: "Level 1 Instructor", pay_type: "hourly", hourly_rate_cents: 2_200 },
-    { key: "l2", name: "Level 2 Instructor", pay_type: "hourly", hourly_rate_cents: 2_600 },
-    { key: "l3", name: "Level 3 Coach", pay_type: "hourly", hourly_rate_cents: 3_200 },
-    { key: "parent", name: "Parent helper", pay_type: "volunteer", hourly_rate_cents: null },
+    { id: "jr", name: "Junior Instructor", hourly_rate_cents: 0 },
+    { id: "l1", name: "Instructor", hourly_rate_cents: 2_200 },
+    { id: "l2", name: "Senior Instructor", hourly_rate_cents: 2_600 },
+    { id: "vc", name: "Volunteer Coach", hourly_rate_cents: 0 },
+    { id: "l3", name: "Coach", hourly_rate_cents: 3_200 },
   ],
   positions: [
     {
@@ -581,7 +595,7 @@ export const reportAssumptions: OperationsAssumptions = {
     {
       key: "repairs",
       name: "Winter boat repairs",
-      staff_level: "Level 1 Instructor",
+      staff_level: "Instructor",
       hours: 120,
       account: { number: "5130", name: "Boat upkeep" },
       charged_to: "Program admin",
@@ -733,6 +747,7 @@ export const planningPlans: ListedPlan[] = [
     in_force: { when: "later", from: "2027-09-01", to: null },
     parent: { id: "budget", name: "Budget" },
     note: "What a second full-time coach would cost.",
+    platform: "1.39.0",
     expense_cents: 47_800_000,
   }),
   planSummary({
@@ -799,7 +814,7 @@ export const summerSchedule: ScheduleBlock[] = summerOfferings
           scheduled(`opti-${date}`, `Opti Camp-${n}`, "09:00:00", "15:00:00"),
         ],
         parts: [
-          n === 1 ? "2 Level 1 Instructors" : "3 Level 1 Instructors",
+          n === 1 ? "2 Instructors" : "3 Instructors",
           "2 RIBs",
           n === 3 ? "11 Sailqubes" : "5 Sailqubes",
           "14 Optis",

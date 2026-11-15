@@ -51,13 +51,13 @@ const offerings = new Map(
     o,
   ]),
 );
-const usual = ["3 Level 1 Instructors", "2 RIBs", "6 Sailqubes"];
+const usual = ["3 Instructors", "2 RIBs", "6 Sailqubes"];
 const week1 = ["2027-06-21", "2027-06-22", "2027-06-23"].map((d) =>
   block(d, usual, activity(`g ${d}`, "Guppies 1", "09:00:00"), activity(`o ${d}`, "Sea Otters 1", "09:00:00")),
 );
 const week2 = [
-  block("2027-06-28", ["2 Level 1 Instructors", "2 RIBs", "6 Sailqubes"], activity("g2a", "Guppies 2", "09:00:00")),
-  block("2027-06-29", ["2 Level 1 Instructors", "2 RIBs", "6 Sailqubes"], activity("g2b", "Guppies 2", "09:00:00")),
+  block("2027-06-28", ["2 Instructors", "2 RIBs", "6 Sailqubes"], activity("g2a", "Guppies 2", "09:00:00")),
+  block("2027-06-29", ["2 Instructors", "2 RIBs", "6 Sailqubes"], activity("g2b", "Guppies 2", "09:00:00")),
   block("2027-06-30", [], activity("g2c", "Guppies 2", "09:00:00")),
 ];
 
@@ -65,7 +65,7 @@ describe("counted", () => {
   it("says how many, as one or as many", () => {
     expect(counted(1, "RIBs")).toBe("1 RIB");
     expect(counted(2, "RIBs")).toBe("2 RIBs");
-    expect(counted(3, "Level 3 Coach")).toBe("3 Level 3 Coaches");
+    expect(counted(3, "Coach")).toBe("3 Coaches");
     expect(counted(14, "Opti")).toBe("14 Optis");
   });
 });
@@ -101,7 +101,7 @@ describe("scheduleOf", () => {
       {
         staff: [
           { block_id: "b", staff_level: null, position: "Head Coach", count: 1, pay: "hourly" },
-          { block_id: "b", staff_level: "Level 3 Coach", position: null, count: 2, pay: null },
+          { block_id: "b", staff_level: "Coach", position: null, count: 2, pay: null },
         ],
         boats: [
           { block_id: "b", boat_class: "420", count: 3, chartered: null, sailor_owned: 3 },
@@ -114,7 +114,7 @@ describe("scheduleOf", () => {
       [
         "Tuesday practice",
         ["a"],
-        ["1 Head Coach, by the hour", "2 Level 3 Coaches", "1 RIB", "3 420s, plus 3 sailors' own", "1 chartered RIB"],
+        ["1 Head Coach, by the hour", "2 Coaches", "1 RIB", "3 420s, plus 3 sailors' own", "1 chartered RIB"],
       ],
       [null, ["late"], []],
     ]);
@@ -180,7 +180,7 @@ describe("patternsOf", () => {
         { program: "Sea Otters", offerings: "Sea Otters Week 1", time: "9:00 AM–12:00 PM" },
       ],
       parts: usual,
-      exceptions: ["Jun 28 to 29: 2 Level 1 Instructors", "Jun 30: no staff, coach boats or boats yet"],
+      exceptions: ["Jun 28 to 29: 2 Instructors", "Jun 30: no staff, coach boats or boats yet"],
     });
   });
 

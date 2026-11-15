@@ -337,6 +337,22 @@ describe("productsOf", () => {
       { name: "Organization", revenue_cents: 0, direct_cents: 500 },
     ]);
   });
+
+  it("puts the unallocated indirect costs in a row of their own, last", () => {
+    const products = (cents: number) =>
+      productsOf([line("salary", null, 500), line("unrecovered:ga:insurance", null, cents)], []).map((p) => [
+        p.name,
+        p.direct_cents,
+      ]);
+    expect(products(700)).toEqual([
+      ["Organization", 500],
+      ["Unallocated indirect costs", 700],
+    ]);
+    expect(products(-200)).toEqual([
+      ["Organization", 500],
+      ["Over-allocated indirect costs", -200],
+    ]);
+  });
 });
 
 describe("lineAmounts", () => {

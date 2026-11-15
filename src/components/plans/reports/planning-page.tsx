@@ -345,9 +345,9 @@ function PlanMenu({ plan, actions }: { plan: ListedPlan; actions: PlanningAction
   );
 }
 
-/** When and by whom a plan was frozen, what it started from, the platform version that worked it out, and its note, on hover or a tap. */
+/** When and by whom a plan was frozen, what it started from, the release that calculated it, and its note, on hover or a tap. */
 function PlanDetails({ plan }: { plan: ListedPlan }) {
-  if (!plan.frozen_at && !plan.parent && !plan.note) {
+  if (!plan.frozen_at && !plan.parent && !plan.platform && !plan.note) {
     return <span aria-hidden className="size-tap md:size-6" />;
   }
   return (
@@ -375,7 +375,7 @@ function PlanDetails({ plan }: { plan: ListedPlan }) {
             </>
           )}
         </p>
-        {plan.platform && <p className="text-xs text-muted-foreground">Platform {plan.platform}</p>}
+        {plan.platform && <p className="text-xs text-muted-foreground">Calculated with {plan.platform}</p>}
         {plan.note && (
           <p>
             <InlineMarkdown text={plan.note} />

@@ -16,7 +16,7 @@ export interface ScheduledActivity {
 
 /**
  * A block on a date: activities that share their staff, coach boats and boats, each written as people say it, such as
- * "3 Level 1 Instructors". An activity in no block has one of its own, with no name and nothing shared.
+ * "3 Instructors". An activity in no block has one of its own, with no name and nothing shared.
  */
 export interface ScheduleBlock {
   key: string;
@@ -58,12 +58,12 @@ export interface BlockParts {
 
 const amount = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 2 });
 
-/** A name as many: "Opti" → "Optis", "Level 3 Coach" → "Level 3 Coaches"; one already plural stays. */
+/** A name as many: "Opti" → "Optis", "Coach" → "Coaches"; one already plural stays. */
 const plural = (name: string) => (/s$/.test(name) ? name : /(ch|sh|x)$/.test(name) ? `${name}es` : `${name}s`);
 /** A name as one: "RIBs" → "RIB". */
 const singular = (name: string) => name.replace(/([^s])s$/, "$1");
 
-/** A count of something, as people say it: "1 RIB", "3 Level 1 Instructors". */
+/** A count of something, as people say it: "1 RIB", "3 Instructors". */
 export const counted = (n: number, name: string) => `${amount(n)} ${n === 1 ? singular(name) : plural(name)}`;
 
 /**

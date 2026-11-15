@@ -18,8 +18,6 @@ export interface FinancialPlanSummary {
   effective_from: string | null;
   frozen_at: string | null;
   frozen_by: string | null;
-  /** The `@cyc-seattle/platform` version that worked out its results when it was frozen, such as "1.38.1+engine.<hash>". */
-  platform_version: string | null;
   /** The Financial Plan it started as a copy of. */
   parent: { id: string; name: string } | null;
   /** When it was archived, which hides it from Planning's list. Never the plan in force. */
@@ -94,9 +92,11 @@ export function inForce(sets: Dated[], day: string): Map<string, InForce> {
   return result;
 }
 
-/** The package version a frozen plan was worked out with, without the engine's hash: "1.38.1" from "1.38.1+engine.<hash>". */
-export const platformRelease = (set: Pick<FinancialPlanSummary, "status" | "platform_version">) =>
-  isFrozen(set) && set.platform_version ? set.platform_version.split("+engine.")[0]! : null;
+/** The release a plan's results were worked out with, without the engine's hash: "3.0.0" from "3.0.0+engine.<hash>". */
+export const platformRelease = (version: string | null) => (version ? version.split("+engine.")[0]! : null);
+
+/** The hash of the engine's code in a version, which changes only when the engine does, whatever the release. */
+const engineHash = (version: string | null) => version?.split("+engine.")[1] ?? null;
 
 /** A Financial Plan as the Planning page lists it, with its totals once platform has worked them out. */
 export interface ListedPlan {
@@ -113,7 +113,7 @@ export interface ListedPlan {
   archived: boolean;
   /** Its note, a one-line comment such as "Reviewed with the board", in inline Markdown, so it can link. */
   note: string | null;
-  /** The platform package's version that worked out a frozen plan's results, such as "1.38.1". Null for a draft. */
+  /** The release that worked out its results, draft or frozen, such as "3.0.0". Null until it has some that record one. */
   platform: string | null;
   warnings: number;
   /** Null until platform has worked them out. Operating only, leaving out fundraising and capital. */
@@ -165,7 +165,7 @@ export interface PlanLine {
   capital: boolean;
   /** What the money is for: running programs, managing the club, or fundraising. */
   function: "program" | "management" | "fundraising" | null;
-  /** How the engine worked it out, such as "Guppies: hours × Level 1 Instructor's rate". */
+  /** How the engine worked it out, such as "Guppies: hours × Instructor's rate". */
   explanation: string | null;
   plan: string | null;
 }
@@ -237,13 +237,17 @@ export interface Results {
 
 /**
  * Whether a draft's numbers came from another engine than the one platform runs now, such as before a new one
- * deployed. Platform never works them out again on its own, and a frozen plan's never change. False while `engine` is
- * unknown.
+ * deployed. A new release with the same engine doesn't count. Platform never works them out again on its own, and a
+ * frozen plan's never change. False while `engine` is unknown.
  */
 export const fromOlderEngine = (
   plan: { set: Pick<FinancialPlanSummary, "status">; results: Pick<Results, "platform_version"> | null },
   engine: string | null | undefined,
-) => plan.set.status === "draft" && !!plan.results && !!engine && plan.results.platform_version !== engine;
+) =>
+  plan.set.status === "draft" &&
+  !!plan.results &&
+  !!engine &&
+  (plan.results.platform_version === null || engineHash(plan.results.platform_version) !== engineHash(engine));
 
 /** How long a Financial Plan's numbers may be missing before the page says they couldn't be calculated. */
 export const stuckAfterMs = 30_000;

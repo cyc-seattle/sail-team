@@ -43,7 +43,7 @@ const kinds: Record<string, string> = {
   unknown_position: "Missing salaried position",
   unknown_product: "Missing product",
   unknown_resource: "Missing resource",
-  unknown_staff_level: "Missing staff level",
+  unknown_staff_level: "Staff level with no rate",
 };
 
 /** What a kind of warning is called, or its code in words for a kind the app doesn't know yet. */

@@ -28,7 +28,6 @@ const setFields = [
   "effective_from",
   "frozen_at",
   "frozen_by",
-  "platform_version",
   "archived_at",
   "parent_id.id",
   "parent_id.name",
@@ -56,7 +55,11 @@ export const financialPlansQuery = queryOptions({
   queryFn: async (): Promise<ListedPlan[]> => {
     const [sets, totals, warnings] = await Promise.all([
       readAll<SetRow>("financial_plans", undefined, setFields),
-      readAll<Totals & { financial_plan_id: string }>("plan_results", undefined, ["financial_plan_id", ...totalFields]),
+      readAll<Totals & { financial_plan_id: string; platform_version: string | null }>("plan_results", undefined, [
+        "financial_plan_id",
+        "platform_version",
+        ...totalFields,
+      ]),
       readAll<{ financial_plan_id: string }>("plan_result_warnings", undefined, ["financial_plan_id"]),
     ]);
     const savers = await userNames(sets.map((set) => set.frozen_by));
@@ -74,7 +77,7 @@ export const financialPlansQuery = queryOptions({
         parent: set.parent,
         archived: set.archived_at !== null,
         note: set.note,
-        platform: platformRelease(set),
+        platform: platformRelease(total?.platform_version ?? null),
         warnings: warnings.filter((w) => w.financial_plan_id === set.id).length,
         revenue_cents: total ? total.operating_revenue_cents : null,
         expense_cents: total ? total.operating_expense_cents : null,

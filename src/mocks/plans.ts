@@ -93,6 +93,24 @@ const boatClasses = {
   keelboat: boatClass(55, "Keelboat", 4),
 };
 
+/** The staff levels, a role at a grade, which each Operations Plan sets a rate for. */
+const staffRoles = [
+  { id: id(91), name: "Instructor", sort: 1 },
+  { id: id(92), name: "Coach", sort: 2 },
+];
+const staffLevels = (
+  [
+    [94, "Junior Instructor", 0, "junior"],
+    [95, "Instructor", 0, "standard"],
+    [96, "Senior Instructor", 0, "senior"],
+    [97, "Volunteer Coach", 1, "volunteer"],
+    [98, "Coach", 1, "standard"],
+    [99, "Head Coach", 1, "head"],
+  ] as const
+).map(([n, name, role, grade]) => ({ id: id(n), name, role_id: staffRoles[role]!.id, grade }));
+/** A staff level's id, by its name. */
+const levelId = (name: string) => staffLevels.find((l) => l.name === name)!.id;
+
 /** The club's boats of each class, on the asset list, which the engine counts on each day. */
 const fleet = (
   [
@@ -136,6 +154,8 @@ const catalog = {
   qualifications: [],
   qualification_covers: [],
   boat_classes: Object.values(boatClasses),
+  staff_roles: staffRoles,
+  staff_levels: staffLevels,
   assets,
   boats,
 };
@@ -197,7 +217,7 @@ const laborLine = (
     name,
     cost_center_type: type,
     cost_center_key: center,
-    staff_level_key: key(level),
+    staff_level_id: levelId(level),
     hours,
     account_id: a.id,
     function: null,
@@ -213,10 +233,10 @@ function operations(plan: string): Copy {
     mileage_rate_cents: 70,
   });
   const level = (name: string, cents: number) =>
-    c.add("plan_staff_levels", name, { name, pay_type: "hourly", hourly_rate_cents: cents });
-  level("Junior Instructor", 1_900);
-  level("Level 1 Instructor", 2_200);
-  level("Level 3 Coach", 3_200);
+    c.add("plan_staff_levels", name, { staff_level_id: levelId(name), hourly_rate_cents: cents });
+  level("Junior Instructor", 0);
+  level("Instructor", 2_200);
+  level("Coach", 3_200);
   const ga = c.add("plan_pools", "G&A", { name: "G&A" });
   const admin = c.add("plan_pools", "Program admin", { name: "Program admin" });
   const position = (name: string, salary: number, share: number, pool: string, coaching: number | null = null) =>
@@ -306,7 +326,7 @@ function operations(plan: string): Copy {
   // Capital entered the old way, as a budget line, which has no rank.
   line("Trailer", accounts.equipment, 500_000, "org", null);
   line("Storage dock upkeep", accounts.boats, 300_000, "offering", key("Boat storage"));
-  laborLine(c, "Winter boat repairs", "Level 1 Instructor", 120, "pool", key("Program admin"), accounts.boats);
+  laborLine(c, "Winter boat repairs", "Instructor", 120, "pool", key("Program admin"), accounts.boats);
   c.add("plan_closed_dates", "Fourth of July", { date: "2027-07-05", name: "Independence Day, observed" });
   for (const [name, starts_on, ends_on] of [
     ["Spring 2027", "2027-03-01", "2027-06-15"],
@@ -387,7 +407,7 @@ function block(
   const b = c.add("plan_activity_blocks", name, { date: on, name });
   c.add("plan_block_staff", `${name} staff`, {
     block_id: b,
-    staff_level_key: key(staff[0]),
+    staff_level_id: levelId(staff[0]),
     position_key: null,
     count: staff[1],
     pay: null,
@@ -413,22 +433,23 @@ function summer(plan: string, instructors: number): Copy {
   const settings = (p: { id: string; name: string }, level: string, perCoach: number, notes: string[] | null) =>
     c.add("plan_programs", `${p.name} settings`, {
       product_id: p.id,
-      staff_level_key: key(level),
+      staff_level_id: levelId(level),
       sailors_per_coach: perCoach,
+      indirect_cost_rate: 0.15,
       notes,
     });
-  settings(products.guppies, "Level 1 Instructor", 10, [
+  settings(products.guppies, "Instructor", 10, [
     "If there are more than 12 Guppies, add a **Junior Instructor**.",
     "Guppies sail Sailqubes.",
   ]);
-  settings(products.otters, "Level 1 Instructor", 10, null);
-  settings(products.opti, "Level 1 Instructor", 8, ["Never fewer than 2 instructors on the water."]);
-  settings(products.sailqube, "Level 1 Instructor", 8, null);
-  settings(products.c420, "Level 3 Coach", 8, null);
-  settings(products.keelboat, "Level 3 Coach", 6, null);
-  settings(products.adventure, "Level 1 Instructor", 8, null);
+  settings(products.otters, "Instructor", 10, null);
+  settings(products.opti, "Instructor", 8, ["Never fewer than 2 instructors on the water."]);
+  settings(products.sailqube, "Instructor", 8, null);
+  settings(products.c420, "Coach", 8, null);
+  settings(products.keelboat, "Coach", 6, null);
+  settings(products.adventure, "Instructor", 8, null);
   budgetLine(c, "Tent rental", accounts.boats, 180_000, "program_area", ids.summer, { in_mtdc: false });
-  laborLine(c, "Camp setup", "Level 1 Instructor", 40, "program_area", ids.summer, accounts.wages);
+  laborLine(c, "Camp setup", "Instructor", 40, "program_area", ids.summer, accounts.wages);
   // Each camp: its product, the weeks it runs, its sailors, its fee, and its time of day.
   const camps = [
     { p: products.guppies, weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9], max: 10, target: 9, price: 39_500, end: "12:00:00" },
@@ -450,14 +471,14 @@ function summer(plan: string, instructors: number): Copy {
     {
       name: "Morning dock",
       camps: ["Guppies", "Sea Otters"],
-      staff: ["Level 1 Instructor", instructors],
+      staff: ["Instructor", instructors],
       ribs: 2,
       boats: (week) => [[boatClasses.sailqube, week === 4 ? 9 : 6]],
     },
     {
       name: "Day camps",
       camps: ["Opti Camp", "Sailqube Camp"],
-      staff: ["Level 1 Instructor", 4],
+      staff: ["Instructor", 4],
       ribs: 2,
       boats: () => [
         [boatClasses.opti, 14],
@@ -467,14 +488,14 @@ function summer(plan: string, instructors: number): Copy {
     {
       name: "Big boats",
       camps: ["420 Camp", "Keelboat Camp"],
-      staff: ["Level 3 Coach", 2],
+      staff: ["Coach", 2],
       ribs: 2,
       boats: () => [
         [boatClasses.c420, 6],
         [boatClasses.keelboat, 2],
       ],
     },
-    { name: "Adventure", camps: ["Adventure Camp"], staff: ["Level 1 Instructor", 2], ribs: 1, boats: () => [] },
+    { name: "Adventure", camps: ["Adventure Camp"], staff: ["Instructor", 2], ribs: 1, boats: () => [] },
   ];
   for (let week = 1; week <= 9; week++) {
     const monday = date("2027-06-21", 7 * (week - 1));
@@ -515,8 +536,9 @@ function doublehanded(plan: string): Copy {
   const c = new Copy(plan);
   c.add("plan_programs", "J-Pod settings", {
     product_id: products.jpod.id,
-    staff_level_key: key("Level 3 Coach"),
+    staff_level_id: levelId("Coach"),
     sailors_per_coach: 8,
+    indirect_cost_rate: 0.2,
     notes: ["Most sailors bring their own 420s."],
   });
   for (const [session, first, weeks, target] of [
@@ -540,7 +562,7 @@ function doublehanded(plan: string): Copy {
     for (let week = 0; week < weeks; week++) {
       const on = date(first, 7 * week);
       const last = session === "Fall" && week === weeks - 1;
-      const b = last ? null : block(c, `J-Pod ${on}`, on, ["Level 3 Coach", 2], 2, [[boatClasses.c420, 3, 3]]);
+      const b = last ? null : block(c, `J-Pod ${on}`, on, ["Coach", 2], 2, [[boatClasses.c420, 3, 3]]);
       activity(c, `J-Pod ${on}`, o, on, "16:00:00", "19:00:00", b);
     }
   }
@@ -569,7 +591,6 @@ const set = (setId: string, fields: Row) => ({
   fiscal_year: 2027,
   frozen_at: null,
   frozen_by: null,
-  platform_version: null,
   note: null,
   parent_id: null,
   archived_at: null,
@@ -583,7 +604,6 @@ const budget = set(ids.budget, {
   note: "Reviewed with the board",
   frozen_at: "2027-03-10T18:00:00Z",
   frozen_by: ids.saver,
-  platform_version: "1.38.1+engine.0a1b2c3d4e5f",
 });
 const parent = { id: ids.budget, name: "Budget" };
 const twoCoaches = set(ids.twoCoaches, {
@@ -600,7 +620,6 @@ const firstPass = set(ids.firstPass, {
   status: "frozen",
   frozen_at: "2027-02-14T18:00:00Z",
   frozen_by: ids.saver,
-  platform_version: "1.37.0+engine.0a1b2c3d4e5f",
   archived_at: "2027-03-10T18:05:00Z",
 });
 
@@ -749,17 +768,23 @@ function results(setRow: Row, calculatedAt: string, platformVersion: string | nu
 // Budget's results, as platform worked them out when it was frozen, and Two coaches', after its latest change, before
 // platform's engine changed. Three coaches' are still being worked out.
 const worked = [
-  results(budget, "2027-03-10T18:00:00Z", budget.platform_version),
-  results(twoCoaches, "2027-04-02T23:05:00Z", "1.38.1+engine.0a1b2c3d4e5f"),
+  results(budget, "2027-03-10T18:00:00Z", "1.38.1+engine.9f8e7d6c5b4a"),
+  results(twoCoaches, "2027-04-02T23:05:00Z", "1.38.1+engine.9f8e7d6c5b4a"),
 ];
 const resultTables = Object.fromEntries(
   ["plan_results", "plan_result_lines", "plan_result_pnl", "plan_result_warnings", "plan_result_capital"].map(
     (table) => [table, worked.flatMap((r) => r[table] ?? [])],
   ),
 );
-resultTables["plan_results"]!.push({ ...worked[0]!["plan_results"]![0]!, financial_plan_id: ids.firstPass });
+resultTables["plan_results"]!.push({
+  ...worked[0]!["plan_results"]![0]!,
+  financial_plan_id: ids.firstPass,
+  platform_version: "1.37.0+engine.9f8e7d6c5b4a",
+});
 
 const planIds = Object.keys(copies);
+/** A row's staff level, expanded as the app asks for it. */
+const staffLevel = (r: Row) => staffLevels.find((l) => l.id === r["staff_level_id"]) ?? null;
 const named = (row: { id: string; name: string }) => ({ id: row.id, name: row.name });
 
 /** Each table's rows, as Directus would return them, with relations expanded where the app asks for them. */
@@ -790,7 +815,13 @@ export const tables: Record<string, Row[]> = {
   plan_programs: rowsOf(planIds, "plan_programs").map((r) => ({
     ...r,
     product_id: named(catalog.products.find((p) => p.id === r["product_id"])!),
+    staff_level_id: staffLevel(r),
   })),
+  plan_staff_levels: rowsOf(planIds, "plan_staff_levels").map((r) => {
+    const level = staffLevels.find((l) => l.id === r["staff_level_id"])!;
+    return { ...r, staff_level_id: { ...level, role_id: staffRoles.find((x) => x.id === level.role_id)! } };
+  }),
+  plan_block_staff: rowsOf(planIds, "plan_block_staff").map((r) => ({ ...r, staff_level_id: staffLevel(r) })),
   // A program's own row, with the color a Catalog Writer gave Guppies; the rest take one from the palette.
   plan_offerings: rowsOf(planIds, "plan_offerings").map((r) => {
     const product = catalog.products.find((p) => p.id === r["product_id"])!;
@@ -818,6 +849,7 @@ export const tables: Record<string, Row[]> = {
       rowsOf(planIds, table).map((r) => ({
         ...r,
         account_id: catalog.accounts.find((a) => a.id === r["account_id"])!,
+        ...(table === "plan_labor_lines" && { staff_level_id: staffLevel(r) }),
       })),
     ]),
   ),
