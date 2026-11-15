@@ -337,6 +337,22 @@ describe("productsOf", () => {
       { name: "Organization", revenue_cents: 0, direct_cents: 500 },
     ]);
   });
+
+  it("puts what the indirect cost rates don't recover in a row of its own, last", () => {
+    const products = (cents: number) =>
+      productsOf([line("salary", null, 500), line("unrecovered:ga:insurance", null, cents)], []).map((p) => [
+        p.name,
+        p.direct_cents,
+      ]);
+    expect(products(700)).toEqual([
+      ["Organization", 500],
+      ["Indirect costs not recovered", 700],
+    ]);
+    expect(products(-200)).toEqual([
+      ["Organization", 500],
+      ["Indirect costs over-recovered", -200],
+    ]);
+  });
 });
 
 describe("lineAmounts", () => {

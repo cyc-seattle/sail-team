@@ -545,9 +545,13 @@ export interface Product {
   direct_cents: number;
 }
 
+/** The row for what the indirect cost rates don't recover of the shared costs (cyc-seattle/platform#296). */
+const UNRECOVERED = "Indirect costs not recovered";
+
 /**
  * What the Operations Plan sells, by product, from its offerings' lines, leaving out their shares of the pools. Its
- * costs that are no offering's, such as a salary's rest charged to the organization, are a row of their own.
+ * costs that are no offering's, such as a salary's rest charged to the organization, are a row of their own, and what
+ * the indirect cost rates don't recover is one more, last.
  */
 export function productsOf(
   lines: (Line & Pick<PlanLine, "cost_center_key">)[],
@@ -556,7 +560,9 @@ export function productsOf(
   const productOf = new Map(offerings.map((o) => [o.key, o.product]));
   const products = new Map<string, Product>();
   for (const line of operating(lines).filter((l) => !isShare(l))) {
-    const name = (line.cost_center_key && productOf.get(line.cost_center_key)) ?? "Organization";
+    const name = line.key.startsWith("unrecovered:")
+      ? UNRECOVERED
+      : ((line.cost_center_key && productOf.get(line.cost_center_key)) ?? "Organization");
     const product = products.get(name) ?? { name, revenue_cents: 0, direct_cents: 0 };
     products.set(name, {
       ...product,
@@ -564,9 +570,10 @@ export function productsOf(
       direct_cents: product.direct_cents + (line.revenue ? 0 : line.amount_cents),
     });
   }
-  return [...products.values()].sort(
-    (a, b) => Number(a.name === "Organization") - Number(b.name === "Organization") || a.name.localeCompare(b.name),
-  );
+  const last = (p: Product) => (p.name === UNRECOVERED ? 2 : p.name === "Organization" ? 1 : 0);
+  return [...products.values()]
+    .sort((a, b) => last(a) - last(b) || a.name.localeCompare(b.name))
+    .map((p) => (p.name === UNRECOVERED && p.direct_cents < 0 ? { ...p, name: "Indirect costs over-recovered" } : p));
 }
 
 /** Fundraising's revenue and costs by account. */
