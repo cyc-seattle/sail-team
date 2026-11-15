@@ -2,11 +2,11 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { inForceText, type InForce } from "@/model/financial-plans";
 
-/** Whether a Financial Plan is a draft or saved. Saved ones are called frozen. */
-export type VersionState = "draft" | "saved";
+/** Whether a Financial Plan is a draft or frozen. */
+export type VersionState = "draft" | "frozen";
 
-const labels: Record<VersionState, string> = { draft: "Draft", saved: "Frozen" };
-const variants = { draft: "secondary", saved: "outline" } as const;
+const labels: Record<VersionState, string> = { draft: "Draft", frozen: "Frozen" };
+const variants = { draft: "secondary", frozen: "outline" } as const;
 
 /** Whether a Financial Plan is a draft or frozen. */
 export function VersionBadge({ state }: { state: VersionState }) {

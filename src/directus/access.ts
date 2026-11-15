@@ -36,7 +36,7 @@ export function canUpdateFields(permissions: Permissions | undefined, collection
 
 /** Whether the user is a Plan Admin: they save Financial Plans, make them active, and archive them. */
 export const canAdminPlans = (permissions: Permissions | undefined) =>
-  canUpdateFields(permissions, "version_sets", ["status", "effective_from", "archived_at"]);
+  canUpdateFields(permissions, "financial_plans", ["status", "effective_from", "archived_at"]);
 
 /**
  * The fields of `wanted` the user can read on some row of `collection`. Directus refuses a request that names a field

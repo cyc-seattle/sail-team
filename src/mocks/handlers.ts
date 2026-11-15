@@ -107,23 +107,31 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
       Object.assign(row, changes);
       return HttpResponse.json({ data: row });
     }),
-    // A new Financial Plan, with its parent's plans copied in, as platform's hook copies them.
-    http.post(`${directusUrl}/items/version_sets`, async ({ request }) => {
+    // A new Financial Plan, with its parent's plans and their rows copied in, as platform's hook copies them.
+    http.post(`${directusUrl}/items/financial_plans`, async ({ request }) => {
       const body = (await request.json()) as Row;
-      const parent = tables["version_sets"]!.find((s) => s["id"] === body["parent_id"]);
+      const parent = tables["financial_plans"]!.find((s) => s["id"] === body["parent_id"]);
       const row: Row = {
-        saved_at: null,
-        saved_by: null,
+        frozen_at: null,
+        frozen_by: null,
         effective_from: null,
         archived_at: null,
         ...body,
         status: "draft",
         parent_id: parent ? { id: parent["id"], name: parent["name"] } : null,
       };
-      tables["version_sets"]!.push(row);
-      const members = tables["version_set_members"]!;
-      for (const m of members.filter((m) => (m["version_set_id"] as Row)["id"] === parent?.["id"])) {
-        members.push({ ...m, id: crypto.randomUUID(), version_set_id: row });
+      tables["financial_plans"]!.push(row);
+      const plans = tables["plans"]!;
+      for (const plan of plans.filter((p) => (p["financial_plan_id"] as Row)["id"] === parent?.["id"])) {
+        const copy = { ...plan, id: crypto.randomUUID(), financial_plan_id: row };
+        plans.push(copy);
+        for (const [table, rows] of Object.entries(tables)) {
+          if (table.startsWith("plan_") && !table.startsWith("plan_result")) {
+            for (const r of rows.filter((r) => r["plan_id"] === plan["id"])) {
+              rows.push({ ...r, id: crypto.randomUUID(), plan_id: copy.id });
+            }
+          }
+        }
       }
       return HttpResponse.json({ data: row });
     }),

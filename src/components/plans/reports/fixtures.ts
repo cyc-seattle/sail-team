@@ -119,16 +119,18 @@ export const summerPrograms: ProgramSettings[] = [
     name: "Guppies",
     staff_level: "Level 1 Instructor",
     sailors_per_coach: 10,
-    rules:
-      "If there are more than 12 Guppies, add a Junior Instructor.\nGuppies sail Sailqubes. The Harpoon can take up to 10 instead.",
+    notes: [
+      "If there are more than 12 Guppies, add a **Junior Instructor**.",
+      "Guppies sail Sailqubes. The Harpoon can take up to 10 instead.",
+    ],
   },
   {
     name: "Opti Camp",
     staff_level: "Level 2 Instructor",
     sailors_per_coach: 8,
-    rules: "About a third bring their own Optis.\nNever fewer than 2 coaches on the water.",
+    notes: ["About a third bring their own Optis.", "Never fewer than 2 coaches on the water."],
   },
-  { name: "Race Camp", staff_level: "Level 3 Coach", sailors_per_coach: 10, rules: null },
+  { name: "Race Camp", staff_level: "Level 3 Coach", sailors_per_coach: 10, notes: null },
 ];
 
 const week = (n: number) => {
@@ -291,9 +293,9 @@ export const areaOfferings: Record<string, ReportOffering[]> = {
 };
 
 export const doublehandedPrograms: ProgramSettings[] = [
-  { name: "J-Pod", staff_level: "Level 3 Coach", sailors_per_coach: 8, rules: "Travel regattas take two coaches." },
-  { name: "K-Pod", staff_level: "Level 3 Coach", sailors_per_coach: 10, rules: null },
-  { name: "L-Pod", staff_level: "Level 4 Coach", sailors_per_coach: 12, rules: "Most sailors bring their own 420s." },
+  { name: "J-Pod", staff_level: "Level 3 Coach", sailors_per_coach: 8, notes: ["Travel regattas take two coaches."] },
+  { name: "K-Pod", staff_level: "Level 3 Coach", sailors_per_coach: 10, notes: null },
+  { name: "L-Pod", staff_level: "Level 4 Coach", sailors_per_coach: 12, notes: ["Most sailors bring their own 420s."] },
 ];
 
 export const doublehandedStatement = {
@@ -605,13 +607,18 @@ export const reportAssumptions: OperationsAssumptions = {
   ],
 };
 
-export const summerRules =
-  "Guppies and Opti Camp share the dock in the morning.\nNo sailing on Monday, July 5.\nThe Program Director coaches Race Camp, at salary.";
+export const summerNotes = [
+  "Guppies and Opti Camp share the dock in the morning.",
+  "No sailing on Monday, July 5.",
+  "The Program Director coaches Race Camp, *at salary*.",
+];
 
-export const doublehandedRules = "J-Pod and K-Pod share coaches on Wednesdays.";
+export const doublehandedNotes = ["J-Pod and K-Pod share coaches on Wednesdays."];
 
-export const assumptionsRules =
-  "Keep one RIB ashore for repairs on summer weekdays.\nNo more than 6 RIBs on the water at once.";
+export const assumptionsNotes = [
+  "Keep one RIB ashore for repairs on summer weekdays.",
+  "No more than 6 RIBs on the water at once.",
+];
 
 export const warnings: PlanWarning[] = [
   {
@@ -681,8 +688,8 @@ const planSummary = (
 ): ListedPlan => ({
   year: 2027,
   in_force: null,
-  saved_at: null,
-  saved_by: null,
+  frozen_at: null,
+  frozen_by: null,
   parent: null,
   archived: false,
   note: null,
@@ -702,10 +709,10 @@ export const planningPlans: ListedPlan[] = [
   planSummary({
     id: "budget",
     name: "Budget",
-    status: "saved",
+    status: "frozen",
     in_force: { when: "now", from: "2026-07-01", to: "2027-08-31" },
-    saved_at: "2027-03-10T18:00:00Z",
-    saved_by: "Morgan Keel",
+    frozen_at: "2027-03-10T18:00:00Z",
+    frozen_by: "Morgan Keel",
     platform: "1.38.1",
     warnings: 2,
   }),
@@ -730,18 +737,18 @@ export const planningPlans: ListedPlan[] = [
   planSummary({
     id: "board",
     name: "Board review",
-    status: "saved",
+    status: "frozen",
     in_force: { when: "past", from: "2026-03-01", to: "2026-06-30" },
-    saved_at: "2027-02-02T18:00:00Z",
-    saved_by: "Sam Halyard",
+    frozen_at: "2027-02-02T18:00:00Z",
+    frozen_by: "Sam Halyard",
     platform: "1.36.0",
     expense_cents: 45_500_000,
   }),
   planSummary({
     id: "first",
     name: "First pass",
-    status: "saved",
-    saved_at: "2027-01-15T18:00:00Z",
+    status: "frozen",
+    frozen_at: "2027-01-15T18:00:00Z",
     expense_cents: 48_700_000,
     archived: true,
   }),
@@ -749,9 +756,9 @@ export const planningPlans: ListedPlan[] = [
     id: "2026",
     name: "2026 Budget",
     year: 2026,
-    status: "saved",
+    status: "frozen",
     in_force: { when: "now", from: "2025-07-01", to: null },
-    saved_at: "2026-03-04T18:00:00Z",
+    frozen_at: "2026-03-04T18:00:00Z",
     revenue_cents: 45_200_000,
     expense_cents: 42_900_000,
   }),

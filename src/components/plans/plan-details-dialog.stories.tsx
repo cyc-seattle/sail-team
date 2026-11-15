@@ -7,7 +7,7 @@ const meta = {
   args: {
     trigger: "Edit",
     title: "Edit Budget",
-    initial: { name: "Budget", message: "Reviewed with the board" },
+    initial: { name: "Budget", note: "Reviewed with the board" },
     submitLabel: "Save",
     onSubmit: fn(async () => {}),
   },
@@ -24,7 +24,7 @@ export const Edit: Story = {
     await userEvent.type(name, "Adopted budget");
     await userEvent.click(dialog.getByRole("button", { name: "Save" }));
     await waitFor(() =>
-      expect(args.onSubmit).toHaveBeenCalledWith({ name: "Adopted budget", message: "Reviewed with the board" }),
+      expect(args.onSubmit).toHaveBeenCalledWith({ name: "Adopted budget", note: "Reviewed with the board" }),
     );
   },
 };
@@ -34,7 +34,7 @@ export const Duplicate: Story = {
     trigger: "Duplicate",
     title: "Duplicate Budget",
     description: "The copy is a draft, for 2027. Budget doesn't change.",
-    initial: { name: "Budget copy", message: null },
+    initial: { name: "Budget copy", note: null },
     submitLabel: "Duplicate",
   },
   play: async ({ canvas, canvasElement, userEvent }) => {

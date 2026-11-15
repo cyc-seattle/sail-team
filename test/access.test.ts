@@ -16,13 +16,13 @@ describe("canRead", () => {
 
 describe("canWrite", () => {
   it("is true for a Plan Writer starting or changing a Financial Plan", () => {
-    expect(canWrite(plannerPermissions, "version_sets", "create")).toBe(true);
-    expect(canWrite(plannerPermissions, "version_sets", "update")).toBe(true);
+    expect(canWrite(plannerPermissions, "financial_plans", "create")).toBe(true);
+    expect(canWrite(plannerPermissions, "financial_plans", "update")).toBe(true);
   });
 
   it("is false for a collection the user only reads, or before permissions load", () => {
     expect(canWrite(plannerPermissions, "plans", "update")).toBe(false);
-    expect(canWrite(undefined, "version_sets", "create")).toBe(false);
+    expect(canWrite(undefined, "financial_plans", "create")).toBe(false);
   });
 });
 

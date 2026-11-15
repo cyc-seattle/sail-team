@@ -9,11 +9,11 @@ const budget: FinancialPlanSummary = {
   organization_id: "org",
   fiscal_year: 2027,
   name: "Budget",
-  message: "Reviewed with the board",
-  status: "saved",
+  note: "Reviewed with the board",
+  status: "frozen",
   effective_from: "2026-07-01",
-  saved_at: "2027-03-10T18:00:00Z",
-  saved_by: null,
+  frozen_at: "2027-03-10T18:00:00Z",
+  frozen_by: null,
   platform_version: null,
   parent: null,
   archived_at: null,
@@ -22,10 +22,10 @@ const twoCoaches: FinancialPlanSummary = {
   ...budget,
   id: "two",
   name: "Two coaches",
-  message: null,
+  note: null,
   status: "draft",
   effective_from: null,
-  saved_at: null,
+  frozen_at: null,
   parent: { id: "budget", name: "Budget" },
 };
 
@@ -91,7 +91,7 @@ export const Duplicate: Story = {
     const dialog = within(await within(canvasElement.ownerDocument.body).findByRole("dialog"));
     await expect(dialog.getByLabelText("Name")).toHaveValue("Budget copy");
     await userEvent.click(dialog.getByRole("button", { name: "Duplicate" }));
-    await waitFor(() => expect(args.onStart).toHaveBeenCalledWith({ name: "Budget copy", message: null }));
+    await waitFor(() => expect(args.onStart).toHaveBeenCalledWith({ name: "Budget copy", note: null }));
   },
 };
 
@@ -106,7 +106,7 @@ export const RenameFrozen: Story = {
     await userEvent.type(name, "Adopted budget");
     await userEvent.click(dialog.getByRole("button", { name: "Save" }));
     await waitFor(() =>
-      expect(args.onEdit).toHaveBeenCalledWith({ name: "Adopted budget", message: "Reviewed with the board" }),
+      expect(args.onEdit).toHaveBeenCalledWith({ name: "Adopted budget", note: "Reviewed with the board" }),
     );
   },
 };

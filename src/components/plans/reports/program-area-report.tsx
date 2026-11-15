@@ -22,7 +22,7 @@ import { NoteInfo } from "../note-info";
 import { CollapsibleSection } from "./collapsible-section";
 import { OfferingName } from "./offering-name";
 import { ReportSection } from "./report-page";
-import { RulesList } from "./rules-list";
+import { NotesList } from "./notes-list";
 import { PlanCalendar } from "./plan-calendar";
 import { StatementTable } from "./statement-table";
 import { WarningsSection } from "./warnings-section";
@@ -74,18 +74,18 @@ const per = (cents: number, by: number) => (by > 0 ? Math.round(cents / by) : nu
 const hoursOf = (n: number) => count(Math.round(n * 10) / 10);
 
 /**
- * The area's rules, then each program's settings and rules, closed until someone opens them. The planning agent reads
- * the rules; the engine checks only the settings.
+ * The area's notes, then each program's settings and notes, closed until someone opens them. The planning agent reads
+ * the notes; the engine checks only the settings.
  */
 function AreaAssumptions({
   area,
-  rules,
+  notes,
   programs,
   fixedCosts,
   staffTime,
 }: {
   area: string;
-  rules: string | null;
+  notes: string[] | null;
   programs: ProgramSettings[];
   fixedCosts: FixedCost[];
   staffTime: StaffTime[];
@@ -93,11 +93,11 @@ function AreaAssumptions({
   return (
     <CollapsibleSection title="Assumptions">
       <div className="grid max-w-3xl gap-6">
-        <section aria-labelledby="area-rules" className="grid gap-2">
-          <h3 id="area-rules" className="text-sm font-medium">
+        <section aria-labelledby="area-notes" className="grid gap-2">
+          <h3 id="area-notes" className="text-sm font-medium">
             {area}
           </h3>
-          <RulesList rules={rules} label={`${area} rules`} />
+          <NotesList notes={notes} label={`${area} notes`} />
         </section>
         {programs.map((p) => (
           <section key={p.name} aria-label={p.name} className="grid gap-2 border-t pt-4">
@@ -108,7 +108,7 @@ function AreaAssumptions({
               <dt className="text-muted-foreground">Sailors per coach</dt>
               <dd className="tabular-nums">{p.sailors_per_coach ?? none}</dd>
             </dl>
-            <RulesList rules={p.rules} label={`${p.name} rules`} />
+            <NotesList notes={p.notes} label={`${p.name} notes`} />
           </section>
         ))}
         {fixedCosts.length > 0 && (
@@ -250,8 +250,8 @@ const totalRow = "border-t-2 font-semibold hover:bg-transparent";
 export interface ProgramAreaReportProps {
   /** The program area's name, such as Summer. */
   area: string;
-  /** The area's own rules, for what spans its programs. */
-  rules: string | null;
+  /** The area's own notes, for what spans its programs. */
+  notes: string[] | null;
   warnings: PlanWarning[];
   statement: { revenue: AccountAmount[]; direct: AccountAmount[]; indirect: AccountAmount[] };
   /** Its total revenue and expenses, which its offerings' and what's charged to the area itself add up to. */
@@ -278,7 +278,7 @@ export interface ProgramAreaReportProps {
  */
 export function ProgramAreaReport({
   area,
-  rules,
+  notes,
   warnings,
   statement,
   total,
@@ -300,7 +300,7 @@ export function ProgramAreaReport({
     <>
       <div className="grid gap-2">
         <WarningsSection warnings={warnings} />
-        <AreaAssumptions area={area} rules={rules} programs={programs} fixedCosts={fixedCosts} staffTime={staffTime} />
+        <AreaAssumptions area={area} notes={notes} programs={programs} fixedCosts={fixedCosts} staffTime={staffTime} />
       </div>
 
       <ReportSection id="calendar" title="Calendar">

@@ -10,8 +10,8 @@ Feature: Seeing the Financial Plans
   name, and a note that says what it was for, such as "Reviewed with the board".
 
   A plan's activities are grouped into blocks, one date each, and each block is given its staff, RIBs and boats. Each
-  program has its settings: the staff level that leads it, and how many sailors one of them can take. Rules, in the
-  planner's own words, say what the settings can't, for the planner's AI to follow. The engine costs what the blocks
+  program has its settings: the staff level that leads it, and how many sailors one of them can take. Short notes, in
+  the planner's own words, say what the settings can't, for the planner's AI to follow. The engine costs what the blocks
   are given, and warns where they break a limit, such as a practice on a day CSC is closed.
 
   Planning is where planners, and anyone else who can read plans, see the Financial Plans as a set of reports: an
@@ -102,26 +102,26 @@ Feature: Seeing the Financial Plans
       And a planner's AI raises the offering's price to $1,200
       Then it shows $12,000 of revenue, without my reloading the page
 
-  Rule: A program area's report shows its programs' settings and rules, and each offering's enrollment and fees
+  Rule: A program area's report shows its programs' settings and notes, and each offering's enrollment and fees
 
     Scenario: An offering's target and fee, and its program's settings
       Given I'm a planner who can read plans
       And a draft Financial Plan whose Youth Racing plan has one offering of 10 sailors at $1,000 each
-      And its program is led by a Lead coach, at 5 sailors per coach, with the rule "Sail in pairs"
+      And its program is led by a Lead coach, at 5 sailors per coach, with the note "Sail in pairs"
       And I've signed in
       When I open Youth Racing's report in the draft
       Then its offering's enrollment shows a target of 10 sailors, and its fees a fee of $1,000
-      And its assumptions show the program's Lead coach, 5 sailors per coach, and the rule "Sail in pairs"
+      And its assumptions show the program's Lead coach, 5 sailors per coach, and the note "Sail in pairs"
 
-  Rule: Assumptions show the rules every program follows and the rates every plan uses
+  Rule: Assumptions show the notes every program follows and the rates every plan uses
 
-    Scenario: The Operations Plan's rules and a coach's pay
+    Scenario: The Operations Plan's notes and a coach's pay
       Given I'm a planner who can read plans
       And a draft Financial Plan whose Operations Plan pays coaches $30 an hour and has $1,000 of office costs
-      And the Operations Plan's rule "No more than 4 RIBs on the water"
+      And the Operations Plan's note "No more than 4 RIBs on the water"
       And I've signed in
       When I open the draft's Assumptions
-      Then I see the rule "No more than 4 RIBs on the water"
+      Then I see the note "No more than 4 RIBs on the water"
       And I see the coach's pay of $30.00 an hour
 
   Rule: A program area's calendar shows its offerings over the year, then a day's activity blocks at their times

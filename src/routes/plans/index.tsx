@@ -29,9 +29,9 @@ function AllPlans() {
       plans={data}
       actions={{
         canAdmin: canAdminPlans(permissions),
-        canDelete: canWrite(permissions, "version_sets", "delete"),
+        canDelete: canWrite(permissions, "financial_plans", "delete"),
         onFreeze: async (plan) => {
-          await updateFinancialPlan(plan.id, { status: "saved" });
+          await updateFinancialPlan(plan.id, { status: "frozen" });
           await refresh();
         },
         onActivate: async (plan, date) => {

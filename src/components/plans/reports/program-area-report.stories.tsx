@@ -6,13 +6,13 @@ import {
   doublehandedSchedule,
   summerSchedule,
   doublehandedPrograms,
-  doublehandedRules,
+  doublehandedNotes,
   doublehandedTotal,
   summerTotal,
   doublehandedStatement,
   summerOfferings,
   summerPrograms,
-  summerRules,
+  summerNotes,
   doublehandedTrips,
   summerFixedCosts,
   summerStaffTime,
@@ -30,7 +30,7 @@ const meta = {
     schedule: doublehandedSchedule,
     closedDays,
     area: "Doublehanded",
-    rules: doublehandedRules,
+    notes: doublehandedNotes,
     warnings: warnings.filter((w) => w.area === "doublehanded"),
     statement: doublehandedStatement,
     total: doublehandedTotal,
@@ -50,7 +50,7 @@ export const Doublehanded: Story = {
     const table = canvas.getByRole("table", { name: "Fees" });
     const names = [...table.querySelectorAll("tbody button")].map((b) => b.textContent).filter(Boolean);
     await expect(names.slice(0, 4)).toEqual(["J-Pod Spring", "K-Pod Spring", "L-Pod Spring", "J-Pod Summer"]);
-    await expect(canvas.getByRole("list", { name: "J-Pod rules" })).not.toBeVisible();
+    await expect(canvas.getByRole("list", { name: "J-Pod notes" })).not.toBeVisible();
   },
 };
 
@@ -80,14 +80,14 @@ export const EnrollmentHelp: Story = {
 export const AssumptionsOpen: Story = {
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByText("Assumptions", { selector: "h2" }));
-    await expect(canvas.getByRole("list", { name: "J-Pod rules" })).toBeVisible();
+    await expect(canvas.getByRole("list", { name: "J-Pod notes" })).toBeVisible();
   },
 };
 
 export const Summer: Story = {
   args: {
     area: "Summer",
-    rules: summerRules,
+    notes: summerNotes,
     warnings: warnings.filter((w) => w.area === "summer"),
     statement: summerStatement,
     total: summerTotal,
