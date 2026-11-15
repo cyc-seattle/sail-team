@@ -81,6 +81,9 @@ export const AssumptionsOpen: Story = {
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByText("Assumptions", { selector: "h2" }));
     await expect(canvas.getByRole("list", { name: "J-Pod notes" })).toBeVisible();
+    // Each program's indirect cost rate, or none for a program without one.
+    await expect(canvas.getByRole("region", { name: "J-Pod" })).toHaveTextContent("Indirect cost rate20%");
+    await expect(canvas.getByRole("region", { name: "K-Pod" })).toHaveTextContent("Indirect cost rate—");
   },
 };
 

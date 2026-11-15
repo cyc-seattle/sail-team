@@ -4,7 +4,7 @@
  */
 export const decimalFields: Record<string, readonly string[]> = {
   plan_offerings: ["fill_rate", "cogs_rate"],
-  plan_programs: ["sailors_per_coach"],
+  plan_programs: ["sailors_per_coach", "indirect_cost_rate"],
   plan_block_resources: ["quantity", "hours"],
   plan_labor_lines: ["hours"],
   plan_rates: ["payroll_tax_rate"],

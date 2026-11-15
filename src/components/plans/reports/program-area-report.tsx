@@ -107,6 +107,10 @@ function AreaAssumptions({
               <dd>{p.staff_level ?? none}</dd>
               <dt className="text-muted-foreground">Sailors per coach</dt>
               <dd className="tabular-nums">{p.sailors_per_coach ?? none}</dd>
+              <dt className="text-muted-foreground">Indirect cost rate</dt>
+              <dd className="tabular-nums">
+                {p.indirect_cost_rate == null ? none : formatShare(p.indirect_cost_rate)}
+              </dd>
             </dl>
             <NotesList notes={p.notes} label={`${p.name} notes`} />
           </section>
