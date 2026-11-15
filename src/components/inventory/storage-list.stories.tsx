@@ -1,11 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test";
+import { withRouter } from "../../../.storybook/with-router";
 import { storageByArea } from "@/model/inventory";
 import { areas, assets, classes, day } from "./fixtures";
 import { StorageList } from "./storage-list";
 
 const meta = {
   component: StorageList,
+  decorators: [withRouter("/inventory/storage", ["/inventory/classes"])],
   args: {
     groups: storageByArea(assets, classes, areas, day),
     actions: { canCreate: true, canUpdate: true, onCreate: fn(async () => {}), onUpdate: fn(async () => {}) },
@@ -23,7 +25,7 @@ export const ByArea: Story = {
       "Yard Arm",
       "No location",
     ]);
-    await expect(canvas.getByText(/No area set for Keelboat/)).toBeVisible();
+    await expect(canvas.getByRole("alert")).toHaveTextContent("Keelboat has no area");
   },
 };
 

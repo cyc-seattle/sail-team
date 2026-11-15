@@ -37,7 +37,6 @@ export interface StorageArea {
   /** Its usable area, in square feet. */
   area_sq_ft: number | null;
   note: string | null;
-  sort: number | null;
 }
 
 export type StorageAreaInput = Pick<StorageArea, "name" | "area_sq_ft" | "note">;
@@ -144,11 +143,10 @@ export interface StorageGroup {
   unmeasured: string[];
 }
 
-const areaOrder = (a: StorageArea, b: StorageArea) =>
-  (a.sort ?? Number.MAX_SAFE_INTEGER) - (b.sort ?? Number.MAX_SAFE_INTEGER) || byName.compare(a.name, b.name);
+const areaOrder = (a: StorageArea, b: StorageArea) => byName.compare(a.name, b.name);
 
 /**
- * What CSC keeps in each storage area on `day`, areas in their set order, then what has no location. Within an area,
+ * What CSC keeps in each storage area on `day`, areas by name, then what has no location. Within an area,
  * boats by class, then other assets by kind. Areas with nothing in them are kept, so a new one shows.
  */
 export function storageByArea(

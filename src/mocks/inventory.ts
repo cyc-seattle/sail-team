@@ -11,11 +11,11 @@ const footprints: Record<string, number | null> = { Opti: 40, Sailqube: 60, "420
 const classes: Row[] = tables["boat_classes"]!.map((c) => ({ ...c, footprint_sq_ft: footprints[c["name"] as string] }));
 const className = (classId: unknown) => classes.find((c) => c["id"] === classId)!["name"] as string;
 
-/** Where the club keeps things, in the order a Catalog Writer set. */
+/** Where the club keeps things. */
 const areas: Row[] = [
-  { id: id(9600), name: "Docks", area_sq_ft: "2000.00", note: "The dinghy float and the RIB slips.", sort: 1 },
-  { id: id(9601), name: "Dry Storage", area_sq_ft: "3500.00", note: null, sort: 2 },
-  { id: id(9602), name: "Yard Arm", area_sq_ft: "1200.00", note: null, sort: 3 },
+  { id: id(9600), name: "Docks", area_sq_ft: "2000.00", note: "The dinghy float and the RIB slips." },
+  { id: id(9601), name: "Dry Storage", area_sq_ft: "3500.00", note: null },
+  { id: id(9602), name: "Yard Arm", area_sq_ft: "1200.00", note: null },
 ];
 const [docks, dry, yard] = areas.map((a) => a["id"]);
 

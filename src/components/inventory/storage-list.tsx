@@ -1,8 +1,10 @@
+import { Link } from "@tanstack/react-router";
 import { PencilIcon, PlusIcon } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { FormField } from "@/components/form-field";
 import { NoteInfo } from "@/components/plans/note-info";
 import { ReportSection } from "@/components/plans/reports/report-page";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -21,14 +23,19 @@ export interface StorageActions {
 const pinned = "sticky left-0 z-10 bg-background";
 const ft2 = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 const NOTE_LENGTH = 280;
+const list = new Intl.ListFormat("en-US", { type: "conjunction" });
+
+/** "Keelboat", "Keelboat and RIB", "420, Keelboat, and RIB". */
+const listed = (names: string[]) => list.format(names);
 
 /**
- * What CSC keeps in each storage area, in the order the areas are set: boats by class, with the area they take, then
+ * What CSC keeps in each storage area, areas by name: boats by class, with the area they take, then
  * other assets by kind. Each area shows the area its boats use against its own. What has no location comes last. A
  * Catalog Writer adds and edits areas here; an asset's location is set on the asset.
  */
 export function StorageList({ groups, actions }: { groups: StorageGroup[]; actions: StorageActions }) {
   const [editing, setEditing] = useState<StorageArea | "new" | null>(null);
+  const unmeasured = [...new Set(groups.flatMap((g) => g.unmeasured))];
   return (
     <ReportSection
       id="storage"
@@ -48,7 +55,7 @@ export function StorageList({ groups, actions }: { groups: StorageGroup[]; actio
         <Table aria-label="Storage" focusable>
           <TableHeader>
             <TableRow>
-              <TableHead className={pinned}>Kept here</TableHead>
+              <TableHead className={pinned}>Asset</TableHead>
               <TableHead className="text-right">Count</TableHead>
               <TableHead className="text-right">Area (ft²)</TableHead>
               {actions.canUpdate && (
@@ -70,7 +77,7 @@ export function StorageList({ groups, actions }: { groups: StorageGroup[]; actio
                 <TableCell className="text-right font-medium tabular-nums whitespace-nowrap">
                   {g.area && g.area.area_sq_ft !== null
                     ? `${ft2.format(g.used_sq_ft)} of ${ft2.format(g.area.area_sq_ft)}`
-                    : ft2.format(g.used_sq_ft)}
+                    : g.used_sq_ft > 0 && ft2.format(g.used_sq_ft)}
                 </TableCell>
                 {actions.canUpdate && (
                   <TableCell className="text-right">
@@ -98,7 +105,7 @@ export function StorageList({ groups, actions }: { groups: StorageGroup[]; actio
               {g.lines.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={actions.canUpdate ? 4 : 3} className="text-muted-foreground">
-                    Nothing kept here yet.
+                    No assets yet.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -107,7 +114,7 @@ export function StorageList({ groups, actions }: { groups: StorageGroup[]; actio
                     <TableCell className={pinned}>{l.label}</TableCell>
                     <TableCell className="text-right tabular-nums">{l.count}</TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {l.sq_ft === null ? "" : ft2.format(l.sq_ft)}
+                      {l.sq_ft === null ? "—" : ft2.format(l.sq_ft)}
                     </TableCell>
                     {actions.canUpdate && <TableCell />}
                   </TableRow>
@@ -117,11 +124,17 @@ export function StorageList({ groups, actions }: { groups: StorageGroup[]; actio
           ))}
         </Table>
       )}
-      {groups.some((g) => g.unmeasured.length > 0) && (
-        <p className="text-sm text-muted-foreground">
-          No area set for {[...new Set(groups.flatMap((g) => g.unmeasured))].join(", ")}, so they aren&apos;t counted.
-          Set one on Boat classes.
-        </p>
+      {unmeasured.length > 0 && (
+        <Alert>
+          <AlertDescription>
+            {listed(unmeasured)} {unmeasured.length === 1 ? "has" : "have"} no area, so{" "}
+            {unmeasured.length === 1 ? "it's" : "they're"} left out of the area used. Set it on{" "}
+            <Link to="/inventory/classes" className="text-link underline">
+              Boat classes
+            </Link>
+            .
+          </AlertDescription>
+        </Alert>
       )}
       <StorageAreaDialog
         area={editing}

@@ -48,7 +48,7 @@ export const inventoryQuery = queryOptions({
     const [assets, classes, areas, accounts, costAccounts] = await Promise.all([
       readAll<AssetRow>("assets", undefined, assetFields),
       readAll<BoatClass>("boat_classes", undefined, ["id", "name", "max_capacity", "footprint_sq_ft", "account_id"]),
-      readAll<StorageArea>("storage_areas", undefined, ["id", "name", "area_sq_ft", "note", "sort"]),
+      readAll<StorageArea>("storage_areas", undefined, ["id", "name", "area_sq_ft", "note"]),
       readAll<Account>("accounts", { type: { _eq: "expense" } }, ["id", "number", "name"]),
       // Where a class with no account of its own books its boats' upkeep.
       readAll<{ account_id: string }>("organization_cost_accounts", { cost_type: { _eq: "boat_maintenance" } }, [

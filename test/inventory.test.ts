@@ -113,10 +113,10 @@ describe("parseDollars", () => {
 });
 
 describe("storageByArea", () => {
-  const docks = { id: "docks", name: "Docks", area_sq_ft: 1000, note: null, sort: 1 };
-  const yard = { id: "yard", name: "Yard Arm", area_sq_ft: null, note: null, sort: 2 };
+  const docks = { id: "docks", name: "Docks", area_sq_ft: 1000, note: null };
+  const yard = { id: "yard", name: "Yard Arm", area_sq_ft: null, note: null };
 
-  it("lists each area in order with its boats by class and their area, then other assets, then what has no location", () => {
+  it("lists each area by name with its boats by class and their area, then other assets, then what has no location", () => {
     const groups = storageByArea(
       [
         asset("1", { boat: boat("opti", "1"), location_id: "docks" }),
