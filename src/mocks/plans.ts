@@ -435,6 +435,7 @@ function summer(plan: string, instructors: number): Copy {
       product_id: p.id,
       staff_level_id: levelId(level),
       sailors_per_coach: perCoach,
+      indirect_cost_rate: 0.15,
       notes,
     });
   settings(products.guppies, "Instructor", 10, [
@@ -537,6 +538,7 @@ function doublehanded(plan: string): Copy {
     product_id: products.jpod.id,
     staff_level_id: levelId("Coach"),
     sailors_per_coach: 8,
+    indirect_cost_rate: 0.2,
     notes: ["Most sailors bring their own 420s."],
   });
   for (const [session, first, weeks, target] of [

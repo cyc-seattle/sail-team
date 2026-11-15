@@ -12,6 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as HouseholdRouteImport } from './routes/household'
 import { Route as LinksRouteImport } from './routes/links'
+import { Route as CatalogIndexRouteImport } from './routes/catalog/index'
+import { Route as CatalogAccountsRouteImport } from './routes/catalog/accounts'
+import { Route as CatalogOfferingsRouteImport } from './routes/catalog/offerings'
+import { Route as CatalogQualificationsRouteImport } from './routes/catalog/qualifications'
 import { Route as InventoryIndexRouteImport } from './routes/inventory/index'
 import { Route as InventoryClassesRouteImport } from './routes/inventory/classes'
 import { Route as PlansIndexRouteImport } from './routes/plans/index'
@@ -36,6 +40,26 @@ const HouseholdRoute = HouseholdRouteImport.update({
 const LinksRoute = LinksRouteImport.update({
   id: '/links',
   path: '/links',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CatalogIndexRoute = CatalogIndexRouteImport.update({
+  id: '/catalog/',
+  path: '/catalog/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CatalogAccountsRoute = CatalogAccountsRouteImport.update({
+  id: '/catalog/accounts',
+  path: '/catalog/accounts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CatalogOfferingsRoute = CatalogOfferingsRouteImport.update({
+  id: '/catalog/offerings',
+  path: '/catalog/offerings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CatalogQualificationsRoute = CatalogQualificationsRouteImport.update({
+  id: '/catalog/qualifications',
+  path: '/catalog/qualifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InventoryIndexRoute = InventoryIndexRouteImport.update({
@@ -95,8 +119,12 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/household': typeof HouseholdRoute
   '/links': typeof LinksRoute
+  '/catalog/accounts': typeof CatalogAccountsRoute
+  '/catalog/offerings': typeof CatalogOfferingsRoute
+  '/catalog/qualifications': typeof CatalogQualificationsRoute
   '/inventory/classes': typeof InventoryClassesRoute
   '/roster/$teamId': typeof RosterTeamIdRoute
+  '/catalog/': typeof CatalogIndexRoute
   '/inventory/': typeof InventoryIndexRoute
   '/plans/': typeof PlansIndexRoute
   '/roster/': typeof RosterIndexRoute
@@ -110,8 +138,12 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/household': typeof HouseholdRoute
   '/links': typeof LinksRoute
+  '/catalog/accounts': typeof CatalogAccountsRoute
+  '/catalog/offerings': typeof CatalogOfferingsRoute
+  '/catalog/qualifications': typeof CatalogQualificationsRoute
   '/inventory/classes': typeof InventoryClassesRoute
   '/roster/$teamId': typeof RosterTeamIdRoute
+  '/catalog': typeof CatalogIndexRoute
   '/inventory': typeof InventoryIndexRoute
   '/plans': typeof PlansIndexRoute
   '/roster': typeof RosterIndexRoute
@@ -126,8 +158,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/household': typeof HouseholdRoute
   '/links': typeof LinksRoute
+  '/catalog/accounts': typeof CatalogAccountsRoute
+  '/catalog/offerings': typeof CatalogOfferingsRoute
+  '/catalog/qualifications': typeof CatalogQualificationsRoute
   '/inventory/classes': typeof InventoryClassesRoute
   '/roster/$teamId': typeof RosterTeamIdRoute
+  '/catalog/': typeof CatalogIndexRoute
   '/inventory/': typeof InventoryIndexRoute
   '/plans/': typeof PlansIndexRoute
   '/roster/': typeof RosterIndexRoute
@@ -143,8 +179,12 @@ export interface FileRouteTypes {
     | '/'
     | '/household'
     | '/links'
+    | '/catalog/accounts'
+    | '/catalog/offerings'
+    | '/catalog/qualifications'
     | '/inventory/classes'
     | '/roster/$teamId'
+    | '/catalog/'
     | '/inventory/'
     | '/plans/'
     | '/roster/'
@@ -158,8 +198,12 @@ export interface FileRouteTypes {
     | '/'
     | '/household'
     | '/links'
+    | '/catalog/accounts'
+    | '/catalog/offerings'
+    | '/catalog/qualifications'
     | '/inventory/classes'
     | '/roster/$teamId'
+    | '/catalog'
     | '/inventory'
     | '/plans'
     | '/roster'
@@ -173,8 +217,12 @@ export interface FileRouteTypes {
     | '/'
     | '/household'
     | '/links'
+    | '/catalog/accounts'
+    | '/catalog/offerings'
+    | '/catalog/qualifications'
     | '/inventory/classes'
     | '/roster/$teamId'
+    | '/catalog/'
     | '/inventory/'
     | '/plans/'
     | '/roster/'
@@ -189,8 +237,12 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HouseholdRoute: typeof HouseholdRoute
   LinksRoute: typeof LinksRoute
+  CatalogAccountsRoute: typeof CatalogAccountsRoute
+  CatalogOfferingsRoute: typeof CatalogOfferingsRoute
+  CatalogQualificationsRoute: typeof CatalogQualificationsRoute
   InventoryClassesRoute: typeof InventoryClassesRoute
   RosterTeamIdRoute: typeof RosterTeamIdRoute
+  CatalogIndexRoute: typeof CatalogIndexRoute
   InventoryIndexRoute: typeof InventoryIndexRoute
   PlansIndexRoute: typeof PlansIndexRoute
   RosterIndexRoute: typeof RosterIndexRoute
@@ -222,6 +274,34 @@ declare module '@tanstack/react-router' {
       path: '/links'
       fullPath: '/links'
       preLoaderRoute: typeof LinksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/catalog/': {
+      id: '/catalog/'
+      path: '/catalog'
+      fullPath: '/catalog/'
+      preLoaderRoute: typeof CatalogIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/catalog/accounts': {
+      id: '/catalog/accounts'
+      path: '/catalog/accounts'
+      fullPath: '/catalog/accounts'
+      preLoaderRoute: typeof CatalogAccountsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/catalog/offerings': {
+      id: '/catalog/offerings'
+      path: '/catalog/offerings'
+      fullPath: '/catalog/offerings'
+      preLoaderRoute: typeof CatalogOfferingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/catalog/qualifications': {
+      id: '/catalog/qualifications'
+      path: '/catalog/qualifications'
+      fullPath: '/catalog/qualifications'
+      preLoaderRoute: typeof CatalogQualificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/inventory/': {
@@ -301,8 +381,12 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HouseholdRoute: HouseholdRoute,
   LinksRoute: LinksRoute,
+  CatalogAccountsRoute: CatalogAccountsRoute,
+  CatalogOfferingsRoute: CatalogOfferingsRoute,
+  CatalogQualificationsRoute: CatalogQualificationsRoute,
   InventoryClassesRoute: InventoryClassesRoute,
   RosterTeamIdRoute: RosterTeamIdRoute,
+  CatalogIndexRoute: CatalogIndexRoute,
   InventoryIndexRoute: InventoryIndexRoute,
   PlansIndexRoute: PlansIndexRoute,
   RosterIndexRoute: RosterIndexRoute,

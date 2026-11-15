@@ -5,7 +5,7 @@ import { financialPlanQuery, financialPlansQuery, type FinancialPlan } from "../
 import { planInputsQuery, type PlanInputs } from "../src/directus/plan-inputs.ts";
 import { handlers } from "../src/mocks/handlers.ts";
 import { ids } from "../src/mocks/plans.ts";
-import type { ListedPlan } from "../src/model/financial-plans.ts";
+import type { ListedPlan, PlanLine } from "../src/model/financial-plans.ts";
 import {
   numberedOfferings,
   overviewRows,
@@ -276,7 +276,7 @@ describe("a Financial Plan's reports", () => {
     const { results } = await plan(ids.budget);
     const insurance = sharedCostsOf(results!.lines, ids.opsBudget).find((c) => c.name === "Insurance")!;
     expect(insurance).toMatchObject({ pool: "G&A", number: "6110", total_cents: 900_000 });
-    // Non-program's net covers the rest.
+    // The programs' indirect cost rates allocate part of it, and the organization keeps the rest, unallocated.
     expect(insurance.allocated_cents).toBeGreaterThan(0);
     expect(insurance.allocated_cents).toBeLessThan(insurance.total_cents);
   });
@@ -290,14 +290,70 @@ describe("a Financial Plan's reports", () => {
 });
 
 describe("the Storage tab", () => {
-  it("shows each area's storage, then what every program shares", async () => {
+  it("shows each area's storage, then what every program shares, then what the rates leave unallocated", async () => {
     const { plans, results } = await plan(ids.budget);
     const costs = storageOf(results!.lines, plans);
     expect(costs.map((c) => [c.kind, c.payer, c.name])).toEqual([
       ["area", "Doublehanded", "Storage (dinghy float and dry storage, by area)"],
       ["area", "Summer", "Storage (dinghy float and dry storage, by area)"],
       ["shared", "Shared (G&A)", "Self storage facility"],
+      ["unallocated", "No program", "Self storage facility"],
     ]);
     expect(costs.filter((c) => c.kind === "area").map((c) => c.cents)).toEqual([700_000, 980_000]);
+  });
+});
+
+describe("the shared costs", () => {
+  const line = (key: string, name: string, amount_cents: number, plan: string): PlanLine => ({
+    key,
+    name,
+    account_number: "6110",
+    account_name: "Insurance",
+    cost_center_key: null,
+    cost_center_type: "org",
+    amount_cents,
+    revenue: false,
+    capital: false,
+    function: "management",
+    explanation: null,
+    plan,
+  });
+
+  it("adds what the rates allocate to what's unallocated, or over-allocated", () => {
+    const shared = sharedCostsOf(
+      [
+        line("pool:ga:insurance", "G&A share: Insurance", 700, "summer"),
+        line("unrecovered:ga:insurance", "G&A unallocated: Insurance", 300, "ops"),
+        line("pool:ga:audit", "G&A share: Audit", 600, "summer"),
+        line("unrecovered:ga:audit", "G&A over-allocated: Audit", -100, "ops"),
+      ],
+      "ops",
+    );
+    expect(shared.map((c) => [c.pool, c.name, c.allocated_cents, c.total_cents])).toEqual([
+      ["G&A", "Audit", 600, 500],
+      ["G&A", "Insurance", 700, 1000],
+    ]);
+  });
+
+  it("reads results from platform 2.2.0, which said not recovered", () => {
+    const shared = sharedCostsOf(
+      [
+        line("pool:ga:insurance", "G&A share: Insurance", 700, "summer"),
+        line("unrecovered:ga:insurance", "G&A not recovered: Insurance", 300, "ops"),
+      ],
+      "ops",
+    );
+    expect(shared.map((c) => [c.name, c.allocated_cents, c.total_cents])).toEqual([["Insurance", 700, 1000]]);
+  });
+
+  it("reads results from before the rates, where non-program's net covered part of each shared cost", () => {
+    const shared = sharedCostsOf(
+      [
+        line("pool:ga:insurance", "G&A share: Insurance", 700, "summer"),
+        line("offset:ga:insurance", "G&A covered by non-program: Insurance", 300, "ops"),
+      ],
+      "ops",
+    );
+    expect(shared.map((c) => [c.name, c.allocated_cents, c.total_cents])).toEqual([["Insurance", 700, 1000]]);
   });
 });

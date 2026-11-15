@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   appliesTo,
   formatShare,
@@ -76,24 +76,18 @@ function RateTable({
   children: ReactNode;
 }) {
   return (
-    // Its own scroller, not Table's, so a keyboard can reach it to scroll a wide one on a phone.
-    <div
-      tabIndex={0}
-      className="overflow-x-auto rounded-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-    >
-      <table aria-label={label} className="w-full caption-bottom text-sm">
-        <TableHeader>
-          <TableRow>
-            {head.map((h, i) => (
-              <TableHead key={h} className={cn(i > 0 && !text.includes(h) && "text-right")}>
-                {h}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>{children}</TableBody>
-      </table>
-    </div>
+    <Table aria-label={label} focusable>
+      <TableHeader>
+        <TableRow>
+          {head.map((h, i) => (
+            <TableHead key={h} className={cn(i > 0 && !text.includes(h) && "text-right")}>
+              {h}
+            </TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>{children}</TableBody>
+    </Table>
   );
 }
 

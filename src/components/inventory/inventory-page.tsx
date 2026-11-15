@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
-import { PageHeader } from "@/components/plans/page-header";
-import { SectionNav } from "@/components/section-nav";
+import { SectionPage } from "@/components/section-page";
 
 const pages = [
   { key: "assets", name: "Assets", to: "/inventory" },
@@ -9,7 +8,7 @@ const pages = [
 
 export type InventoryPageKey = "assets" | "classes";
 
-/** One page of Inventory: the section's title, its buttons, the page switcher, then the page. */
+/** One page of Inventory. */
 export function InventoryPage({
   current,
   actions,
@@ -20,10 +19,8 @@ export function InventoryPage({
   children: ReactNode;
 }) {
   return (
-    <main className="mx-auto grid max-w-6xl gap-6 p-card">
-      <PageHeader title="Inventory" actions={actions} />
-      <SectionNav label="Inventory pages" pages={pages} current={current} />
-      <div className="grid gap-12">{children}</div>
-    </main>
+    <SectionPage title="Inventory" pages={pages} current={current} actions={actions}>
+      {children}
+    </SectionPage>
   );
 }
