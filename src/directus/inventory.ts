@@ -1,6 +1,14 @@
-import { createItem, deleteItem, updateItem } from "@directus/sdk";
+import { createItem, customEndpoint, deleteItem, updateItem } from "@directus/sdk";
 import { queryOptions } from "@tanstack/react-query";
-import type { Account, Asset, AssetInput, BoatClass, BoatClassInput } from "@/model/inventory";
+import type {
+  Account,
+  Asset,
+  AssetInput,
+  BoatClass,
+  BoatClassInput,
+  StorageArea,
+  StorageAreaInput,
+} from "@/model/inventory";
 import { appDirectus } from "./app.ts";
 import { readAll } from "./plans.ts";
 
@@ -16,6 +24,7 @@ const assetFields = [
   "acquired_on",
   "disposed_on",
   "note",
+  "location_id",
   "boats.id",
   "boats.boat_class_id",
   "boats.sail_number",
@@ -24,20 +33,22 @@ const assetFields = [
 type AssetRow = Omit<Asset, "boat"> & { boats: NonNullable<Asset["boat"]>[] };
 
 /**
- * Every asset, each with its boat details, every boat class, the expense accounts a class can book to, and the one it
- * books to by default.
+ * Every asset, each with its boat details, every boat class, every storage area, the expense accounts a class can book
+ * to, and the one it books to by default.
  */
 export const inventoryQuery = queryOptions({
   queryKey: ["inventory"],
   queryFn: async (): Promise<{
     assets: Asset[];
     classes: BoatClass[];
+    areas: StorageArea[];
     accounts: Account[];
     defaultAccountId: string | null;
   }> => {
-    const [assets, classes, accounts, costAccounts] = await Promise.all([
+    const [assets, classes, areas, accounts, costAccounts] = await Promise.all([
       readAll<AssetRow>("assets", undefined, assetFields),
       readAll<BoatClass>("boat_classes", undefined, ["id", "name", "max_capacity", "footprint_sq_ft", "account_id"]),
+      readAll<StorageArea>("storage_areas", undefined, ["id", "name", "area_sq_ft", "note"]),
       readAll<Account>("accounts", { type: { _eq: "expense" } }, ["id", "number", "name"]),
       // Where a class with no account of its own books its boats' upkeep.
       readAll<{ account_id: string }>("organization_cost_accounts", { cost_type: { _eq: "boat_maintenance" } }, [
@@ -51,6 +62,7 @@ export const inventoryQuery = queryOptions({
         ...c,
         footprint_sq_ft: c.footprint_sq_ft === null ? null : Number(c.footprint_sq_ft),
       })),
+      areas: areas.map((a) => ({ ...a, area_sq_ft: a.area_sq_ft === null ? null : Number(a.area_sq_ft) })),
       accounts: accounts.sort((a, b) => a.number.localeCompare(b.number)),
       defaultAccountId: costAccounts[0]?.account_id ?? null,
     };
@@ -99,4 +111,22 @@ export async function createBoatClass(input: BoatClassInput): Promise<void> {
 
 export async function updateBoatClass(id: string, input: BoatClassInput): Promise<void> {
   await client().request(updateItem("boat_classes", id, classRow(input)));
+}
+
+const areaRow = ({ area_sq_ft, ...input }: StorageAreaInput) => ({
+  ...input,
+  area_sq_ft: area_sq_ft === null ? null : String(area_sq_ft),
+});
+
+/** A new storage area, last in the order. */
+export async function createStorageArea(input: StorageAreaInput): Promise<void> {
+  await client().request(
+    customEndpoint({ path: "/items/storage_areas", method: "POST", body: JSON.stringify(areaRow(input)) }),
+  );
+}
+
+export async function updateStorageArea(id: string, input: StorageAreaInput): Promise<void> {
+  await client().request(
+    customEndpoint({ path: `/items/storage_areas/${id}`, method: "PATCH", body: JSON.stringify(areaRow(input)) }),
+  );
 }

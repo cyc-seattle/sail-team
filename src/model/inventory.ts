@@ -25,8 +25,21 @@ export interface Asset {
   acquired_on: string | null;
   disposed_on: string | null;
   note: string | null;
+  /** The storage area where it's kept. */
+  location_id: string | null;
   boat: { id: string; boat_class_id: string | null; sail_number: string | null } | null;
 }
+
+/** Where assets are kept, such as Docks, Dry Storage, or Yard Arm. */
+export interface StorageArea {
+  id: string;
+  name: string;
+  /** Its usable area, in square feet. */
+  area_sq_ft: number | null;
+  note: string | null;
+}
+
+export type StorageAreaInput = Pick<StorageArea, "name" | "area_sq_ft" | "note">;
 
 /** A kind of boat, such as Opti or RIB. */
 export interface BoatClass {
@@ -111,3 +124,69 @@ export function parseDollars(text: string): number | null {
 /** Cents as dollars to edit: 125050 → "1250.50", 90000 → "900". */
 export const dollarsText = (cents: number | null) =>
   cents === null ? "" : cents % 100 === 0 ? String(cents / 100) : (cents / 100).toFixed(2);
+
+/** One line of a storage area: a boat class's boats, or the other assets of one kind, with the area the boats take. */
+export interface StorageLine {
+  key: string;
+  label: string;
+  count: number;
+  /** Boats × the class's area. Null for assets that aren't boats, or a class with no area yet. */
+  sq_ft: number | null;
+}
+
+/** A storage area, or none for what has no location, with what's kept there and the area its boats take. */
+export interface StorageGroup {
+  area: StorageArea | null;
+  lines: StorageLine[];
+  used_sq_ft: number;
+  /** Boat classes kept here with no area set, so they aren't in `used_sq_ft`. */
+  unmeasured: string[];
+}
+
+const areaOrder = (a: StorageArea, b: StorageArea) => byName.compare(a.name, b.name);
+
+/**
+ * What CSC keeps in each storage area on `day`, areas by name, then what has no location. Within an area,
+ * boats by class, then other assets by kind. Areas with nothing in them are kept, so a new one shows.
+ */
+export function storageByArea(
+  assets: Asset[],
+  classes: BoatClass[],
+  areas: StorageArea[],
+  day: string,
+): StorageGroup[] {
+  const kept = assets.filter((a) => inService(a, day));
+  // An asset whose area this person can't read counts as having no location.
+  const locationOf = (a: Asset) => (areas.some((x) => x.id === a.location_id) ? a.location_id : null);
+  const groupOf = (area: StorageArea | null): StorageGroup => {
+    const here = kept.filter((a) => locationOf(a) === (area?.id ?? null));
+    const boatLines = sortClasses(classes)
+      .map((c): StorageLine => {
+        const count = here.filter((a) => a.boat?.boat_class_id === c.id).length;
+        return {
+          key: c.id,
+          label: c.name,
+          count,
+          sq_ft: c.footprint_sq_ft === null ? null : count * c.footprint_sq_ft,
+        };
+      })
+      .filter((l) => l.count > 0);
+    const otherLines = assetKinds
+      .map((k): StorageLine => ({
+        key: k.kind,
+        label: k.plural,
+        count: here.filter((a) => a.kind === k.kind && !a.boat?.boat_class_id).length,
+        sq_ft: null,
+      }))
+      .filter((l) => l.count > 0);
+    return {
+      area,
+      lines: [...boatLines, ...otherLines],
+      used_sq_ft: boatLines.reduce((sum, l) => sum + (l.sq_ft ?? 0), 0),
+      unmeasured: boatLines.filter((l) => l.sq_ft === null).map((l) => l.label),
+    };
+  };
+  const groups = [...areas].sort(areaOrder).map(groupOf);
+  const unplaced = groupOf(null);
+  return unplaced.lines.length > 0 ? [...groups, unplaced] : groups;
+}

@@ -14,7 +14,10 @@ import {
   type AssetInput,
   type AssetKind,
   type BoatClass,
+  type StorageArea,
 } from "@/model/inventory";
+
+const NONE = "none";
 
 /** The longest note platform keeps. */
 const NOTE_LENGTH = 280;
@@ -30,6 +33,7 @@ export function AssetDialog({
   onOpenChange,
   asset,
   classes,
+  areas,
   onSave,
 }: {
   open: boolean;
@@ -37,13 +41,16 @@ export function AssetDialog({
   /** The asset to change, or none to add one. */
   asset: Asset | null;
   classes: BoatClass[];
+  areas: StorageArea[];
   onSave: (input: AssetInput) => Promise<void>;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto">
         {/* Remounted on each open, so it starts from the asset as it is now. */}
-        {open && <AssetForm asset={asset} classes={classes} onSave={onSave} onDone={() => onOpenChange(false)} />}
+        {open && (
+          <AssetForm asset={asset} classes={classes} areas={areas} onSave={onSave} onDone={() => onOpenChange(false)} />
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -52,11 +59,13 @@ export function AssetDialog({
 function AssetForm({
   asset,
   classes,
+  areas,
   onSave,
   onDone,
 }: {
   asset: Asset | null;
   classes: BoatClass[];
+  areas: StorageArea[];
   onSave: (input: AssetInput) => Promise<void>;
   onDone: () => void;
 }) {
@@ -68,6 +77,7 @@ function AssetForm({
   const [model, setModel] = useState(asset?.model ?? "");
   const [identifier, setIdentifier] = useState(asset?.identifier ?? "");
   const [registration, setRegistration] = useState(asset?.registration_number ?? "");
+  const [location, setLocation] = useState(asset?.location_id ?? NONE);
   const [value, setValue] = useState(dollarsText(asset?.value_cents ?? null));
   const [acquired, setAcquired] = useState(asset?.acquired_on ?? "");
   const [note, setNote] = useState(asset?.note ?? "");
@@ -79,6 +89,7 @@ function AssetForm({
   const badValue = Number.isNaN(cents);
   const kindItems = assetKinds.map((k) => ({ value: k.kind, label: k.label }));
   const classItems = classes.map((c) => ({ value: c.id, label: c.name }));
+  const locationItems = [{ value: NONE, label: "None" }, ...areas.map((a) => ({ value: a.id, label: a.name }))];
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -95,6 +106,7 @@ function AssetForm({
         value_cents: cents,
         acquired_on: acquired || null,
         note: text(note),
+        location_id: location === NONE ? null : location,
         boat: boat ? { boat_class_id: classId, sail_number: kind === "sailboat" ? text(sailNumber) : null } : null,
       });
       onDone();
@@ -187,6 +199,22 @@ function AssetForm({
         </FormField>
         <FormField label="Acquired">
           {(id) => <Input id={id} type="date" value={acquired} onChange={(e) => setAcquired(e.target.value)} />}
+        </FormField>
+        <FormField label="Location">
+          {(id) => (
+            <Select items={locationItems} value={location} onValueChange={(v) => setLocation(String(v ?? NONE))}>
+              <SelectTrigger id={id} className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {locationItems.map((l) => (
+                  <SelectItem key={l.value} value={l.value}>
+                    {l.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </FormField>
       </div>
       <FormField

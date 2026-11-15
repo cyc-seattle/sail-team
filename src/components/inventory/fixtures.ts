@@ -1,4 +1,4 @@
-import type { Account, Asset, BoatClass } from "@/model/inventory";
+import type { Account, Asset, BoatClass, StorageArea } from "@/model/inventory";
 import { inventoryTables } from "@/mocks/inventory";
 import { tables } from "@/mocks/plans";
 
@@ -11,6 +11,11 @@ export const assets: Asset[] = inventoryTables["assets"]!.map(({ boats, ...a }) 
 }));
 
 export const classes = inventoryTables["boat_classes"] as unknown as BoatClass[];
+
+export const areas: StorageArea[] = inventoryTables["storage_areas"]!.map((a) => ({
+  ...(a as unknown as StorageArea),
+  area_sq_ft: a["area_sq_ft"] === null ? null : Number(a["area_sq_ft"]),
+}));
 
 export const accounts = (tables["accounts"] as unknown as (Account & { type: string })[]).filter(
   (a) => a.type === "expense",

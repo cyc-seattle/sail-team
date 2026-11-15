@@ -11,6 +11,17 @@ const footprints: Record<string, number | null> = { Opti: 40, Sailqube: 60, "420
 const classes: Row[] = tables["boat_classes"]!.map((c) => ({ ...c, footprint_sq_ft: footprints[c["name"] as string] }));
 const className = (classId: unknown) => classes.find((c) => c["id"] === classId)!["name"] as string;
 
+/** Where the club keeps things. */
+const areas: Row[] = [
+  { id: id(9600), name: "Docks", area_sq_ft: "2000.00", note: "The dinghy float and the RIB slips." },
+  { id: id(9601), name: "Dry Storage", area_sq_ft: "3500.00", note: null },
+  { id: id(9602), name: "Yard Arm", area_sq_ft: "1200.00", note: null },
+];
+const [docks, dry, yard] = areas.map((a) => a["id"]);
+
+/** Where each class's boats are kept. */
+const locations: Record<string, unknown> = { Opti: dry, Sailqube: dry, "420": dry, RIB: docks, Keelboat: docks };
+
 /** Each class's make and what one is worth. */
 const makes: Record<string, [string, number]> = {
   Opti: ["McLaughlin", 350_000],
@@ -40,6 +51,7 @@ const fleet: Row[] = tables["assets"]!.map((a, i) => {
     value_cents: value - (i % 4) * 25_000,
     acquired_on: `20${18 + (i % 7)}-0${(i % 9) + 1}-15`,
     note: i === 0 ? "New sail in 2026, from the **spring appeal**." : null,
+    location_id: locations[name],
     boats: [boat],
   };
 });
@@ -55,6 +67,7 @@ const extra = (n: number, row: Row): Row => ({
   acquired_on: null,
   disposed_on: null,
   note: null,
+  location_id: null,
   boats: [],
   ...row,
 });
@@ -68,6 +81,7 @@ const others: Row[] = [
     identifier: "6BP-1023345",
     value_cents: 380_000,
     acquired_on: "2022-04-01",
+    location_id: yard,
   }),
   extra(2, {
     kind: "motor",
@@ -76,6 +90,7 @@ const others: Row[] = [
     identifier: "6BP-1023346",
     value_cents: 380_000,
     acquired_on: "2022-04-01",
+    location_id: yard,
   }),
   extra(3, {
     kind: "motor",
@@ -93,6 +108,7 @@ const others: Row[] = [
     registration_number: "4TR 812",
     value_cents: 260_000,
     acquired_on: "2019-05-20",
+    location_id: yard,
   }),
   extra(5, {
     kind: "other",
@@ -126,6 +142,7 @@ const others: Row[] = [
 /** The asset list's tables, as Directus returns them, each asset with its boat details. */
 export const inventoryTables: Record<string, Row[]> = {
   boat_classes: classes,
+  storage_areas: areas,
   assets: [...fleet, ...others],
   boats: [...boats, ...others.flatMap((a) => a["boats"] as Row[])],
 };
