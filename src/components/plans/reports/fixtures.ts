@@ -707,6 +707,7 @@ export const planningPlans: ListedPlan[] = [
     saved_at: "2027-03-10T18:00:00Z",
     saved_by: "Morgan Keel",
     platform: "1.38.1",
+    note: "From the [board's budget spreadsheet](https://example.com/budget-2027)",
     warnings: 2,
   }),
   planSummary({
@@ -716,7 +717,7 @@ export const planningPlans: ListedPlan[] = [
     parent: { id: "budget", name: "Budget" },
     warnings: 4,
     expense_cents: 44_100_000,
-    note: "Allocated every summer week and the spring and fall terms. 4 warnings left",
+    note: "Allocated every summer week and the spring and fall terms. **4 warnings** left",
   }),
   planSummary({
     id: "two-coaches",

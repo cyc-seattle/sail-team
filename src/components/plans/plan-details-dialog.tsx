@@ -81,7 +81,16 @@ export function PlanDetailsDialog({
           </div>
           <div className="grid gap-2">
             <Label htmlFor="plan-note">Note</Label>
-            <Textarea id="plan-note" value={message} onChange={(e) => setMessage(e.target.value)} />
+            <Textarea
+              id="plan-note"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              maxLength={280}
+              aria-describedby="plan-note-hint"
+            />
+            <p id="plan-note-hint" className="text-xs text-muted-foreground">
+              Up to 280 characters. **Bold**, *italic*, and [links](https://…) work.
+            </p>
           </div>
           {state === "failed" && (
             <p role="alert" className="text-sm text-destructive">
