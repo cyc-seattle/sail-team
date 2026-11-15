@@ -9,21 +9,21 @@ Feature: Signing in to sail-team
 
   Scenario: Signing in brings me back to the page I opened
     Given I'm a planner who can read plans
-    When I open Planning
+    When I open Planning before signing in
     And I sign in
     Then I'm back on Planning
     And the page shows my name
 
   Scenario: Someone who can't read plans is told so, not shown a blank page
     Given I'm a parent who can't read plans
-    When I open Planning
+    When I open Planning before signing in
     And I sign in
     Then the page says I don't have access to plans
     And it shows no plans
 
   Scenario: Signing out means signing in again
     Given I'm a planner who can read plans
-    When I open Planning
+    When I open Planning before signing in
     And I sign in
     And I sign out
     Then I'm on the sign-in page

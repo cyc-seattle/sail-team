@@ -31,7 +31,8 @@ Given(/^I'm a (?:parent|coach) who can't read plans$/, async ({ visitor }) => {
   await makeDirectusUser(visitor);
 });
 
-When(/^I open Planning(?: without signing in)?$/, async ({ page }) => {
+// Not "I open Planning", which plans.steps.ts defines for someone already signed in.
+When(/^I open Planning (?:without|before) signing in$/, async ({ page }) => {
   await page.goto(`${await app()}/plans`);
 });
 
