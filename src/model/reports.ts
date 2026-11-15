@@ -97,6 +97,8 @@ export interface ProgramSettings {
   /** The staff level that leads it, such as an instructor or a coach. */
   staff_level: string | null;
   sailors_per_coach: number | null;
+  /** The share of its direct costs it pays toward the shared costs, fixed for the year. */
+  indirect_cost_rate?: number | null;
   /** Short notes the planning agent reads, each in inline markdown. */
   notes: string[] | null;
 }
@@ -484,33 +486,51 @@ export interface SharedCost {
   /** The pool it's spread from, such as G&A. */
   pool: string;
   total_cents: number;
-  /** The part spread over the programs' offerings. Non-program's net covers the rest, or adds to it with a loss. */
+  /**
+   * The part the programs' indirect cost rates recover. The organization keeps the rest, or has a credit when they
+   * recover more.
+   */
   allocated_cents: number;
 }
 
-const covered = " covered by non-program: ";
+/** What the organization keeps of a pooled line, and how its name joins the pool to the line. */
+const KEPT: Record<string, RegExp> = {
+  // cyc-seattle/platform#296: what the indirect cost rates don't recover.
+  "unrecovered:": / (?:not recovered|over-recovered): /,
+  // Results from before #296: what non-program's net covered (cyc-seattle/platform#242).
+  "offset:": / covered by non-program: /,
+};
+const keptPrefix = (line: Pick<PlanLine, "key">) => Object.keys(KEPT).find((p) => line.key.startsWith(p));
+
+/** A pooled line's pool and its own name: "G&A share: Insurance" is G&A's Insurance. */
+function splitShare(line: Pick<PlanLine, "key" | "name">): [string, string] {
+  const kept = keptPrefix(line);
+  const match = (kept ? KEPT[kept]! : / share: /).exec(line.name);
+  if (!match) return [line.name, line.name];
+  return [line.name.slice(0, match.index), line.name.slice(match.index + match[0].length)];
+}
 
 /**
- * Each pool's lines at their full amount, added back up from every offering's share and the part non-program's net
- * covers (an `offset:` line, cyc-seattle/platform#242), by pool and account.
+ * Each pool's lines at their full amount, added back up from every offering's share and the part the organization
+ * keeps, by pool and account.
  */
 export function sharedCostsOf(lines: (Line & Pick<PlanLine, "plan">)[], operations: string | null): SharedCost[] {
   const costs = new Map<string, SharedCost>();
-  for (const line of operating(lines).filter((l) => !l.revenue && (isShare(l) || l.key.startsWith("offset:")))) {
-    const offset = line.key.startsWith("offset:");
-    const key = offset ? `pool:${line.key.slice("offset:".length)}` : line.key;
-    const [pool, ...name] = line.name.split(offset ? covered : " share: ");
+  for (const line of operating(lines).filter((l) => !l.revenue && (isShare(l) || keptPrefix(l)))) {
+    const kept = keptPrefix(line);
+    const key = kept ? `pool:${line.key.slice(kept.length)}` : line.key;
+    const [pool, name] = splitShare(line);
     const cost = costs.get(key) ?? {
       number: line.account_number,
-      name: name.join(offset ? covered : " share: ") || line.name,
-      pool: pool!,
+      name,
+      pool,
       total_cents: 0,
       allocated_cents: 0,
     };
     costs.set(key, {
       ...cost,
       total_cents: cost.total_cents + line.amount_cents,
-      allocated_cents: cost.allocated_cents + (offset || line.plan === operations ? 0 : line.amount_cents),
+      allocated_cents: cost.allocated_cents + (kept || line.plan === operations ? 0 : line.amount_cents),
     });
   }
   return [...costs.values()].sort(
@@ -753,7 +773,8 @@ export function storageOf(lines: (Line & Pick<PlanLine, "plan">)[], plans: Plan[
     costs.set(id, { ...cost, cents: (costs.get(id)?.cents ?? 0) + cents });
   };
   const areaOf = new Map(plans.filter((p) => p.kind === "program_area").map((p) => [p.id, reportName(p)]));
-  // What non-program sales cover of a pool (`offset:` lines) stays in the pool's share, as on Non-program.
+  // What non-program sales covered of a pool (`offset:` lines, before cyc-seattle/platform#296) stays in the pool's
+  // share, as on Non-program.
   for (const line of lines.filter((l) => !l.revenue && isStorage(l) && !l.key.startsWith("offset:"))) {
     if (isShare(line)) {
       add(
@@ -767,10 +788,9 @@ export function storageOf(lines: (Line & Pick<PlanLine, "plan">)[], plans: Plan[
       continue;
     }
     const area = line.plan ? areaOf.get(line.plan) : undefined;
+    const name = keptPrefix(line) ? splitShare(line)[1] : line.name;
     add(
-      area
-        ? { payer: area, kind: "area", name: line.name }
-        : { payer: "No program", kind: "unallocated", name: line.name },
+      area ? { payer: area, kind: "area", name } : { payer: "No program", kind: "unallocated", name },
       line.amount_cents,
     );
   }
