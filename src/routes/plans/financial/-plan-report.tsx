@@ -118,17 +118,17 @@ function Older({ plan }: { plan: FinancialPlan }) {
   );
 }
 
-/** What a report shows while platform works out a draft's numbers, or once it's given up. */
+/** What a report shows while platform calculates a draft's numbers, or once it's given up. */
 function PendingNumbers({ stuck }: { stuck: boolean }) {
   return stuck ? (
     <Alert>
       <AlertDescription>
-        Its numbers couldn't be worked out. Check its plans for a mistake, or change something to try again.
+        Its numbers couldn't be calculated. Check its plans for a mistake, or change something to try again.
       </AlertDescription>
     </Alert>
   ) : (
     <p role="status" className="text-sm text-muted-foreground">
-      Working out its numbers…
+      Calculating…
     </p>
   );
 }

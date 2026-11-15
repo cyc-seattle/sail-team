@@ -245,7 +245,7 @@ export const fromOlderEngine = (
   engine: string | null | undefined,
 ) => plan.set.status === "draft" && !!plan.results && !!engine && plan.results.platform_version !== engine;
 
-/** How long a Financial Plan's numbers may be missing before the page says they couldn't be worked out. */
+/** How long a Financial Plan's numbers may be missing before the page says they couldn't be calculated. */
 export const stuckAfterMs = 30_000;
 
 /**
