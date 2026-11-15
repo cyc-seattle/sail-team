@@ -38,13 +38,22 @@ export interface InForce {
   to: string | null;
 }
 
-/** When a plan is in force, in words: "In force since Jul 1, 2026", "Active from Sep 1, 2026". */
+/**
+ * When a plan is active, in words: "Since Jul 1, 2026", "From Sep 1, 2026", "Mar 1, 2026 to Jun 30, 2026". Beside a
+ * plan's name, `activeText` says "Active" first.
+ */
 export function inForceText({ when, from, to }: InForce): string {
   if (when === "later") {
-    return `Active from ${formatDay(from)}`;
+    return `From ${formatDay(from)}`;
   }
-  return when === "past" ? `In force ${formatDay(from)} to ${formatDay(to!)}` : `In force since ${formatDay(from)}`;
+  return when === "past" ? `${formatDay(from)} to ${formatDay(to!)}` : `Since ${formatDay(from)}`;
 }
+
+/** "Active since Jul 1, 2026", "Active from Sep 1, 2026", "Active Mar 1, 2026 to Jun 30, 2026". */
+export const activeText = (inForce: InForce) => {
+  const text = inForceText(inForce);
+  return `Active ${inForce.when === "past" ? text : text[0]!.toLowerCase() + text.slice(1)}`;
+};
 
 /** The day before `date`, both as `YYYY-MM-DD`. */
 function dayBefore(date: string): string {
@@ -102,7 +111,7 @@ export interface ListedPlan {
   frozen_by: string | null;
   parent: { id: string; name: string } | null;
   archived: boolean;
-  /** Its note, a one-line comment such as "Reviewed with the board". */
+  /** Its note, a one-line comment such as "Reviewed with the board", in inline Markdown, so it can link. */
   note: string | null;
   /** The platform package's version that worked out a frozen plan's results, such as "1.38.1". Null for a draft. */
   platform: string | null;

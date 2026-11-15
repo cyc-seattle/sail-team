@@ -32,23 +32,26 @@ async function frozenBudget(club: Club, name: string, note: string | null = null
   return set;
 }
 
-/** Planning's row for a Financial Plan. */
+/** A link to one of the scenario's Financial Plans, by its address, since another run's plan may share its name. */
+const planLink = (page: Page, name: string) => page.locator(`a[href$="/plans/financial/${named.get(name)}"]`);
+
+/** Planning's row for one of the scenario's Financial Plans. */
 const planRow = (page: Page, name: string) =>
   page
     .getByRole("table", { name: "Financial Plans" })
     .getByRole("row")
-    .filter({ has: page.getByRole("link", { name, exact: true }) });
+    .filter({ has: planLink(page, name) });
 
-/** Opens Planning on the run's own year, which other runs' plans don't share. */
-async function openPlanning(page: Page, club: Club): Promise<void> {
+async function openPlanning(page: Page): Promise<void> {
   await page.goto(`${await app()}/plans`);
-  await page.getByRole("combobox", { name: "Year" }).click();
-  await page.getByRole("option", { name: String(club.year), exact: true }).click();
+  await expect(page.getByRole("table", { name: "Financial Plans" })).toBeVisible({ timeout: 30_000 });
 }
 
 /** A plan's details on Planning: when it was frozen, what it started from, and its note. */
 async function details(page: Page, name: string) {
-  await page.getByRole("button", { name: `About ${name}` }).click();
+  await planRow(page, name)
+    .getByRole("button", { name: `About ${name}` })
+    .click();
   return page.getByRole("dialog", { name: `About ${name}` });
 }
 
@@ -67,15 +70,28 @@ Given("a draft started from it named {string}", async ({ club }, name: string) =
   named.set(name, set);
 });
 
-When("I open Planning for 2027", async ({ page, club }) => {
-  await openPlanning(page, club);
+When("I open Planning", async ({ page }) => {
+  await openPlanning(page);
+});
+
+Then("{string}'s note links {string} to {word}", async ({ page }, name: string, text: string, href: string) => {
+  const about = await details(page, name);
+  await expect(about.getByRole("link", { name: text, exact: true })).toHaveAttribute("href", href);
+});
+
+When("I turn off drafts", async ({ page }) => {
+  await page.getByRole("switch", { name: "Show drafts" }).click();
+});
+
+Then("Planning lists {string}", async ({ page }, name: string) => {
+  await expect(planLink(page, name)).toBeVisible();
 });
 
 Then(
   "I see {string}, marked frozen, and {string}, marked as a draft",
   async ({ page }, frozen: string, draft: string) => {
-    await expect(planRow(page, frozen)).toContainText("Frozen");
-    await expect(planRow(page, draft)).toContainText("Draft");
+    await expect(planRow(page, frozen).getByRole("img", { name: "Frozen" })).toBeVisible();
+    await expect(planRow(page, draft).getByRole("img", { name: "Draft" })).toBeVisible();
   },
 );
 
@@ -459,8 +475,8 @@ Then("the page is titled {string}", async ({ page }, name: string) => {
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 });
 
-Then("Planning shows {string} with the note {string}", async ({ page, club }, name: string, note: string) => {
-  await openPlanning(page, club);
+Then("Planning shows {string} with the note {string}", async ({ page }, name: string, note: string) => {
+  await openPlanning(page);
   await expect(await details(page, name)).toContainText(note);
 });
 
@@ -492,10 +508,58 @@ Then("I see no way to edit it or duplicate it", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Duplicate" })).toHaveCount(0);
 });
 
-Then("Planning has no actions for {string}", async ({ page, club }, name: string) => {
-  await openPlanning(page, club);
-  await expect(planRow(page, name)).toBeVisible();
-  await expect(page.getByRole("button", { name: `Actions for ${name}` })).toHaveCount(0);
+Then("Planning has no actions for {string}", async ({ page }, name: string) => {
+  await openPlanning(page);
+  const row = planRow(page, name);
+  await expect(row).toBeVisible();
+  await expect(row.getByRole("button", { name: `More for ${name}` })).toHaveCount(0);
+  await expect(row.getByRole("button", { name: /^Active date of/ })).toHaveCount(0);
+});
+
+Then("Planning has no way to freeze {string} or make it active", async ({ page }, name: string) => {
+  await openPlanning(page);
+  const row = planRow(page, name);
+  await expect(row.getByRole("img", { name: "Draft" })).toBeVisible();
+  await expect(row.getByRole("button", { name: /^Active date of/ })).toHaveCount(0);
+  await row.getByRole("button", { name: `More for ${name}` }).click();
+  await expect(page.getByRole("menuitem", { name: "Delete" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Freeze" })).toHaveCount(0);
+});
+
+When("I freeze {string} there", async ({ page }, name: string) => {
+  await planRow(page, name)
+    .getByRole("button", { name: `More for ${name}` })
+    .click();
+  await page.getByRole("menuitem", { name: "Freeze" }).click();
+  const dialog = page.getByRole("dialog", { name: `Freeze ${name}?` });
+  await dialog.getByRole("button", { name: "Freeze" }).click();
+  await expect(dialog).toBeHidden({ timeout: 30_000 });
+});
+
+Then("Planning marks {string} frozen, for good", async ({ page }, name: string) => {
+  const row = planRow(page, name);
+  await expect(row.getByRole("img", { name: "Frozen" })).toBeVisible({ timeout: 30_000 });
+  await row.getByRole("button", { name: `More for ${name}` }).click();
+  await expect(page.getByRole("menuitem", { name: "Archive" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Freeze" })).toHaveCount(0);
+});
+
+When(
+  "I make {string} active from {word} {int}, {int} there",
+  async ({ page }, name: string, month: string, day: number, year: number) => {
+    await planRow(page, name)
+      .getByRole("button", { name: /^Active date of/ })
+      .click();
+    const popover = page.getByRole("dialog", { name: `When ${name} is active` });
+    await popover.getByLabel("Active from").fill(isoDate(month, day, year));
+    await popover.getByRole("button", { name: "Save" }).click();
+    await expect(popover).toBeHidden({ timeout: 30_000 });
+  },
+);
+
+Then("Planning shows {string} active from {string}", async ({ page }, name: string, when: string) => {
+  const date = planRow(page, name).getByRole("button", { name: `Active date of ${name}: ${when}` });
+  await expect(date).toBeVisible({ timeout: 30_000 });
 });
 
 When("I freeze it", async ({ page }) => {
@@ -511,7 +575,9 @@ Then("it's marked frozen", async ({ page }) => {
 });
 
 When("I delete {string}", async ({ page }, name: string) => {
-  await page.getByRole("button", { name: `Actions for ${name}` }).click();
+  await planRow(page, name)
+    .getByRole("button", { name: `More for ${name}` })
+    .click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
   const dialog = page.getByRole("dialog", { name: `Delete ${name}?` });
   await dialog.getByRole("button", { name: "Delete" }).click();
@@ -519,23 +585,24 @@ When("I delete {string}", async ({ page }, name: string) => {
 });
 
 When("I archive {string}", async ({ page }, name: string) => {
-  await page.getByRole("button", { name: `Actions for ${name}` }).click();
+  await planRow(page, name)
+    .getByRole("button", { name: `More for ${name}` })
+    .click();
   await page.getByRole("menuitem", { name: "Archive" }).click();
-  await expect(page.locator(`a[href$="/plans/financial/${named.get(name)}"]`)).toHaveCount(0, { timeout: 30_000 });
+  await expect(planLink(page, name)).toHaveCount(0, { timeout: 30_000 });
 });
 
-Then("Planning lists {string} when I ask to see archived plans", async ({ page }, name: string) => {
-  await page.getByRole("combobox", { name: "Status" }).click();
-  await page.getByRole("option", { name: "Archived" }).click();
-  await expect(page.locator(`a[href$="/plans/financial/${named.get(name)}"]`)).toBeVisible();
+Then("Planning lists {string} when I turn on archived plans", async ({ page }, name: string) => {
+  await page.getByRole("switch", { name: "Show archived" }).click();
+  await expect(planLink(page, name)).toBeVisible();
 });
 
 Then("Planning no longer lists {string}", async ({ page }, name: string) => {
-  // By its address, since another run's draft may share its name.
-  await expect(page.locator(`a[href$="/plans/financial/${named.get(name)}"]`)).toHaveCount(0);
+  await expect(planLink(page, name)).toHaveCount(0);
 });
 
-When("I make it active from {word} {int}, {int}", async ({ page }, month: string, day: number, year: number) => {
+/** A day written out, such as July 1, 2026, as `YYYY-MM-DD`. */
+function isoDate(month: string, day: number, year: number): string {
   const months = [
     "January",
     "February",
@@ -550,7 +617,11 @@ When("I make it active from {word} {int}, {int}", async ({ page }, month: string
     "November",
     "December",
   ];
-  const date = `${year}-${String(months.indexOf(month) + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  return `${year}-${String(months.indexOf(month) + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+When("I make it active from {word} {int}, {int}", async ({ page }, month: string, day: number, year: number) => {
+  const date = isoDate(month, day, year);
   await page.getByRole("button", { name: "Make active" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Active from").fill(date);
@@ -558,8 +629,8 @@ When("I make it active from {word} {int}, {int}", async ({ page }, month: string
   await expect(dialog).toBeHidden({ timeout: 30_000 });
 });
 
-Then("it's in force since {string}", async ({ page }, when: string) => {
-  await expect(page.getByText(`In force since ${when}`)).toBeVisible({ timeout: 30_000 });
+Then("it's active since {string}", async ({ page }, when: string) => {
+  await expect(page.getByText(`Active since ${when}`)).toBeVisible({ timeout: 30_000 });
 });
 
 Then("I see no way to freeze it or make it active", async ({ page }) => {

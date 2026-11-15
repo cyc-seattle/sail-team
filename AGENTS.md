@@ -73,11 +73,13 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   also read what planners entered in its plans (`src/directus/plan-inputs.ts`): each plan's notes, each program's
   settings, each offering with its activities, and the Operations Plan's rates, with each bonus on the position it
   pays. `src/model/reports.ts` makes each report from those and the results: shares of a pool (`pool:` lines) are a
-  plan's indirect costs, and everything else of its own is direct. `/plans` lists every Financial Plan, with when
-  each is in force: a plan is active from its `effective_from`, and the one in force on a day is its year's with the
-  latest date on or before it (`inForce` in `src/model/financial-plans.ts`, cyc-seattle/platform#251). There, a Plan
-  Writer deletes a draft, and a Plan Admin freezes a draft (`status`), makes a draft or frozen plan active from a date, or archives one (`archived_at`), which hides it until
-  the status filter asks for archived ones. The menus follow `/permissions/me`: `canAdminPlans` in `access.ts`. `/plans/financial/<set>` is its Overview, and
+  plan's indirect costs, and everything else of its own is direct. `/plans` lists every Financial Plan under its year,
+  newest first, with the day each is active from: a plan is active from its `effective_from`, and the one in force on a day is its year's
+  with the latest date on or before it (`inForce` in `src/model/financial-plans.ts`, cyc-seattle/platform#251). Its
+  note, at most 280 characters of inline Markdown (`src/components/inline-markdown.tsx`), shows behind its ⓘ. Show drafts and
+  Show archived narrow the list. Its status, details, and warnings are icons in fixed places, so they line up. There,
+  a Plan Admin sets or clears the date it's active from in its Active column. Its ⋯ menu freezes a draft (`status`) for
+  good and archives it (`archived_at`), for a Plan Admin, and deletes a draft, for a Plan Writer. The menus follow `/permissions/me`: `canAdminPlans` in `access.ts`. `/plans/financial/<set>` is its Overview, and
   `/plans/financial/<set>/<report>` its other reports: `calendar`, `rates` (Assumptions), `storage`, a Program Plan's
   program area id, the same in every Financial Plan, `non-program`, or `fundraising`. Storage lists the lines on the Storage account, 7351 under 7350 Occupancy/Rent:
   what each area pays, then what every program shares. A program area's report shows each offering's term: one of the

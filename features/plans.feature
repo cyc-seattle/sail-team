@@ -4,10 +4,11 @@ Feature: Seeing the Financial Plans
   AI: it starts as a draft, and when it's ready a Plan Admin freezes it. A draft's numbers are worked out again after every
   change to it, wherever the change is made. A frozen Financial Plan's plans and numbers never change, though its name,
   note, and the date it's active from can. A Plan Admin makes a Financial Plan active from a date, a draft or
-  a frozen one. The plan in force on a day is the one for its year with the latest date on or before it. To change the plan after that, a planner duplicates it, and the copy begins as a draft. A plan no one
-  needs any more can be archived, which takes it off Planning's list until someone asks to see archived plans. A year can have several drafts at once, so planners can weigh options, such as
+  a frozen one. The plan active on a day is the one for its year with the latest date on or before it. To change the plan after that, a planner duplicates it, and the copy begins as a draft. A plan no one
+  needs any more can be archived, which takes it off Planning's list until someone turns on archived plans. A year can have several drafts at once, so planners can weigh options, such as
   two drafts started from the same Financial Plan, one with two coaches and one with three. Each Financial Plan has a
-  name, and a note that says what it was for, such as "Reviewed with the board".
+  name, and a short note that says what it was for, such as "Reviewed with the board", which can link to the
+  spreadsheet it came from.
 
   A plan's activities are grouped into blocks, one date each, and each block is given its staff, RIBs and boats. Each
   program has its settings: the staff level that leads it, and how many sailors one of them can take. Short notes, in
@@ -19,17 +20,17 @@ Feature: Seeing the Financial Plans
   report includes its coaches' wages, its RIBs, and its share of the shared costs, such as the office, worked out with
   the other plans in the same Financial Plan. A Plan Writer can rename any Financial Plan, change its note,
   duplicate one, and delete a draft here. A Plan Admin can also freeze a draft, make one active from a date,
-  and archive one. Everything else about a plan is changed through their AI. Every plan and number here is made up for
+  and archive one, from its report or right in Planning's list. Everything else about a plan is changed through their AI. Every plan and number here is made up for
   the run.
 
-  Rule: Planning lists every Financial Plan in one table, by year and status
+  Rule: Planning lists every Financial Plan in one table, under its year, newest first
 
     Scenario: A frozen Financial Plan and a draft started from it
       Given I'm a planner who can read plans
       And a frozen Financial Plan for 2027 named "Budget", noted "Reviewed with the board"
       And a draft started from it named "Two coaches"
       And I've signed in
-      When I open Planning for 2027
+      When I open Planning
       Then I see "Budget", marked frozen, and "Two coaches", marked as a draft
       And "Budget" shows its note and the day it was frozen
       And "Two coaches" shows it was started from "Budget"
@@ -38,8 +39,25 @@ Feature: Seeing the Financial Plans
       Given I'm a planner who can read plans
       And a frozen Financial Plan for 2027 whose camp takes in $10,000 and spends $5,000 running it, with $2,000 of donations
       And I've signed in
-      When I open Planning for 2027
+      When I open Planning
       Then "Budget" shows revenue of $10,000, expenses of $5,000, and net of $5,000
+
+    Scenario: A note links to the spreadsheet a plan came from
+      Given I'm a planner who can read plans
+      And a frozen Financial Plan for 2027 named "Budget", noted "From the [budget spreadsheet](https://example.com/budget)"
+      And I've signed in
+      When I open Planning
+      Then "Budget"'s note links "budget spreadsheet" to https://example.com/budget
+
+    Scenario: Leaving out the drafts
+      Given I'm a planner who can read plans
+      And a frozen Financial Plan for 2027 named "Budget", noted "Reviewed with the board"
+      And a draft started from it named "Two coaches"
+      And I've signed in
+      When I open Planning
+      And I turn off drafts
+      Then Planning lists "Budget"
+      And Planning no longer lists "Two coaches"
 
   Rule: A Financial Plan's Overview shows each program area from revenue to net, and Non-program on its own
 
@@ -177,7 +195,7 @@ Feature: Seeing the Financial Plans
       Given I'm a Plan Writer
       And a draft Financial Plan named "Two coaches"
       And I've signed in
-      When I open Planning for 2027
+      When I open Planning
       And I delete "Two coaches"
       Then Planning no longer lists "Two coaches"
 
@@ -187,6 +205,7 @@ Feature: Seeing the Financial Plans
       And I've signed in
       When I open "Two coaches"
       Then I see no way to freeze it or make it active
+      And Planning has no way to freeze "Two coaches" or make it active
 
   Rule: A Plan Admin can freeze a Financial Plan, make it active from a date, and archive it
 
@@ -198,14 +217,22 @@ Feature: Seeing the Financial Plans
       And I freeze it
       Then it's marked frozen
 
+    Scenario: Freezing a draft from Planning
+      Given I'm a Plan Admin
+      And a draft Financial Plan named "Two coaches"
+      And I've signed in
+      When I open Planning
+      And I freeze "Two coaches" there
+      Then Planning marks "Two coaches" frozen, for good
+
     Scenario: Archiving a frozen Financial Plan
       Given I'm a Plan Admin
       And a frozen Financial Plan for 2027 named "Budget"
       And I've signed in
-      When I open Planning for 2027
+      When I open Planning
       And I archive "Budget"
       Then Planning no longer lists "Budget"
-      And Planning lists "Budget" when I ask to see archived plans
+      And Planning lists "Budget" when I turn on archived plans
 
     Scenario: Making a frozen Financial Plan active from a date
       Given I'm a Plan Admin
@@ -213,7 +240,15 @@ Feature: Seeing the Financial Plans
       And I've signed in
       When I open "Budget"
       And I make it active from July 1, 2026
-      Then it's in force since "Jul 1, 2026"
+      Then it's active since "Jul 1, 2026"
+
+    Scenario: Making a Financial Plan active from Planning
+      Given I'm a Plan Admin
+      And a frozen Financial Plan for 2027 named "Budget"
+      And I've signed in
+      When I open Planning
+      And I make "Budget" active from July 1, 2026 there
+      Then Planning shows "Budget" active from "Jul 1, 2026"
 
   Rule: Only someone who can read plans can see them
 

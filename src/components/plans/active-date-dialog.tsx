@@ -64,7 +64,7 @@ export function ActiveDateDialog({ name, year, current, open, onOpenChange, onSu
           <DialogHeader>
             <DialogTitle>{changing ? `Change when ${name} is active` : `Make ${name} active`}</DialogTitle>
             <DialogDescription>
-              From this date, it&apos;s the plan in force for {year}, until another plan&apos;s date. A draft stays a
+              From this date, it&apos;s the active plan for {year}, until another plan&apos;s date. A draft stays a
               draft, and its plans can still change.
             </DialogDescription>
           </DialogHeader>
