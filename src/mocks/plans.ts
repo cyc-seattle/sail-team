@@ -793,6 +793,8 @@ export const tables: Record<string, Row[]> = {
   accounts: catalog.accounts,
   products: catalog.products,
   boat_classes: catalog.boat_classes,
+  assets: catalog.assets,
+  boats: catalog.boats,
   financial_plans: [budget, twoCoaches, threeCoaches, firstPass],
   // financial_plan_id and program_area_id are expanded when a request asks for their fields.
   plans: plans.map((p) => {
