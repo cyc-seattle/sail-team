@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronDownIcon, InfoIcon, TriangleAlertIcon } from "lucide-react";
 import { useState } from "react";
+import { InlineMarkdown } from "@/components/inline-markdown";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -50,7 +51,7 @@ const statusItems = [
   { value: ALL, label: "Every status" },
   { value: IN_FORCE, label: "In force" },
   { value: "draft", label: "Draft" },
-  { value: "saved", label: "Frozen" },
+  { value: "frozen", label: "Frozen" },
   { value: ARCHIVED, label: "Archived" },
 ];
 const isInForce = (plan: ListedPlan) => plan.in_force?.when === "now";
@@ -63,7 +64,7 @@ const statusMatches = (plan: ListedPlan, status: string) =>
 const byStatus = (a: ListedPlan, b: ListedPlan) =>
   Number(isInForce(b)) - Number(isInForce(a)) ||
   Number(a.status !== "draft") - Number(b.status !== "draft") ||
-  (a.status === "draft" ? a.name.localeCompare(b.name) : (b.saved_at ?? "").localeCompare(a.saved_at ?? ""));
+  (a.status === "draft" ? a.name.localeCompare(b.name) : (b.frozen_at ?? "").localeCompare(a.frozen_at ?? ""));
 
 type Confirmed = "save" | "delete";
 type Action = Confirmed | "activate" | "archive" | "unarchive";
@@ -218,7 +219,7 @@ function PlanActions({ plan, actions }: { plan: ListedPlan; actions: PlanningAct
 
 /** When and by whom a plan was frozen, what it started from, the platform version that worked it out, and its note, on hover or a tap. */
 function PlanDetails({ plan }: { plan: ListedPlan }) {
-  if (!plan.saved_at && !plan.parent && !plan.note) {
+  if (!plan.frozen_at && !plan.parent && !plan.note) {
     return null;
   }
   return (
@@ -233,8 +234,10 @@ function PlanDetails({ plan }: { plan: ListedPlan }) {
       </PopoverTrigger>
       <PopoverContent align="start" aria-label={`About ${plan.name}`} className="w-80">
         <p className="text-xs text-muted-foreground">
-          {plan.saved_at ? `Frozen ${formatDate(plan.saved_at)}${plan.saved_by ? ` by ${plan.saved_by}` : ""}` : null}
-          {plan.saved_at && plan.parent ? ". " : null}
+          {plan.frozen_at
+            ? `Frozen ${formatDate(plan.frozen_at)}${plan.frozen_by ? ` by ${plan.frozen_by}` : ""}`
+            : null}
+          {plan.frozen_at && plan.parent ? ". " : null}
           {plan.parent && (
             <>
               Started from{" "}
@@ -245,7 +248,11 @@ function PlanDetails({ plan }: { plan: ListedPlan }) {
           )}
         </p>
         {plan.platform && <p className="text-xs text-muted-foreground">Platform {plan.platform}</p>}
-        {plan.note && <p>{plan.note}</p>}
+        {plan.note && (
+          <p>
+            <InlineMarkdown text={plan.note} />
+          </p>
+        )}
       </PopoverContent>
     </Popover>
   );

@@ -19,23 +19,26 @@ const plan = (id: string) =>
 
 describe("changing Financial Plans in Directus", () => {
   it("renames a draft and changes its note", async () => {
-    await updateFinancialPlan(ids.twoCoaches, { name: "Two coaches, more boats", message: "For the board" });
+    await updateFinancialPlan(ids.twoCoaches, { name: "Two coaches, more boats", note: "For the board" });
     expect((await plan(ids.twoCoaches)).set).toMatchObject({
       name: "Two coaches, more boats",
-      message: "For the board",
+      note: "For the board",
     });
   });
 
-  it("renames a saved one", async () => {
-    await updateFinancialPlan(ids.budget, { name: "Adopted budget", message: "Reviewed with the board" });
+  it("renames a frozen one", async () => {
+    await updateFinancialPlan(ids.budget, { name: "Adopted budget", note: "Reviewed with the board" });
     expect((await plan(ids.budget)).set.name).toBe("Adopted budget");
   });
 
-  it("starts a draft from a saved one, in its year, holding a copy of each of its plans", async () => {
+  it("starts a draft from a frozen one, in its year, holding a copy of each of its plans", async () => {
     const budget = await plan(ids.budget);
-    const id = await startFinancialPlan(budget, { name: "Budget copy", message: null });
-    const { set, members } = await plan(id);
+    const id = await startFinancialPlan(budget, { name: "Budget copy", note: null });
+    const { set, plans } = await plan(id);
     expect(set).toMatchObject({ name: "Budget copy", status: "draft", fiscal_year: 2027, parent: { id: ids.budget } });
-    expect(members.map((m) => m.plan_id).sort()).toEqual(budget.members.map((m) => m.plan_id).sort());
+    const areas = (p: { plans: { kind: string; program_area_id: string | null }[] }) =>
+      p.plans.map((m) => `${m.kind} ${m.program_area_id}`).sort();
+    expect(areas({ plans })).toEqual(areas(budget));
+    expect(plans.map((m) => m.id)).not.toContain(budget.plans[0]!.id);
   });
 });

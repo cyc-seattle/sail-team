@@ -8,7 +8,7 @@ import {
   type FinancialPlanSummary,
   type InForce,
   type ListedPlan,
-  type Member,
+  type Plan,
   type PlanLine,
   type PnlRow,
   type ResultWarning,
@@ -23,11 +23,11 @@ const setFields = [
   "organization_id",
   "fiscal_year",
   "name",
-  "message",
+  "note",
   "status",
   "effective_from",
-  "saved_at",
-  "saved_by",
+  "frozen_at",
+  "frozen_by",
   "platform_version",
   "archived_at",
   "parent_id.id",
@@ -55,61 +55,58 @@ export const financialPlansQuery = queryOptions({
   queryKey: ["financial-plans"],
   queryFn: async (): Promise<ListedPlan[]> => {
     const [sets, totals, warnings] = await Promise.all([
-      readAll<SetRow>("version_sets", undefined, setFields),
-      readAll<Totals & { version_set_id: string }>("plan_results", undefined, ["version_set_id", ...totalFields]),
-      readAll<{ version_set_id: string }>("plan_result_warnings", undefined, ["version_set_id"]),
+      readAll<SetRow>("financial_plans", undefined, setFields),
+      readAll<Totals & { financial_plan_id: string }>("plan_results", undefined, ["financial_plan_id", ...totalFields]),
+      readAll<{ financial_plan_id: string }>("plan_result_warnings", undefined, ["financial_plan_id"]),
     ]);
-    const savers = await userNames(sets.map((set) => set.saved_by));
+    const savers = await userNames(sets.map((set) => set.frozen_by));
     const forces = inForce(sets, today());
     return sets.map(summary).map((set): ListedPlan => {
-      const total = totals.find((t) => t.version_set_id === set.id);
+      const total = totals.find((t) => t.financial_plan_id === set.id);
       return {
         id: set.id,
         name: set.name,
         year: set.fiscal_year,
         status: set.status,
         in_force: forces.get(set.id) ?? null,
-        saved_at: set.saved_at,
-        saved_by: (set.saved_by && savers.get(set.saved_by)) ?? null,
+        frozen_at: set.frozen_at,
+        frozen_by: (set.frozen_by && savers.get(set.frozen_by)) ?? null,
         parent: set.parent,
         archived: set.archived_at !== null,
-        note: set.message,
+        note: set.note,
         platform: platformRelease(set),
-        warnings: warnings.filter((w) => w.version_set_id === set.id).length,
+        warnings: warnings.filter((w) => w.financial_plan_id === set.id).length,
         revenue_cents: total ? total.operating_revenue_cents : null,
         expense_cents: total ? total.operating_expense_cents : null,
         net_cents: total ? total.operating_net_cents : null,
       };
     });
   },
-  // Until every plan's numbers are in, so a draft that's just been saved or started shows them when they are.
+  // Until every plan's numbers are in, so a draft that's just been frozen or started shows them when they are.
   refetchInterval: (query) =>
     query.state.status !== "error" && query.state.data?.some((p) => p.net_cents === null) ? 5_000 : false,
 });
 
-/** A Financial Plan's plans, each with the copy of it the Financial Plan holds. */
-async function readMembers(setId: string): Promise<Member[]> {
+/** A Financial Plan's plans: its Operations Plan, and a Program Plan for each of its program areas. */
+async function readPlans(setId: string): Promise<Plan[]> {
   const rows = await readAll<{
     id: string;
-    version_id: string;
-    plan_id: { id: string; name: string; kind: Member["kind"]; program_area_id: { id: string; name: string } | null };
-  }>("version_set_members", { version_set_id: { _eq: setId } }, [
+    kind: Plan["kind"];
+    program_area_id: { id: string; name: string } | null;
+    notes: string[] | null;
+  }>("plans", { financial_plan_id: { _eq: setId } }, [
     "id",
-    "version_id",
-    "plan_id.id",
-    "plan_id.name",
-    "plan_id.kind",
-    "plan_id.program_area_id.id",
-    "plan_id.program_area_id.name",
+    "kind",
+    "program_area_id.id",
+    "program_area_id.name",
+    "notes",
   ]);
-  return rows.map((m) => ({
-    id: m.id,
-    plan_id: m.plan_id.id,
-    version_id: m.version_id,
-    plan_name: m.plan_id.name,
-    kind: m.plan_id.kind,
-    program_area_id: m.plan_id.program_area_id?.id ?? null,
-    area_name: m.plan_id.program_area_id?.name ?? null,
+  return rows.map((p) => ({
+    id: p.id,
+    kind: p.kind,
+    program_area_id: p.program_area_id?.id ?? null,
+    area_name: p.program_area_id?.name ?? null,
+    notes: p.notes,
   }));
 }
 
@@ -118,10 +115,10 @@ async function readMembers(setId: string): Promise<Member[]> {
  * draft.
  */
 async function readResults(setId: string): Promise<Results | null> {
-  const bySet = { version_set_id: { _eq: setId } };
+  const bySet = { financial_plan_id: { _eq: setId } };
   const [totals, pnl, lines, warnings, capital] = await Promise.all([
     readAll<Totals & { calculated_at: string | null }>("plan_results", bySet, totalFields),
-    readAll<Omit<PnlRow, "member"> & { version_set_member_id: string | null }>("plan_result_pnl", bySet, [
+    readAll<Omit<PnlRow, "plan"> & { plan_id: string | null }>("plan_result_pnl", bySet, [
       "level",
       "subject_key",
       "name",
@@ -135,7 +132,7 @@ async function readResults(setId: string): Promise<Results | null> {
       "term_key",
       "term_name",
       "term_starts_on",
-      "version_set_member_id",
+      "plan_id",
     ]),
     readAll<{
       line: string;
@@ -143,7 +140,7 @@ async function readResults(setId: string): Promise<Results | null> {
       cost_center_key: string | null;
       cost_center_type: PlanLine["cost_center_type"];
       amount_cents: number;
-      version_set_member_id: string | null;
+      plan_id: string | null;
       function: PlanLine["function"];
       explanation: string | null;
       account_id: { type: string; number: string | null; name: string };
@@ -153,19 +150,19 @@ async function readResults(setId: string): Promise<Results | null> {
       "cost_center_key",
       "cost_center_type",
       "amount_cents",
-      "version_set_member_id",
+      "plan_id",
       "function",
       "explanation",
       "account_id.type",
       "account_id.number",
       "account_id.name",
     ]),
-    readAll<Omit<ResultWarning, "member"> & { version_set_member_id: string | null }>("plan_result_warnings", bySet, [
+    readAll<Omit<ResultWarning, "plan"> & { plan_id: string | null }>("plan_result_warnings", bySet, [
       "code",
       "message",
       "category",
       "date",
-      "version_set_member_id",
+      "plan_id",
     ]),
     readAll<CapitalResult & { item_key: string }>("plan_result_capital", bySet, [
       "rank",
@@ -183,7 +180,7 @@ async function readResults(setId: string): Promise<Results | null> {
   return {
     calculated_at,
     totals: total,
-    pnl: pnl.map(({ version_set_member_id, ...row }) => ({ ...row, member: version_set_member_id })),
+    pnl: pnl.map(({ plan_id, ...row }) => ({ ...row, plan: plan_id })),
     lines: lines.map((l) => ({
       key: l.line,
       // Older results have no plain name, so fall back to the engine's own.
@@ -197,9 +194,9 @@ async function readResults(setId: string): Promise<Results | null> {
       capital: l.account_id.type === "asset",
       function: l.function,
       explanation: l.explanation,
-      member: l.version_set_member_id,
+      plan: l.plan_id,
     })),
-    warnings: warnings.map(({ version_set_member_id, ...w }) => ({ ...w, member: version_set_member_id })),
+    warnings: warnings.map(({ plan_id, ...w }) => ({ ...w, plan: plan_id })),
     capital: capital.map(({ item_key, ...c }) => ({ ...c, key: item_key })).sort((a, b) => a.rank - b.rank),
   };
 }
@@ -236,34 +233,34 @@ export interface FinancialPlan {
   set: FinancialPlanSummary;
   /** When it's in force, among its year's Financial Plans, or null when it's never been made active. */
   inForce: InForce | null;
-  members: Member[];
+  plans: Plan[];
   /** Null until platform has worked them out. */
   results: Results | null;
 }
 
 /**
- * A Financial Plan, its plans, and its P&L as platform worked it out: for a saved one, when it was saved; for a draft,
+ * A Financial Plan, its plans, and its P&L as platform worked it out: for a frozen one, when it was frozen; for a draft,
  * after its latest change. Null when there's no such Financial Plan.
  */
 export const financialPlanQuery = (setId: string) =>
   queryOptions({
     queryKey: ["financial-plans", setId],
     queryFn: async (): Promise<FinancialPlan | null> => {
-      const [row] = await readAll<SetRow>("version_sets", { id: { _eq: setId } }, setFields);
+      const [row] = await readAll<SetRow>("financial_plans", { id: { _eq: setId } }, setFields);
       if (!row) {
         return null;
       }
       const set = summary(row);
-      const [members, results, year] = await Promise.all([
-        readMembers(setId),
+      const [plans, results, year] = await Promise.all([
+        readPlans(setId),
         readResults(setId),
         readAll<Pick<FinancialPlanSummary, "id" | "organization_id" | "fiscal_year" | "effective_from">>(
-          "version_sets",
+          "financial_plans",
           { _and: [{ organization_id: { _eq: set.organization_id } }, { fiscal_year: { _eq: set.fiscal_year } }] },
           ["id", "organization_id", "fiscal_year", "effective_from"],
         ),
       ]);
-      return { set, inForce: inForce(year, today()).get(set.id) ?? null, members, results };
+      return { set, inForce: inForce(year, today()).get(set.id) ?? null, plans, results };
     },
   });
 
@@ -275,18 +272,18 @@ export async function updateFinancialPlan(
   id: string,
   changes: {
     name?: string;
-    message?: string | null;
-    status?: "saved";
+    note?: string | null;
+    status?: "frozen";
     effective_from?: string | null;
     archived_at?: string | null;
   },
 ): Promise<void> {
-  await appDirectus().client.request(updateItem("version_sets", id, changes));
+  await appDirectus().client.request(updateItem("financial_plans", id, changes));
 }
 
-/** Deletes a draft Financial Plan. Platform takes its plans out of it, and refuses to delete a saved one. */
+/** Deletes a draft Financial Plan, and platform its plans with it. Platform refuses to delete a frozen one. */
 export async function deleteFinancialPlan(id: string): Promise<void> {
-  await appDirectus().client.request(deleteItem("version_sets", id));
+  await appDirectus().client.request(deleteItem("financial_plans", id));
 }
 
 /**
@@ -295,22 +292,22 @@ export async function deleteFinancialPlan(id: string): Promise<void> {
  */
 export async function startFinancialPlan(
   parent: FinancialPlan,
-  { name, message }: { name: string; message: string | null },
+  { name, note }: { name: string; note: string | null },
 ): Promise<string> {
   const id = crypto.randomUUID();
   await appDirectus().client.request(
-    createItem("version_sets", {
+    createItem("financial_plans", {
       id,
       organization_id: parent.set.organization_id,
       fiscal_year: parent.set.fiscal_year,
       name,
-      message,
+      note,
       parent_id: parent.set.id,
     }),
   );
   for (let tries = 0; tries < 30; tries++) {
-    const copies = await readAll("version_set_members", { version_set_id: { _eq: id } }, ["id"]);
-    if (copies.length >= parent.members.length) {
+    const copies = await readAll("plans", { financial_plan_id: { _eq: id } }, ["id"]);
+    if (copies.length >= parent.plans.length) {
       return id;
     }
     await new Promise((resolve) => setTimeout(resolve, 500));

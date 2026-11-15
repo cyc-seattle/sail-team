@@ -1,6 +1,6 @@
 // The shapes the Planning reports show, and how they're made from a Financial Plan's results and inputs.
 import type { PlanActivity, PlanOffering } from "@cyc-seattle/platform/planning";
-import type { Member, PlanLine, PnlRow, ResultWarning, Results } from "./financial-plans.ts";
+import type { Plan, PlanLine, PnlRow, ResultWarning, Results } from "./financial-plans.ts";
 
 /** Lines that are worked out the same way, added up, such as every offering's coach wages. */
 export interface LineAmount {
@@ -91,14 +91,14 @@ export function totalOf(rows: OverviewRow[]): OverviewRow {
   };
 }
 
-/** A program's hard rules, which hold for every one of its offerings. */
+/** A program's settings, which hold for every one of its offerings. */
 export interface ProgramSettings {
   name: string;
   /** The staff level that leads it, such as an instructor or a coach. */
   staff_level: string | null;
   sailors_per_coach: number | null;
-  /** Free text the planning agent reads, one rule a line. */
-  rules: string | null;
+  /** Short notes the planning agent reads, each in inline markdown. */
+  notes: string[] | null;
 }
 
 /** One offering in a program area's report. */
@@ -342,24 +342,23 @@ export interface PlanWarning {
   message: string;
 }
 
-/** A rules field's text as the list it's read as: one rule a line, blank lines dropped. */
-export const rulesOf = (text: string | null) =>
-  (text ?? "")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
+/** A notes list as it's shown: blank notes dropped. */
+export const notesOf = (notes: string[] | null) => (notes ?? []).map((note) => note.trim()).filter(Boolean);
 
-/** A report's key: a Program Plan's id, or `non-program` for the Operations Plan. */
-export const reportKey = (member: Pick<Member, "kind" | "plan_id">) =>
-  member.kind === "operations" ? "non-program" : member.plan_id;
+/**
+ * A report's key: a Program Plan's program area, which every Financial Plan's copy of it shares, or `non-program` for
+ * the Operations Plan.
+ */
+export const reportKey = (plan: Pick<Plan, "kind" | "program_area_id">) =>
+  plan.kind === "operations" ? "non-program" : plan.program_area_id!;
 
-/** What a member's report is called: its program area's name, or Non-program. */
-export const reportName = (member: Member) =>
-  member.kind === "operations" ? "Non-program" : (member.area_name ?? member.plan_name);
+/** What a plan's report is called: its program area's name, or Non-program. */
+export const reportName = (plan: Plan) =>
+  plan.kind === "operations" ? "Non-program" : (plan.area_name ?? "Program Plan");
 
 /** A Financial Plan's reports, in the order the switcher lists them: program areas A to Z between Assumptions and Non-program. */
-export function reportsOf(members: Member[]): { key: string; name: string }[] {
-  const areas = members
+export function reportsOf(plans: Plan[]): { key: string; name: string }[] {
+  const areas = plans
     .filter((m) => m.kind === "program_area")
     .map((m) => ({ key: reportKey(m), name: reportName(m) }))
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -460,16 +459,16 @@ export function statementOf(lines: Line[]): {
  * has none to compare, so it stays last. Every operating line is in one row, so they add up to the plan's totals.
  */
 export function overviewRows(
-  members: Member[],
-  lines: (Line & Pick<PlanLine, "member">)[],
+  plans: Plan[],
+  lines: (Line & Pick<PlanLine, "plan">)[],
   offerings: Record<string, ReportOffering[]>,
 ): OverviewRow[] {
-  return members.map((member) => {
-    const own = member.kind === "operations" ? [] : (offerings[reportKey(member)] ?? []);
+  return plans.map((plan) => {
+    const own = plan.kind === "operations" ? [] : (offerings[reportKey(plan)] ?? []);
     return {
-      report: reportKey(member),
-      name: reportName(member),
-      ...stepsOf(lines.filter((l) => l.member === member.id)),
+      report: reportKey(plan),
+      name: reportName(plan),
+      ...stepsOf(lines.filter((l) => l.plan === plan.id)),
       offerings: own.length,
       sailors: own.reduce((total, o) => total + o.estimated, 0),
       days: own.reduce((total, o) => total + o.days, 0),
@@ -495,7 +494,7 @@ const covered = " covered by non-program: ";
  * Each pool's lines at their full amount, added back up from every offering's share and the part non-program's net
  * covers (an `offset:` line, cyc-seattle/platform#242), by pool and account.
  */
-export function sharedCostsOf(lines: (Line & Pick<PlanLine, "member">)[], operations: string | null): SharedCost[] {
+export function sharedCostsOf(lines: (Line & Pick<PlanLine, "plan">)[], operations: string | null): SharedCost[] {
   const costs = new Map<string, SharedCost>();
   for (const line of operating(lines).filter((l) => !l.revenue && (isShare(l) || l.key.startsWith("offset:")))) {
     const offset = line.key.startsWith("offset:");
@@ -511,7 +510,7 @@ export function sharedCostsOf(lines: (Line & Pick<PlanLine, "member">)[], operat
     costs.set(key, {
       ...cost,
       total_cents: cost.total_cents + line.amount_cents,
-      allocated_cents: cost.allocated_cents + (offset || line.member === operations ? 0 : line.amount_cents),
+      allocated_cents: cost.allocated_cents + (offset || line.plan === operations ? 0 : line.amount_cents),
     });
   }
   return [...costs.values()].sort(
@@ -616,14 +615,14 @@ export function capitalList(
 }
 
 /** The engine's warnings, each with the report of the plan it's about, or Non-program's when it names none. */
-export function planWarnings(warnings: ResultWarning[], members: Member[]): PlanWarning[] {
+export function planWarnings(warnings: ResultWarning[], plans: Plan[]): PlanWarning[] {
   return warnings.map((w, i) => {
-    const member = members.find((m) => m.id === w.member);
+    const plan = plans.find((p) => p.id === w.plan);
     return {
       key: String(i),
       code: w.code,
       category: w.category,
-      area: member ? reportKey(member) : "non-program",
+      area: plan ? reportKey(plan) : "non-program",
       date: w.date,
       message: w.message,
     };
@@ -747,13 +746,13 @@ export interface StorageCost {
  * through the pools, then what no program pays. Results say only what each line came to, so a shared cost is named by
  * its line, and its total is what reached every offering.
  */
-export function storageOf(lines: (Line & Pick<PlanLine, "member">)[], members: Member[]): StorageCost[] {
+export function storageOf(lines: (Line & Pick<PlanLine, "plan">)[], plans: Plan[]): StorageCost[] {
   const costs = new Map<string, StorageCost>();
   const add = (cost: Omit<StorageCost, "cents">, cents: number) => {
     const id = `${cost.kind}|${cost.payer}|${cost.name}`;
     costs.set(id, { ...cost, cents: (costs.get(id)?.cents ?? 0) + cents });
   };
-  const areaOf = new Map(members.filter((m) => m.kind === "program_area").map((m) => [m.id, reportName(m)]));
+  const areaOf = new Map(plans.filter((p) => p.kind === "program_area").map((p) => [p.id, reportName(p)]));
   // What non-program sales cover of a pool (`offset:` lines) stays in the pool's share, as on Non-program.
   for (const line of lines.filter((l) => !l.revenue && isStorage(l) && !l.key.startsWith("offset:"))) {
     if (isShare(line)) {
@@ -767,7 +766,7 @@ export function storageOf(lines: (Line & Pick<PlanLine, "member">)[], members: M
       );
       continue;
     }
-    const area = line.member ? areaOf.get(line.member) : undefined;
+    const area = line.plan ? areaOf.get(line.plan) : undefined;
     add(
       area
         ? { payer: area, kind: "area", name: line.name }

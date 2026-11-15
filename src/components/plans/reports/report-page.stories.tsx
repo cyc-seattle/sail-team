@@ -3,11 +3,11 @@ import { expect, userEvent } from "storybook/test";
 
 import {
   areaOfferings,
-  assumptionsRules,
+  assumptionsNotes,
   capital,
   doublehandedOfferings,
   doublehandedPrograms,
-  doublehandedRules,
+  doublehandedNotes,
   doublehandedTotal,
   doublehandedStatement,
   functions,
@@ -19,7 +19,7 @@ import {
   sharedCosts,
   summerOfferings,
   summerPrograms,
-  summerRules,
+  summerNotes,
   doublehandedTrips,
   summerFixedCosts,
   summerStaffTime,
@@ -48,7 +48,7 @@ const meta = {
   args: {
     setId: "budget",
     name: "Budget",
-    status: "saved",
+    status: "frozen",
     inForce: { when: "now", from: "2026-07-01", to: null },
     reports,
     current: "overview",
@@ -83,7 +83,7 @@ export const Summer: Story = {
     children: (
       <ProgramAreaReport
         area="Summer"
-        rules={summerRules}
+        notes={summerNotes}
         warnings={warnings.filter((w) => w.area === "summer")}
         statement={summerStatement}
         total={summerTotal}
@@ -105,7 +105,7 @@ export const SummerAssumptionsOpen: Story = {
   args: { ...Summer.args },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByText("Assumptions", { selector: "h2" }));
-    await expect(canvas.getByRole("list", { name: "Guppies rules" })).toBeVisible();
+    await expect(canvas.getByRole("list", { name: "Guppies notes" })).toBeVisible();
     await expect(canvas.getByRole("table", { name: "Fixed costs" })).toHaveTextContent("Tent rental");
     await expect(canvas.getByRole("row", { name: /Camp setup/ })).toHaveTextContent("40");
   },
@@ -117,7 +117,7 @@ export const Doublehanded: Story = {
     children: (
       <ProgramAreaReport
         area="Doublehanded"
-        rules={doublehandedRules}
+        notes={doublehandedNotes}
         warnings={warnings.filter((w) => w.area === "doublehanded")}
         statement={doublehandedStatement}
         total={doublehandedTotal}
@@ -143,7 +143,7 @@ export const FundraisingAndCapital: Story = {
 };
 
 export const Assumptions: Story = {
-  args: { current: "rates", children: <RatesReport assumptions={reportAssumptions} rules={assumptionsRules} /> },
+  args: { current: "rates", children: <RatesReport assumptions={reportAssumptions} notes={assumptionsNotes} /> },
 };
 
 export const Draft: Story = { args: { ...Overview.args, name: "Two more coaches", status: "draft" } };

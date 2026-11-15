@@ -16,18 +16,18 @@ const campDays = (club: Club) =>
 /** The Financial Plans a scenario made, by name. */
 const named = new Map<string, string>();
 
-/** A Financial Plan holding a copy of the Operations Plan and of Youth Racing's plan, and those copies. */
-async function plansWithCopies(club: Club): Promise<{ operations: string; youth: string }> {
+/** A draft Financial Plan named `name`, holding an Operations Plan and Youth Racing's plan. */
+async function draftWithPlans(club: Club, name: string): Promise<{ set: string; operations: string; youth: string }> {
   await club.setUp();
-  return { operations: await club.copy(club.operationsPlan!), youth: await club.copy(club.areaPlan!) };
+  const set = await club.financialPlan(name);
+  return { set, operations: await club.plan(set, null), youth: await club.plan(set, club.areaId!) };
 }
 
-/** A saved Financial Plan named `name`, whose Youth Racing camp takes in $10,000 and spends `costs`. */
-async function savedBudget(club: Club, name: string, note: string | null = null, costs = 500_000): Promise<string> {
-  const { operations, youth } = await plansWithCopies(club);
+/** A frozen Financial Plan named `name`, whose Youth Racing camp takes in $10,000 and spends `costs`. */
+async function frozenBudget(club: Club, name: string, note: string | null = null, costs = 500_000): Promise<string> {
+  const { set, youth } = await draftWithPlans(club, name);
   await club.offering(youth, OFFERING, 10, 100_000, costs);
-  const set = await club.financialPlan(name, [operations, youth]);
-  await club.save(set, note);
+  await club.freeze(set, note);
   named.set(name, set);
   return set;
 }
@@ -46,7 +46,7 @@ async function openPlanning(page: Page, club: Club): Promise<void> {
   await page.getByRole("option", { name: String(club.year), exact: true }).click();
 }
 
-/** A plan's details on Planning: when it was saved, what it started from, and its note. */
+/** A plan's details on Planning: when it was frozen, what it started from, and its note. */
 async function details(page: Page, name: string) {
   await page.getByRole("button", { name: `About ${name}` }).click();
   return page.getByRole("dialog", { name: `About ${name}` });
@@ -58,7 +58,7 @@ Given(
   async ({ club }, name: string, note: string) => {
     named.clear();
     club.ownYear();
-    await savedBudget(club, name, note);
+    await frozenBudget(club, name, note);
   },
 );
 
@@ -99,11 +99,10 @@ Given(
   async ({ club }) => {
     named.clear();
     club.ownYear();
-    const { operations, youth } = await plansWithCopies(club);
+    const { set, operations, youth } = await draftWithPlans(club, "Budget");
     await club.offering(youth, OFFERING, 10, 100_000, 500_000);
     await club.donations(operations, 200_000);
-    const set = await club.financialPlan("Budget", [operations, youth]);
-    await club.save(set);
+    await club.freeze(set);
     named.set("Budget", set);
   },
 );
@@ -118,7 +117,7 @@ Then("{string} shows revenue of $10,000, expenses of $5,000, and net of $5,000",
 Given("a frozen Financial Plan for 2027 named {string}", async ({ club }, name: string) => {
   named.clear();
   club.ownYear();
-  await savedBudget(club, name);
+  await frozenBudget(club, name);
 });
 
 // A Financial Plan's Overview.
@@ -126,11 +125,11 @@ Given(
   "a frozen Financial Plan with an Operations Plan, and Program Plans for Youth Racing and Adult Sailing",
   async ({ club }) => {
     named.clear();
-    const { operations, youth } = await plansWithCopies(club);
+    const { set, youth } = await draftWithPlans(club, "Budget");
     await club.offering(youth, OFFERING, 10, 100_000, 500_000);
-    const adult = await club.copy(await club.anotherArea("Adult Sailing"));
-    opened.set = await club.financialPlan("Budget", [operations, youth, adult]);
-    await club.save(opened.set);
+    await club.plan(set, await club.anotherArea("Adult Sailing"));
+    opened.set = set;
+    await club.freeze(opened.set);
   },
 );
 
@@ -178,19 +177,19 @@ Then(
 // A program area's report.
 /** A Financial Plan whose camp has a coach at $30 an hour on ten 10-hour practices, and shares $1,000 of office costs. */
 async function coachedCamp(club: Club): Promise<string> {
-  const { operations, youth } = await plansWithCopies(club);
+  const { set, operations, youth } = await draftWithPlans(club, "Budget");
   const level = await club.coachRate(operations, 3_000);
   await club.office(operations, 100_000);
   const camp = await club.offering(youth, OFFERING, 10, 100_000);
   await club.practices(youth, camp["id"] as string, campDays(club), "08:00:00", "18:00:00", level);
-  return club.financialPlan("Budget", [operations, youth]);
+  return set;
 }
 
 Given(
   "a frozen Financial Plan whose Youth Racing offering took in $10,000, paid $3,000 of coaches' wages, and paid $1,000 of shared costs",
   async ({ club }) => {
     opened.set = await coachedCamp(club);
-    await club.save(opened.set);
+    await club.freeze(opened.set);
   },
 );
 
@@ -209,13 +208,13 @@ Given("its only Program Plan has an offering with a coach on every practice, 100
 Given(
   "a frozen Financial Plan whose Youth Racing makes $20,000 in {string} and loses $5,000 in {string}",
   async ({ club }, summer: string, fall: string) => {
-    const { operations, youth } = await plansWithCopies(club);
+    const { set, operations, youth } = await draftWithPlans(club, "Budget");
     const inSummer = await club.term(operations, summer, "07-01", "08-31");
     const inFall = await club.term(operations, fall, "09-01", "11-30");
     await club.offering(youth, `${OFFERING} summer`, 1, 2_000_000, 0, { term_key: inSummer });
     await club.offering(youth, `${OFFERING} fall`, 1, 0, 500_000, { term_key: inFall });
-    opened.set = await club.financialPlan("Budget", [operations, youth]);
-    await club.save(opened.set);
+    opened.set = set;
+    await club.freeze(opened.set);
   },
 );
 
@@ -247,11 +246,11 @@ Then("its program shows a net of $20,000 in {string}", async ({ page, club }, te
 });
 
 When(/^I open Youth Racing's report in (?:that Financial Plan|the draft)$/, async ({ page, club }) => {
-  await page.goto(`${await app()}/plans/financial/${opened.set}/${club.areaPlan}`);
+  await page.goto(`${await app()}/plans/financial/${opened.set}/${club.areaId}`);
 });
 
 When("I open Youth Racing's report in {string}", async ({ page, club }, name: string) => {
-  await page.goto(`${await app()}/plans/financial/${named.get(name)}/${club.areaPlan}`);
+  await page.goto(`${await app()}/plans/financial/${named.get(name)}/${club.areaId}`);
 });
 
 const statementRow = (page: Page, name: RegExp) =>
@@ -282,36 +281,35 @@ Then("it shows the $1,000 of the office", async ({ page }) => {
   await expect(statementRow(page, /^Office/)).toContainText("$1,000");
 });
 
-// A saved Financial Plan keeps its P&L.
+// A frozen Financial Plan keeps its P&L.
 Given(
   "a frozen Financial Plan named {string} whose Youth Racing offering paid $1,000 of office costs",
   async ({ club }, name: string) => {
     named.clear();
-    const { operations, youth } = await plansWithCopies(club);
+    const { set, operations, youth } = await draftWithPlans(club, name);
     await club.office(operations, 100_000);
     await club.offering(youth, OFFERING, 10, 100_000, 500_000);
-    const set = await club.financialPlan(name, [operations, youth]);
-    await club.save(set);
+    await club.freeze(set);
     named.set(name, set);
   },
 );
 
 Given("a Financial Plan started from {string} with $2,000 of office costs", async ({ club }, name: string) => {
-  const { set, copies } = await club.startFrom(named.get(name)!, `After ${name}`);
-  await club.setLine(copies.get(club.operationsPlan!)!, "Office rent", 200_000);
-  await club.save(set);
+  const { set, plans } = await club.startFrom(named.get(name)!, `After ${name}`);
+  await club.setLine(plans.get("operations")!, "Office rent", 200_000);
+  await club.freeze(set);
 });
 
 // A draft's P&L.
-/** The draft's offering and copies, for a planner's AI to change. */
+/** The draft's offering and plans, for a planner's AI to change. */
 let draft: { offering: string; operations: string; youth: string } | undefined;
 
 Given(
   "a draft Financial Plan whose Youth Racing plan has one offering of 10 sailors at $1,000 each",
   async ({ club }) => {
-    const { operations, youth } = await plansWithCopies(club);
+    const { set, operations, youth } = await draftWithPlans(club, "Two coaches");
     draft = { offering: (await club.offering(youth, OFFERING, 10, 100_000))["id"] as string, operations, youth };
-    opened.set = await club.financialPlan("Two coaches", [operations, youth]);
+    opened.set = set;
   },
 );
 
@@ -325,12 +323,12 @@ Then("it shows $12,000 of revenue, without my reloading the page", async ({ page
   await expect(statementRow(page, /Total revenue/)).toContainText("$12,000");
 });
 
-// A program area's settings, rules and offerings.
+// A program area's settings, notes and offerings.
 Given(
-  "its program is led by a Lead coach, at {int} sailors per coach, with the rule {string}",
-  async ({ club }, sailors: number, rule: string) => {
+  "its program is led by a Lead coach, at {int} sailors per coach, with the note {string}",
+  async ({ club }, sailors: number, note: string) => {
     const level = await club.coachRate(draft!.operations, 3_000, "Lead coach");
-    await club.program(draft!.youth, level, sailors, rule);
+    await club.program(draft!.youth, level, sailors, [note]);
   },
 );
 
@@ -372,31 +370,31 @@ Then("its offering's enrollment shows a target of 10 sailors, and its fees a fee
 });
 
 Then(
-  "its assumptions show the program's Lead coach, {int} sailors per coach, and the rule {string}",
-  async ({ page }, sailors: number, rule: string) => {
+  "its assumptions show the program's Lead coach, {int} sailors per coach, and the note {string}",
+  async ({ page }, sailors: number, note: string) => {
     await page.locator("summary", { hasText: "Assumptions" }).click();
     const program = page.getByRole("region", { name: /Beginner camp/ });
     await expect(program).toContainText("Lead coach");
     await expect(program).toContainText(String(sailors));
-    await expect(program.getByRole("listitem")).toHaveText(rule);
+    await expect(program.getByRole("listitem")).toHaveText(note);
   },
 );
 
 // Assumptions.
-Given("the Operations Plan's rule {string}", async ({ club }, rule: string) => {
-  const members: { version_id: string; plan_id: string }[] = await asAdmin(
+Given("the Operations Plan's note {string}", async ({ club }, note: string) => {
+  const [operations]: { id: string }[] = await asAdmin(
     "GET",
-    `/items/version_set_members?filter[version_set_id][_eq]=${opened.set}&fields=version_id,plan_id`,
+    `/items/plans?filter[financial_plan_id][_eq]=${opened.set}&filter[kind][_eq]=operations&fields=id`,
   );
-  await club.rules(members.find((m) => m.plan_id === club.operationsPlan)!.version_id, rule);
+  await club.notes(operations!.id, [note]);
 });
 
 When("I open the draft's Assumptions", async ({ page }) => {
   await page.goto(`${await app()}/plans/financial/${opened.set}/rates`);
 });
 
-Then("I see the rule {string}", async ({ page }, rule: string) => {
-  await expect(page.getByRole("list", { name: "Rules" }).getByRole("listitem")).toHaveText(rule);
+Then("I see the note {string}", async ({ page }, note: string) => {
+  await expect(page.getByRole("list", { name: "Notes" }).getByRole("listitem")).toHaveText(note);
 });
 
 Then("I see the coach's pay of $30.00 an hour", async ({ page, club }) => {
@@ -408,11 +406,11 @@ Then("I see the coach's pay of $30.00 an hour", async ({ page, club }) => {
 // Warnings. A warning is found by the closed day's name, which the test sets, so platform can reword the rest.
 const CLOSED_DAY = "the Fourth of July, observed";
 Given("a draft with a practice on a closed day", async ({ club }) => {
-  const { operations, youth } = await plansWithCopies(club);
+  const { set, operations, youth } = await draftWithPlans(club, "Two coaches");
   await club.closed(operations, campDays(club)[0]!, CLOSED_DAY);
   const camp = await club.offering(youth, OFFERING, 10, 100_000);
   await club.practices(youth, camp["id"] as string, [campDays(club)[0]!]);
-  opened.set = await club.financialPlan("Two coaches", [operations, youth]);
+  opened.set = set;
 });
 
 When("I open its warnings", async ({ page }) => {
@@ -440,8 +438,7 @@ Then("no plan, version, or amount appears", async ({ page }) => {
 Given("a draft Financial Plan named {string}", async ({ club }, name: string) => {
   named.clear();
   club.ownYear();
-  const { operations, youth } = await plansWithCopies(club);
-  named.set(name, await club.financialPlan(name, [operations, youth]));
+  named.set(name, (await draftWithPlans(club, name)).set);
 });
 
 When(/^I open "([^"]+)"$/, async ({ page }, name: string) => {

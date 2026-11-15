@@ -1,24 +1,24 @@
 import type { Pnl } from "@cyc-seattle/platform/planning";
 import { formatDay } from "./dates.ts";
 
-/** A Financial Plan: the organization's plan for a year, a draft or saved. */
+/** A Financial Plan: the organization's plan for a year, a draft or frozen. */
 export interface FinancialPlanSummary {
   id: string;
   organization_id: string;
   fiscal_year: number;
   name: string;
-  /** Its note, a one-line comment such as "Reviewed with the board". */
-  message: string | null;
-  /** A draft's plans change; a saved one's never do, though its name, note, and active date can. */
-  status: "draft" | "saved";
+  /** Its note, a one-line comment such as "Reviewed with the board": at most 280 characters, inline markdown. */
+  note: string | null;
+  /** A draft's plans change; a frozen one's never do, though its name, note, and active date can. */
+  status: "draft" | "frozen";
   /**
    * The day a Plan Admin made it active from, or none. The plan in force on a day is the one for its year with
    * the latest date on or before it (cyc-seattle/platform#251). A draft can be active.
    */
   effective_from: string | null;
-  saved_at: string | null;
-  saved_by: string | null;
-  /** The `@cyc-seattle/platform` version that worked out its results when it was saved, such as "1.38.1+engine.<hash>". */
+  frozen_at: string | null;
+  frozen_by: string | null;
+  /** The `@cyc-seattle/platform` version that worked out its results when it was frozen, such as "1.38.1+engine.<hash>". */
   platform_version: string | null;
   /** The Financial Plan it started as a copy of. */
   parent: { id: string; name: string } | null;
@@ -26,8 +26,8 @@ export interface FinancialPlanSummary {
   archived_at: string | null;
 }
 
-/** Whether it's saved, and so never changes. */
-export const isSaved = (set: Pick<FinancialPlanSummary, "status">) => set.status === "saved";
+/** Whether it's frozen, and so never changes. */
+export const isFrozen = (set: Pick<FinancialPlanSummary, "status">) => set.status === "frozen";
 
 /** When a Financial Plan is in force: now, from a later date, or over a span that's past. */
 export interface InForce {
@@ -85,9 +85,9 @@ export function inForce(sets: Dated[], day: string): Map<string, InForce> {
   return result;
 }
 
-/** The package version a saved plan was worked out with, without the engine's hash: "1.38.1" from "1.38.1+engine.<hash>". */
+/** The package version a frozen plan was worked out with, without the engine's hash: "1.38.1" from "1.38.1+engine.<hash>". */
 export const platformRelease = (set: Pick<FinancialPlanSummary, "status" | "platform_version">) =>
-  isSaved(set) && set.platform_version ? set.platform_version.split("+engine.")[0]! : null;
+  isFrozen(set) && set.platform_version ? set.platform_version.split("+engine.")[0]! : null;
 
 /** A Financial Plan as the Planning page lists it, with its totals once platform has worked them out. */
 export interface ListedPlan {
@@ -97,14 +97,14 @@ export interface ListedPlan {
   status: FinancialPlanSummary["status"];
   /** When it's in force, or null when it's never been made active. */
   in_force: InForce | null;
-  saved_at: string | null;
-  /** Who saved it, by name. Null when the person looking can't read it. */
-  saved_by: string | null;
+  frozen_at: string | null;
+  /** Who froze it, by name. Null when the person looking can't read it. */
+  frozen_by: string | null;
   parent: { id: string; name: string } | null;
   archived: boolean;
   /** Its note, a one-line comment such as "Reviewed with the board". */
   note: string | null;
-  /** The platform package's version that worked out a saved plan's results, such as "1.38.1". Null for a draft. */
+  /** The platform package's version that worked out a frozen plan's results, such as "1.38.1". Null for a draft. */
   platform: string | null;
   warnings: number;
   /** Null until platform has worked them out. Operating only, leaving out fundraising and capital. */
@@ -127,19 +127,18 @@ export interface Totals {
   total_cents: number;
 }
 
-/** One plan in a Financial Plan, with the copy of it the Financial Plan holds. */
-export interface Member {
+/** One plan in a Financial Plan: its Operations Plan, or a program area's Program Plan. */
+export interface Plan {
   id: string;
-  plan_id: string;
-  version_id: string;
-  plan_name: string;
   kind: "program_area" | "operations";
   program_area_id: string | null;
   area_name: string | null;
+  /** Short notes for the planning agent, each in inline markdown. */
+  notes: string[] | null;
 }
 
 /**
- * One cost or revenue line, with its plain name, its account, whether that account is revenue, and the member it's
+ * One cost or revenue line, with its plain name, its account, whether that account is revenue, and the plan it's
  * charged in.
  */
 export interface PlanLine {
@@ -159,7 +158,7 @@ export interface PlanLine {
   function: "program" | "management" | "fundraising" | null;
   /** How the engine worked it out, such as "Guppies: hours × Level 1 Instructor's rate". */
   explanation: string | null;
-  member: string | null;
+  plan: string | null;
 }
 
 /** The term a row is for, as it was when platform worked the row out. All null for offerings in no term. */
@@ -172,7 +171,7 @@ export interface ResultTerm {
 }
 
 /**
- * One offering's, product's, or program area's P&L, with the member it's charged in. A `program_area_term` row is an
+ * One offering's, product's, or program area's P&L, with the plan it's charged in. A `program_area_term` row is an
  * area's offerings in one term, or in none.
  */
 export interface PnlRow extends ResultTerm {
@@ -188,7 +187,7 @@ export interface PnlRow extends ResultTerm {
   allocation_holds: number | null;
   /** The fewest sailors at which an offering pays for itself. Null when it doesn't even when full. */
   breakeven_enrollment: number | null;
-  member: string | null;
+  plan: string | null;
 }
 
 /** One of the engine's warnings, about a plan and a date when it names them. */
@@ -197,11 +196,11 @@ export interface ResultWarning {
   message: string;
   /** Allocation: the blocks break a limit, or run on a closed day. Data: a row is missing or wrong. */
   category: "allocation" | "data" | null;
-  member: string | null;
+  plan: string | null;
   date: string | null;
 }
 
-/** A Financial Plan's P&L, as platform last worked it out: for a draft, after its latest change; for a saved one, once. */
+/** A Financial Plan's P&L, as platform last worked it out: for a draft, after its latest change; for a frozen one, once. */
 /** One planned capital purchase, in the order platform ranks them, with how far the year's money goes. */
 export interface CapitalResult {
   rank: number;
@@ -231,7 +230,7 @@ export const stuckAfterMs = 30_000;
 /**
  * How often to read a Financial Plan again, in milliseconds, or false not to. Platform works out a draft's numbers
  * about a second after each change, wherever it's made, so a draft is read again every few seconds, and one whose
- * numbers are missing sooner, until they arrive. A saved one's numbers never change once they're in.
+ * numbers are missing sooner, until they arrive. A frozen one's numbers never change once they're in.
  */
 export function refreshEvery(
   plan: { set: Pick<FinancialPlanSummary, "status">; results: Results | null } | null | undefined,
@@ -243,5 +242,5 @@ export function refreshEvery(
   if (!plan.results) {
     return stuck ? 5_000 : 2_000;
   }
-  return isSaved(plan.set) ? false : 5_000;
+  return isFrozen(plan.set) ? false : 5_000;
 }
