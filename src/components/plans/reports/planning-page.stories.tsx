@@ -103,12 +103,20 @@ export const Note: Story = {
   },
 };
 
-/** A frozen plan's details say when and by whom it was frozen, and which platform version worked it out. */
+/** A frozen plan's details say when and by whom it was frozen, and which release calculated it. */
 export const FrozenPlansDetails: Story = {
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "About Board review" }));
-    await waitFor(async () => expect(await screen.findByText("Platform 1.36.0")).toBeVisible());
+    await waitFor(async () => expect(await screen.findByText("Calculated with 1.36.0")).toBeVisible());
     await expect(screen.getByText(/Frozen .* by Sam Halyard/)).toBeVisible();
+  },
+};
+
+/** A draft's details say which release calculated it too. */
+export const DraftPlansDetails: Story = {
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "About Fall re-plan" }));
+    await waitFor(async () => expect(await screen.findByText("Calculated with 1.39.0")).toBeVisible());
   },
 };
 
