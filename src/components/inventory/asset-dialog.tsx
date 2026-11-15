@@ -48,7 +48,9 @@ export function AssetDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto">
         {/* Remounted on each open, so it starts from the asset as it is now. */}
-        {open && <AssetForm asset={asset} classes={classes} areas={areas} onSave={onSave} onDone={() => onOpenChange(false)} />}
+        {open && (
+          <AssetForm asset={asset} classes={classes} areas={areas} onSave={onSave} onDone={() => onOpenChange(false)} />
+        )}
       </DialogContent>
     </Dialog>
   );

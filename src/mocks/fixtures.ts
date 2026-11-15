@@ -71,6 +71,7 @@ export const plannerPermissions: Permissions = {
   assets: write(),
   boats: write(),
   boat_classes: write(),
+  storage_areas: write(),
   accounts: read("full"),
   program_areas: read("full"),
   products: read("full"),
@@ -87,5 +88,6 @@ export const catalogReaderPermissions: Permissions = {
   assets: read("full"),
   boats: read("full"),
   boat_classes: read("full"),
+  storage_areas: read("full"),
   accounts: read("full"),
 };

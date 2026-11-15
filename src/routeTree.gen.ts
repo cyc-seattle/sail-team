@@ -18,6 +18,7 @@ import { Route as CatalogOfferingsRouteImport } from './routes/catalog/offerings
 import { Route as CatalogQualificationsRouteImport } from './routes/catalog/qualifications'
 import { Route as InventoryIndexRouteImport } from './routes/inventory/index'
 import { Route as InventoryClassesRouteImport } from './routes/inventory/classes'
+import { Route as InventoryStorageRouteImport } from './routes/inventory/storage'
 import { Route as PlansIndexRouteImport } from './routes/plans/index'
 import { Route as RosterIndexRouteImport } from './routes/roster/index'
 import { Route as RosterTeamIdRouteImport } from './routes/roster/$teamId'
@@ -72,6 +73,11 @@ const InventoryClassesRoute = InventoryClassesRouteImport.update({
   path: '/inventory/classes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InventoryStorageRoute = InventoryStorageRouteImport.update({
+  id: '/inventory/storage',
+  path: '/inventory/storage',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlansIndexRoute = PlansIndexRouteImport.update({
   id: '/plans/',
   path: '/plans/',
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/catalog/offerings': typeof CatalogOfferingsRoute
   '/catalog/qualifications': typeof CatalogQualificationsRoute
   '/inventory/classes': typeof InventoryClassesRoute
+  '/inventory/storage': typeof InventoryStorageRoute
   '/roster/$teamId': typeof RosterTeamIdRoute
   '/catalog/': typeof CatalogIndexRoute
   '/inventory/': typeof InventoryIndexRoute
@@ -142,6 +149,7 @@ export interface FileRoutesByTo {
   '/catalog/offerings': typeof CatalogOfferingsRoute
   '/catalog/qualifications': typeof CatalogQualificationsRoute
   '/inventory/classes': typeof InventoryClassesRoute
+  '/inventory/storage': typeof InventoryStorageRoute
   '/roster/$teamId': typeof RosterTeamIdRoute
   '/catalog': typeof CatalogIndexRoute
   '/inventory': typeof InventoryIndexRoute
@@ -162,6 +170,7 @@ export interface FileRoutesById {
   '/catalog/offerings': typeof CatalogOfferingsRoute
   '/catalog/qualifications': typeof CatalogQualificationsRoute
   '/inventory/classes': typeof InventoryClassesRoute
+  '/inventory/storage': typeof InventoryStorageRoute
   '/roster/$teamId': typeof RosterTeamIdRoute
   '/catalog/': typeof CatalogIndexRoute
   '/inventory/': typeof InventoryIndexRoute
@@ -183,6 +192,7 @@ export interface FileRouteTypes {
     | '/catalog/offerings'
     | '/catalog/qualifications'
     | '/inventory/classes'
+    | '/inventory/storage'
     | '/roster/$teamId'
     | '/catalog/'
     | '/inventory/'
@@ -202,6 +212,7 @@ export interface FileRouteTypes {
     | '/catalog/offerings'
     | '/catalog/qualifications'
     | '/inventory/classes'
+    | '/inventory/storage'
     | '/roster/$teamId'
     | '/catalog'
     | '/inventory'
@@ -221,6 +232,7 @@ export interface FileRouteTypes {
     | '/catalog/offerings'
     | '/catalog/qualifications'
     | '/inventory/classes'
+    | '/inventory/storage'
     | '/roster/$teamId'
     | '/catalog/'
     | '/inventory/'
@@ -241,6 +253,7 @@ export interface RootRouteChildren {
   CatalogOfferingsRoute: typeof CatalogOfferingsRoute
   CatalogQualificationsRoute: typeof CatalogQualificationsRoute
   InventoryClassesRoute: typeof InventoryClassesRoute
+  InventoryStorageRoute: typeof InventoryStorageRoute
   RosterTeamIdRoute: typeof RosterTeamIdRoute
   CatalogIndexRoute: typeof CatalogIndexRoute
   InventoryIndexRoute: typeof InventoryIndexRoute
@@ -318,6 +331,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InventoryClassesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/inventory/storage': {
+      id: '/inventory/storage'
+      path: '/inventory/storage'
+      fullPath: '/inventory/storage'
+      preLoaderRoute: typeof InventoryStorageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/plans/': {
       id: '/plans/'
       path: '/plans'
@@ -385,6 +405,7 @@ const rootRouteChildren: RootRouteChildren = {
   CatalogOfferingsRoute: CatalogOfferingsRoute,
   CatalogQualificationsRoute: CatalogQualificationsRoute,
   InventoryClassesRoute: InventoryClassesRoute,
+  InventoryStorageRoute: InventoryStorageRoute,
   RosterTeamIdRoute: RosterTeamIdRoute,
   CatalogIndexRoute: CatalogIndexRoute,
   InventoryIndexRoute: InventoryIndexRoute,

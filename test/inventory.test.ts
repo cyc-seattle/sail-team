@@ -6,6 +6,7 @@ import {
   inService,
   parseDollars,
   sortAssets,
+  storageByArea,
   type Asset,
   type BoatClass,
 } from "../src/model/inventory.ts";
@@ -108,5 +109,40 @@ describe("parseDollars", () => {
     expect(dollarsText(90_000)).toBe("900");
     expect(dollarsText(125_050)).toBe("1250.50");
     expect(dollarsText(null)).toBe("");
+  });
+});
+
+describe("storageByArea", () => {
+  const docks = { id: "docks", name: "Docks", area_sq_ft: 1000, note: null, sort: 1 };
+  const yard = { id: "yard", name: "Yard Arm", area_sq_ft: null, note: null, sort: 2 };
+
+  it("lists each area in order with its boats by class and their area, then other assets, then what has no location", () => {
+    const groups = storageByArea(
+      [
+        asset("1", { boat: boat("opti", "1"), location_id: "docks" }),
+        asset("2", { boat: boat("opti", "2"), location_id: "docks" }),
+        asset("3", { kind: "powerboat", boat: boat("rib"), location_id: "docks" }),
+        asset("4", { kind: "motor", location_id: "docks" }),
+        asset("5", { boat: boat("opti", "5"), disposed_on: "2026-01-01", location_id: "docks" }),
+        asset("6", { kind: "other" }),
+      ],
+      classes,
+      [yard, docks],
+      "2026-06-01",
+    );
+    expect(groups).toEqual([
+      {
+        area: docks,
+        lines: [
+          { key: "opti", label: "Opti", count: 2, sq_ft: 80 },
+          { key: "rib", label: "RIB", count: 1, sq_ft: null },
+          { key: "motor", label: "Motors", count: 1, sq_ft: null },
+        ],
+        used_sq_ft: 80,
+        unmeasured: ["RIB"],
+      },
+      { area: yard, lines: [], used_sq_ft: 0, unmeasured: [] },
+      { area: null, lines: [{ key: "other", label: "Other", count: 1, sq_ft: null }], used_sq_ft: 0, unmeasured: [] },
+    ]);
   });
 });

@@ -165,18 +165,21 @@ export function storageByArea(
     const boatLines = sortClasses(classes)
       .map((c): StorageLine => {
         const count = here.filter((a) => a.boat?.boat_class_id === c.id).length;
-        return { key: c.id, label: c.name, count, sq_ft: c.footprint_sq_ft === null ? null : count * c.footprint_sq_ft };
+        return {
+          key: c.id,
+          label: c.name,
+          count,
+          sq_ft: c.footprint_sq_ft === null ? null : count * c.footprint_sq_ft,
+        };
       })
       .filter((l) => l.count > 0);
     const otherLines = assetKinds
-      .map(
-        (k): StorageLine => ({
-          key: k.kind,
-          label: k.plural,
-          count: here.filter((a) => a.kind === k.kind && !a.boat?.boat_class_id).length,
-          sq_ft: null,
-        }),
-      )
+      .map((k): StorageLine => ({
+        key: k.kind,
+        label: k.plural,
+        count: here.filter((a) => a.kind === k.kind && !a.boat?.boat_class_id).length,
+        sq_ft: null,
+      }))
       .filter((l) => l.count > 0);
     return {
       area,

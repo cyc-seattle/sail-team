@@ -120,7 +120,9 @@ const areaRow = ({ area_sq_ft, ...input }: StorageAreaInput) => ({
 
 /** A new storage area, last in the order. */
 export async function createStorageArea(input: StorageAreaInput): Promise<void> {
-  await client().request(customEndpoint({ path: "/items/storage_areas", method: "POST", body: JSON.stringify(areaRow(input)) }));
+  await client().request(
+    customEndpoint({ path: "/items/storage_areas", method: "POST", body: JSON.stringify(areaRow(input)) }),
+  );
 }
 
 export async function updateStorageArea(id: string, input: StorageAreaInput): Promise<void> {
