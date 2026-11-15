@@ -146,7 +146,7 @@ point `PLAYWRIGHT_BROWSERS_PATH` at a matching set of browsers in a git-ignored 
 domain. The image is Caddy serving `dist/` (`Dockerfile`, `Caddyfile`), with a content security
 policy that lets the page call only itself and Directus.
 
-- There's no merge queue. A PR's push runs only CI, and once CI passes a maintainer merges it, squashed.
+- A PR's push runs only CI, and once CI passes a maintainer merges it, squashed.
   Contributors push branches and open PRs; only maintainers merge. A push to `main` deploys it to dev, at
   `https://dev.cycsail.team/plans`, previews prod, and applies prod once a maintainer approves. Prod runs the image dev
   built for the same commit. All of it goes through the org's `deploy.yml` (`.github/workflows/pull-request.yml`).
