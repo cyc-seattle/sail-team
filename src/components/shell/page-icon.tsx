@@ -4,6 +4,7 @@ import {
   ContactIcon,
   HouseIcon,
   LinkIcon,
+  PackageIcon,
   UsersIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -11,6 +12,7 @@ import {
 const icons: Record<string, LucideIcon> = {
   "/": HouseIcon,
   "/plans": ChartColumnIcon,
+  "/inventory": PackageIcon,
   "/roster": UsersIcon,
   "/household": ContactIcon,
   "/links": LinkIcon,

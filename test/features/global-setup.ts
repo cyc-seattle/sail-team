@@ -1,4 +1,5 @@
 import { rm } from "node:fs/promises";
+import { cleanUpStaleFleets } from "./fleet";
 import { cleanUpStalePosts } from "./posts";
 import { authentikLock } from "./support";
 import { cleanUp, staleVisitors } from "./visitors";
@@ -10,4 +11,5 @@ export default async function globalSetup() {
     await cleanUp(email);
   }
   await cleanUpStalePosts();
+  await cleanUpStaleFleets();
 }

@@ -68,4 +68,17 @@ export const plannerPermissions: Permissions = {
   ...teamPermissions,
   plans: read("full"),
   financial_plans: write(),
+  plan_boat_rates: read("full"),
+  assets: write(),
+  boats: write(),
+  boat_classes: write(),
+  accounts: read("full"),
+};
+
+/** A Catalog Reader, who reads the inventory but changes none of it, and reads no plans. */
+export const catalogReaderPermissions: Permissions = {
+  assets: read("full"),
+  boats: read("full"),
+  boat_classes: read("full"),
+  accounts: read("full"),
 };
