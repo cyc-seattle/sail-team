@@ -1,0 +1,40 @@
+name: integration
+
+# Runs the journeys against dev after each of main's dev deploys, and skips itself when dev holds
+# nothing it hasn't tested (cyc-seattle/platform#280). Its issue is the nightly's own, so a green
+# run here never closes one a failed night opened.
+on:
+  workflow_dispatch:
+
+# One run at a time, and at most one waiting. A newer run replaces one that's waiting.
+concurrency:
+  group: integration
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  dev:
+    uses: cyc-seattle/.github/.github/workflows/deploy.yml@v3.4.0
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      environment: dev
+      task: none
+      integration: true
+  report:
+    needs: dev
+    if: always() && needs.dev.outputs.skipped != 'true'
+    uses: cyc-seattle/.github/.github/workflows/nightly-report.yml@v3.4.0
+    permissions:
+      actions: read
+      contents: read
+      issues: write
+    with:
+      result: ${{ needs.dev.result }}
+      assignee: ungood
+      title: Integration tests failed on dev
+      tested: ${{ needs.dev.outputs.tested }}
+      passed: ${{ needs.dev.outputs.passed }}
