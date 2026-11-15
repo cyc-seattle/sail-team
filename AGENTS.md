@@ -91,6 +91,11 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   from a date. A club plan's
   old address, `/plans/club/<set>`, sends people to its
   Financial Plan.
+- `src/directus/inventory.ts` reads and writes Inventory: `assets`, each with its `boats` row when it's a sailboat or
+  powerboat, and `boat_classes`. `/inventory` lists every asset by kind, and `/inventory/classes` each boat class with
+  how many boats CSC has today. A Catalog Writer adds and edits them in the app; an asset that leaves is disposed of
+  (`disposed_on`), and Bring back clears it. An asset and its boat details are written in one request, so they never
+  disagree. Boat rates belong to each plan, on its Assumptions, not here. Anyone who reads `assets` sees Inventory.
 - `src/directus/announcements.ts` reads `announcements`, which everyone who signs in reads: a title, a Markdown body,
   drawn without its raw HTML, and the day it was posted (`published_on`). The
   [`weekly-announcement`](.agents/skills/weekly-announcement/SKILL.md) skill writes the week's roundup.

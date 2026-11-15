@@ -5,7 +5,7 @@ import { InventoryPage } from "./inventory-page";
 
 const meta = {
   component: InventoryPage,
-  decorators: [withRouter("/inventory", ["/inventory", "/inventory/classes", "/inventory/storage"])],
+  decorators: [withRouter("/inventory", ["/inventory", "/inventory/classes"])],
   parameters: { layout: "fullscreen" },
   args: { current: "assets", children: <p>The page.</p> },
 } satisfies Meta<typeof InventoryPage>;
@@ -19,9 +19,9 @@ export const OnAssets: Story = {
 };
 
 export const OnAPhone: Story = {
-  args: { current: "storage" },
+  args: { current: "classes" },
   globals: { viewport: { value: "phone" } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("combobox", { name: "Inventory page" })).toHaveTextContent("Dry storage");
+    await expect(canvas.getByRole("combobox", { name: "Inventory page" })).toHaveTextContent("Boat classes");
   },
 };

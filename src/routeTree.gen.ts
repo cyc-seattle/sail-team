@@ -14,7 +14,6 @@ import { Route as HouseholdRouteImport } from './routes/household'
 import { Route as LinksRouteImport } from './routes/links'
 import { Route as InventoryIndexRouteImport } from './routes/inventory/index'
 import { Route as InventoryClassesRouteImport } from './routes/inventory/classes'
-import { Route as InventoryStorageRouteImport } from './routes/inventory/storage'
 import { Route as PlansIndexRouteImport } from './routes/plans/index'
 import { Route as RosterIndexRouteImport } from './routes/roster/index'
 import { Route as RosterTeamIdRouteImport } from './routes/roster/$teamId'
@@ -47,11 +46,6 @@ const InventoryIndexRoute = InventoryIndexRouteImport.update({
 const InventoryClassesRoute = InventoryClassesRouteImport.update({
   id: '/inventory/classes',
   path: '/inventory/classes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const InventoryStorageRoute = InventoryStorageRouteImport.update({
-  id: '/inventory/storage',
-  path: '/inventory/storage',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlansIndexRoute = PlansIndexRouteImport.update({
@@ -102,7 +96,6 @@ export interface FileRoutesByFullPath {
   '/household': typeof HouseholdRoute
   '/links': typeof LinksRoute
   '/inventory/classes': typeof InventoryClassesRoute
-  '/inventory/storage': typeof InventoryStorageRoute
   '/roster/$teamId': typeof RosterTeamIdRoute
   '/inventory/': typeof InventoryIndexRoute
   '/plans/': typeof PlansIndexRoute
@@ -118,7 +111,6 @@ export interface FileRoutesByTo {
   '/household': typeof HouseholdRoute
   '/links': typeof LinksRoute
   '/inventory/classes': typeof InventoryClassesRoute
-  '/inventory/storage': typeof InventoryStorageRoute
   '/roster/$teamId': typeof RosterTeamIdRoute
   '/inventory': typeof InventoryIndexRoute
   '/plans': typeof PlansIndexRoute
@@ -135,7 +127,6 @@ export interface FileRoutesById {
   '/household': typeof HouseholdRoute
   '/links': typeof LinksRoute
   '/inventory/classes': typeof InventoryClassesRoute
-  '/inventory/storage': typeof InventoryStorageRoute
   '/roster/$teamId': typeof RosterTeamIdRoute
   '/inventory/': typeof InventoryIndexRoute
   '/plans/': typeof PlansIndexRoute
@@ -153,7 +144,6 @@ export interface FileRouteTypes {
     | '/household'
     | '/links'
     | '/inventory/classes'
-    | '/inventory/storage'
     | '/roster/$teamId'
     | '/inventory/'
     | '/plans/'
@@ -169,7 +159,6 @@ export interface FileRouteTypes {
     | '/household'
     | '/links'
     | '/inventory/classes'
-    | '/inventory/storage'
     | '/roster/$teamId'
     | '/inventory'
     | '/plans'
@@ -185,7 +174,6 @@ export interface FileRouteTypes {
     | '/household'
     | '/links'
     | '/inventory/classes'
-    | '/inventory/storage'
     | '/roster/$teamId'
     | '/inventory/'
     | '/plans/'
@@ -202,7 +190,6 @@ export interface RootRouteChildren {
   HouseholdRoute: typeof HouseholdRoute
   LinksRoute: typeof LinksRoute
   InventoryClassesRoute: typeof InventoryClassesRoute
-  InventoryStorageRoute: typeof InventoryStorageRoute
   RosterTeamIdRoute: typeof RosterTeamIdRoute
   InventoryIndexRoute: typeof InventoryIndexRoute
   PlansIndexRoute: typeof PlansIndexRoute
@@ -249,13 +236,6 @@ declare module '@tanstack/react-router' {
       path: '/inventory/classes'
       fullPath: '/inventory/classes'
       preLoaderRoute: typeof InventoryClassesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/inventory/storage': {
-      id: '/inventory/storage'
-      path: '/inventory/storage'
-      fullPath: '/inventory/storage'
-      preLoaderRoute: typeof InventoryStorageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/plans/': {
@@ -322,7 +302,6 @@ const rootRouteChildren: RootRouteChildren = {
   HouseholdRoute: HouseholdRoute,
   LinksRoute: LinksRoute,
   InventoryClassesRoute: InventoryClassesRoute,
-  InventoryStorageRoute: InventoryStorageRoute,
   RosterTeamIdRoute: RosterTeamIdRoute,
   InventoryIndexRoute: InventoryIndexRoute,
   PlansIndexRoute: PlansIndexRoute,

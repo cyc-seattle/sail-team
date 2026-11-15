@@ -68,7 +68,6 @@ export const plannerPermissions: Permissions = {
   ...teamPermissions,
   plans: read("full"),
   financial_plans: write(),
-  plan_boat_rates: read("full"),
   assets: write(),
   boats: write(),
   boat_classes: write(),

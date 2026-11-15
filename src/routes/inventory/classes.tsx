@@ -1,10 +1,10 @@
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { BoatClassList } from "@/components/inventory/boat-class-list";
 import { InventoryPage } from "@/components/inventory/inventory-page";
 import { NoAccess } from "@/components/shell/no-access";
-import { canRead, canWrite } from "@/directus/access";
-import { activeRatesQuery, createBoatClass, inventoryQuery, updateBoatClass } from "@/directus/inventory";
+import { canWrite } from "@/directus/access";
+import { createBoatClass, inventoryQuery, updateBoatClass } from "@/directus/inventory";
 import { today } from "@/model/financial-plans";
 import { boatsInService } from "@/model/inventory";
 import { useInventoryAccess, useRefreshInventory } from "./-inventory";
@@ -22,8 +22,6 @@ function AllClasses() {
   const { permissions } = useInventoryAccess();
   const refresh = useRefreshInventory();
   const { data } = useSuspenseQuery(inventoryQuery);
-  const canReadRates = canRead(permissions, "plan_boat_rates");
-  const rates = useQuery({ ...activeRatesQuery, enabled: canReadRates });
   return (
     <InventoryPage current="classes">
       <BoatClassList
@@ -31,8 +29,6 @@ function AllClasses() {
         accounts={data.accounts}
         defaultAccountId={data.defaultAccountId}
         counts={boatsInService(data.assets, today())}
-        rates={rates.data ?? null}
-        canReadRates={canReadRates && rates.isSuccess}
         actions={{
           canCreate: canWrite(permissions, "boat_classes", "create"),
           canUpdate: canWrite(permissions, "boat_classes", "update"),

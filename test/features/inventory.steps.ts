@@ -17,8 +17,8 @@ Given("I'm a Catalog Reader", async ({ visitor }) => {
   await giveThroughGroup(visitor, "Catalog Reader");
 });
 
-Given("a boat class whose boats each take {int} square feet", async ({ fleet }, sqFt: number) => {
-  await fleet.boatClass(sqFt);
+Given("a boat class with no boats yet", async ({ fleet }) => {
+  await fleet.boatClass();
 });
 
 When("I open Inventory", async ({ page }) => {
@@ -43,10 +43,10 @@ Then("the asset list shows it under Sailboats", async ({ page, fleet }) => {
   await expect(table.getByRole("row").filter({ hasText: `${fleet.className} 77` })).toBeVisible();
 });
 
-Then("Dry storage counts {int} square feet for the class", async ({ page, fleet }, sqFt: number) => {
-  await page.getByRole("link", { name: "Dry storage" }).click();
-  const row = page.getByRole("table", { name: "Dry storage" }).getByRole("row").filter({ hasText: fleet.className });
-  await expect(row.getByRole("cell")).toHaveText([fleet.className, "1", String(sqFt), String(sqFt)]);
+Then("Boat classes counts {int} boat of that class", async ({ page, fleet }, boats: number) => {
+  await page.getByRole("link", { name: "Boat classes" }).click();
+  const row = page.getByRole("table", { name: "Boat classes" }).getByRole("row").filter({ hasText: fleet.className });
+  await expect(row.getByRole("cell").nth(5)).toHaveText(String(boats));
 });
 
 Then("I see the asset list", async ({ page }) => {
