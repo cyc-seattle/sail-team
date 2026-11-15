@@ -72,7 +72,7 @@ Feature: Seeing the Financial Plans
       Then it shows $3,000 of coaches' wages
       And it shows the $1,000 of the office
 
-  Rule: A program area's report shows its P&L for each term
+  Rule: A program area's budget shows revenue, expenses and net for each term, and each program within it
 
     Scenario: A term that loses money
       Given I'm a planner who can read plans
@@ -80,6 +80,7 @@ Feature: Seeing the Financial Plans
       And I've signed in
       When I open Youth Racing's report in that Financial Plan
       Then "Summer 2027" shows a net of $20,000, and "Fall 2027" a net of −$5,000
+      And its program shows a net of $20,000 in "Summer 2027"
 
   Rule: A frozen Financial Plan shows the P&L it was frozen with, and never recalculates it
 
@@ -101,15 +102,15 @@ Feature: Seeing the Financial Plans
       And a planner's AI raises the offering's price to $1,200
       Then it shows $12,000 of revenue, without my reloading the page
 
-  Rule: A program area's report shows its programs' settings and rules, and each offering's fee and sailors
+  Rule: A program area's report shows its programs' settings and rules, and each offering's enrollment and fees
 
-    Scenario: An offering's fee and sailors, and its program's settings
+    Scenario: An offering's target and fee, and its program's settings
       Given I'm a planner who can read plans
       And a draft Financial Plan whose Youth Racing plan has one offering of 10 sailors at $1,000 each
       And its program is led by a Lead coach, at 5 sailors per coach, with the rule "Sail in pairs"
       And I've signed in
       When I open Youth Racing's report in the draft
-      Then its offering shows a fee of $1,000 and 10 sailors
+      Then its offering's enrollment shows a target of 10 sailors, and its fees a fee of $1,000
       And its assumptions show the program's Lead coach, 5 sailors per coach, and the rule "Sail in pairs"
 
   Rule: Assumptions show the rules every program follows and the rates every plan uses
@@ -123,7 +124,7 @@ Feature: Seeing the Financial Plans
       Then I see the rule "No more than 4 RIBs on the water"
       And I see the coach's pay of $30.00 an hour
 
-  Rule: The Calendar shows each program area's offerings over the year, then a day's activity blocks at their times
+  Rule: A program area's calendar shows its offerings over the year, then a day's activity blocks at their times
 
     Scenario: A day's practice that differs from the others
       Given I'm a planner who can read plans
@@ -131,7 +132,6 @@ Feature: Seeing the Financial Plans
       And it practices each weekday morning for two weeks with a Lead coach, but the last day has no coach yet
       And I've signed in
       When I open Youth Racing's report in the draft
-      And I see it on the calendar
       Then the calendar shows the offering's 10 sailors across both weeks
       When I open the practice on Jul 16
       Then it has no staff, coach boats or boats yet, where the other days have 1 Lead coach

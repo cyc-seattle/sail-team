@@ -1,15 +1,18 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, userEvent } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import {
+  closedDays,
   doublehandedOfferings,
+  doublehandedSchedule,
+  summerSchedule,
   doublehandedPrograms,
   doublehandedRules,
-  doublehandedTerms,
+  doublehandedTotal,
+  summerTotal,
   doublehandedStatement,
   summerOfferings,
   summerPrograms,
   summerRules,
-  summerTerms,
   doublehandedTrips,
   summerFixedCosts,
   summerStaffTime,
@@ -23,13 +26,14 @@ const meta = {
   component: ProgramAreaReport,
   decorators: [withRouter("/plans/financial/budget/doublehanded", ["/plans/financial/$setId/$planId"])],
   args: {
-    setId: "budget",
     areaKey: "doublehanded",
+    schedule: doublehandedSchedule,
+    closedDays,
     area: "Doublehanded",
     rules: doublehandedRules,
     warnings: warnings.filter((w) => w.area === "doublehanded"),
     statement: doublehandedStatement,
-    terms: doublehandedTerms,
+    total: doublehandedTotal,
     programs: doublehandedPrograms,
     offerings: doublehandedOfferings,
     trips: doublehandedTrips,
@@ -40,13 +44,35 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Each program's spring comes before its fall, whatever order they were planned in. */
+/** Offerings run term by term, in the order the terms start, whatever order they were planned in. */
 export const Doublehanded: Story = {
   play: async ({ canvas }) => {
-    const table = canvas.getByRole("table", { name: "Offerings" });
-    const names = [...table.querySelectorAll("tbody button")].map((b) => b.textContent);
-    await expect(names.slice(0, 2)).toEqual(["J-Pod Spring", "J-Pod Summer"]);
+    const table = canvas.getByRole("table", { name: "Fees" });
+    const names = [...table.querySelectorAll("tbody button")].map((b) => b.textContent).filter(Boolean);
+    await expect(names.slice(0, 4)).toEqual(["J-Pod Spring", "K-Pod Spring", "L-Pod Spring", "J-Pod Summer"]);
     await expect(canvas.getByRole("list", { name: "J-Pod rules" })).not.toBeVisible();
+  },
+};
+
+/** Max and Capacity say what they mean on hover. */
+export const EnrollmentHelp: Story = {
+  play: async ({ canvas }) => {
+    const table = canvas.getByRole("table", { name: "Enrollment" });
+    await expect([...table.querySelectorAll("thead th")].map((h) => h.textContent)).toEqual([
+      "Offering",
+      "Break even",
+      "Max",
+      "Capacity",
+      "Target",
+      "Sailor-days",
+      "Sailor-hours",
+    ]);
+    await userEvent.hover(within(table).getByRole("button", { name: "What Capacity means" }));
+    const help = await within(document.body).findByText(
+      "The most sailors the coaches and boats given to its blocks can take",
+    );
+    // The popover fades in.
+    await waitFor(() => expect(help).toBeVisible());
   },
 };
 
@@ -64,24 +90,23 @@ export const Summer: Story = {
     rules: summerRules,
     warnings: warnings.filter((w) => w.area === "summer"),
     statement: summerStatement,
-    terms: summerTerms,
+    total: summerTotal,
     programs: summerPrograms,
     offerings: summerOfferings,
     areaKey: "summer",
+    schedule: summerSchedule,
     trips: [],
     fixedCosts: summerFixedCosts,
     staffTime: summerStaffTime,
   },
 };
 
-/** Its offerings link to the Calendar, showing only this area. */
-export const SeeOnTheCalendar: Story = {
+/** Its calendar shows only this area's offerings, so there's no area to choose. */
+export const Calendar: Story = {
   args: Summer.args!,
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("link", { name: "See on the calendar" })).toHaveAttribute(
-      "href",
-      "/plans/financial/budget/calendar?area=summer",
-    );
+    await expect(canvas.getByRole("group", { name: "Year" })).toHaveTextContent("Guppies");
+    await expect(canvas.queryByRole("combobox")).toBeNull();
   },
 };
 
@@ -93,22 +118,49 @@ export const DoublehandedTrips: Story = {
   },
 };
 
-/** Each term's revenue, expenses and net, in the order the terms start. */
-export const ByTerm: Story = {
+/** Rows of a table, as the cells' text. */
+const rowsOf = (table: HTMLElement) =>
+  [...table.querySelectorAll("tbody tr")].map((r) => [...r.querySelectorAll("td")].map((c) => c.textContent));
+
+/**
+ * Budget runs term by term, then program by program, each with its subtotal, then what's charged to the area itself,
+ * then the total.
+ */
+export const Budget: Story = {
   play: async ({ canvas }) => {
-    const table = canvas.getByRole("table", { name: "By term" });
-    const rows = [...table.querySelectorAll("tbody tr")].map((r) =>
-      [...r.querySelectorAll("td")].map((c) => c.textContent),
-    );
-    await expect(rows.map((r) => r[0])).toEqual(["Spring 2027", "Summer 2027", "Fall 2027"]);
-    await expect(rows[1]).toEqual(["Summer 2027", "$30,000", "$33,000", "−$3,000"]);
+    const rows = rowsOf(canvas.getByRole("table", { name: "Budget" }));
+    await expect(rows.slice(0, 5).map((r) => r[0])).toEqual([
+      "Spring 2027",
+      "J-Pod",
+      "J-Pod Spring",
+      "K-Pod",
+      "K-Pod Spring",
+    ]);
+    // Summer's coaches cost more than its sailors pay.
+    await expect(rows.find((r) => r[0] === "Summer 2027")?.[3]).toMatch(/^−/);
+    await expect(rows.at(-2)).toEqual(["Charged to the area", "$0", "$7,000", "−$7,000"]);
+    // The same as the statement above it.
+    await expect(rows.at(-1)).toEqual(["Total", "$93,000", "$85,000", "$8,000"]);
   },
 };
 
-/** An area with no terms shows no term table, since its year says the same. */
-export const NoTerms: Story = {
-  args: { terms: [] },
+/** Enrollment adds up all but Break even; Fees only groups. */
+export const Subtotals: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.queryByRole("table", { name: "By term" })).toBeNull();
+    const enrollment = rowsOf(canvas.getByRole("table", { name: "Enrollment" }));
+    await expect(enrollment[0]).toEqual(["Spring 2027", "", "48", "48", "34", "748", "2,244"]);
+    await expect(enrollment.at(-1)).toEqual(["Total", "", "128", "128", "86", "1,892", "5,676"]);
+    const fees = rowsOf(canvas.getByRole("table", { name: "Fees" }));
+    await expect(fees[0]).toEqual(["Spring 2027", ""]);
+  },
+};
+
+/** Offerings in no term come last, under No term. */
+export const NoTerm: Story = {
+  args: Summer.args!,
+  play: async ({ canvas }) => {
+    const rows = rowsOf(canvas.getByRole("table", { name: "Fees" }));
+    const terms = rows.filter((r) => r[0] === "Summer 2027" || r[0] === "No term").map((r) => r[0]);
+    await expect(terms).toEqual(["Summer 2027", "No term"]);
   },
 };

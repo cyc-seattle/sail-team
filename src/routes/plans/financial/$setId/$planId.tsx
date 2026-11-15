@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PlanReport } from "../-plan-report";
 
-/** On the Calendar, the one program area shown and the day, kept in the address. */
+/** On the Calendar, the one program area shown and the day, kept in the address; on a program area's report, its day. */
 export interface CalendarSearch {
   area?: string;
   day?: string;

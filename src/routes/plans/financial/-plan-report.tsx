@@ -5,7 +5,7 @@ import { FinancialPlanActions } from "@/components/plans/financial-plan-actions"
 import { FundraisingCapitalReport } from "@/components/plans/reports/fundraising-capital-report";
 import { NonProgramReport } from "@/components/plans/reports/non-program-report";
 import { OverviewReport } from "@/components/plans/reports/overview-report";
-import { ProgramAreaReport } from "@/components/plans/reports/program-area-report";
+import { ProgramAreaReport, type ProgramAreaReportProps } from "@/components/plans/reports/program-area-report";
 import { PlanCalendar, type PlanCalendarProps } from "@/components/plans/reports/plan-calendar";
 import { RatesReport } from "@/components/plans/reports/rates-report";
 import { ReportPage } from "@/components/plans/reports/report-page";
@@ -30,8 +30,9 @@ import {
   reportsOf,
   sharedCostsOf,
   statementOf,
+  withResults,
+  areaTotal,
   storageOf,
-  termsOf,
 } from "@/model/reports";
 
 /**
@@ -164,17 +165,20 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
     );
   }
   const member = members.find((m) => m.kind === "program_area" && reportKey(m) === report)!;
+  const offerings = withResults(inputs.offerings[report] ?? [], results.pnl);
   return (
-    <ProgramAreaReport
+    <AreaReport
       area={reportName(member)}
       rules={inputs.rules[report] ?? null}
       warnings={warnings.filter((w) => w.area === report)}
       statement={statementOf(results.lines.filter((l) => l.member === member.id))}
-      terms={termsOf(results.pnl, member.program_area_id)}
+      total={areaTotal(results.pnl, member.program_area_id)}
       programs={inputs.programs[report] ?? []}
-      offerings={inputs.offerings[report] ?? []}
-      setId={set.id}
+      offerings={offerings}
       areaKey={report}
+      schedule={inputs.schedule[report] ?? []}
+      closedDays={inputs.operations?.closedDays ?? []}
+
       trips={inputs.trips[report] ?? []}
       fixedCosts={inputs.fixedCosts[report] ?? []}
       staffTime={inputs.staffTime[report] ?? []}
@@ -183,6 +187,19 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
 }
 
 const reportRoute = getRouteApi("/plans/financial/$setId/$planId");
+
+/** A program area's report, with its calendar's day kept in the address. */
+function AreaReport(props: Omit<ProgramAreaReportProps, "day" | "onDayChange">) {
+  const { day } = reportRoute.useSearch();
+  const navigate = reportRoute.useNavigate();
+  return (
+    <ProgramAreaReport
+      {...props}
+      day={day ?? null}
+      onDayChange={(next) => void navigate({ search: (s) => ({ ...s, day: next }), replace: true })}
+    />
+  );
+}
 
 /** The Calendar, with its area and day kept in the address. */
 function CalendarReport(props: Pick<PlanCalendarProps, "areas" | "closedDays">) {

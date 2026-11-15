@@ -222,7 +222,7 @@ Given(
 Then(
   "{string} shows a net of $20,000, and {string} a net of −$5,000",
   async ({ page }, summer: string, fall: string) => {
-    const terms = page.getByRole("table", { name: "By term" });
+    const terms = page.getByRole("table", { name: "Budget" });
     await expect(
       terms
         .getByRole("row", { name: new RegExp(`^${summer}`) })
@@ -237,6 +237,14 @@ Then(
     ).toHaveText("−$5,000");
   },
 );
+
+Then("its program shows a net of $20,000 in {string}", async ({ page, club }, term: string) => {
+  // The program's subtotal row comes right after its term's.
+  const rows = page.getByRole("table", { name: "Budget" }).getByRole("row");
+  const names = await rows.evaluateAll((all) => all.map((r) => r.querySelector("td")?.textContent ?? ""));
+  const program = names.indexOf(`Beginner camp ${club.run}`, names.indexOf(term));
+  await expect(rows.nth(program).getByRole("cell").last()).toHaveText("$20,000");
+});
 
 When(/^I open Youth Racing's report in (?:that Financial Plan|the draft)$/, async ({ page, club }) => {
   await page.goto(`${await app()}/plans/financial/${opened.set}/${club.areaPlan}`);
@@ -336,10 +344,6 @@ Given(
   },
 );
 
-When("I see it on the calendar", async ({ page }) => {
-  await page.getByRole("link", { name: "See on the calendar" }).click();
-});
-
 Then("the calendar shows the offering's 10 sailors across both weeks", async ({ page }) => {
   await expect(page.getByRole("group", { name: "Year" })).toContainText("10/10");
 });
@@ -356,14 +360,15 @@ Then("it has no staff, coach boats or boats yet, where the other days have 1 Lea
   await expect(block).toContainText("Usually 1 Lead coach");
 });
 
-Then("its offering shows a fee of $1,000 and 10 sailors", async ({ page, club }) => {
+Then("its offering's enrollment shows a target of 10 sailors, and its fees a fee of $1,000", async ({ page, club }) => {
   // Its row, named for its program and its session (with no program in its name, its own name), not the program's own row above it.
-  const cells = page
-    .getByRole("table", { name: "Offerings" })
-    .getByRole("row", { name: `Beginner camp ${club.run} ${OFFERING}` })
-    .getByRole("cell");
-  await expect(cells.nth(1)).toHaveText("$1,000");
-  await expect(cells.nth(3)).toHaveText("10");
+  const cells = (table: string) =>
+    page
+      .getByRole("table", { name: table, exact: true })
+      .getByRole("row", { name: `Beginner camp ${club.run} ${OFFERING}` })
+      .getByRole("cell");
+  await expect(cells("Enrollment").nth(4)).toHaveText("10");
+  await expect(cells("Fees").nth(1)).toHaveText("$1,000");
 });
 
 Then(

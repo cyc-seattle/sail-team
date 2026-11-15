@@ -8,7 +8,7 @@ import {
   doublehandedOfferings,
   doublehandedPrograms,
   doublehandedRules,
-  doublehandedTerms,
+  doublehandedTotal,
   doublehandedStatement,
   functions,
   fundraising,
@@ -23,10 +23,13 @@ import {
   doublehandedTrips,
   summerFixedCosts,
   summerStaffTime,
-  summerTerms,
+  summerTotal,
   summerStatement,
   totals,
   warnings,
+  closedDays,
+  doublehandedSchedule,
+  summerSchedule,
 } from "./fixtures";
 import { FundraisingCapitalReport } from "./fundraising-capital-report";
 import { NonProgramReport } from "./non-program-report";
@@ -83,11 +86,12 @@ export const Summer: Story = {
         rules={summerRules}
         warnings={warnings.filter((w) => w.area === "summer")}
         statement={summerStatement}
-        terms={summerTerms}
+        total={summerTotal}
         programs={summerPrograms}
         offerings={summerOfferings}
-        setId="budget"
         areaKey="summer"
+        schedule={summerSchedule}
+        closedDays={closedDays}
         trips={[]}
         fixedCosts={summerFixedCosts}
         staffTime={summerStaffTime}
@@ -116,11 +120,12 @@ export const Doublehanded: Story = {
         rules={doublehandedRules}
         warnings={warnings.filter((w) => w.area === "doublehanded")}
         statement={doublehandedStatement}
-        terms={doublehandedTerms}
+        total={doublehandedTotal}
         programs={doublehandedPrograms}
         offerings={doublehandedOfferings}
-        setId="budget"
         areaKey="doublehanded"
+        schedule={doublehandedSchedule}
+        closedDays={closedDays}
         trips={doublehandedTrips}
         fixedCosts={[]}
         staffTime={[]}

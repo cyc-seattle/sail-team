@@ -4,6 +4,7 @@ import type { ScheduleBlock, ScheduledActivity } from "@/model/schedule";
 import type { ListedPlan, Totals } from "@/model/financial-plans";
 import type {
   AccountAmount,
+  InAndOut,
   CapitalItem,
   FunctionalExpenses,
   LineAmount,
@@ -12,7 +13,6 @@ import type {
   Product,
   ProgramSettings,
   ReportOffering,
-  TermRow,
   Trip,
   SharedCost,
 } from "@/model/reports";
@@ -145,6 +145,12 @@ const camp = (program: string, n: number, fee: number, estimated: number, max: n
   fee_cents: fee,
   estimated,
   max,
+  max_set: true,
+  // Race Camp runs outside the summer term, as a one-off.
+  term: program === "Race Camp" ? null : "Summer 2027",
+  // Week 5's Opti Camp is short a coach, and Race Camp needs more sailors than it expects.
+  room: program === "Opti Camp" && n === 4 ? 12 : max,
+  breakeven: program === "Race Camp" ? 9 : program === "Guppies" ? 7 : 10,
   days: 5,
   hours,
   cogs_rate: program === "Race Camp" ? 0.08 : null,
@@ -175,6 +181,9 @@ const termOffering = (
   fee_cents: 145_000,
   estimated,
   max: 16,
+  max_set: true,
+  room: 16,
+  breakeven: session === "Summer" ? null : 9,
   days: 22,
   hours: 66,
   cogs_rate: null,
@@ -192,6 +201,40 @@ export const doublehandedOfferings: ReportOffering[] = [
   termOffering("J-Pod", "Summer", "2027-06-22", "2027-08-12", 9),
   termOffering("K-Pod", "Summer", "2027-06-23", "2027-08-13", 11),
 ];
+
+/** Each Doublehanded offering's Tuesday and Thursday practices, J-Pod on Tuesdays and the rest on Thursdays. */
+export const doublehandedSchedule: ScheduleBlock[] = doublehandedOfferings.flatMap((o) => {
+  const out: ScheduleBlock[] = [];
+  for (
+    let d = new Date(`${o.starts_on}T00:00:00Z`);
+    d <= new Date(`${o.ends_on}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + 1)
+  ) {
+    if (d.getUTCDay() !== (o.program === "J-Pod" ? 2 : 4)) {
+      continue;
+    }
+    const date = d.toISOString().slice(0, 10);
+    out.push({
+      key: `${o.key} ${date}`,
+      date,
+      name: null,
+      activities: [
+        {
+          key: `${o.key} ${date}`,
+          offering_key: o.key,
+          kind: "practice",
+          start_time: "16:00:00",
+          end_time: "19:00:00",
+          setup_minutes: 30,
+          putaway_minutes: 30,
+          on_water_minutes: 150,
+        },
+      ],
+      parts: ["2 Level 3 Coaches", "2 RIBs"],
+    });
+  }
+  return out;
+});
 
 const offering = (
   program: string,
@@ -253,19 +296,6 @@ export const doublehandedPrograms: ProgramSettings[] = [
   { name: "L-Pod", staff_level: "Level 4 Coach", sailors_per_coach: 12, rules: "Most sailors bring their own 420s." },
 ];
 
-/** Doublehanded by term, adding up to its year. Summer loses money. */
-export const doublehandedTerms: TermRow[] = [
-  { term: "Spring 2027", revenue_cents: 3_800_000, expense_cents: 3_100_000 },
-  { term: "Summer 2027", revenue_cents: 3_000_000, expense_cents: 3_300_000 },
-  { term: "Fall 2027", revenue_cents: 2_500_000, expense_cents: 2_100_000 },
-];
-
-/** Summer's camps are all in one term, and its adult classes in no term. */
-export const summerTerms: TermRow[] = [
-  { term: "Summer 2027", revenue_cents: 19_200_000, expense_cents: 15_800_000 },
-  { term: null, revenue_cents: 2_300_000, expense_cents: 2_000_000 },
-];
-
 export const doublehandedStatement = {
   revenue: [account("4130", "Doublehanded tuition", 9_500_000), account("4900", "Scholarships", -200_000)],
   direct: [
@@ -278,6 +308,40 @@ export const doublehandedStatement = {
   ],
   indirect: [account(null, "G&A", 1_700_000), account(null, "Program admin", 500_000), account(null, "Space", 200_000)],
 };
+
+/** An area's revenue and expenses, from its statement. */
+const totalOf = (statement: { revenue: AccountAmount[]; direct: AccountAmount[]; indirect: AccountAmount[] }) => ({
+  revenue_cents: statement.revenue.reduce((t, a) => t + a.cents, 0),
+  expense_cents: [...statement.direct, ...statement.indirect].reduce((t, a) => t + a.cents, 0),
+});
+
+/**
+ * Shares an area's total out among its offerings, revenue by what their sailors pay and expenses by how big they're
+ * planned, all but `charged`, which is the area's own, so the Budget adds up to the statement.
+ */
+function fit(offerings: ReportOffering[], total: InAndOut, charged: number): void {
+  const share = (cents: number, weight: (o: ReportOffering) => number) => {
+    const all = offerings.reduce((t, o) => t + weight(o), 0);
+    let left = cents;
+    return offerings.map((o, i) => {
+      const part = i === offerings.length - 1 ? left : Math.round((cents * weight(o)) / all);
+      left -= part;
+      return part;
+    });
+  };
+  const revenue = share(total.revenue_cents, (o) => o.fee_cents * o.estimated);
+  // Summer's coaches cost more than its sailors pay.
+  const expenses = share(total.expense_cents - charged, (o) => o.fee_cents * o.max * (o.session === "Summer" ? 2 : 1));
+  offerings.forEach((o, i) => Object.assign(o, { revenue_cents: revenue[i], expense_cents: expenses[i] }));
+}
+
+/** Doublehanded's total, with $7,000 of coaching charged to the area itself. */
+export const doublehandedTotal = totalOf(doublehandedStatement);
+fit(doublehandedOfferings, doublehandedTotal, 700_000);
+
+/** Summer's total, with $9,000 of its director's time charged to the area itself. */
+export const summerTotal = totalOf(summerStatement);
+fit(summerOfferings, summerTotal, 900_000);
 
 /** What CSC sells outside the programs. */
 export const products: Product[] = [
