@@ -37,6 +37,7 @@ import {
   type Asset,
   type AssetInput,
   type BoatClass,
+  type StorageArea,
 } from "@/model/inventory";
 import { AssetDialog } from "./asset-dialog";
 
@@ -105,11 +106,14 @@ type Pending = { kind: "edit" | "dispose" | "delete"; asset: Asset } | { kind: "
 export function AssetList({
   assets,
   classes,
+  areas,
   day,
   actions,
 }: {
   assets: Asset[];
   classes: BoatClass[];
+  /** Where assets are kept. */
+  areas: StorageArea[];
   /** Today, `YYYY-MM-DD`, to tell what CSC still has. */
   day: string;
   actions: AssetActions;
@@ -130,7 +134,7 @@ export function AssetList({
   );
   const total = shown.reduce((sum, a) => sum + (a.value_cents ?? 0), 0);
   const close = () => setPending(null);
-  const columns = showDisposed ? 10 : 9;
+  const columns = showDisposed ? 11 : 10;
 
   return (
     <section aria-label="Assets" className="grid gap-4">
@@ -179,6 +183,7 @@ export function AssetList({
               <TableHead>Make</TableHead>
               <TableHead>Model</TableHead>
               <TableHead>Serial no.</TableHead>
+              <TableHead>Location</TableHead>
               <TableHead>Acquired</TableHead>
               {showDisposed && <TableHead>Disposed</TableHead>}
               <TableHead className="text-right">Value</TableHead>
@@ -207,6 +212,7 @@ export function AssetList({
                       key={a.id}
                       asset={a}
                       classes={classes}
+                      areas={areas}
                       day={day}
                       showDisposed={showDisposed}
                       actions={actions}
@@ -234,6 +240,7 @@ export function AssetList({
         onOpenChange={(open) => !open && close()}
         asset={pending && pending.kind !== "add" ? pending.asset : null}
         classes={sortedClasses}
+        areas={areas}
         onSave={(input) =>
           pending?.kind === "edit" ? actions.onUpdate(pending.asset, input) : actions.onCreate(input)
         }
@@ -258,6 +265,7 @@ export function AssetList({
 function AssetRow({
   asset,
   classes,
+  areas,
   day,
   showDisposed,
   actions,
@@ -265,6 +273,7 @@ function AssetRow({
 }: {
   asset: Asset;
   classes: BoatClass[];
+  areas: StorageArea[];
   day: string;
   showDisposed: boolean;
   actions: AssetActions;
@@ -296,6 +305,7 @@ function AssetRow({
       <TableCell>{asset.make}</TableCell>
       <TableCell>{asset.model}</TableCell>
       <TableCell className="tabular-nums">{asset.identifier}</TableCell>
+      <TableCell className="whitespace-nowrap">{areas.find((a) => a.id === asset.location_id)?.name}</TableCell>
       <TableCell className="whitespace-nowrap tabular-nums">
         {asset.acquired_on && formatDay(asset.acquired_on)}
       </TableCell>

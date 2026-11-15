@@ -26,6 +26,7 @@ const asset = (id: string, changes: Partial<Asset> = {}): Asset => ({
   acquired_on: null,
   disposed_on: null,
   note: null,
+  location_id: null,
   boat: null,
   ...changes,
 });

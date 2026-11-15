@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test";
 import { AssetList, type AssetActions } from "./asset-list";
-import { assets, classes, day } from "./fixtures";
+import { areas, assets, classes, day } from "./fixtures";
 
 const writer = (fields: Partial<AssetActions> = {}): AssetActions => ({
   canCreate: true,
@@ -16,7 +16,7 @@ const writer = (fields: Partial<AssetActions> = {}): AssetActions => ({
 
 const meta = {
   component: AssetList,
-  args: { assets, classes, day, actions: writer() },
+  args: { assets, classes, areas, day, actions: writer() },
 } satisfies Meta<typeof AssetList>;
 export default meta;
 type Story = StoryObj<typeof meta>;

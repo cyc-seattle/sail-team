@@ -28,6 +28,7 @@ function AllAssets() {
       <AssetList
         assets={data.assets}
         classes={data.classes}
+        areas={data.areas}
         day={today()}
         actions={{
           canCreate,
