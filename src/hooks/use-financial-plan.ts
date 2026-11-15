@@ -5,7 +5,7 @@ import { refreshEvery, stuckAfterMs } from "@/model/financial-plans";
 
 /**
  * A Financial Plan, read again while its numbers can change, and whether they've been missing long enough to say they
- * couldn't be worked out.
+ * couldn't be calculated.
  */
 export function useFinancialPlan(setId: string) {
   const [stuck, setStuck] = useState(false);

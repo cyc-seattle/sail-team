@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { inForce, platformRelease, refreshEvery, today, type Results } from "../src/model/financial-plans.ts";
+import {
+  fromOlderEngine,
+  inForce,
+  platformRelease,
+  refreshEvery,
+  today,
+  type Results,
+} from "../src/model/financial-plans.ts";
 
 describe("refreshEvery", () => {
   const draft = { status: "draft" as const };
@@ -19,6 +26,24 @@ describe("refreshEvery", () => {
   it("stops reading a frozen plan once its numbers are in, and a plan that isn't there", () => {
     expect(refreshEvery({ set: frozen, results }, false)).toBe(false);
     expect(refreshEvery(null, false)).toBe(false);
+  });
+});
+
+describe("fromOlderEngine", () => {
+  const today = "1.39.0+engine.new";
+  const draft = { status: "draft" as const };
+  const frozen = { status: "frozen" as const };
+
+  it("tells a draft whose numbers came from another engine, or from before platform recorded one", () => {
+    expect(fromOlderEngine({ set: draft, results: { platform_version: "1.38.1+engine.old" } }, today)).toBe(true);
+    expect(fromOlderEngine({ set: draft, results: { platform_version: null } }, today)).toBe(true);
+    expect(fromOlderEngine({ set: draft, results: { platform_version: today } }, today)).toBe(false);
+  });
+
+  it("never tells a frozen plan, one with no numbers yet, or any while platform's engine is unknown", () => {
+    expect(fromOlderEngine({ set: frozen, results: { platform_version: "1.38.1+engine.old" } }, today)).toBe(false);
+    expect(fromOlderEngine({ set: draft, results: null }, today)).toBe(false);
+    expect(fromOlderEngine({ set: draft, results: { platform_version: null } }, null)).toBe(false);
   });
 });
 

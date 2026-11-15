@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { FinancialPlanActions } from "@/components/plans/financial-plan-actions";
+import { OlderNumbers } from "@/components/plans/older-numbers";
 import { FundraisingCapitalReport } from "@/components/plans/reports/fundraising-capital-report";
 import { NonProgramReport } from "@/components/plans/reports/non-program-report";
 import { OverviewReport } from "@/components/plans/reports/overview-report";
@@ -14,10 +15,17 @@ import { NoAccess } from "@/components/shell/no-access";
 import { NoticePage } from "@/components/shell/notice-page";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { canAdminPlans, canRead, canUpdateFields, canWrite } from "@/directus/access";
-import { startFinancialPlan, updateFinancialPlan, type FinancialPlan } from "@/directus/financial-plans";
+import {
+  engineQuery,
+  startFinancialPlan,
+  updateFinancialPlan,
+  workOutAgain,
+  type FinancialPlan,
+} from "@/directus/financial-plans";
 import { planInputsQuery, type PlanInputs } from "@/directus/plan-inputs";
 import { useSession } from "@/directus/use-session";
 import { useFinancialPlan } from "@/hooks/use-financial-plan";
+import { fromOlderEngine } from "@/model/financial-plans";
 import {
   capitalList,
   functionalExpenses,
@@ -72,6 +80,7 @@ function Found({ data, stuck, report }: { data: FinancialPlan; stuck: boolean; r
       current={report}
       actions={<Actions plan={data} />}
     >
+      <Older plan={data} />
       {!data.results ? (
         <PendingNumbers stuck={stuck} />
       ) : !inputs ? (
@@ -85,17 +94,41 @@ function Found({ data, stuck, report }: { data: FinancialPlan; stuck: boolean; r
   );
 }
 
-/** What a report shows while platform works out a draft's numbers, or once it's given up. */
+/** Says a draft's numbers came from an older engine, and lets someone who can edit it recalculate them. */
+function Older({ plan }: { plan: FinancialPlan }) {
+  const session = useSession();
+  const queryClient = useQueryClient();
+  const { data: engine } = useQuery(engineQuery);
+  if (!fromOlderEngine(plan, engine)) {
+    return null;
+  }
+  const permissions = session.kind === "signed-in" ? session.permissions : undefined;
+  const canEdit = canUpdateFields(permissions, "financial_plans", ["name", "note"]);
+  return (
+    <OlderNumbers
+      onWorkOut={
+        canEdit
+          ? async () => {
+              await workOutAgain(plan.set.id);
+              await queryClient.invalidateQueries({ queryKey: ["financial-plans"] });
+            }
+          : undefined
+      }
+    />
+  );
+}
+
+/** What a report shows while platform calculates a draft's numbers, or once it's given up. */
 function PendingNumbers({ stuck }: { stuck: boolean }) {
   return stuck ? (
     <Alert>
       <AlertDescription>
-        Its numbers couldn't be worked out. Check its plans for a mistake, or change something to try again.
+        Its numbers couldn't be calculated. Check its plans for a mistake, or change something to try again.
       </AlertDescription>
     </Alert>
   ) : (
     <p role="status" className="text-sm text-muted-foreground">
-      Working out its numbers…
+      Calculating…
     </p>
   );
 }

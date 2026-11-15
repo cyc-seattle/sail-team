@@ -117,7 +117,10 @@ async function readPlans(setId: string): Promise<Plan[]> {
 async function readResults(setId: string): Promise<Results | null> {
   const bySet = { financial_plan_id: { _eq: setId } };
   const [totals, pnl, lines, warnings, capital] = await Promise.all([
-    readAll<Totals & { calculated_at: string | null }>("plan_results", bySet, totalFields),
+    readAll<Totals & { calculated_at: string | null; platform_version: string | null }>("plan_results", bySet, [
+      ...totalFields,
+      "platform_version",
+    ]),
     readAll<Omit<PnlRow, "plan"> & { plan_id: string | null }>("plan_result_pnl", bySet, [
       "level",
       "subject_key",
@@ -176,9 +179,10 @@ async function readResults(setId: string): Promise<Results | null> {
   if (!totals[0]) {
     return null;
   }
-  const { calculated_at, ...total } = totals[0];
+  const { calculated_at, platform_version, ...total } = totals[0];
   return {
     calculated_at,
+    platform_version: platform_version ?? null,
     totals: total,
     pnl: pnl.map(({ plan_id, ...row }) => ({ ...row, plan: plan_id })),
     lines: lines.map((l) => ({
@@ -324,4 +328,31 @@ const tryAgain = "That didn't work. Try again.";
 export function refusalOf(error: unknown): string {
   const [first] = (error as { errors?: { message?: string; extensions?: { code?: string } }[] } | null)?.errors ?? [];
   return first?.extensions?.code === "INVALID_PAYLOAD" && first.message ? first.message : tryAgain;
+}
+
+/**
+ * The engine platform works out numbers with now, to tell a draft's older numbers. Null when platform doesn't say,
+ * such as before it could.
+ */
+export const engineQuery = queryOptions({
+  queryKey: ["planning-engine"],
+  queryFn: async (): Promise<string | null> => {
+    try {
+      const { platform_version } = await appDirectus().client.request(
+        customEndpoint<{ platform_version: string }>({ path: "/frozen-plans/engine", method: "GET" }),
+      );
+      return platform_version;
+    } catch {
+      return null;
+    }
+  },
+  // It changes only when platform deploys.
+  staleTime: 5 * 60_000,
+});
+
+/** Has platform work out a draft's numbers again now, with the engine it runs today, and waits until it has. */
+export async function workOutAgain(setId: string): Promise<void> {
+  await appDirectus().client.request(
+    customEndpoint({ path: `/frozen-plans/drafts/${encodeURIComponent(setId)}/results`, method: "POST" }),
+  );
 }

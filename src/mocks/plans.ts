@@ -642,7 +642,10 @@ const rowTables = [
 const rowsOf = (planIds: string[], table: string) => planIds.flatMap((p) => copies[p]?.rows[table] ?? []);
 
 /** A Financial Plan's results, as platform's hook works them out and writes them. */
-function results(setRow: Row, calculatedAt: string): Record<string, Row[]> {
+/** The engine platform runs now. */
+export const engine = "1.39.0+engine.0a1b2c3d4e5f";
+
+function results(setRow: Row, calculatedAt: string, platformVersion: string | null): Record<string, Row[]> {
   const own = plans.filter((p) => p.set === setRow);
   const planIds = own.map((p) => p.id);
   const data = {
@@ -684,6 +687,7 @@ function results(setRow: Row, calculatedAt: string): Record<string, Row[]> {
       {
         financial_plan_id: setId,
         calculated_at: calculatedAt,
+        platform_version: platformVersion,
         operating_revenue_cents: out.organization.operating.revenue_cents,
         operating_expense_cents: out.organization.operating.expense_cents,
         operating_net_cents: out.organization.operating.net_cents,
@@ -742,9 +746,12 @@ function results(setRow: Row, calculatedAt: string): Record<string, Row[]> {
   };
 }
 
-// Budget's results, as platform worked them out when it was frozen, and Two coaches', after its latest change. Three
-// coaches' are still being worked out.
-const worked = [results(budget, "2027-03-10T18:00:00Z"), results(twoCoaches, "2027-04-02T23:05:00Z")];
+// Budget's results, as platform worked them out when it was frozen, and Two coaches', after its latest change, before
+// platform's engine changed. Three coaches' are still being worked out.
+const worked = [
+  results(budget, "2027-03-10T18:00:00Z", budget.platform_version),
+  results(twoCoaches, "2027-04-02T23:05:00Z", "1.38.1+engine.0a1b2c3d4e5f"),
+];
 const resultTables = Object.fromEntries(
   ["plan_results", "plan_result_lines", "plan_result_pnl", "plan_result_warnings", "plan_result_capital"].map(
     (table) => [table, worked.flatMap((r) => r[table] ?? [])],

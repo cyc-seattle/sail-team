@@ -69,7 +69,9 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   frozen, and a draft's about a second after every change to it, wherever it's made. The app never calculates them.
   Each result row names the plan it's charged in (`plan_id`), so one plan's full P&L, with its wages and its share of
   the shared costs, is one filter. An open draft is read again every few seconds, and a plan with no results yet every two, until they
-  arrive; after 30 seconds the page says they couldn't be worked out (`src/hooks/use-financial-plan.ts`). The reports
+  arrive; after 30 seconds the page says they couldn't be calculated (`src/hooks/use-financial-plan.ts`). Platform never works a draft's out again when its engine changes (cyc-seattle/platform#284), so a draft whose
+  results record another `platform_version` than `GET /frozen-plans/engine` says it was calculated with an older
+  engine, and someone who can edit it can recalculate it (`POST /frozen-plans/drafts/<id>/results`). The reports
   also read what planners entered in its plans (`src/directus/plan-inputs.ts`): each plan's notes, each program's
   settings, each offering with its activities, and the Operations Plan's rates, with each bonus on the position it
   pays. `src/model/reports.ts` makes each report from those and the results: shares of a pool (`pool:` lines) are a
