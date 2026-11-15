@@ -1,9 +1,6 @@
-import { Link } from "@tanstack/react-router";
 import { PencilIcon, PlusIcon } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { FormField } from "@/components/form-field";
-import { RateTable } from "@/components/plans/assumptions";
-import { Money } from "@/components/plans/money";
 import { ReportSection } from "@/components/plans/reports/report-page";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { refusalOf } from "@/directus/financial-plans";
-import type { ActiveRates } from "@/directus/inventory";
 import { sortClasses, type Account, type BoatClass, type BoatClassInput } from "@/model/inventory";
 
 export interface BoatClassActions {
@@ -27,16 +23,14 @@ const DEFAULT_ACCOUNT = "default";
 
 /**
  * Every boat class: the account its boats' fuel and upkeep are booked to, how many sailors one boat takes, the dry
- * storage one takes, and how many CSC has now. Under it, each class's rates in the active plan, read only. A Catalog
- * Writer adds and edits classes here.
+ * storage one takes, and how many CSC has now. A Catalog Writer adds and edits classes here. Rates belong to each plan,
+ * so they're on its Assumptions, not here.
  */
 export function BoatClassList({
   classes,
   accounts,
   defaultAccountId,
   counts,
-  rates,
-  canReadRates,
   actions,
 }: {
   classes: BoatClass[];
@@ -45,10 +39,6 @@ export function BoatClassList({
   defaultAccountId: string | null;
   /** Boats of each class CSC has now, by class id. */
   counts: Map<string, number>;
-  /** The active plan's rates, or null when no plan is active. */
-  rates: ActiveRates | null;
-  /** Whether the person can read plans' rates at all. */
-  canReadRates: boolean;
   actions: BoatClassActions;
 }) {
   const [editing, setEditing] = useState<BoatClass | "new" | null>(null);
@@ -79,8 +69,8 @@ export function BoatClassList({
                 <TableHead>
                   <span className="sr-only">Account name</span>
                 </TableHead>
-                <TableHead className="text-right">Sailors per boat</TableHead>
-                <TableHead className="text-right">Sq ft each</TableHead>
+                <TableHead className="text-right">Capacity</TableHead>
+                <TableHead className="text-right">Area (ft²)</TableHead>
                 <TableHead className="text-right">Boats</TableHead>
                 {actions.canUpdate && (
                   <TableHead>
@@ -127,7 +117,6 @@ export function BoatClassList({
           </Table>
         )}
       </ReportSection>
-      {canReadRates && <BoatRates classes={sorted} rates={rates} />}
       <BoatClassDialog
         boatClass={editing}
         accounts={accounts}
@@ -138,53 +127,6 @@ export function BoatClassList({
         }
       />
     </>
-  );
-}
-
-/** Each class's rates in the active plan, named and ordered as the plan's Assumptions show them. */
-function BoatRates({ classes, rates }: { classes: BoatClass[]; rates: ActiveRates | null }) {
-  if (!rates) {
-    return (
-      <ReportSection id="boat-rates" title="Boat rates">
-        <p className="text-sm text-muted-foreground">No plan is active today.</p>
-      </ReportSection>
-    );
-  }
-  const priced = classes.filter((c) => rates.rates.has(c.id));
-  const cents = (value: number | null | undefined, whole = false) =>
-    value == null ? <span className="text-muted-foreground">—</span> : <Money cents={value} whole={whole} />;
-  return (
-    <ReportSection
-      id="boat-rates"
-      title="Boat rates"
-      actions={
-        <Link
-          to="/plans/financial/$setId/$planId"
-          params={{ setId: rates.plan.id, planId: "rates" }}
-          className="text-sm text-link underline"
-        >
-          {rates.plan.name} assumptions
-        </Link>
-      }
-    >
-      {priced.length === 0 ? (
-        <p className="text-sm text-muted-foreground">The active plan has no boat rates.</p>
-      ) : (
-        <RateTable label="Boat rates" head={["Boat class", "Fuel per hour", "Upkeep per hour", "Charter per day"]}>
-          {priced.map((c) => {
-            const rate = rates.rates.get(c.id)!;
-            return (
-              <TableRow key={c.id}>
-                <TableCell>{c.name}</TableCell>
-                <TableCell className="text-right">{cents(rate.fuel_per_hour_cents)}</TableCell>
-                <TableCell className="text-right">{cents(rate.maintenance_per_boat_hour_cents)}</TableCell>
-                <TableCell className="text-right">{cents(rate.charter_per_day_cents, true)}</TableCell>
-              </TableRow>
-            );
-          })}
-        </RateTable>
-      )}
-    </ReportSection>
   );
 }
 
@@ -269,7 +211,7 @@ function BoatClassForm({
         {(id) => <Input id={id} value={name} onChange={(e) => setName(e.target.value)} required />}
       </FormField>
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label="Sailors per boat">
+        <FormField label="Capacity">
           {(id) => (
             <Input
               id={id}
@@ -282,7 +224,7 @@ function BoatClassForm({
             />
           )}
         </FormField>
-        <FormField label="Sq ft each">
+        <FormField label="Area (ft²)">
           {(id) => (
             <Input
               id={id}

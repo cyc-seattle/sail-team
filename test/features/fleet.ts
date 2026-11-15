@@ -23,13 +23,9 @@ export class Fleet {
   readonly className = `${prefix}${newRunId()} dinghy`;
   private classId?: string;
 
-  /** Adds the scenario's boat class, each boat taking `sqFt` of dry storage. */
-  async boatClass(sqFt: number): Promise<void> {
-    const { id } = await asAdmin("POST", "/items/boat_classes", {
-      name: this.className,
-      max_capacity: 2,
-      footprint_sq_ft: String(sqFt),
-    });
+  /** Adds the scenario's boat class. */
+  async boatClass(): Promise<void> {
+    const { id } = await asAdmin("POST", "/items/boat_classes", { name: this.className, max_capacity: 2 });
     this.classId = id;
   }
 

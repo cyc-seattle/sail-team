@@ -1,6 +1,5 @@
 import { createItem, deleteItem, updateItem } from "@directus/sdk";
 import { queryOptions } from "@tanstack/react-query";
-import { inForce, today } from "@/model/financial-plans";
 import type { Account, Asset, AssetInput, BoatClass, BoatClassInput } from "@/model/inventory";
 import { appDirectus } from "./app.ts";
 import { readAll } from "./plans.ts";
@@ -54,60 +53,6 @@ export const inventoryQuery = queryOptions({
       })),
       accounts: accounts.sort((a, b) => a.number.localeCompare(b.number)),
       defaultAccountId: costAccounts[0]?.account_id ?? null,
-    };
-  },
-});
-
-/** What a boat of each class costs in the active Financial Plan, by class id. */
-export interface BoatRate {
-  maintenance_per_boat_hour_cents: number;
-  fuel_per_hour_cents: number | null;
-  charter_per_day_cents: number | null;
-}
-
-export interface ActiveRates {
-  plan: { id: string; name: string };
-  rates: Map<string, BoatRate>;
-}
-
-/** The boat rates in the Operations Plan of the plan active today, or null when no plan is active. */
-export const activeRatesQuery = queryOptions({
-  queryKey: ["inventory", "active-rates"],
-  queryFn: async (): Promise<ActiveRates | null> => {
-    const sets = await readAll<{
-      id: string;
-      name: string;
-      organization_id: string;
-      fiscal_year: number;
-      effective_from: string | null;
-    }>("financial_plans", { effective_from: { _nnull: true } }, [
-      "id",
-      "name",
-      "organization_id",
-      "fiscal_year",
-      "effective_from",
-    ]);
-    const now = [...inForce(sets, today())].find(([, when]) => when.when === "now");
-    const active = sets.find((s) => s.id === now?.[0]);
-    if (!active) {
-      return null;
-    }
-    const [operations] = await readAll<{ id: string }>(
-      "plans",
-      { _and: [{ financial_plan_id: { _eq: active.id } }, { kind: { _eq: "operations" } }] },
-      ["id"],
-    );
-    const rows = operations
-      ? await readAll<BoatRate & { boat_class_id: string }>("plan_boat_rates", { plan_id: { _eq: operations.id } }, [
-          "boat_class_id",
-          "maintenance_per_boat_hour_cents",
-          "fuel_per_hour_cents",
-          "charter_per_day_cents",
-        ])
-      : [];
-    return {
-      plan: { id: active.id, name: active.name },
-      rates: new Map(rows.map(({ boat_class_id, ...rate }) => [boat_class_id, rate])),
     };
   },
 });

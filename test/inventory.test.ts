@@ -6,7 +6,6 @@ import {
   inService,
   parseDollars,
   sortAssets,
-  storageNeeds,
   type Asset,
   type BoatClass,
 } from "../src/model/inventory.ts";
@@ -74,13 +73,14 @@ describe("sortAssets", () => {
   });
 });
 
-describe("storageNeeds", () => {
-  it("multiplies each class's boats in service by its footprint, largest first, and leaves out classes with none", () => {
+describe("boatsInService", () => {
+  it("counts each class's boats CSC has on the day", () => {
     const assets = [
       asset("1", { boat: boat("opti", "1") }),
       asset("2", { boat: boat("opti", "2") }),
       asset("3", { boat: boat("opti", "3"), disposed_on: "2026-01-01" }),
       asset("4", { kind: "powerboat", boat: boat("rib") }),
+      asset("5", { kind: "motor" }),
     ];
     expect(boatsInService(assets, "2026-06-01")).toEqual(
       new Map([
@@ -88,10 +88,6 @@ describe("storageNeeds", () => {
         ["rib", 1],
       ]),
     );
-    expect(storageNeeds(assets, [...classes, { ...opti, id: "420", name: "420" }], "2026-06-01")).toEqual([
-      { boatClass: opti, boats: 2, sq_ft: 80 },
-      { boatClass: rib, boats: 1, sq_ft: null },
-    ]);
   });
 });
 

@@ -178,7 +178,7 @@ export function AssetList({
               <TableHead>Sail no.</TableHead>
               <TableHead>Make</TableHead>
               <TableHead>Model</TableHead>
-              <TableHead>Hull or serial no.</TableHead>
+              <TableHead>Serial no.</TableHead>
               <TableHead>Acquired</TableHead>
               {showDisposed && <TableHead>Disposed</TableHead>}
               <TableHead className="text-right">Value</TableHead>

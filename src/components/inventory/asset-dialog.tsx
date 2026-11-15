@@ -159,7 +159,7 @@ function AssetForm({
             {(id) => <Input id={id} value={model} onChange={(e) => setModel(e.target.value)} />}
           </FormField>
         )}
-        <FormField label={boat ? "Hull number" : "Serial number"}>
+        <FormField label="Serial number">
           {(id) => <Input id={id} value={identifier} onChange={(e) => setIdentifier(e.target.value)} />}
         </FormField>
         <FormField label="Registration">

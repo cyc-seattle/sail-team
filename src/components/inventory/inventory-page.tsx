@@ -5,10 +5,9 @@ import { SectionNav } from "@/components/section-nav";
 const pages = [
   { key: "assets", name: "Assets", to: "/inventory" },
   { key: "classes", name: "Boat classes", to: "/inventory/classes" },
-  { key: "storage", name: "Dry storage", to: "/inventory/storage" },
 ];
 
-export type InventoryPageKey = "assets" | "classes" | "storage";
+export type InventoryPageKey = "assets" | "classes";
 
 /** One page of Inventory: the section's title, its buttons, the page switcher, then the page. */
 export function InventoryPage({

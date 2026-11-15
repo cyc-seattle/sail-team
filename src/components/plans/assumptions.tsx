@@ -64,7 +64,7 @@ export function TableSection({ title, level, children }: { title: string; level:
  * A small table of one kind of rate, such as each staff level's pay. Columns after the first are numbers, on the
  * right, unless named in `text`.
  */
-export function RateTable({
+function RateTable({
   label,
   head,
   text = [],

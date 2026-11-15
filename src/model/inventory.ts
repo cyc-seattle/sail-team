@@ -96,26 +96,6 @@ export function boatsInService(assets: Asset[], day: string): Map<string, number
   return counts;
 }
 
-/** A class's dry storage: how many boats, the area each takes, and the two multiplied. */
-export interface StorageNeed {
-  boatClass: BoatClass;
-  boats: number;
-  /** Null while the class has no footprint. */
-  sq_ft: number | null;
-}
-
-/** The dry storage each class with boats in service takes on `day`, largest first, then those with no footprint. */
-export function storageNeeds(assets: Asset[], classes: BoatClass[], day: string): StorageNeed[] {
-  const counts = boatsInService(assets, day);
-  return classes
-    .filter((c) => (counts.get(c.id) ?? 0) > 0)
-    .map((c) => {
-      const boats = counts.get(c.id)!;
-      return { boatClass: c, boats, sq_ft: c.footprint_sq_ft === null ? null : boats * c.footprint_sq_ft };
-    })
-    .sort((a, b) => (b.sq_ft ?? -1) - (a.sq_ft ?? -1) || byName.compare(a.boatClass.name, b.boatClass.name));
-}
-
 /** Dollars as typed, such as "1,250.50" or "$900", in cents. Null for blank, NaN for anything else. */
 export function parseDollars(text: string): number | null {
   const cleaned = text.replace(/[$,\s]/g, "");
