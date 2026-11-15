@@ -22,6 +22,22 @@ const preview: Preview = {
   // vite.config.ts runs the stories once per theme.
   initialGlobals: { theme: import.meta.env["VITE_STORY_THEME"] ?? "light" },
   parameters: {
+    options: {
+      storySort: {
+        order: [
+          "Style guide",
+          [
+            "Introduction",
+            "Words",
+            "Layout",
+            "Color and type",
+            "Notes and descriptions",
+            "Editing in the app",
+            "Shared components",
+          ],
+        ],
+      },
+    },
     // A violation fails the story's test, in CI too.
     a11y: { test: "error" },
     viewport: {

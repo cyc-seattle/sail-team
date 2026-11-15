@@ -1,0 +1,24 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Style guide/Introduction" />
+
+# Style guide
+
+How Sail Team looks and reads, and the rules that keep every page the same. The rest of this Storybook shows every
+component, in light and dark.
+
+The people who use Sail Team are staff, coaches, volunteers, and households. They do everything in the app. Nobody
+opens Directus's Data Studio except to fix something that broke.
+
+- [Words](?path=/docs/style-guide-words--docs): how a label, button, or message is worded, and the words we've settled.
+- [Layout](?path=/docs/style-guide-layout--docs): where things go on a page, and how tables read.
+- [Color and type](?path=/docs/style-guide-color-and-type--docs): the tokens, the type scale, and dark mode.
+- [Notes and descriptions](?path=/docs/style-guide-notes-and-descriptions--docs): the two kinds of free text, and how
+  each is shown.
+- [Editing in the app](?path=/docs/style-guide-editing-in-the-app--docs): every change a person makes has a screen.
+- [Shared components](?path=/docs/style-guide-shared-components--docs): what to use before building something.
+
+The pages are MDX in `src/guide/`. Change a rule there, in the same PR as the code it changes. The
+[`ux-review`](https://github.com/cyc-seattle/sail-team/blob/main/.agents/skills/ux-review/SKILL.md) skill checks a
+change against them, and the [`design`](https://github.com/cyc-seattle/sail-team/blob/main/.agents/skills/design/SKILL.md)
+skill follows them while building.

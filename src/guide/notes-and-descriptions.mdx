@@ -1,0 +1,38 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Style guide/Notes and descriptions" />
+
+# Notes and descriptions
+
+Free text comes in two kinds, and a field is one or the other.
+
+## Note
+
+A note is a short remark beside a thing: why a number is what it is, or a link to where it came from.
+
+- At most 280 characters. Its input says how many are left, and stops at 280.
+- Inline Markdown only: bold, italics, code, and links, such as a link to the spreadsheet a plan came from. No
+  headings, lists, quotes, or images.
+- A single note is shown behind an info icon beside what it's about (`NoteInfo`), on hover or a tap. Never a Note
+  column in a table.
+- Its label is "Note".
+
+A thing can have a list of notes instead, such as a plan's notes: each one a note, with the same limit and Markdown,
+shown as bullets in the page. Its label is "Notes".
+
+## Description
+
+A description is longer text about a thing, read on its own, such as what a program is for. Not every
+thing has one: a plan has notes and no description.
+
+- No set length.
+- Simple Markdown: paragraphs, bold, italics, links, and lists. No raw HTML, which is dropped (`skipHtml`), and no
+  images.
+- Shown in the page, under the thing's heading, not behind an icon.
+- Its label is "Description".
+
+## Choosing
+
+If what people write in it would run past 280 characters, it's a description. If it's several short points, it's a
+list of notes. A note that keeps reaching its limit is a sign the field should be a description. Don't add a note to
+hold what a description or a proper field should.
