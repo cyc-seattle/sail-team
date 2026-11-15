@@ -3,7 +3,6 @@ import { PencilIcon, PlusIcon } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { FormField } from "@/components/form-field";
 import { NoteInfo } from "@/components/plans/note-info";
-import { ReportSection } from "@/components/plans/reports/report-page";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -37,18 +36,15 @@ export function StorageList({ groups, actions }: { groups: StorageGroup[]; actio
   const [editing, setEditing] = useState<StorageArea | "new" | null>(null);
   const unmeasured = [...new Set(groups.flatMap((g) => g.unmeasured))];
   return (
-    <ReportSection
-      id="storage"
-      title="Storage"
-      actions={
-        actions.canCreate && (
+    <section aria-label="Storage" className="grid gap-4">
+      {actions.canCreate && (
+        <div className="flex justify-end">
           <Button className="h-tap md:h-8" onClick={() => setEditing("new")}>
             <PlusIcon aria-hidden />
             Add storage area
           </Button>
-        )
-      }
-    >
+        </div>
+      )}
       {groups.length === 0 ? (
         <p className="text-sm text-muted-foreground">No storage areas yet.</p>
       ) : (
@@ -143,7 +139,7 @@ export function StorageList({ groups, actions }: { groups: StorageGroup[]; actio
           editing === "new" || editing === null ? actions.onCreate(input) : actions.onUpdate(editing, input)
         }
       />
-    </ReportSection>
+    </section>
   );
 }
 
