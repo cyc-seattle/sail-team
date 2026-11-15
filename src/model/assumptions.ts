@@ -14,7 +14,7 @@ import type {
 export interface OperationsAssumptions {
   rates: Pick<PlanRates, "payroll_tax_rate" | "lodging_per_night_cents" | "mileage_rate_cents"> | null;
   /** Each staff level's rate, by role, then grade. A volunteer's is 0. */
-  staffLevels: (Pick<PlanStaffLevel, "key" | "hourly_rate_cents"> & { name: string })[];
+  staffLevels: (Pick<PlanStaffLevel, "hourly_rate_cents"> & { id: string; name: string })[];
   positions: (Pick<
     PlanSalariedPosition,
     "key" | "name" | "annual_salary_cents" | "paid_hours_per_year" | "ga_share"

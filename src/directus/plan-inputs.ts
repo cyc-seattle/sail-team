@@ -70,7 +70,7 @@ type LaborRow = CostRow<Pick<PlanLaborLine, "key" | "name" | "hours" | "note">> 
 type Named = { name: string };
 
 /** A plan's rate for a staff level, with the level, its role and its grade from the catalog. */
-type StaffLevelRow = Pick<PlanStaffLevel, "key" | "hourly_rate_cents"> & {
+type StaffLevelRow = Pick<PlanStaffLevel, "hourly_rate_cents"> & {
   staff_level_id: Pick<StaffLevel, "id" | "name" | "grade"> & {
     role_id: { id: string; name: string; sort: number | null };
   };
@@ -84,8 +84,8 @@ type BonusRow = Pick<PlanBonusOwner, "id" | "key" | "role_name" | "bonus_rate" |
 function staffLevelsInOrder(rows: StaffLevelRow[]): OperationsAssumptions["staffLevels"] {
   const levels = rows.map((r) => ({ ...r.staff_level_id, role_id: r.staff_level_id.role_id.id, row: r }));
   const roles = rows.map((r) => r.staff_level_id.role_id);
-  return sortStaffLevels(levels, roles).map(({ name, row }) => ({
-    key: row.key,
+  return sortStaffLevels(levels, roles).map(({ id, name, row }) => ({
+    id,
     name,
     hourly_rate_cents: row.hourly_rate_cents,
   }));
@@ -105,7 +105,6 @@ async function operationsAssumptions(
         "plan_staff_levels",
         [operations],
         [
-          "key",
           "hourly_rate_cents",
           "staff_level_id.id",
           "staff_level_id.name",

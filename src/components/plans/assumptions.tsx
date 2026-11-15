@@ -201,7 +201,7 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
         <TableSection title="Staff levels" level={2}>
           <RateTable label="Staff levels" head={["Level", "Per hour"]}>
             {a.staffLevels.map((l) => (
-              <TableRow key={l.key}>
+              <TableRow key={l.id}>
                 <TableCell>{l.name}</TableCell>
                 <Num>{l.hourly_rate_cents === 0 ? "Volunteer" : money(l.hourly_rate_cents)}</Num>
               </TableRow>

@@ -467,11 +467,11 @@ export const reportAssumptions: OperationsAssumptions = {
     mileage_rate_cents: 70,
   },
   staffLevels: [
-    { key: "jr", name: "Junior Instructor", hourly_rate_cents: 0 },
-    { key: "l1", name: "Instructor", hourly_rate_cents: 2_200 },
-    { key: "l2", name: "Senior Instructor", hourly_rate_cents: 2_600 },
-    { key: "vc", name: "Volunteer Coach", hourly_rate_cents: 0 },
-    { key: "l3", name: "Coach", hourly_rate_cents: 3_200 },
+    { id: "jr", name: "Junior Instructor", hourly_rate_cents: 0 },
+    { id: "l1", name: "Instructor", hourly_rate_cents: 2_200 },
+    { id: "l2", name: "Senior Instructor", hourly_rate_cents: 2_600 },
+    { id: "vc", name: "Volunteer Coach", hourly_rate_cents: 0 },
+    { id: "l3", name: "Coach", hourly_rate_cents: 3_200 },
   ],
   positions: [
     {
