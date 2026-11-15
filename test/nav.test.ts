@@ -8,9 +8,10 @@ const studio = { href: directus, label: "Directus" };
 const impersonate = { href: "https://login.example.org/if/admin/#/identity/users", label: "Sign in as someone" };
 
 describe("navFor", () => {
-  it("shows Planning to someone who can read plans, Rosters to a household on a team, and Household to a household", () => {
+  it("shows Planning to someone who can read plans, Inventory to someone who can read assets, Rosters to a household on a team, and Household to a household", () => {
     expect(navFor(plannerPermissions)).toEqual([
       { to: "/plans", label: "Planning" },
+      { to: "/inventory", label: "Inventory" },
       { to: "/roster", label: "Rosters" },
       { to: "/household", label: "Household" },
     ]);

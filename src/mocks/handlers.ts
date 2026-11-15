@@ -3,6 +3,7 @@ import type { Permissions } from "@/directus/access";
 import type { Me } from "@/directus/sign-in";
 import { planner, plannerPermissions } from "./fixtures";
 import { homeTables } from "./home";
+import { inventoryTables } from "./inventory";
 import { engine, tables } from "./plans";
 import { rosterTables } from "./roster";
 
@@ -79,7 +80,9 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
     ),
     http.get(`${directusUrl}/items/:table/:id`, ({ params, request }) => {
       const table = params["table"] as string;
-      const row = (tables[table] ?? rosterTables[table])?.find((r) => r["id"] === params["id"]);
+      const row = (inventoryTables[table] ?? tables[table] ?? rosterTables[table])?.find(
+        (r) => r["id"] === params["id"],
+      );
       return row
         ? HttpResponse.json({ data: shape(row, new URL(request.url).searchParams.get("fields")) })
         : forbidden();
@@ -88,24 +91,74 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
       const query = new URL(request.url).searchParams;
       const filter = query.get("filter");
       const table = params["table"] as string;
-      const rows = (tables[table] ?? rosterTables[table] ?? homeTables[table] ?? []).filter(
+      const rows = (inventoryTables[table] ?? tables[table] ?? rosterTables[table] ?? homeTables[table] ?? []).filter(
         (r) => !filter || matches(r, JSON.parse(filter), session.me?.id),
       );
       return HttpResponse.json({ data: rows.map((r) => shape(r, query.get("fields"))) });
     }),
     http.patch(`${directusUrl}/items/:table/:id`, async ({ params, request }) => {
       const table = params["table"] as string;
-      const row = (tables[table] ?? rosterTables[table])?.find((r) => r["id"] === params["id"]);
+      const row = (inventoryTables[table] ?? tables[table] ?? rosterTables[table])?.find(
+        (r) => r["id"] === params["id"],
+      );
       if (!row) {
         return forbidden();
       }
       const changes = (await request.json()) as Row;
+      // An asset's boat details, changed with it, as Directus applies a nested change to a one-to-many.
+      if (table === "assets" && changes["boats"]) {
+        const nested = changes["boats"] as { create: Row[]; update: Row[]; delete: string[] };
+        const boats = (row["boats"] as Row[]).filter((b) => !nested.delete.includes(b["id"] as string));
+        for (const update of nested.update) {
+          Object.assign(boats.find((b) => b["id"] === update["id"]) ?? {}, update);
+        }
+        boats.push(...nested.create.map((b) => ({ id: crypto.randomUUID(), asset_id: row["id"], ...b })));
+        changes["boats"] = boats;
+      }
       // A picked school is saved by its id, and read back with its name, as Directus expands the relation.
       if (changes["school_id"]) {
         changes["school_id"] = rosterTables["schools"]!.find((s) => s["id"] === changes["school_id"]) ?? null;
       }
       Object.assign(row, changes);
       return HttpResponse.json({ data: row });
+    }),
+    // A new asset, with its boat details, or a new boat class.
+    http.post(`${directusUrl}/items/:table`, async ({ params, request }) => {
+      const table = params["table"] as string;
+      const rows = inventoryTables[table];
+      if (!rows) {
+        // Another handler's table, such as a Financial Plan's.
+        return undefined;
+      }
+      const body = (await request.json()) as Row;
+      const row: Row = { id: crypto.randomUUID(), ...body };
+      if (table === "assets") {
+        row["boats"] = ((body["boats"] as Row[] | undefined) ?? []).map((b) => ({
+          id: crypto.randomUUID(),
+          asset_id: row["id"],
+          ...b,
+        }));
+      }
+      rows.push(row);
+      return HttpResponse.json({ data: row });
+    }),
+    http.delete(`${directusUrl}/items/:table/:id`, ({ params }) => {
+      const table = params["table"] as string;
+      if (table === "boats") {
+        for (const asset of inventoryTables["assets"]!) {
+          asset["boats"] = (asset["boats"] as Row[]).filter((b) => b["id"] !== params["id"]);
+        }
+      }
+      const rows = inventoryTables[table];
+      if (!rows) {
+        return undefined;
+      }
+      const at = rows.findIndex((r) => r["id"] === params["id"]);
+      if (at < 0) {
+        return forbidden();
+      }
+      rows.splice(at, 1);
+      return new HttpResponse(null, { status: 204 });
     }),
     http.get(`${directusUrl}/frozen-plans/engine`, () => HttpResponse.json({ platform_version: engine })),
     // A draft recalculated with today's engine. Made up, they come out the same.
