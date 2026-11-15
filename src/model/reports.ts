@@ -97,7 +97,7 @@ export interface ProgramSettings {
   /** The staff level that leads it, such as an instructor or a coach. */
   staff_level: string | null;
   sailors_per_coach: number | null;
-  /** The share of its direct costs it pays toward the shared costs, fixed for the year. */
+  /** The share of its program fees it pays toward the shared costs, fixed for the year. */
   indirect_cost_rate?: number | null;
   /** Short notes the planning agent reads, each in inline markdown. */
   notes: string[] | null;
