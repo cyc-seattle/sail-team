@@ -436,7 +436,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
               name: p.product_id.name,
               staff_level: (p.staff_level_key && levelName.get(p.staff_level_key)) ?? null,
               sailors_per_coach: p.sailors_per_coach,
-              indirect_cost_rate: p.indirect_cost_rate,
+              indirect_cost_rate: p.indirect_cost_rate ?? null,
               notes: p.notes,
             })),
           ),

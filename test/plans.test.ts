@@ -290,13 +290,14 @@ describe("a Financial Plan's reports", () => {
 });
 
 describe("the Storage tab", () => {
-  it("shows each area's storage, then what every program shares", async () => {
+  it("shows each area's storage, then what every program shares, then what the rates don't recover", async () => {
     const { plans, results } = await plan(ids.budget);
     const costs = storageOf(results!.lines, plans);
     expect(costs.map((c) => [c.kind, c.payer, c.name])).toEqual([
       ["area", "Doublehanded", "Storage (dinghy float and dry storage, by area)"],
       ["area", "Summer", "Storage (dinghy float and dry storage, by area)"],
       ["shared", "Shared (G&A)", "Self storage facility"],
+      ["unallocated", "No program", "Self storage facility"],
     ]);
     expect(costs.filter((c) => c.kind === "area").map((c) => c.cents)).toEqual([700_000, 980_000]);
   });
