@@ -34,7 +34,7 @@ export function AccountsList({ accounts, costAccounts }: { accounts: CatalogAcco
         {shown.length === 0 ? (
           <p className="text-sm text-muted-foreground">No accounts yet.</p>
         ) : (
-          <Table aria-label="Chart of accounts">
+          <Table aria-label="Chart of accounts" focusable>
             <TableHeader>
               <TableRow>
                 <AccountHeads />
@@ -73,7 +73,7 @@ export function AccountsList({ accounts, costAccounts }: { accounts: CatalogAcco
         {booked.length === 0 ? (
           <p className="text-sm text-muted-foreground">No cost has an account yet.</p>
         ) : (
-          <Table aria-label="Where costs are booked">
+          <Table aria-label="Where costs are booked" focusable>
             <TableHeader>
               <TableRow>
                 <TableHead>Cost</TableHead>

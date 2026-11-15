@@ -133,9 +133,7 @@ export function offeringsByProgram(
   return programs
     .map((program) => ({
       program,
-      offerings: offerings
-        .filter((o) => o.program_id === program.id)
-        .sort((a, b) => byName.compare(a.name, b.name)),
+      offerings: offerings.filter((o) => o.program_id === program.id).sort((a, b) => byName.compare(a.name, b.name)),
     }))
     .filter((g) => g.offerings.length > 0);
 }

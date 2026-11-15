@@ -31,7 +31,7 @@ export function ProgramsList({
       {groups.length === 0 ? (
         <p className="text-sm text-muted-foreground">No products yet.</p>
       ) : (
-        <Table aria-label="Programs and products">
+        <Table aria-label="Programs and products" focusable>
           <TableHeader>
             <TableRow>
               <TableHead className={pinned}>Name</TableHead>
@@ -75,7 +75,11 @@ export function ProgramsList({
                       )}
                     </TableCell>
                     {/* A product in an area takes the area's account, on the area's row. */}
-                    {area ? <TableCell colSpan={2} /> : <AccountCells account={accountOf(product.revenue_account_id)} />}
+                    {area ? (
+                      <TableCell colSpan={2} />
+                    ) : (
+                      <AccountCells account={accountOf(product.revenue_account_id)} />
+                    )}
                   </TableRow>
                 );
               })}
