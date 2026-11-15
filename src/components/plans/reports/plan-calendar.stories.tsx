@@ -37,7 +37,7 @@ export const ABlockThatDiffers: Story = {
     await userEvent.click(canvas.getByRole("button", { name: /^Morning dock.*different from the usual$/ }));
     const block = canvas.getByRole("complementary", { name: "Activity block" });
     await expect(block).toHaveTextContent("Guppies Week 2");
-    await expect(block).toHaveTextContent("Different from the usual: 2 Level 1 Instructors.");
+    await expect(block).toHaveTextContent("Different from the usual: 2 Instructors.");
   },
 };
 

@@ -13,7 +13,9 @@ import type {
   PlanSalariedPosition,
   PlanStaffLevel,
   PlanTrip,
+  StaffLevel,
 } from "@cyc-seattle/platform/planning";
+import { sortStaffLevels } from "@cyc-seattle/platform/planning";
 import { byStart, type Term } from "@/model/terms";
 import { queryOptions } from "@tanstack/react-query";
 import {
@@ -62,11 +64,32 @@ type CostRow<T> = T & {
 type BudgetRow = CostRow<Pick<PlanBudgetLine, "key" | "name" | "amount_cents" | "note" | "in_mtdc">> & {
   account_id: { type: string };
 };
-type LaborRow = CostRow<Pick<PlanLaborLine, "key" | "name" | "staff_level_key" | "hours" | "note">>;
+type LaborRow = CostRow<Pick<PlanLaborLine, "key" | "name" | "hours" | "note">> & { staff_level_id: Named | null };
+
+/** A row's staff level, read through its link to the catalog. */
+type Named = { name: string };
+
+/** A plan's rate for a staff level, with the level, its role and its grade from the catalog. */
+type StaffLevelRow = Pick<PlanStaffLevel, "key" | "hourly_rate_cents"> & {
+  staff_level_id: Pick<StaffLevel, "id" | "name" | "grade"> & {
+    role_id: { id: string; name: string; sort: number | null };
+  };
+};
 
 type BonusRow = Pick<PlanBonusOwner, "id" | "key" | "role_name" | "bonus_rate" | "basis" | "position_key"> & {
   account_id: Account;
 };
+
+/** The plan's staff levels with their rates, by role, then grade, as planning lists them. */
+function staffLevelsInOrder(rows: StaffLevelRow[]): OperationsAssumptions["staffLevels"] {
+  const levels = rows.map((r) => ({ ...r.staff_level_id, role_id: r.staff_level_id.role_id.id, row: r }));
+  const roles = rows.map((r) => r.staff_level_id.role_id);
+  return sortStaffLevels(levels, roles).map(({ name, row }) => ({
+    key: row.key,
+    name,
+    hourly_rate_cents: row.hourly_rate_cents,
+  }));
+}
 
 /** The Operations Plan's rates for the year, with every plan's bonuses on the positions they pay. */
 async function operationsAssumptions(
@@ -78,7 +101,20 @@ async function operationsAssumptions(
       // Every field, since platform drops rib_resource_kind_id (cyc-seattle/platform#126), and Directus refuses a
       // field it doesn't have.
       rowsOf<PlanRates>("plan_rates", [operations]),
-      rowsOf<PlanStaffLevel>("plan_staff_levels", [operations]),
+      rowsOf<StaffLevelRow>(
+        "plan_staff_levels",
+        [operations],
+        [
+          "key",
+          "hourly_rate_cents",
+          "staff_level_id.id",
+          "staff_level_id.name",
+          "staff_level_id.grade",
+          "staff_level_id.role_id.id",
+          "staff_level_id.role_id.name",
+          "staff_level_id.role_id.sort",
+        ],
+      ),
       rowsOf<PlanSalariedPosition & { remainder_pool_id: { name: string } | null }>(
         "plan_salaried_positions",
         [operations],
@@ -149,7 +185,7 @@ async function operationsAssumptions(
           mileage_rate_cents: rate.mileage_rate_cents,
         }
       : null,
-    staffLevels: byName(staffLevels),
+    staffLevels: staffLevelsInOrder(staffLevels),
     positions: byName(positions).map(({ remainder_pool_id, ...p }) => ({
       ...p,
       hourly_coaching_rate_cents: p.hourly_coaching_rate_cents ?? null,
@@ -192,9 +228,9 @@ async function blockRows(planIds: string[]) {
       "date",
       "name",
     ]),
-    rowsOf<PlanBlockStaff>("plan_block_staff", planIds, [
+    rowsOf<Omit<PlanBlockStaff, "staff_level_id"> & { staff_level_id: Named | null }>("plan_block_staff", planIds, [
       "block_id",
-      "staff_level_key",
+      "staff_level_id.name",
       "position_key",
       "count",
       "pay",
@@ -286,13 +322,11 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
           "end_time",
           "on_water_minutes",
         ]),
-        rowsOf<PlanProgram & { product_id: { name: string } }>("plan_programs", planIds, [
-          "plan_id",
-          "product_id.name",
-          "staff_level_key",
-          "sailors_per_coach",
-          "notes",
-        ]),
+        rowsOf<Omit<PlanProgram, "staff_level_id"> & { product_id: { name: string }; staff_level_id: Named | null }>(
+          "plan_programs",
+          planIds,
+          ["plan_id", "product_id.name", "staff_level_id.name", "sailors_per_coach", "notes"],
+        ),
         ops ? operationsAssumptions(ops.id, planIds) : null,
         rowsOf<BudgetRow>("plan_budget_lines", planIds, [
           "plan_id",
@@ -312,7 +346,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
           "name",
           "cost_center_type",
           "cost_center_key",
-          "staff_level_key",
+          "staff_level_id.name",
           "hours",
           "note",
           ...accountFields,
@@ -338,7 +372,6 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
       ]);
       const terms = byStart(termRows);
       const termName = new Map(terms.map((t) => [t.key, t.name]));
-      const levelName = new Map(operations?.staffLevels.map((l) => [l.key, l.name]));
       const keyOf = new Map(plans.map((p) => [p.id, p.kind === "operations" ? "rates" : reportKey(p)]));
       const byReport = <T>(rows: (T & { plan_id: string })[]) => {
         const out: Record<string, T[]> = {};
@@ -373,7 +406,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         name: l.name,
         hours: l.hours,
         note: l.note,
-        staff_level: levelName.get(l.staff_level_key) ?? null,
+        staff_level: l.staff_level_id?.name ?? null,
         account: { number: l.account_id.number, name: l.account_id.name },
         charged_to: chargedTo(l),
       }));
@@ -383,7 +416,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
       const parts: BlockParts = {
         staff: blocks.staff.map((s) => ({
           block_id: s.block_id,
-          staff_level: (s.staff_level_key && levelName.get(s.staff_level_key)) ?? null,
+          staff_level: s.staff_level_id?.name ?? null,
           position: (s.position_key && positionName.get(s.position_key)) ?? null,
           count: s.count,
           pay: s.pay,
@@ -433,7 +466,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
             programs.map((p) => ({
               plan_id: p.plan_id,
               name: p.product_id.name,
-              staff_level: (p.staff_level_key && levelName.get(p.staff_level_key)) ?? null,
+              staff_level: p.staff_level_id?.name ?? null,
               sailors_per_coach: p.sailors_per_coach,
               notes: p.notes,
             })),

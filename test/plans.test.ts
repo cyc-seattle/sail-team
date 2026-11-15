@@ -130,10 +130,10 @@ describe("reading a Financial Plan's inputs from Directus", () => {
   it("reads each program's settings, with its staff level's name from the Operations Plan", async () => {
     const { programs } = await inputs(ids.budget);
     expect(programs[ids.summer]).toContainEqual(
-      expect.objectContaining({ name: "Guppies", staff_level: "Level 1 Instructor", sailors_per_coach: 10 }),
+      expect.objectContaining({ name: "Guppies", staff_level: "Instructor", sailors_per_coach: 10 }),
     );
     expect(programs[ids.summer]).toContainEqual(
-      expect.objectContaining({ name: "420 Camp", staff_level: "Level 3 Coach", sailors_per_coach: 8 }),
+      expect.objectContaining({ name: "420 Camp", staff_level: "Coach", sailors_per_coach: 8 }),
     );
   });
 
@@ -185,7 +185,7 @@ describe("reading a Financial Plan's inputs from Directus", () => {
     expect(operations?.fixedCosts.find((c) => c.name === "Spring gala gifts")?.revenue).toBe(true);
     expect(operations?.fixedCosts.find((c) => c.name === "Storage dock upkeep")?.charged_to).toBe("Boat storage 2027");
     expect(operations?.staffTime).toEqual([
-      expect.objectContaining({ name: "Winter boat repairs", staff_level: "Level 1 Instructor", hours: 120 }),
+      expect.objectContaining({ name: "Winter boat repairs", staff_level: "Instructor", hours: 120 }),
     ]);
     expect(operations?.salariedHours).toEqual([
       { key: "key:Program Director on Guppies", position: "Program Director", booked_to: "Guppies", hours: 200 },
@@ -197,7 +197,7 @@ describe("reading a Financial Plan's inputs from Directus", () => {
     const { schedule, offerings } = await inputs(ids.budget);
     const summer = schedule[ids.summer]!;
     const dock = summer.find((b) => b.date === "2027-06-21" && b.name === "Morning dock");
-    expect(dock?.parts).toEqual(["3 Level 1 Instructors", "2 RIBs", "6 Sailqubes"]);
+    expect(dock?.parts).toEqual(["3 Instructors", "2 RIBs", "6 Sailqubes"]);
     expect(dock?.activities.map((a) => [a.offering_key, a.setup_minutes, a.on_water_minutes])).toEqual([
       ["key:Guppies Week 1", 30, 180],
       ["key:Sea Otters Week 1", 30, 180],
@@ -205,13 +205,13 @@ describe("reading a Financial Plan's inputs from Directus", () => {
     // "J-Pod 2027-03-02" only repeats the program and the date.
     expect(schedule[ids.doublehanded]?.[0]).toMatchObject({
       name: null,
-      parts: ["2 Level 3 Coaches", "2 RIBs", "3 420s, plus 3 sailors' own"],
+      parts: ["2 Coaches", "2 RIBs", "3 420s, plus 3 sailors' own"],
     });
     const numbered = new Map(
       numberedOfferings(offerings[ids.summer]!).flatMap((g) => g.offerings.map((o) => [o.key, o])),
     );
     expect(patternsOf(summer, numbered).find((p) => p.title === "Morning dock")?.exceptions).toEqual([
-      "Jun 28 to Jul 2: 2 Level 1 Instructors",
+      "Jun 28 to Jul 2: 2 Instructors",
       "Jul 12 to 16: 9 Sailqubes",
     ]);
   });
