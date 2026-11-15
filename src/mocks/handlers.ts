@@ -3,7 +3,7 @@ import type { Permissions } from "@/directus/access";
 import type { Me } from "@/directus/sign-in";
 import { planner, plannerPermissions } from "./fixtures";
 import { homeTables } from "./home";
-import { tables } from "./plans";
+import { engine, tables } from "./plans";
 import { rosterTables } from "./roster";
 
 export interface MockSession {
@@ -106,6 +106,18 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
       }
       Object.assign(row, changes);
       return HttpResponse.json({ data: row });
+    }),
+    http.get(`${directusUrl}/frozen-plans/engine`, () => HttpResponse.json({ platform_version: engine })),
+    // A draft's numbers worked out again with today's planner. Made up, they come out the same.
+    http.post(`${directusUrl}/frozen-plans/drafts/:id/results`, ({ params }) => {
+      const set = tables["financial_plans"]!.find((s) => s["id"] === params["id"]);
+      if (set?.["status"] !== "draft") {
+        return forbidden();
+      }
+      for (const row of tables["plan_results"]!.filter((r) => r["financial_plan_id"] === set["id"])) {
+        row["platform_version"] = engine;
+      }
+      return HttpResponse.json({ written: true });
     }),
     // A new Financial Plan, with its parent's plans and their rows copied in, as platform's hook copies them.
     http.post(`${directusUrl}/items/financial_plans`, async ({ request }) => {

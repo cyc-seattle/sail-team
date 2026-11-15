@@ -225,6 +225,8 @@ export interface CapitalResult {
 
 export interface Results {
   calculated_at: string | null;
+  /** The planner (platform's engine) that worked them out. None in results from before platform recorded it. */
+  platform_version: string | null;
   totals: Totals;
   pnl: PnlRow[];
   lines: PlanLine[];
@@ -232,6 +234,16 @@ export interface Results {
   /** None in results worked out before capital was ranked. */
   capital: CapitalResult[];
 }
+
+/**
+ * Whether a draft's numbers came from another planner than the one platform runs now, such as before a new one
+ * deployed. Platform never works them out again on its own, and a frozen plan's never change. False while `engine` is
+ * unknown.
+ */
+export const fromOlderEngine = (
+  plan: { set: Pick<FinancialPlanSummary, "status">; results: Pick<Results, "platform_version"> | null },
+  engine: string | null | undefined,
+) => plan.set.status === "draft" && !!plan.results && !!engine && plan.results.platform_version !== engine;
 
 /** How long a Financial Plan's numbers may be missing before the page says they couldn't be worked out. */
 export const stuckAfterMs = 30_000;
