@@ -28,6 +28,7 @@ import {
   summerStatement,
   totals,
   warnings,
+  rowWarnings,
   closedDays,
   doublehandedSchedule,
   summerSchedule,
@@ -38,6 +39,9 @@ import { ProgramAreaReport } from "./program-area-report";
 import { RatesReport } from "./rates-report";
 import { ReportPage } from "./report-page";
 import { withRouter } from "../../../../.storybook/with-router";
+
+// The plan's warnings, with those about one row each, which show on the rows they name.
+const everyWarning = [...warnings, ...rowWarnings];
 
 const meta = {
   component: ReportPage,
@@ -87,7 +91,7 @@ export const Summer: Story = {
       <ProgramAreaReport
         area="Summer"
         notes={summerNotes}
-        warnings={warnings.filter((w) => w.area === "summer")}
+        warnings={everyWarning}
         statement={summerStatement}
         total={summerTotal}
         programs={summerPrograms}
@@ -121,7 +125,7 @@ export const Doublehanded: Story = {
       <ProgramAreaReport
         area="Doublehanded"
         notes={doublehandedNotes}
-        warnings={warnings.filter((w) => w.area === "doublehanded")}
+        warnings={everyWarning}
         statement={doublehandedStatement}
         total={doublehandedTotal}
         programs={doublehandedPrograms}
@@ -140,12 +144,25 @@ export const Doublehanded: Story = {
 export const NonProgram: Story = {
   args: {
     current: "non-program",
-    children: <NonProgramReport products={products} shared={sharedCosts} fundraising={fundraising} capital={capital} />,
+    warnings: everyWarning,
+    children: (
+      <NonProgramReport
+        products={products}
+        shared={sharedCosts}
+        fundraising={fundraising}
+        capital={capital}
+        warnings={everyWarning}
+      />
+    ),
   },
 };
 
 export const Assumptions: Story = {
-  args: { current: "rates", children: <RatesReport assumptions={reportAssumptions} storage={storageCosts} /> },
+  args: {
+    current: "rates",
+    warnings: everyWarning,
+    children: <RatesReport assumptions={reportAssumptions} storage={storageCosts} warnings={everyWarning} />,
+  },
 };
 
 /** The count beside its name links to the Overview's warnings, where each area's count links to its own. */

@@ -371,7 +371,7 @@ fit(summerOfferings, summerTotal, 900_000);
 /** What CSC sells outside the programs. */
 export const products: Product[] = [
   { name: "Boat storage", revenue_cents: 1_500_000, direct_cents: 300_000 },
-  { name: "Charters", revenue_cents: 700_000, direct_cents: 450_000 },
+  { name: "Charters", id: "product-charters", revenue_cents: 700_000, direct_cents: 450_000 },
   { name: "Merchandise", revenue_cents: 200_000, direct_cents: 150_000 },
 ];
 
@@ -563,6 +563,7 @@ export const reportAssumptions: OperationsAssumptions = {
     {
       key: "sailqube",
       boat_class: "Sailqube",
+      boat_class_id: "class-sailqube",
       fuel_per_hour_cents: null,
       maintenance_per_boat_hour_cents: 200,
       charter_per_day_cents: null,
@@ -774,7 +775,7 @@ export const warnings: PlanWarning[] = [
     subject: "launch-ramp",
     area: "non-program",
     date: null,
-    message: "Launch ramp repair is a budget line, so it comes last.",
+    message: "Add Launch ramp repair to the capital list to rank it.",
   },
 ];
 
@@ -962,4 +963,62 @@ export const doublehandedTrips: Trip[] = [
     airfare_cents: 45_000,
     miles: null,
   },
+];
+
+const rowWarning = (
+  key: string,
+  code: string,
+  subject: string,
+  area: string,
+  message: string,
+  date: string | null = null,
+): PlanWarning => ({ key, code, category: "data", severity: "warning", subject, area, date, message });
+
+/** Warnings about one row each, which show on that row: on Assumptions, Non-program, and an area's tables. */
+export const rowWarnings: PlanWarning[] = [
+  rowWarning(
+    "r1",
+    "position_overbooked",
+    "pd",
+    "non-program",
+    "Program Director's hours on programs cost more than its salary allows, so they're cut to fit.",
+  ),
+  rowWarning(
+    "r2",
+    "bonus_without_revenue",
+    "summer",
+    "non-program",
+    "Summer Director's offerings have no revenue, so its bonus is split evenly.",
+  ),
+  rowWarning(
+    "r3",
+    "no_charter_rate",
+    "class-sailqube",
+    "summer",
+    "Morning dock charters Sailqubes, which have no charter rate. They cost nothing.",
+    "2027-07-12",
+  ),
+  rowWarning(
+    "r4",
+    "cost_off_programs",
+    "tents",
+    "summer",
+    "Tent rental is left out of the shared-cost split, so other areas pay more.",
+  ),
+  rowWarning(
+    "r5",
+    "trip_without_staff",
+    "fall-regatta",
+    "doublehanded",
+    "Fall regatta has no staff on its travel days, so no coach airfare or lodging.",
+    "2027-10-16",
+  ),
+  rowWarning(
+    "r6",
+    "area_on_non_program",
+    "product-charters",
+    "non-program",
+    "Charters isn't a program, but it's in a program area.",
+  ),
+  rowWarning("r7", "capital_unranked", "capital-Trailer", "non-program", "Add Trailer to the capital list to rank it."),
 ];

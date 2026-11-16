@@ -4,6 +4,7 @@ import { PageHeader } from "../page-header";
 import { PlanStatus, type VersionState } from "../version-badge";
 import type { PlanWarning } from "@/model/reports";
 import { ReportNav, type Report } from "./report-nav";
+import { WarningMark } from "../warning-mark";
 import { WarningsBadge } from "./warnings-badge";
 
 /** A report's sections, one under the next, each full width. */
@@ -61,18 +62,22 @@ export function ReportSection({
   id,
   title,
   actions,
+  warnings = [],
   children,
 }: {
   id: string;
   title: string;
   actions?: ReactNode;
+  /** The engine's warnings about the whole section, marked beside its title. */
+  warnings?: PlanWarning[];
   children: ReactNode;
 }) {
   return (
     <section aria-labelledby={id} className="grid gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id={id} className="text-lg font-medium">
+        <h2 id={id} className="flex items-center gap-1 text-lg font-medium">
           {title}
+          <WarningMark warnings={warnings} />
         </h2>
         {actions}
       </div>

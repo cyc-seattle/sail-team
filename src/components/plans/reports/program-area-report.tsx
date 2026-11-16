@@ -14,7 +14,7 @@ import {
   type ReportOffering,
   type Trip,
 } from "@/model/reports";
-import { placeOf } from "@/model/warnings";
+import { about, placeOf } from "@/model/warnings";
 import { cn } from "@/lib/utils";
 import { BudgetLines, StaffTimeTable } from "../assumptions";
 import { Money } from "../money";
@@ -126,13 +126,13 @@ function AreaAssumptions({
         {fixedCosts.length > 0 && (
           <div className="border-t pt-4">
             <div className="grid gap-6">
-              <BudgetLines costsTitle="Fixed costs" lines={fixedCosts} level={3} />
+              <BudgetLines costsTitle="Fixed costs" lines={fixedCosts} level={3} warnings={warnings} />
             </div>
           </div>
         )}
         {staffTime.length > 0 && (
           <div className="border-t pt-4">
-            <StaffTimeTable lines={staffTime} level={3} />
+            <StaffTimeTable lines={staffTime} level={3} warnings={warnings} />
           </div>
         )}
       </div>
@@ -227,6 +227,7 @@ function GroupedTable({
                       <span className="inline-flex items-center gap-1">
                         <OfferingName offering={o} />
                         <NoteInfo note={o.note} />
+                        <WarningMark warnings={about(warnings, o.key).filter((w) => placeOf(w) === "list")} />
                       </span>
                     </TableCell>
                     {cells(o)}
@@ -275,6 +276,7 @@ export interface ProgramAreaReportProps {
   area: string;
   /** The area's own notes, for what spans its programs. */
   notes: string[] | null;
+  /** Every warning in the Financial Plan: its own are listed and on its calendar, and any about one of its rows show there. */
   warnings: PlanWarning[];
   statement: { revenue: AccountAmount[]; direct: AccountAmount[]; indirect: AccountAmount[] };
   /** Its total revenue and expenses, which its offerings' and what's charged to the area itself add up to. */
@@ -319,9 +321,10 @@ export function ProgramAreaReport({
   const [ownDay, setOwnDay] = useState<string | null>(null);
   const numbered = new Map(numberedOfferings(offerings).flatMap((g) => g.offerings.map((o) => [o.key, o])));
   const charged = chargedToArea(offerings, total);
+  const own = warnings.filter((w) => w.area === areaKey);
   return (
     <>
-      <WarningsSection warnings={warnings} onDay={(d) => (onDayChange ?? setOwnDay)(d)} />
+      <WarningsSection warnings={own} onDay={(d) => (onDayChange ?? setOwnDay)(d)} />
       <div className="grid gap-2">
         <AreaAssumptions
           area={area}
@@ -339,7 +342,7 @@ export function ProgramAreaReport({
           closedDays={closedDays}
           day={day === undefined ? ownDay : day}
           onDayChange={onDayChange ?? setOwnDay}
-          warnings={warnings}
+          warnings={own}
         />
       </ReportSection>
 
@@ -436,7 +439,12 @@ export function ProgramAreaReport({
             <TableBody>
               {trips.map((t) => (
                 <TableRow key={t.key}>
-                  <TableCell className={pinned}>{t.name}</TableCell>
+                  <TableCell className={pinned}>
+                    <span className="inline-flex items-center gap-1">
+                      {t.name}
+                      <WarningMark warnings={about(warnings, t.key)} />
+                    </span>
+                  </TableCell>
                   <TableCell>{numbered.get(t.offering_key)?.program ?? none}</TableCell>
                   <TableCell>{numbered.get(t.offering_key)?.own ?? none}</TableCell>
                   <Num>{t.nights === null ? none : count(t.nights)}</Num>
