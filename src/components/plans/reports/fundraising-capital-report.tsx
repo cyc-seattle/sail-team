@@ -112,11 +112,6 @@ function ItemRow({ item, runsOut, warnings }: { item: CapitalItem; runsOut: bool
             </a>
           )}
         </span>
-        {item.rank === null && (
-          <span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-            Entered as a budget line, so it has no rank. Add it to the capital list to rank it.
-          </span>
-        )}
       </TableCell>
       <TableCell className="align-top">
         <span className="text-muted-foreground tabular-nums">{item.account_number}</span> {item.account_name}
