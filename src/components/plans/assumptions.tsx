@@ -16,6 +16,7 @@ import { formatCents, formatExactCents } from "@/model/money";
 import { cn } from "@/lib/utils";
 import { AccountTable, type AccountTableGroup } from "./account-table";
 import { NoteInfo } from "./note-info";
+import { reportColumns } from "./reports/report-page";
 
 const none = <span className="text-muted-foreground">—</span>;
 // Prices, salaries and nightly rates are whole dollars; hourly and per-mile rates keep their cents.
@@ -50,10 +51,25 @@ function Num({ children, className }: { children: ReactNode; className?: string 
  * A titled part of the assumptions: a section of its own, with an h2, on the Assumptions tab, and a smaller one, with
  * an h3, inside a program area's.
  */
-export function TableSection({ title, level, children }: { title: string; level: 2 | 3; children: ReactNode }) {
+export function TableSection({
+  title,
+  level,
+  half = false,
+  children,
+}: {
+  title: string;
+  level: 2 | 3;
+  /** Whether it takes one of a report's two columns (`reportColumns`). */
+  half?: boolean;
+  children: ReactNode;
+}) {
   const Heading = level === 2 ? "h2" : "h3";
   return (
-    <section aria-label={title} className={cn("grid content-start", level === 2 ? "gap-4" : "gap-1")}>
+    <section
+      aria-label={title}
+      data-half={half || undefined}
+      className={cn("grid content-start", level === 2 ? "gap-3" : "gap-1")}
+    >
       <Heading className={level === 2 ? "text-lg font-medium" : "text-sm font-medium"}>{title}</Heading>
       {children}
     </section>
@@ -172,9 +188,9 @@ function SalariedStaff({ a }: { a: OperationsAssumptions }) {
  */
 export function OperationsAssumptionsView({ assumptions: a }: { assumptions: OperationsAssumptions }) {
   return (
-    <div className="grid max-w-4xl gap-12">
+    <div className={reportColumns}>
       {a.rates && (
-        <TableSection title="Rates" level={2}>
+        <TableSection title="Rates" level={2} half>
           <RateTable label="Rates" head={["Rate", "Amount"]}>
             <TableRow>
               <TableCell>Lodging, per night</TableCell>
@@ -188,7 +204,7 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
         </TableSection>
       )}
       {a.payrollTaxes.length > 0 && (
-        <TableSection title="Payroll taxes" level={2}>
+        <TableSection title="Payroll taxes" level={2} half>
           <RateTable label="Payroll taxes" head={["Tax", "Rate"]}>
             {a.payrollTaxes.map((t) => (
               <TableRow key={t.key}>
@@ -206,7 +222,7 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
         </TableSection>
       )}
       {a.staffLevels.length > 0 && (
-        <TableSection title="Staff levels" level={2}>
+        <TableSection title="Staff levels" level={2} half>
           <RateTable label="Staff levels" head={["Level", "Per hour"]}>
             {a.staffLevels.map((l) => (
               <TableRow key={l.id}>
@@ -219,7 +235,7 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
       )}
       {a.positions.length > 0 && <SalariedStaff a={a} />}
       {a.salariedHours.length > 0 && (
-        <TableSection title="Salaried hours on programs" level={2}>
+        <TableSection title="Salaried hours on programs" level={2} half>
           <RateTable label="Salaried hours on programs" head={["Position", "Program", "Hours"]} text={["Program"]}>
             {a.salariedHours.map((h) => (
               <TableRow key={h.key}>
@@ -299,7 +315,7 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
       <BudgetLines costsTitle="Fixed costs and G&A" lines={a.fixedCosts} level={2} />
       {a.staffTime.length > 0 && <StaffTimeTable lines={a.staffTime} level={2} />}
       {a.closedDays.length > 0 && (
-        <TableSection title="Closed days" level={2}>
+        <TableSection title="Closed days" level={2} half>
           <RateTable label="Closed days" head={["Date", "Closed for"]} text={["Closed for"]}>
             {a.closedDays.map((d) => (
               <TableRow key={d.key}>

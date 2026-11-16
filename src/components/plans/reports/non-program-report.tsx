@@ -35,7 +35,7 @@ export function NonProgramReport({ products, shared }: { products: Product[]; sh
   const pools = [...new Set(shared.map((c) => c.pool))].sort((a, b) => a.localeCompare(b));
   return (
     <>
-      <ReportSection id="sold-outside-programs" title="Sold outside programs">
+      <ReportSection id="sold-outside-programs" title="Sold outside programs" half>
         <Table aria-label="Sold outside programs">
           <TableHeader>
             <TableRow>
@@ -68,7 +68,7 @@ export function NonProgramReport({ products, shared }: { products: Product[]; sh
         </Table>
       </ReportSection>
 
-      <ReportSection id="shared-costs" title="Shared costs">
+      <ReportSection id="shared-costs" title="Shared costs" half>
         <AccountTable
           label="Shared costs"
           columns={[{ head: "Allocated" }, { head: "Unallocated" }, { head: "Total" }]}

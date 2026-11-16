@@ -4,6 +4,13 @@ import { PageHeader } from "../page-header";
 import { PlanStatus, type VersionState } from "../version-badge";
 import { ReportNav, type Report } from "./report-nav";
 
+/**
+ * A report's sections in two columns on a laptop: each spans both unless it's `data-half`, so tables line up as columns
+ * instead of each being its own width. One column on a phone.
+ */
+export const reportColumns =
+  "grid items-start gap-x-8 gap-y-10 lg:grid-cols-2 *:min-w-0 lg:*:col-span-2 lg:*:data-half:col-span-1";
+
 export interface ReportPageProps {
   setId: string;
   /** The Financial Plan's name, such as Budget. */
@@ -38,25 +45,30 @@ export function ReportPage({
         actions={actions}
       />
       <ReportNav setId={setId} reports={reports} current={current} />
-      <div className="grid gap-12">{children}</div>
+      <div className={reportColumns}>{children}</div>
     </main>
   );
 }
 
-/** A titled part of a report, spaced well apart from the next, with any controls for it on the right. */
+/**
+ * A titled part of a report, spaced well apart from the next, with any controls for it on the right. A `half` one
+ * takes one of the two columns, for a table with a column or two of values.
+ */
 export function ReportSection({
   id,
   title,
   actions,
+  half = false,
   children,
 }: {
   id: string;
   title: string;
   actions?: ReactNode;
+  half?: boolean;
   children: ReactNode;
 }) {
   return (
-    <section aria-labelledby={id} className="grid gap-4">
+    <section aria-labelledby={id} data-half={half || undefined} className="grid gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id={id} className="text-lg font-medium">
           {title}

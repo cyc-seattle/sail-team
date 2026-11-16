@@ -17,7 +17,7 @@ export function FundraisingCapitalReport({
 }) {
   return (
     <>
-      <ReportSection id="fundraising" title="Fundraising">
+      <ReportSection id="fundraising" title="Fundraising" half>
         <StatementTable
           label="Fundraising"
           sections={[
@@ -26,7 +26,7 @@ export function FundraisingCapitalReport({
           ]}
         />
       </ReportSection>
-      <ReportSection id="capital" title="Capital">
+      <ReportSection id="capital" title="Capital" half>
         <CapitalTable items={capital.items} />
       </ReportSection>
     </>
@@ -61,7 +61,7 @@ export function CapitalTable({ items }: { items: CapitalItem[] }) {
       <TableBody>
         {rows(ranked)}
         {unranked.length > 0 && (
-          <TableRow className="hover:bg-transparent">
+          <TableRow highlight={false}>
             <TableCell />
             <TableCell colSpan={4} className="pt-6 font-medium">
               Not ranked
