@@ -26,7 +26,7 @@ export function WarningsSection({ warnings, onDay }: { warnings: PlanWarning[]; 
             </TableHead>
             {dated && <TableHead>Date</TableHead>}
             <TableHead>Warning</TableHead>
-            <TableHead>Detail</TableHead>
+            <TableHead className="hidden sm:table-cell">Detail</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -55,8 +55,12 @@ export function WarningsSection({ warnings, onDay }: { warnings: PlanWarning[]; 
                     ))}
                 </TableCell>
               )}
-              <TableCell className="align-top font-medium">{kindName(w.code)}</TableCell>
-              <TableCell className="align-top whitespace-normal">{w.message}</TableCell>
+              <TableCell className="align-top whitespace-normal">
+                <span className="font-medium">{kindName(w.code)}</span>
+                {/* A phone has no room for a column of its own, so the detail goes under the name. */}
+                <span className="block sm:hidden">{w.message}</span>
+              </TableCell>
+              <TableCell className="hidden align-top whitespace-normal sm:table-cell">{w.message}</TableCell>
             </TableRow>
           ))}
         </TableBody>
