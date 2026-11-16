@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent, within } from "storybook/test";
 import { withRouter } from "../../../../.storybook/with-router";
-import { areaOfferings, functions, overviewRows, totals, warnings } from "./fixtures";
+import { areaOfferings, functions, overviewRows, totals } from "./fixtures";
 import { OverviewReport } from "./overview-report";
 
 const meta = {
@@ -13,7 +13,6 @@ const meta = {
     setId: "budget",
     rows: overviewRows,
     offerings: areaOfferings,
-    warnings,
     totals,
     functions,
   },
@@ -85,6 +84,3 @@ export const ByProgram: Story = {
     await expect(fees.querySelector("tfoot")).toHaveTextContent("All programs");
   },
 };
-
-/** A plan with nothing to warn about has no warnings card. */
-export const NoWarnings: Story = { args: { warnings: [] } };

@@ -2,7 +2,9 @@ import type { ReactNode } from "react";
 import type { InForce } from "@/model/financial-plans";
 import { PageHeader } from "../page-header";
 import { PlanStatus, type VersionState } from "../version-badge";
+import type { PlanWarning } from "@/model/reports";
 import { ReportNav, type Report } from "./report-nav";
+import { WarningsBadge } from "./warnings-badge";
 
 export interface ReportPageProps {
   setId: string;
@@ -15,6 +17,8 @@ export interface ReportPageProps {
   current: string;
   /** The plan's buttons, on the right. */
   actions?: ReactNode;
+  /** Every warning the engine left on it, counted beside its name. */
+  warnings?: PlanWarning[];
   children: ReactNode;
 }
 
@@ -27,13 +31,19 @@ export function ReportPage({
   reports,
   current,
   actions,
+  warnings = [],
   children,
 }: ReportPageProps) {
   return (
     <main className="mx-auto grid max-w-6xl gap-6 p-card">
       <PageHeader
         title={name}
-        badge={<PlanStatus state={status} inForce={inForce} />}
+        badge={
+          <span className="inline-flex items-center gap-2 self-center">
+            <PlanStatus state={status} inForce={inForce} />
+            <WarningsBadge setId={setId} warnings={warnings} reports={reports} />
+          </span>
+        }
         back={{ to: "/plans", label: "Planning" }}
         actions={actions}
       />

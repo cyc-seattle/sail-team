@@ -1,7 +1,8 @@
 import { programColor } from "@cyc-seattle/platform/planning";
 import { useState, type CSSProperties } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { numberedOfferings, type NumberedOffering, type ReportOffering } from "@/model/reports";
+import { numberedOfferings, type NumberedOffering, type PlanWarning, type ReportOffering } from "@/model/reports";
+import { distinct, placeOf, worstOf } from "@/model/warnings";
 import {
   dayOf,
   differences,
@@ -19,6 +20,7 @@ import {
   type ScheduleBlock,
 } from "@/model/schedule";
 import { cn } from "@/lib/utils";
+import { SeverityIcon, WarningList } from "../warning-mark";
 import { SpanGrid, type SpanRow } from "./span-grid";
 
 /** A program area on the calendar: its report's key, its name, its blocks and its offerings. */
@@ -39,6 +41,8 @@ export interface PlanCalendarProps {
   day: string | null;
   onAreaChange: (area: string | null) => void;
   onDayChange: (day: string) => void;
+  /** The engine's warnings; those about a day show on it. */
+  warnings?: PlanWarning[];
 }
 
 const HOUR = 56;
@@ -57,13 +61,23 @@ interface Placed {
  * Every program area's calendar together: each offering over its weeks, its programs in shades of its area's color, then
  * a chosen day's activity blocks at their times, each opening to its staff, coach boats and boats.
  */
-export function PlanCalendar({ areas, closedDays, area, day, onAreaChange, onDayChange }: PlanCalendarProps) {
+export function PlanCalendar({
+  areas,
+  closedDays,
+  area,
+  day,
+  onAreaChange,
+  onDayChange,
+  warnings = [],
+}: PlanCalendarProps) {
   const [chosen, setChosen] = useState<string | null>(null);
   const sorted = [...areas].sort((a, b) => a.name.localeCompare(b.name));
   const shown = sorted.filter((a) => !area || a.key === area);
   const all = shown.flatMap((a) => a.blocks).sort((a, b) => a.date.localeCompare(b.date));
   const weeks = weeksOf(all);
   const today = day ?? all[0]?.date ?? null;
+  const dayWarnings = distinct(warnings.filter((w) => placeOf(w) === "day" && shown.some((a) => a.key === w.area)));
+  const warningsOn = (d: string) => dayWarnings.filter((w) => w.date === d);
 
   const offerings = new Map<string, NumberedOffering>();
   const colors = new Map<string, CSSProperties>();
@@ -209,6 +223,7 @@ export function PlanCalendar({ areas, closedDays, area, day, onAreaChange, onDay
                   {i === 0 || monthOf(w) !== monthOf(weeks[i - 1]!) ? monthOf(w) : " "}
                 </span>
                 <span className="text-xs">{dayOf(w)}</span>
+                <WeekMark worst={worstOf(dayWarnings.filter((x) => x.date && weekOf(x.date) === w))} />
               </>
             ),
           }))}
@@ -232,6 +247,7 @@ export function PlanCalendar({ areas, closedDays, area, day, onAreaChange, onDay
               >
                 <span className="text-xs">{weekdayOf(d)}</span> <span className="font-medium">{dayOf(d)}</span>
                 {closedOn(d) && <span className="text-[0.625rem] leading-none"> Closed</span>}
+                <DayMark warnings={warningsOn(d)} />
               </button>
             ))}
           </div>
@@ -240,6 +256,7 @@ export function PlanCalendar({ areas, closedDays, area, day, onAreaChange, onDay
             {closed && <span className="font-normal text-muted-foreground"> · Closed for {closed.name}</span>}
           </h3>
         </div>
+        {warningsOn(today).length > 0 && <WarningList warnings={warningsOn(today)} className="max-w-3xl text-sm" />}
 
         <div className="grid items-start gap-4 lg:grid-cols-[1fr_20rem]">
           <div className="relative rounded-lg border bg-card" style={{ height: hours.length * HOUR }}>
@@ -261,6 +278,7 @@ export function PlanCalendar({ areas, closedDays, area, day, onAreaChange, onDay
                 const title = p.block.name ?? programs.join(" and ");
                 const header = framed ? 20 : 0;
                 const odd = differing.has(p.block.key);
+                const own = dayWarnings.filter((w) => p.block.activities.some((a) => a.key === w.subject));
                 return (
                   <button
                     key={p.block.key}
@@ -303,6 +321,14 @@ export function PlanCalendar({ areas, closedDays, area, day, onAreaChange, onDay
                         );
                       })}
                     </span>
+                    {own.length > 0 && (
+                      <>
+                        <span className="sr-only">, {own.length === 1 ? "1 warning" : `${own.length} warnings`}</span>
+                        <span aria-hidden className="absolute -top-1.5 -left-1.5 rounded-full bg-background p-px">
+                          <SeverityIcon severity={worstOf(own)!} className="size-3" />
+                        </span>
+                      </>
+                    )}
                     {odd && (
                       <>
                         <span className="sr-only">, different from the usual</span>
@@ -414,5 +440,33 @@ function BlockDetails({
         </p>
       )}
     </aside>
+  );
+}
+
+/** A week's worst warning, under its day in the year's heading, or a blank of the same height. */
+function WeekMark({ worst }: { worst: "error" | "warning" | null }) {
+  return (
+    <span className="flex h-4 justify-center">
+      {worst && (
+        <>
+          <span className="sr-only">, {worst === "error" ? "has errors" : "has warnings"}</span>
+          <SeverityIcon severity={worst} className="size-3" />
+        </>
+      )}
+    </span>
+  );
+}
+
+/** A day's worst warning, under its date. */
+function DayMark({ warnings }: { warnings: PlanWarning[] }) {
+  const worst = worstOf(warnings);
+  if (!worst) {
+    return null;
+  }
+  return (
+    <>
+      <span className="sr-only">, {warnings.length === 1 ? "1 warning" : `${warnings.length} warnings`}</span>
+      <SeverityIcon severity={worst} className="size-3" />
+    </>
   );
 }

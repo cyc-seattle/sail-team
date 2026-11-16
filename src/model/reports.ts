@@ -94,6 +94,8 @@ export function totalOf(rows: OverviewRow[]): OverviewRow {
 /** A program's settings, which hold for every one of its offerings. */
 export interface ProgramSettings {
   name: string;
+  /** Its product's id, which the engine's warnings about it name. */
+  program_id?: string;
   /** The staff level that leads it, such as an instructor or a coach. */
   staff_level: string | null;
   sailors_per_coach: number | null;
@@ -338,6 +340,10 @@ export interface PlanWarning {
   /** Its kind, such as `over_capacity`. */
   code: string;
   category: ResultWarning["category"];
+  /** Results from before platform set a severity are warnings. */
+  severity: "warning" | "error";
+  /** The key of the row it's about, when platform names one. */
+  subject: string | null;
   /** The report key of the plan it's about: a program area's, or `non-program` for the Operations Plan or none. */
   area: string;
   date: string | null;
@@ -650,6 +656,8 @@ export function planWarnings(warnings: ResultWarning[], plans: Plan[]): PlanWarn
       key: String(i),
       code: w.code,
       category: w.category,
+      severity: w.severity ?? "warning",
+      subject: w.subject_key ?? null,
       area: plan ? reportKey(plan) : "non-program",
       date: w.date,
       message: w.message,

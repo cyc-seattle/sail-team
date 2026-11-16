@@ -205,6 +205,10 @@ export interface ResultWarning {
   message: string;
   /** Allocation: the blocks break a limit, or run on a closed day. Data: a row is missing or wrong. */
   category: "allocation" | "data" | null;
+  /** Error: the plan can't run as allocated for the sailors expected. None in results from before platform set it. */
+  severity: "warning" | "error" | null;
+  /** The key of the row it's about, such as a product's id or a boat class's name. None in older results. */
+  subject_key: string | null;
   plan: string | null;
   date: string | null;
 }

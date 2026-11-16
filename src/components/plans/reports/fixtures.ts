@@ -132,7 +132,14 @@ export const summerPrograms: ProgramSettings[] = [
     indirect_cost_rate: 0.15,
     notes: ["About a third bring their own Optis.", "Never fewer than 2 coaches on the water."],
   },
-  { name: "Race Camp", staff_level: "Coach", sailors_per_coach: 10, indirect_cost_rate: 0.15, notes: null },
+  {
+    name: "Race Camp",
+    program_id: "product-race-camp",
+    staff_level: "Coach",
+    sailors_per_coach: 10,
+    indirect_cost_rate: null,
+    notes: null,
+  },
 ];
 
 const week = (n: number) => {
@@ -145,6 +152,7 @@ const week = (n: number) => {
 const camp = (program: string, n: number, fee: number, estimated: number, max: number, hours: number) => ({
   key: `${program}-${n}`,
   program,
+  program_id: `product-${program.toLowerCase().replace(" ", "-")}`,
   ...week(n),
   fee_cents: fee,
   estimated,
@@ -642,36 +650,65 @@ export const assumptionsNotes = [
 export const warnings: PlanWarning[] = [
   {
     key: "w1",
-    code: "over_capacity",
+    code: "short_of_boats",
     category: "allocation",
+    severity: "error",
+    subject: "RIB",
     area: "summer",
     date: "2027-07-12",
-    message: "Guppies Week 4: 14 sailors, but the boats can take 12",
+    message:
+      "Guppies Week 4, Opti Camp Week 4, and Race Camp Week 4 need 4 RIBs out at once for the sailors expected, but CSC has only 3, so they're 1 short",
   },
   {
     key: "w2",
-    code: "over_capacity",
+    code: "over_inventory_boats",
     category: "allocation",
+    severity: "warning",
+    subject: "Sailqube",
     area: "summer",
-    date: "2027-07-13",
-    message: "Guppies Week 4: 14 sailors, but the staff can take 10",
+    date: "2027-07-12",
+    message: "11 Sailqubes out at once for Guppies Week 4 and Opti Camp Week 4, but CSC has only 8",
   },
   {
     key: "w3",
-    code: "no_program_settings",
-    category: "data",
+    code: "closed_date",
+    category: "allocation",
+    severity: "warning",
+    subject: "guppies-2027-07-05",
     area: "summer",
-    date: "2027-07-19",
-    message:
-      "Race Camp Week 2's program has no staff level or sailors per coach, so its sailors aren't checked against its staff",
+    date: "2027-07-05",
+    message: "Guppies Week 3's session is on Independence Day, observed, when CSC is closed",
   },
   {
     key: "w4",
-    code: "unallocated_activity",
+    code: "no_indirect_cost_rate",
+    category: "data",
+    severity: "warning",
+    subject: "product-race-camp",
+    area: "summer",
+    date: null,
+    message: "Race Camp has no indirect cost rate, so it pays none of the shared costs",
+  },
+  {
+    key: "w5",
+    code: "position_double_booked",
     category: "allocation",
+    severity: "warning",
+    subject: "program-director",
     area: "doublehanded",
     date: "2027-08-02",
-    message: "J-Pod Summer's practice has no staff",
+    message:
+      "Program Director coaches J-Pod Summer and Race Camp Week 7 at the same time, so another coach is needed for 2 hours",
+  },
+  {
+    key: "w6",
+    code: "capital_unranked",
+    category: "data",
+    severity: "warning",
+    subject: "launch-ramp",
+    area: "non-program",
+    date: null,
+    message: "Launch ramp repair is capital entered as a budget line, so it comes after the ranked capital list",
   },
 ];
 

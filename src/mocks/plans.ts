@@ -766,6 +766,8 @@ function results(setRow: Row, calculatedAt: string, platformVersion: string | nu
       code: w.code,
       message: w.message,
       category: w.category,
+      severity: ("severity" in w ? w.severity : null) as "warning" | "error" | null,
+      subject_key: w.key ?? null,
       date: w.date ?? null,
     })),
   };

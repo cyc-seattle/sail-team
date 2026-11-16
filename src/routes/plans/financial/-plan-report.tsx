@@ -79,6 +79,7 @@ function Found({ data, stuck, report }: { data: FinancialPlan; stuck: boolean; r
       reports={reports}
       current={report}
       actions={<Actions plan={data} />}
+      warnings={data.results ? planWarnings(data.results.warnings, data.plans) : []}
     >
       <Older plan={data} />
       {!data.results ? (
@@ -145,7 +146,6 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
         setId={set.id}
         rows={rows}
         offerings={inputs.offerings}
-        warnings={warnings}
         totals={results.totals}
         functions={functionalExpenses(results.lines)}
       />
@@ -163,6 +163,7 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
             offerings: inputs.offerings[reportKey(m)] ?? [],
           }))}
         closedDays={inputs.operations?.closedDays ?? []}
+        warnings={warnings}
       />
     );
   }
@@ -233,7 +234,7 @@ function AreaReport(props: Omit<ProgramAreaReportProps, "day" | "onDayChange">) 
 }
 
 /** The Calendar, with its area and day kept in the address. */
-function CalendarReport(props: Pick<PlanCalendarProps, "areas" | "closedDays">) {
+function CalendarReport(props: Pick<PlanCalendarProps, "areas" | "closedDays" | "warnings">) {
   const { area, day } = reportRoute.useSearch();
   const navigate = reportRoute.useNavigate();
   return (

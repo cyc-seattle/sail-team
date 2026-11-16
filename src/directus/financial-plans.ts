@@ -167,6 +167,8 @@ async function readResults(setId: string): Promise<Results | null> {
       "code",
       "message",
       "category",
+      "severity",
+      "subject_key",
       "date",
       "plan_id",
     ]),

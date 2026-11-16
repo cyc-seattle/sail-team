@@ -17,7 +17,6 @@ import {
   type Fee,
   type FunctionalExpenses,
   type OverviewRow,
-  type PlanWarning,
   type ReportOffering,
   type Sort,
   type SortKey,
@@ -27,7 +26,6 @@ import { cn } from "@/lib/utils";
 import { Money } from "../money";
 import { ReportSection } from "./report-page";
 import { SegmentedControl } from "./segmented-control";
-import { WarningsSection } from "./warnings-section";
 
 /** The name column stays put while the numbers scroll sideways on a phone. */
 const pinned = "sticky left-0 z-10 bg-background";
@@ -125,7 +123,6 @@ export interface OverviewReportProps {
   rows: OverviewRow[];
   /** Each program area's offerings, by its report's key. */
   offerings: Record<string, ReportOffering[]>;
-  warnings: PlanWarning[];
   /** The organization's totals, as platform worked them out. */
   totals: Totals;
   /** The year's expenses by function, as Form 990 splits them. */
@@ -191,7 +188,7 @@ function NonProgram({ setId, row }: { setId: string; row: OverviewRow }) {
  * by program or by session, as the switch at the top says, and the schedule's weeks across every area, closed at
  * first. Fees and enrollment list program areas A to Z.
  */
-export function OverviewReport({ setId, rows, offerings, warnings, totals, functions }: OverviewReportProps) {
+export function OverviewReport({ setId, rows, offerings, totals, functions }: OverviewReportProps) {
   const [sort, setSort] = useState<Sort>(defaultSort);
   const [by, setBy] = useState<EnrollmentBy>("session");
   const nonProgram = rows.find((r) => r.report === "non-program");
@@ -227,12 +224,6 @@ export function OverviewReport({ setId, rows, offerings, warnings, totals, funct
           ]}
         />
       </div>
-
-      <WarningsSection
-        warnings={warnings}
-        setId={setId}
-        areas={Object.fromEntries(rows.map((r) => [r.report, r.name]))}
-      />
 
       <ReportSection id="revenue-and-expenses" title="Revenue and expenses">
         <Table aria-label="Revenue and expenses">

@@ -15,6 +15,7 @@ import {
   type ReportOffering,
   type Trip,
 } from "@/model/reports";
+import { placeOf } from "@/model/warnings";
 import { cn } from "@/lib/utils";
 import { BudgetLines, StaffTimeTable } from "../assumptions";
 import { Money } from "../money";
@@ -23,9 +24,9 @@ import { CollapsibleSection } from "./collapsible-section";
 import { OfferingName } from "./offering-name";
 import { ReportSection } from "./report-page";
 import { NotesList } from "./notes-list";
+import { WarningMark } from "../warning-mark";
 import { PlanCalendar } from "./plan-calendar";
 import { StatementTable } from "./statement-table";
-import { WarningsSection } from "./warnings-section";
 
 const pinned = "sticky left-0 z-10 bg-background";
 const count = (n: number) => n.toLocaleString("en-US");
@@ -83,9 +84,11 @@ function AreaAssumptions({
   programs,
   fixedCosts,
   staffTime,
+  warnings,
 }: {
   area: string;
   notes: string[] | null;
+  warnings: PlanWarning[];
   programs: ProgramSettings[];
   fixedCosts: FixedCost[];
   staffTime: StaffTime[];
@@ -101,7 +104,10 @@ function AreaAssumptions({
         </section>
         {programs.map((p) => (
           <section key={p.name} aria-label={p.name} className="grid gap-2 border-t pt-4">
-            <h3 className="text-sm font-medium">{p.name}</h3>
+            <h3 className="flex items-center gap-1 text-sm font-medium">
+              {p.name}
+              <WarningMark warnings={programWarnings(warnings, p.program_id)} />
+            </h3>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
               <dt className="text-muted-foreground">Staff level</dt>
               <dd>{p.staff_level ?? none}</dd>
@@ -132,6 +138,10 @@ function AreaAssumptions({
   );
 }
 
+/** The warnings shown on a program: about its settings or its product. */
+const programWarnings = (warnings: PlanWarning[], programId: string | null | undefined) =>
+  programId ? warnings.filter((w) => placeOf(w) === "program" && w.subject === programId) : [];
+
 /** A column of an offerings table, with what it means when that isn't plain from its name. */
 interface Column {
   name: string;
@@ -161,8 +171,10 @@ function GroupedTable({
   cells,
   sums,
   footer,
+  warnings = [],
 }: {
   label: string;
+  warnings?: PlanWarning[];
   head: Column[];
   offerings: ReportOffering[];
   cells: (o: ReportOffering) => ReactNode;
@@ -199,7 +211,12 @@ function GroupedTable({
             {own.map(({ program, offerings: listed }) => (
               <Fragment key={program}>
                 <TableRow className="font-medium hover:bg-transparent">
-                  <TableCell className={cn(pinned, showTerms ? "pl-5" : "pt-4")}>{program}</TableCell>
+                  <TableCell className={cn(pinned, showTerms ? "pl-5" : "pt-4")}>
+                    <span className="inline-flex items-center gap-1">
+                      {program}
+                      <WarningMark warnings={programWarnings(warnings, listed[0]?.program_id)} />
+                    </span>
+                  </TableCell>
                   {subtotals(listed)}
                 </TableRow>
                 {listed.map((o) => (
@@ -303,8 +320,14 @@ export function ProgramAreaReport({
   return (
     <>
       <div className="grid gap-2">
-        <WarningsSection warnings={warnings} />
-        <AreaAssumptions area={area} notes={notes} programs={programs} fixedCosts={fixedCosts} staffTime={staffTime} />
+        <AreaAssumptions
+          area={area}
+          notes={notes}
+          programs={programs}
+          fixedCosts={fixedCosts}
+          staffTime={staffTime}
+          warnings={warnings}
+        />
       </div>
 
       <ReportSection id="calendar" title="Calendar">
@@ -315,6 +338,7 @@ export function ProgramAreaReport({
           day={day === undefined ? ownDay : day}
           onAreaChange={() => {}}
           onDayChange={onDayChange ?? setOwnDay}
+          warnings={warnings}
         />
       </ReportSection>
 
@@ -332,6 +356,7 @@ export function ProgramAreaReport({
       <ReportSection id="budget" title="Budget">
         <GroupedTable
           label="Budget"
+          warnings={warnings}
           head={budgetHead}
           offerings={offerings}
           cells={(o) => <InOut money={moneyOf([o])} />}

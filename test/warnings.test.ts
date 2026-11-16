@@ -6,6 +6,8 @@ const warning = (key: string, code: string, category: PlanWarning["category"], d
   key,
   code,
   category,
+  severity: "warning",
+  subject: null,
   area: "summer",
   date,
   message: key,
