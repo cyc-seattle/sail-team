@@ -12,16 +12,13 @@ const meta = {
       { key: "doublehanded", name: "Doublehanded", blocks: doublehandedSchedule, offerings: doublehandedOfferings },
     ],
     closedDays,
-    area: null,
     day: "2027-06-30",
-    onAreaChange: () => {},
     onDayChange: () => {},
   },
-  // Keeps the area and day as the page keeps them in its address.
+  // Keeps the day as the page keeps it in its address.
   render: function Render(args) {
-    const [area, setArea] = useState(args.area);
     const [day, setDay] = useState(args.day);
-    return <PlanCalendar {...args} area={area} day={day} onAreaChange={setArea} onDayChange={setDay} />;
+    return <PlanCalendar {...args} day={day} onDayChange={setDay} />;
   },
 } satisfies Meta<typeof PlanCalendar>;
 export default meta;
@@ -50,12 +47,16 @@ export const AClosedDay: Story = {
   },
 };
 
-/** One area alone, as its report links to it. */
-export const OneArea: Story = {
-  args: { area: "doublehanded", day: null },
+/** A block of one activity is just that activity, with its sailors, and its staff and boats one to a line. */
+export const ABlockOfOne: Story = {
+  args: { day: "2027-06-29" },
   play: async ({ canvas }) => {
-    const year = canvas.getByRole("group", { name: "Year" });
-    await expect(year).toHaveTextContent("J-Pod");
-    await expect(year).not.toHaveTextContent("Guppies");
+    await userEvent.click(canvas.getByRole("button", { name: /^J-Pod Summer/ }));
+    const block = canvas.getByRole("complementary", { name: "Activity block" });
+    await expect(canvas.getByRole("heading", { name: "J-Pod Summer" })).toBeVisible();
+    await expect(block).toHaveTextContent("9 of 16 sailors");
+    await expect(canvas.getByRole("list", { name: "Staff, coach boats and boats" })).toHaveTextContent(
+      "4 sailor-owned 420s",
+    );
   },
 };

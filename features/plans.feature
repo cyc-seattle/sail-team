@@ -151,7 +151,9 @@ Feature: Seeing the Financial Plans
       And I've signed in
       When I open Youth Racing's report in the draft
       Then the calendar shows the offering's 10 sailors across both weeks
-      When I open the practice on Jul 16
+      When I choose Fri, Jul 16 on the calendar
+      Then the page stays where it was
+      When I open that day's practice
       Then it has no staff, coach boats or boats yet, where the other days have 1 Lead coach
 
   Rule: The planning engine's warnings are listed at the top of the Overview and each program area's report, all shown once opened
