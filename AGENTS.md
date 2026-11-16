@@ -85,8 +85,8 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   `/plans/financial/<set>/<report>` its other reports: `calendar`, `rates` (Assumptions), `storage`, a Program Plan's
   program area id, the same in every Financial Plan, `non-program`, or `fundraising`. Storage lists the lines on the Storage account, 7351 under 7350 Occupancy/Rent:
   what each area pays, then what every program shares. A program area's report shows each offering's term: one of the
-  Operations Plan's `plan_terms`, which an offering names by `term_key`. The Calendar keeps the one program area it shows and its day in the address
-  (`?area=<report>&day=<date>`), and each area's report links to it with its own area. The engine's warnings and errors show where they apply (`placeOf` in `src/model/warnings.ts`): on a calendar
+  Operations Plan's `plan_terms`, which an offering names by `term_key`. The Calendar shows every program area, and it and each area's
+  report keep their day in the address (`?day=<date>`). The engine's warnings and errors show where they apply (`placeOf` in `src/model/warnings.ts`): on a calendar
   day and its block, a program, or an offering's Enrollment row. Each program area's report lists its own in a table,
   and the Overview those about no area, with each area's count beside it. The count beside a plan's status on every
   report links there. Each report's header is where a

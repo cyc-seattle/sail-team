@@ -1,10 +1,13 @@
-import type { ReactNode } from "react";
+import { Children, type ReactNode } from "react";
 import type { InForce } from "@/model/financial-plans";
 import { PageHeader } from "../page-header";
 import { PlanStatus, type VersionState } from "../version-badge";
 import type { PlanWarning } from "@/model/reports";
 import { ReportNav, type Report } from "./report-nav";
 import { WarningsBadge } from "./warnings-badge";
+
+/** A report's sections, one under the next, each full width. */
+export const reportSections = "grid gap-10 *:min-w-0";
 
 export interface ReportPageProps {
   setId: string;
@@ -48,7 +51,7 @@ export function ReportPage({
         actions={actions}
       />
       <ReportNav setId={setId} reports={reports} current={current} />
-      <div className="grid gap-12">{children}</div>
+      <div className={reportSections}>{children}</div>
     </main>
   );
 }
@@ -66,7 +69,7 @@ export function ReportSection({
   children: ReactNode;
 }) {
   return (
-    <section aria-labelledby={id} className="grid gap-4">
+    <section aria-labelledby={id} className="grid gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id={id} className="text-lg font-medium">
           {title}
@@ -76,4 +79,14 @@ export function ReportSection({
       {children}
     </section>
   );
+}
+
+/**
+ * Two related small sections side by side on a laptop, such as Rates and Payroll taxes. When only one of them is
+ * there, it's full width, so a half-width table never stands alone.
+ */
+export function SectionPair({ children }: { children: ReactNode }) {
+  const shown = Children.toArray(children);
+  if (shown.length < 2) return <>{shown}</>;
+  return <div className="grid items-start gap-x-8 gap-y-10 lg:grid-cols-2 *:min-w-0">{shown}</div>;
 }

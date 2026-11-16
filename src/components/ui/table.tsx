@@ -38,12 +38,17 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
   );
 }
 
-function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
+/**
+ * A row, highlighted under the pointer across every cell, a pinned one too. `highlight={false}` is for a row that's
+ * only a heading or a total.
+ */
+function TableRow({ className, highlight = true, ...props }: React.ComponentProps<"tr"> & { highlight?: boolean }) {
   return (
     <tr
       data-slot="table-row"
       className={cn(
-        "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted",
+        "border-b transition-colors data-[state=selected]:bg-muted",
+        highlight && "hover:*:bg-row-hover has-aria-expanded:*:bg-row-hover",
         className,
       )}
       {...props}
@@ -56,7 +61,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0",
+        "h-9 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0",
         className,
       )}
       {...props}
@@ -68,7 +73,7 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
   return (
     <td
       data-slot="table-cell"
-      className={cn("p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0", className)}
+      className={cn("px-2 py-1.5 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0", className)}
       {...props}
     />
   );
