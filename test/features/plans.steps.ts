@@ -350,12 +350,28 @@ Given(
 );
 
 Then("the calendar shows the offering's 10 sailors across both weeks", async ({ page }) => {
-  await expect(page.getByRole("group", { name: "Year" })).toContainText("10/10");
+  await expect(page.getByRole("group", { name: "Year" })).toContainText("10 of 10");
 });
 
-When("I open the practice on Jul 16", async ({ page }) => {
+/** How far down the page was when a day was chosen. */
+let scrolled = 0;
+
+When("I choose Fri, Jul 16 on the calendar", async ({ page }) => {
   await page.getByRole("button", { name: "Week of Jul 12" }).click();
+  // With the days at the top of the window, the page is scrolled down, so a jump back to the top shows.
+  await page.getByRole("group", { name: "Day" }).evaluate((el) => el.scrollIntoView({ block: "start" }));
+  scrolled = await page.evaluate(() => window.scrollY);
+  expect(scrolled).toBeGreaterThan(0);
   await page.getByRole("button", { name: /^Fri 16/ }).click();
+  await expect(page).toHaveURL(/day=\d{4}-07-16/);
+  await expect(page.getByRole("heading", { name: /^Friday, July 16/ })).toBeVisible();
+});
+
+Then("the page stays where it was", async ({ page }) => {
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrolled);
+});
+
+When("I open that day's practice", async ({ page }) => {
   await page.getByRole("button", { name: /different from the usual$/ }).click();
 });
 

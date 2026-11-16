@@ -86,8 +86,8 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   program area id, the same in every Financial Plan, or `non-program`. The Overview's
   Notes, closed at first, show the Financial Plan's note, then the Operations Plan's notes. Storage, on Assumptions, lists the lines on the Storage account, 7351 under 7350 Occupancy/Rent:
   what each area pays, then what every program shares. A program area's report shows each offering's term: one of the
-  Operations Plan's `plan_terms`, which an offering names by `term_key`. The Calendar keeps the one program area it shows and its day in the address
-  (`?area=<report>&day=<date>`), and each area's report links to it with its own area. Each report's header is where a
+  Operations Plan's `plan_terms`, which an offering names by `term_key`. The Calendar shows every program area, and it and each area's
+  report keep their day in the address (`?day=<date>`). Each report's header is where a
   Plan Writer renames it, changes its note, or duplicates it, and a Plan Admin freezes a draft or makes it active
   from a date. A club plan's
   old address, `/plans/club/<set>`, sends people to its

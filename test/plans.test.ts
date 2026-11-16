@@ -212,7 +212,7 @@ describe("reading a Financial Plan's inputs from Directus", () => {
     // "J-Pod 2027-03-02" only repeats the program and the date.
     expect(schedule[ids.doublehanded]?.[0]).toMatchObject({
       name: null,
-      parts: ["2 Coaches", "2 RIBs", "3 420s, plus 3 sailors' own"],
+      parts: ["2 Coaches", "2 RIBs", "3 420s", "3 sailor-owned 420s"],
     });
     const numbered = new Map(
       numberedOfferings(offerings[ids.summer]!).flatMap((g) => g.offerings.map((o) => [o.key, o])),

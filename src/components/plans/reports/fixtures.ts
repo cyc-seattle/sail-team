@@ -221,7 +221,8 @@ export const doublehandedSchedule: ScheduleBlock[] = doublehandedOfferings.flatM
     out.push({
       key: `${o.key} ${date}`,
       date,
-      name: null,
+      // Named after its one offering, as a block often is.
+      name: `${o.program} ${o.session} ${date}`,
       activities: [
         {
           key: `${o.key} ${date}`,
@@ -234,7 +235,7 @@ export const doublehandedSchedule: ScheduleBlock[] = doublehandedOfferings.flatM
           on_water_minutes: 150,
         },
       ],
-      parts: ["2 Coaches", "2 RIBs"],
+      parts: ["2 Coaches", "2 RIBs", "6 420s", "4 sailor-owned 420s"],
     });
   }
   return out;
@@ -840,7 +841,7 @@ export const summerSchedule: ScheduleBlock[] = summerOfferings
                 date,
                 name: null,
                 activities: [scheduled(`race-${date}`, `Race Camp-${n}`, "13:00:00", "16:00:00")],
-                parts: ["1 Program Director, by the hour", "1 RIB", "6 420s, plus 4 sailors' own"],
+                parts: ["1 Program Director, by the hour", "1 RIB", "6 420s", "4 sailor-owned 420s"],
               },
             ]
           : [];

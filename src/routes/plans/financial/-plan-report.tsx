@@ -211,7 +211,10 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
 
 const reportRoute = getRouteApi("/plans/financial/$setId/$planId");
 
-/** A program area's report, with its calendar's day kept in the address. */
+/**
+ * A program area's report, with its calendar's day kept in the address. Choosing a day keeps the page where it is: the
+ * router would scroll to the top of a new address.
+ */
 function AreaReport(props: Omit<ProgramAreaReportProps, "day" | "onDayChange">) {
   const { day } = reportRoute.useSearch();
   const navigate = reportRoute.useNavigate();
@@ -219,22 +222,20 @@ function AreaReport(props: Omit<ProgramAreaReportProps, "day" | "onDayChange">) 
     <ProgramAreaReport
       {...props}
       day={day ?? null}
-      onDayChange={(next) => void navigate({ search: (s) => ({ ...s, day: next }), replace: true })}
+      onDayChange={(next) => void navigate({ search: (s) => ({ ...s, day: next }), replace: true, resetScroll: false })}
     />
   );
 }
 
-/** The Calendar, with its area and day kept in the address. */
+/** The Calendar, with its day kept in the address. */
 function CalendarReport(props: Pick<PlanCalendarProps, "areas" | "closedDays">) {
-  const { area, day } = reportRoute.useSearch();
+  const { day } = reportRoute.useSearch();
   const navigate = reportRoute.useNavigate();
   return (
     <PlanCalendar
       {...props}
-      area={area ?? null}
       day={day ?? null}
-      onAreaChange={(next) => void navigate({ search: { ...(next && { area: next }) }, replace: true })}
-      onDayChange={(next) => void navigate({ search: (s) => ({ ...s, day: next }), replace: true })}
+      onDayChange={(next) => void navigate({ search: (s) => ({ ...s, day: next }), replace: true, resetScroll: false })}
     />
   );
 }
