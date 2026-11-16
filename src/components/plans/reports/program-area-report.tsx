@@ -311,9 +311,7 @@ export function ProgramAreaReport({
         <PlanCalendar
           areas={[{ key: areaKey, name: area, blocks: schedule, offerings }]}
           closedDays={closedDays}
-          area={null}
           day={day === undefined ? ownDay : day}
-          onAreaChange={() => {}}
           onDayChange={onDayChange ?? setOwnDay}
         />
       </ReportSection>

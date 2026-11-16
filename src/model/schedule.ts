@@ -23,7 +23,7 @@ export interface ScheduleBlock {
   date: string;
   name: string | null;
   activities: ScheduledActivity[];
-  /** Its staff, then its boats: the club's own, then chartered. */
+  /** Its staff, then its boats: the club's own, sailor-owned, then chartered. */
   parts: string[];
 }
 
@@ -111,10 +111,11 @@ export function scheduleOf(
       .sort(),
     ...parts.boats
       .filter((b) => b.block_id === id && (b.count > 0 || !b.chartered))
-      .map(
-        (b) =>
-          `${counted(b.count, b.boat_class)}${b.sailor_owned ? `, plus ${amount(b.sailor_owned)} sailors' own` : ""}`,
-      )
+      .map((b) => counted(b.count, b.boat_class))
+      .sort(),
+    ...parts.boats
+      .filter((b) => b.block_id === id && (b.sailor_owned ?? 0) > 0)
+      .map((b) => counted(b.sailor_owned ?? 0, `sailor-owned ${b.boat_class}`))
       .sort(),
     ...parts.boats
       .filter((b) => b.block_id === id && (b.chartered ?? 0) > 0)
