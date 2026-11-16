@@ -21,8 +21,9 @@
   --border: oklch(0.92 0.005 255);
   --input: oklch(0.92 0.005 255);
   --ring: oklch(0.7 0.01 257);
-  /* Behind the table row under the pointer. Opaque, so a pinned first column shows it too. */
-  --row-hover: oklch(0.94 0.006 255);
+  /* Behind the table row under the pointer. Opaque, so a pinned first column shows it too. As dark as keeps
+     money-positive text at 4.5:1. */
+  --row-hover: oklch(0.955 0.006 255);
 
   /* Status: one lightness and chroma, so each reads as text on a card. */
   --success: oklch(0.52 0.14 150);
