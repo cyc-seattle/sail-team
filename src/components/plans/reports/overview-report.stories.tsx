@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent, within } from "storybook/test";
 import { withRouter } from "../../../../.storybook/with-router";
-import { areaOfferings, functions, overviewRows, totals, warnings } from "./fixtures";
+import { areaOfferings, functions, operationsNotes, overviewRows, totals, warnings } from "./fixtures";
 import { OverviewReport } from "./overview-report";
 
 const meta = {
@@ -11,6 +11,8 @@ const meta = {
   ],
   args: {
     setId: "budget",
+    note: "Reviewed with the board. From the [2027 workbook](https://example.com/workbook).",
+    notes: operationsNotes,
     rows: overviewRows,
     offerings: areaOfferings,
     warnings,
@@ -70,19 +72,36 @@ export const Year: Story = {
   },
 };
 
-/** Fees and enrollment open by session, and the switch at the top groups both by program instead. */
+/** Enrollment, then fees, as a program area's report orders them, each by program. */
 export const ByProgram: Story = {
   play: async ({ canvas }) => {
     const enrollment = canvas.getByRole("table", { name: "Enrollment" });
-    const fees = canvas.getByRole("table", { name: "Program fees" });
-    await expect(enrollment).toHaveTextContent("Week 1");
-    await expect(fees).toHaveTextContent("Week 1");
-    await userEvent.click(canvas.getByRole("button", { name: "By program" }));
+    const fees = canvas.getByRole("table", { name: "Fees" });
+    await expect(enrollment.compareDocumentPosition(fees) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     for (const table of [enrollment, fees]) {
       await expect(table).toHaveTextContent("Guppies");
       await expect(table).not.toHaveTextContent("Week 1");
     }
     await expect(fees.querySelector("tfoot")).toHaveTextContent("All programs");
+  },
+};
+
+/** The plan's note, then the notes every program follows, closed at first. */
+export const Notes: Story = {
+  play: async ({ canvas }) => {
+    const notes = canvas.getByText("Notes", { selector: "h2" });
+    await expect(canvas.getByRole("link", { name: "2027 workbook" })).not.toBeVisible();
+    await userEvent.click(notes);
+    await expect(canvas.getByRole("link", { name: "2027 workbook" })).toBeVisible();
+    await expect(canvas.getByRole("list", { name: "Notes" })).toBeVisible();
+  },
+};
+
+/** A plan with no notes has no Notes. */
+export const NoNotes: Story = {
+  args: { note: null, notes: null },
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByText("Notes", { selector: "h2" })).toBeNull();
   },
 };
 

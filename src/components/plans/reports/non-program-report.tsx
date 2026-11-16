@@ -1,7 +1,8 @@
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { Product, SharedCost } from "@/model/reports";
+import type { AccountAmount, CapitalItem, Product, SharedCost } from "@/model/reports";
 import { AccountTable } from "../account-table";
 import { Money } from "../money";
+import { FundraisingCapitalReport } from "./fundraising-capital-report";
 import { ReportSection } from "./report-page";
 
 const pinned = "sticky left-0 z-10 bg-background";
@@ -25,9 +26,20 @@ const add = <T,>(rows: T[], of: (row: T) => number) => rows.reduce((total, r) =>
 
 /**
  * What CSC sells outside the programs, which carries no shared costs, then each shared cost by account: the part
- * allocated to the programs, the part left unallocated, and its total.
+ * allocated to the programs, the part left unallocated, and its total. Then fundraising and capital, both kept apart
+ * from the operating net.
  */
-export function NonProgramReport({ products, shared }: { products: Product[]; shared: SharedCost[] }) {
+export function NonProgramReport({
+  products,
+  shared,
+  fundraising,
+  capital,
+}: {
+  products: Product[];
+  shared: SharedCost[];
+  fundraising: { revenue: AccountAmount[]; costs: AccountAmount[] };
+  capital: { items: CapitalItem[]; available_cents: number };
+}) {
   const total = {
     revenue_cents: add(products, (p) => p.revenue_cents),
     direct_cents: add(products, (p) => p.direct_cents),
@@ -35,38 +47,36 @@ export function NonProgramReport({ products, shared }: { products: Product[]; sh
   const pools = [...new Set(shared.map((c) => c.pool))].sort((a, b) => a.localeCompare(b));
   return (
     <>
-      <ReportSection id="sold-outside-programs" title="Sold outside programs">
-        <Table aria-label="Sold outside programs">
-          <TableHeader>
-            <TableRow>
-              <TableHead className={pinned}>
-                <span className="sr-only">What</span>
-              </TableHead>
-              <TableHead className="text-right">Revenue</TableHead>
-              <TableHead className="text-right">Direct costs</TableHead>
-              <TableHead className="text-right">Net</TableHead>
+      <Table aria-label="Sold outside programs">
+        <TableHeader>
+          <TableRow>
+            <TableHead className={pinned}>
+              <span className="sr-only">What</span>
+            </TableHead>
+            <TableHead className="text-right">Revenue</TableHead>
+            <TableHead className="text-right">Direct costs</TableHead>
+            <TableHead className="text-right">Net</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {products.map((p) => (
+            <TableRow key={p.name}>
+              <TableCell className={pinned}>{p.name}</TableCell>
+              <Amount cents={p.revenue_cents} />
+              <Amount cents={p.direct_cents} />
+              <Amount cents={p.revenue_cents - p.direct_cents} colored />
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {products.map((p) => (
-              <TableRow key={p.name}>
-                <TableCell className={pinned}>{p.name}</TableCell>
-                <Amount cents={p.revenue_cents} />
-                <Amount cents={p.direct_cents} />
-                <Amount cents={p.revenue_cents - p.direct_cents} colored />
-              </TableRow>
-            ))}
-          </TableBody>
-          <TableFooter className="bg-transparent">
-            <TableRow>
-              <TableCell className={pinned}>Total</TableCell>
-              <Amount cents={total.revenue_cents} />
-              <Amount cents={total.direct_cents} />
-              <Amount cents={total.revenue_cents - total.direct_cents} colored />
-            </TableRow>
-          </TableFooter>
-        </Table>
-      </ReportSection>
+          ))}
+        </TableBody>
+        <TableFooter className="bg-transparent">
+          <TableRow>
+            <TableCell className={pinned}>Total</TableCell>
+            <Amount cents={total.revenue_cents} />
+            <Amount cents={total.direct_cents} />
+            <Amount cents={total.revenue_cents - total.direct_cents} colored />
+          </TableRow>
+        </TableFooter>
+      </Table>
 
       <ReportSection id="shared-costs" title="Shared costs">
         <AccountTable
@@ -96,6 +106,8 @@ export function NonProgramReport({ products, shared }: { products: Product[]; sh
           }))}
         />
       </ReportSection>
+
+      <FundraisingCapitalReport fundraising={fundraising} capital={capital} />
     </>
   );
 }

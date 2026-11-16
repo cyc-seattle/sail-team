@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import { Fragment, useState, type ReactNode } from "react";
+import { InlineMarkdown } from "@/components/inline-markdown";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   defaultSort,
@@ -10,9 +11,9 @@ import {
   fees,
   netOf,
   nextSort,
+  notesOf,
   sortRows,
   totalOf,
-  type EnrollmentBy,
   type EnrollmentRow,
   type Fee,
   type FunctionalExpenses,
@@ -25,8 +26,9 @@ import {
 import type { Totals } from "@/model/financial-plans";
 import { cn } from "@/lib/utils";
 import { Money } from "../money";
+import { CollapsibleSection } from "./collapsible-section";
+import { NotesList } from "./notes-list";
 import { ReportSection } from "./report-page";
-import { SegmentedControl } from "./segmented-control";
 import { WarningsSection } from "./warnings-section";
 
 /** The name column stays put while the numbers scroll sideways on a phone. */
@@ -122,6 +124,10 @@ function FeeRow({ fee, className }: { fee: Fee; className?: string }) {
 
 export interface OverviewReportProps {
   setId: string;
+  /** The Financial Plan's own note, in inline Markdown. */
+  note: string | null;
+  /** The Operations Plan's notes, which every program follows. */
+  notes: string[] | null;
   rows: OverviewRow[];
   /** Each program area's offerings, by its report's key. */
   offerings: Record<string, ReportOffering[]>;
@@ -185,15 +191,41 @@ function NonProgram({ setId, row }: { setId: string; row: OverviewRow }) {
   );
 }
 
+/** The Financial Plan's note, then the notes every program follows, closed at first. Nothing when there are none. */
+function Notes({ note, notes }: { note: string | null; notes: string[] | null }) {
+  if (!note?.trim() && notesOf(notes).length === 0) {
+    return null;
+  }
+  return (
+    <CollapsibleSection title="Notes">
+      <div className="grid max-w-3xl gap-3 text-sm">
+        {note?.trim() && (
+          <p>
+            <InlineMarkdown text={note} />
+          </p>
+        )}
+        {notesOf(notes).length > 0 && <NotesList notes={notes} label="Notes" />}
+      </div>
+    </CollapsibleSection>
+  );
+}
+
 /**
- * A Financial Plan's year: the engine's warnings, closed at first, then each program area from revenue to net, sortable,
- * Non-program on its own, the year's expenses by function and its total, then each program's fees and enrollment, both
- * by program or by session, as the switch at the top says, and the schedule's weeks across every area, closed at
- * first. Fees and enrollment list program areas A to Z.
+ * A Financial Plan's year: its notes and the engine's warnings, both closed at first, then each program area from
+ * revenue to net, sortable, Non-program on its own, the year's expenses by function and its total, then each program's
+ * enrollment and fees, in the order a program area's report shows them. Enrollment and fees list program areas A to Z.
  */
-export function OverviewReport({ setId, rows, offerings, warnings, totals, functions }: OverviewReportProps) {
+export function OverviewReport({
+  setId,
+  note,
+  notes,
+  rows,
+  offerings,
+  warnings,
+  totals,
+  functions,
+}: OverviewReportProps) {
   const [sort, setSort] = useState<Sort>(defaultSort);
-  const [by, setBy] = useState<EnrollmentBy>("session");
   const nonProgram = rows.find((r) => r.report === "non-program");
   const areaRows = rows.filter((r) => r.report !== "non-program");
   const sorted = sortRows(areaRows, sort);
@@ -203,7 +235,7 @@ export function OverviewReport({ setId, rows, offerings, warnings, totals, funct
     .map((row) => ({ row, offerings: offerings[row.report] ?? [] }));
   const total = totalOf(areaRows);
   const every = areas.flatMap((a) => a.offerings);
-  const all = enrollment(every, "program");
+  const all = enrollment(every);
   const allTotal: EnrollmentRow = {
     name: "All programs",
     offerings: all.reduce((t, r) => t + r.offerings, 0),
@@ -213,26 +245,16 @@ export function OverviewReport({ setId, rows, offerings, warnings, totals, funct
   };
   const allFees = feeOf("All programs", every);
   const expenses = functions.program_cents + functions.management_cents + functions.fundraising_cents;
-  const group = by === "session" ? "Session" : "Program";
   return (
     <>
-      <div className="flex justify-end">
-        <SegmentedControl
-          label="Group fees and enrollment"
-          value={by}
-          onChange={setBy}
-          options={[
-            { value: "session", label: "By session" },
-            { value: "program", label: "By program" },
-          ]}
+      <div className="grid gap-2">
+        <Notes note={note} notes={notes} />
+        <WarningsSection
+          warnings={warnings}
+          setId={setId}
+          areas={Object.fromEntries(rows.map((r) => [r.report, r.name]))}
         />
       </div>
-
-      <WarningsSection
-        warnings={warnings}
-        setId={setId}
-        areas={Object.fromEntries(rows.map((r) => [r.report, r.name]))}
-      />
 
       <ReportSection id="revenue-and-expenses" title="Revenue and expenses">
         <Table aria-label="Revenue and expenses">
@@ -330,7 +352,8 @@ export function OverviewReport({ setId, rows, offerings, warnings, totals, funct
                 <TableCell className={pinned}>
                   <Link
                     to="/plans/financial/$setId/$planId"
-                    params={{ setId, planId: "fundraising" }}
+                    params={{ setId, planId: "non-program" }}
+                    hash="fundraising"
                     className="text-link underline"
                   >
                     Fundraising net
@@ -342,7 +365,7 @@ export function OverviewReport({ setId, rows, offerings, warnings, totals, funct
                 <TableCell className={pinned}>
                   <Link
                     to="/plans/financial/$setId/$planId"
-                    params={{ setId, planId: "fundraising" }}
+                    params={{ setId, planId: "non-program" }}
                     hash="capital"
                     className="text-link underline"
                   >
@@ -363,37 +386,11 @@ export function OverviewReport({ setId, rows, offerings, warnings, totals, funct
         </div>
       </ReportSection>
 
-      <ReportSection id="program-fees" title="Program fees">
-        <Table aria-label="Program fees">
-          <TableHeader>
-            <TableRow>
-              <TableHead className={pinned}>{group}</TableHead>
-              <TableHead className="text-right">Per offering</TableHead>
-              <TableHead className="text-right">Per day</TableHead>
-              <TableHead className="text-right">Per hour</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {areas.map(({ row, offerings: own }) => (
-              <Fragment key={row.report}>
-                <AreaRow setId={setId} row={row} span={3} />
-                {fees(own, by).map((fee) => (
-                  <FeeRow key={fee.name} fee={fee} className="pl-6" />
-                ))}
-              </Fragment>
-            ))}
-          </TableBody>
-          <TableFooter className="bg-transparent">
-            <FeeRow fee={allFees} />
-          </TableFooter>
-        </Table>
-      </ReportSection>
-
       <ReportSection id="enrollment" title="Enrollment">
         <Table aria-label="Enrollment">
           <TableHeader>
             <TableRow>
-              <TableHead className={pinned}>{group}</TableHead>
+              <TableHead className={pinned}>Program</TableHead>
               <TableHead className="text-right">Offerings</TableHead>
               <TableHead className="text-right">Sailors</TableHead>
               <TableHead className="text-right">Max</TableHead>
@@ -404,7 +401,7 @@ export function OverviewReport({ setId, rows, offerings, warnings, totals, funct
             {areas.map(({ row, offerings: own }) => (
               <Fragment key={row.report}>
                 <AreaRow setId={setId} row={row} span={4} />
-                {enrollment(own, by).map((e) => (
+                {enrollment(own).map((e) => (
                   <TableRow key={e.name}>
                     <TableCell className={cn(pinned, "pl-6")}>{e.name}</TableCell>
                     <EnrollmentCells row={e} />
@@ -418,6 +415,32 @@ export function OverviewReport({ setId, rows, offerings, warnings, totals, funct
               <TableCell className={pinned}>{allTotal.name}</TableCell>
               <EnrollmentCells row={allTotal} />
             </TableRow>
+          </TableFooter>
+        </Table>
+      </ReportSection>
+
+      <ReportSection id="fees" title="Fees">
+        <Table aria-label="Fees">
+          <TableHeader>
+            <TableRow>
+              <TableHead className={pinned}>Program</TableHead>
+              <TableHead className="text-right">Per offering</TableHead>
+              <TableHead className="text-right">Per day</TableHead>
+              <TableHead className="text-right">Per hour</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {areas.map(({ row, offerings: own }) => (
+              <Fragment key={row.report}>
+                <AreaRow setId={setId} row={row} span={3} />
+                {fees(own).map((fee) => (
+                  <FeeRow key={fee.name} fee={fee} className="pl-6" />
+                ))}
+              </Fragment>
+            ))}
+          </TableBody>
+          <TableFooter className="bg-transparent">
+            <FeeRow fee={allFees} />
           </TableFooter>
         </Table>
       </ReportSection>

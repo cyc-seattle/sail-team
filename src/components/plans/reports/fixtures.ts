@@ -3,6 +3,7 @@ import type { Bonus, FixedCost, OperationsAssumptions, StaffTime } from "@/model
 import type { ScheduleBlock, ScheduledActivity } from "@/model/schedule";
 import type { ListedPlan, Totals } from "@/model/financial-plans";
 import type {
+  StorageCost,
   AccountAmount,
   InAndOut,
   CapitalItem,
@@ -57,7 +58,6 @@ export const reports = [
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((r) => ({ key: r.report, name: r.name })),
   { key: "non-program", name: "Non-program" },
-  { key: "fundraising", name: "Fundraising and capital" },
 ];
 
 const account = (number: string | null, name: string, cents: number, lines?: LineAmount[]): AccountAmount => ({
@@ -634,9 +634,16 @@ export const summerNotes = [
 
 export const doublehandedNotes = ["J-Pod and K-Pod share coaches on Wednesdays."];
 
-export const assumptionsNotes = [
+export const operationsNotes = [
   "Keep one RIB ashore for repairs on summer weekdays.",
   "No more than 6 RIBs on the water at once.",
+];
+
+export const storageCosts: StorageCost[] = [
+  { payer: "Doublehanded", kind: "area", name: "Storage (dinghy float and dry storage, by area)", cents: 699_500 },
+  { payer: "Summer", kind: "area", name: "Storage (dinghy float and dry storage, by area)", cents: 982_400 },
+  { payer: "Shared (G&A)", kind: "shared", name: "Self storage facility", cents: 172_800 },
+  { payer: "No program", kind: "unallocated", name: "Storage not allocated to programs", cents: 1_307_000 },
 ];
 
 export const warnings: PlanWarning[] = [
