@@ -40,8 +40,8 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   it. `src/components/plans/` holds Planning's shared parts: Page Header, Money, Assumptions, Version Badge, the
   Financial Plan Actions, and the Plan Details Dialog. `src/components/plans/reports/` holds Planning itself: the
   Planning Page that lists every Financial Plan, and a Financial Plan's reports, each on a Report Page with its Report
-  Nav: Overview, Calendar (Plan Calendar), Assumptions (Rates Report), Storage, one Program Area Report for each area,
-  Non-program, and Fundraising and Capital ([#63](https://github.com/cyc-seattle/sail-team/issues/63)).
+  Nav: Overview, Calendar (Plan Calendar), Assumptions (Rates Report, with Storage), one Program Area Report for each
+  area, and Non-program, with Fundraising and Capital ([#63](https://github.com/cyc-seattle/sail-team/issues/63)).
   `src/components/home/` holds the home page's Announcement List, and `src/components/links/` the Links page's Link
   List. `src/components/household/` holds the household page's
   Share Contact, Member Card, School Field, and Household View, and `src/components/phone-field.tsx` the Phone Field. `src/components/shell/` holds the App Shell around every
@@ -82,8 +82,9 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   Show archived narrow the list. Its status, details, and warnings are icons in fixed places, so they line up. There,
   a Plan Admin sets or clears the date it's active from in its Active column. Its ⋯ menu freezes a draft (`status`) for
   good and archives it (`archived_at`), for a Plan Admin, and deletes a draft, for a Plan Writer. The menus follow `/permissions/me`: `canAdminPlans` in `access.ts`. `/plans/financial/<set>` is its Overview, and
-  `/plans/financial/<set>/<report>` its other reports: `calendar`, `rates` (Assumptions), `storage`, a Program Plan's
-  program area id, the same in every Financial Plan, `non-program`, or `fundraising`. Storage lists the lines on the Storage account, 7351 under 7350 Occupancy/Rent:
+  `/plans/financial/<set>/<report>` its other reports: `calendar`, `rates` (Assumptions), a Program Plan's
+  program area id, the same in every Financial Plan, or `non-program`. The Overview's
+  Notes, closed at first, show the Financial Plan's note, then the Operations Plan's notes. Storage, on Assumptions, lists the lines on the Storage account, 7351 under 7350 Occupancy/Rent:
   what each area pays, then what every program shares. A program area's report shows each offering's term: one of the
   Operations Plan's `plan_terms`, which an offering names by `term_key`. The Calendar shows every program area, and it and each area's
   report keep their day in the address (`?day=<date>`). Each report's header is where a

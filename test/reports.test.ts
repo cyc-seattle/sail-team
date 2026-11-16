@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  budget,
   capitalList,
   defaultSort,
   netOf,
@@ -131,23 +132,18 @@ describe("fees", () => {
   ];
 
   it("averages each program's fees over its sailors, days and hours", () => {
-    expect(fees(guppies, "program")).toEqual([
+    expect(fees(guppies)).toEqual([
       { name: "Guppies", per_offering_cents: 30_000, per_day_cents: 6_000, per_hour_cents: 1_500 },
     ]);
   });
 
-  it("lists programs A to Z, and sessions in the order they start", () => {
+  it("lists programs A to Z", () => {
     const offerings = [
       { ...offering("Youth Intermediate", "Week 2", "2027-06-28") },
       { ...offering("Teen Sailing", "Week 1", "2027-06-21") },
       { ...offering("Youth Beginner", "Week 1", "2027-06-21") },
     ];
-    expect(fees(offerings, "program").map((f) => f.name)).toEqual([
-      "Teen Sailing",
-      "Youth Beginner",
-      "Youth Intermediate",
-    ]);
-    expect(fees(offerings, "session").map((f) => f.name)).toEqual(["Week 1", "Week 2"]);
+    expect(fees(offerings).map((f) => f.name)).toEqual(["Teen Sailing", "Youth Beginner", "Youth Intermediate"]);
   });
 });
 
@@ -185,17 +181,24 @@ describe("enrollment", () => {
     { ...offering("J-Pod", "Spring", "2027-03-01"), estimated: 8, max: 16, days: 20 },
   ];
 
-  it("adds up each session, in the order they start", () => {
-    expect(enrollment(offerings, "session")).toEqual([
-      { name: "Spring", offerings: 2, sailors: 20, max: 32, sailor_days: 400 },
-      { name: "Fall", offerings: 1, sailors: 10, max: 16, sailor_days: 200 },
+  it("adds up each program, A to Z", () => {
+    expect(enrollment(offerings)).toEqual([
+      { name: "J-Pod", offerings: 2, sailors: 18, max: 32, sailor_days: 360 },
+      { name: "K-Pod", offerings: 1, sailors: 12, max: 16, sailor_days: 240 },
     ]);
   });
+});
 
-  it("adds up each program instead", () => {
-    expect(enrollment(offerings, "program").map((r) => [r.name, r.sailors])).toEqual([
-      ["J-Pod", 18],
-      ["K-Pod", 12],
+describe("budget", () => {
+  it("adds up each program's revenue and expenses, A to Z", () => {
+    const offerings = [
+      { ...offering("K-Pod", "Spring", "2027-03-02"), revenue_cents: 500, expense_cents: 300 },
+      { ...offering("J-Pod", "Spring", "2027-03-01"), revenue_cents: 100, expense_cents: 50 },
+      { ...offering("J-Pod", "Fall", "2027-09-07"), revenue_cents: 200, expense_cents: 70 },
+    ];
+    expect(budget(offerings)).toEqual([
+      { name: "J-Pod", revenue_cents: 300, expense_cents: 120 },
+      { name: "K-Pod", revenue_cents: 500, expense_cents: 300 },
     ]);
   });
 });

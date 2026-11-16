@@ -197,8 +197,6 @@ export function numberedOfferings(offerings: ReportOffering[]): { program: strin
   });
 }
 
-export type EnrollmentBy = "session" | "program";
-
 /** A term's offerings, by program, each program's in the order they start. A null term holds the offerings in none. */
 export interface TermGroup {
   term: string | null;
@@ -261,17 +259,14 @@ export function chargedToArea(offerings: ReportOffering[], area: InAndOut | null
   return rest.revenue_cents === 0 && rest.expense_cents === 0 ? null : rest;
 }
 
-/** The groups offerings fall in: programs A to Z, or sessions in the order they first start. */
-function groupsOf(offerings: ReportOffering[], by: EnrollmentBy): { name: string; offerings: ReportOffering[] }[] {
+/** Offerings by program, A to Z, each program's in the order they start. */
+function groupsOf(offerings: ReportOffering[]): { name: string; offerings: ReportOffering[] }[] {
   const sorted = byStart(offerings);
-  const names = [...new Set(sorted.map((o) => o[by]))];
-  if (by === "program") {
-    names.sort((a, b) => a.localeCompare(b));
-  }
-  return names.map((name) => ({ name, offerings: sorted.filter((o) => o[by] === name) }));
+  const names = [...new Set(sorted.map((o) => o.program))].sort((a, b) => a.localeCompare(b));
+  return names.map((name) => ({ name, offerings: sorted.filter((o) => o.program === name) }));
 }
 
-/** What a sailor pays in a program or a session, on average: for an offering, for a day, and for an hour on the water. */
+/** What a sailor pays in a program, on average: for an offering, for a day, and for an hour on the water. */
 export interface Fee {
   name: string;
   per_offering_cents: number;
@@ -292,12 +287,12 @@ export function feeOf(name: string, offerings: ReportOffering[]): Fee {
   };
 }
 
-/** Each program's or session's average fees: programs A to Z, sessions in the order they start. */
-export function fees(offerings: ReportOffering[], by: EnrollmentBy): Fee[] {
-  return groupsOf(offerings, by).map((group) => feeOf(group.name, group.offerings));
+/** Each program's average fees, programs A to Z. */
+export function fees(offerings: ReportOffering[]): Fee[] {
+  return groupsOf(offerings).map((group) => feeOf(group.name, group.offerings));
 }
 
-/** One row of enrollment: a session, or a program. */
+/** One row of enrollment: a program. */
 export interface EnrollmentRow {
   name: string;
   offerings: number;
@@ -306,15 +301,20 @@ export interface EnrollmentRow {
   sailor_days: number;
 }
 
-/** Offerings added up by program, A to Z, or by session, in the order each first starts. */
-export function enrollment(offerings: ReportOffering[], by: EnrollmentBy): EnrollmentRow[] {
-  return groupsOf(offerings, by).map(({ name, offerings: own }) => ({
+/** Offerings added up by program, A to Z. */
+export function enrollment(offerings: ReportOffering[]): EnrollmentRow[] {
+  return groupsOf(offerings).map(({ name, offerings: own }) => ({
     name,
     offerings: own.length,
     sailors: own.reduce((total, o) => total + o.estimated, 0),
     max: own.reduce((total, o) => total + o.max, 0),
     sailor_days: own.reduce((total, o) => total + o.estimated * o.days, 0),
   }));
+}
+
+/** Each program's revenue and expenses, from its offerings' results, A to Z. */
+export function budget(offerings: ReportOffering[]): (InAndOut & { name: string })[] {
+  return groupsOf(offerings).map(({ name, offerings: own }) => ({ name, ...moneyOf(own) }));
 }
 
 /** The year's expenses by what they're for, as Form 990 splits them. Capital isn't an expense. */
@@ -371,10 +371,8 @@ export function reportsOf(plans: Plan[]): { key: string; name: string }[] {
     { key: "overview", name: "Overview" },
     { key: "calendar", name: "Calendar" },
     { key: "rates", name: "Assumptions" },
-    { key: "storage", name: "Storage" },
     ...areas,
     { key: "non-program", name: "Non-program" },
-    { key: "fundraising", name: "Fundraising and capital" },
   ];
 }
 

@@ -261,7 +261,7 @@ async function costCenterNames() {
 
 /** What a Financial Plan's reports show besides its results: what planners entered in its plans. */
 export interface PlanInputs {
-  /** Each plan's notes, by its report's key; the Operations Plan's under `rates`, for Assumptions. */
+  /** Each plan's notes, by its report's key; the Operations Plan's under `rates`, for the Overview. */
   notes: Record<string, string[] | null>;
   /** Each program area's offerings, by its report's key. */
   offerings: Record<string, ReportOffering[]>;

@@ -3,7 +3,6 @@ import { expect, userEvent } from "storybook/test";
 
 import {
   areaOfferings,
-  assumptionsNotes,
   capital,
   doublehandedOfferings,
   doublehandedPrograms,
@@ -12,11 +11,13 @@ import {
   doublehandedStatement,
   functions,
   fundraising,
+  operationsNotes,
   overviewRows,
   products,
   reportAssumptions,
   reports,
   sharedCosts,
+  storageCosts,
   summerOfferings,
   summerPrograms,
   summerNotes,
@@ -31,7 +32,6 @@ import {
   doublehandedSchedule,
   summerSchedule,
 } from "./fixtures";
-import { FundraisingCapitalReport } from "./fundraising-capital-report";
 import { NonProgramReport } from "./non-program-report";
 import { OverviewReport } from "./overview-report";
 import { ProgramAreaReport } from "./program-area-report";
@@ -63,6 +63,8 @@ export const Overview: Story = {
     children: (
       <OverviewReport
         setId="budget"
+        note="Reviewed with the board. From the [2027 workbook](https://example.com/workbook)."
+        notes={operationsNotes}
         rows={overviewRows}
         offerings={areaOfferings}
         warnings={warnings}
@@ -135,15 +137,14 @@ export const Doublehanded: Story = {
 };
 
 export const NonProgram: Story = {
-  args: { current: "non-program", children: <NonProgramReport products={products} shared={sharedCosts} /> },
-};
-
-export const FundraisingAndCapital: Story = {
-  args: { current: "fundraising", children: <FundraisingCapitalReport fundraising={fundraising} capital={capital} /> },
+  args: {
+    current: "non-program",
+    children: <NonProgramReport products={products} shared={sharedCosts} fundraising={fundraising} capital={capital} />,
+  },
 };
 
 export const Assumptions: Story = {
-  args: { current: "rates", children: <RatesReport assumptions={reportAssumptions} notes={assumptionsNotes} /> },
+  args: { current: "rates", children: <RatesReport assumptions={reportAssumptions} storage={storageCosts} /> },
 };
 
 export const Draft: Story = { args: { ...Overview.args, name: "Two more coaches", status: "draft" } };
