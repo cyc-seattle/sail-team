@@ -775,7 +775,7 @@ export const warnings: PlanWarning[] = [
     subject: "launch-ramp",
     area: "non-program",
     date: null,
-    message: "Launch ramp repair is a budget line, so it comes last.",
+    message: "Add Launch ramp repair to the capital list to rank it.",
   },
 ];
 
@@ -1020,5 +1020,5 @@ export const rowWarnings: PlanWarning[] = [
     "non-program",
     "Charters isn't a program, but it's in a program area.",
   ),
-  rowWarning("r7", "capital_unranked", "capital-Trailer", "non-program", "Trailer is a budget line, so it comes last."),
+  rowWarning("r7", "capital_unranked", "capital-Trailer", "non-program", "Add Trailer to the capital list to rank it."),
 ];
