@@ -113,11 +113,11 @@ export const Calendar: Story = {
   },
 };
 
-/** A trip names its offering, and what each coach's travel takes. */
+/** A trip names its program and offering, and what each coach's travel takes. */
 export const DoublehandedTrips: Story = {
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByText("Trips", { selector: "h2" }));
-    await expect(canvas.getByRole("row", { name: /Nationals/ })).toHaveTextContent("NationalsK-Pod Summer5$450—");
+    await expect(canvas.getByRole("row", { name: /Nationals/ })).toHaveTextContent("NationalsK-PodSummer5$450—");
   },
 };
 
