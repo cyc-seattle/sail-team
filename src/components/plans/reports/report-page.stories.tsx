@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent } from "storybook/test";
 
 import {
   areaOfferings,
@@ -66,6 +66,7 @@ export const Overview: Story = {
         setId="budget"
         rows={overviewRows}
         offerings={areaOfferings}
+        warnings={warnings}
         totals={totals}
         functions={functions}
       />
@@ -146,13 +147,19 @@ export const Assumptions: Story = {
   args: { current: "rates", children: <RatesReport assumptions={reportAssumptions} notes={assumptionsNotes} /> },
 };
 
-/** The count beside its name opens to every warning, by the report it shows on. */
-export const WarningsOpen: Story = {
+/** The count beside its name links to the Overview's warnings, where each area's count links to its own. */
+export const WarningsCounted: Story = {
   args: { ...Overview.args },
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "1 error, 5 warnings" }));
-    const list = within(document.body).getByRole("dialog", { name: "Warnings" });
-    await expect(within(list).getByRole("region", { name: "Summer" })).toBeVisible();
+    await expect(canvas.getByRole("link", { name: "1 error, 10 warnings" })).toHaveAttribute(
+      "href",
+      "/plans/financial/budget#warnings",
+    );
+    await expect(canvas.getByRole("link", { name: "1 error, 8 warnings" })).toHaveAttribute(
+      "href",
+      "/plans/financial/budget/summer#warnings",
+    );
+    await expect(canvas.getByRole("table", { name: "Warnings" })).toHaveTextContent("Launch ramp repair");
   },
 };
 
@@ -161,7 +168,7 @@ export const SummerDayWithWarnings: Story = {
   args: { ...Summer.args },
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: /^Week of Jul 12/ }));
-    await expect(canvas.getByText(/need 4 RIBs out at once/)).toBeVisible();
+    await expect(canvas.getByText(/need 4 RIBs/, { selector: "li span" })).toBeVisible();
   },
 };
 

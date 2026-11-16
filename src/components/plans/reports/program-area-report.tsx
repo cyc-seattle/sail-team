@@ -25,6 +25,7 @@ import { OfferingName } from "./offering-name";
 import { ReportSection } from "./report-page";
 import { NotesList } from "./notes-list";
 import { WarningMark } from "../warning-mark";
+import { WarningsSection } from "./warnings-section";
 import { PlanCalendar } from "./plan-calendar";
 import { StatementTable } from "./statement-table";
 
@@ -60,14 +61,18 @@ function Room({ offering: o }: { offering: ReportOffering }) {
   return <Num>{count(o.room)}</Num>;
 }
 
-/** The fewest sailors at which the offering pays for itself, flagged when that's more than its target. */
-function Breakeven({ offering: o }: { offering: ReportOffering }) {
+/** The fewest sailors at which the offering pays for itself, with the engine's warning when that's above its target. */
+function Breakeven({ offering: o, warnings }: { offering: ReportOffering; warnings: PlanWarning[] }) {
   if (!o.max_set) return <Num>{none}</Num>;
-  if (o.breakeven == null) return <Flagged why="It loses money even when full">Never</Flagged>;
-  if (o.breakeven > o.estimated) {
-    return <Flagged why={`More than its target of ${o.estimated}`}>{count(o.breakeven)}</Flagged>;
-  }
-  return <Num>{count(o.breakeven)}</Num>;
+  const own = warnings.filter((w) => placeOf(w) === "offering" && w.subject === o.key);
+  return (
+    <TableCell className="text-right tabular-nums">
+      <span className="inline-flex items-center gap-1">
+        <WarningMark warnings={own} />
+        {o.breakeven == null ? "Never" : count(o.breakeven)}
+      </span>
+    </TableCell>
+  );
 }
 
 /** A fee divided by days or hours, or nothing to show when the offering has none. */
@@ -319,6 +324,7 @@ export function ProgramAreaReport({
   const charged = chargedToArea(offerings, total);
   return (
     <>
+      <WarningsSection warnings={warnings} onDay={(d) => (onDayChange ?? setOwnDay)(d)} />
       <div className="grid gap-2">
         <AreaAssumptions
           area={area}
@@ -385,7 +391,7 @@ export function ProgramAreaReport({
           offerings={offerings}
           cells={(o) => (
             <>
-              <Breakeven offering={o} />
+              <Breakeven offering={o} warnings={warnings} />
               <Num>{count(o.max)}</Num>
               <Room offering={o} />
               <Num>{count(o.estimated)}</Num>

@@ -15,6 +15,33 @@ export function SeverityIcon({ severity, className }: { severity: "error" | "war
   );
 }
 
+/** How many errors and warnings, each an icon and a number, read out in words. */
+export function WarningCount({ warnings }: { warnings: PlanWarning[] }) {
+  const errors = warnings.filter((w) => w.severity === "error").length;
+  const rest = warnings.length - errors;
+  return (
+    <span className="inline-flex items-center gap-2 tabular-nums">
+      {errors > 0 && (
+        <span className="inline-flex items-center gap-1">
+          <SeverityIcon severity="error" />
+          {errors}
+          <span className="sr-only">
+            {errors === 1 ? " error" : " errors"}
+            {rest > 0 && ","}
+          </span>
+        </span>
+      )}
+      {rest > 0 && (
+        <span className="inline-flex items-center gap-1">
+          <SeverityIcon severity="warning" />
+          {rest}
+          <span className="sr-only">{rest === 1 ? " warning" : " warnings"}</span>
+        </span>
+      )}
+    </span>
+  );
+}
+
 /** Warnings as a list, errors first, each with its icon. */
 export function WarningList({ warnings, className }: { warnings: PlanWarning[]; className?: string }) {
   return (

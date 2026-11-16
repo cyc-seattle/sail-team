@@ -146,6 +146,7 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
         setId={set.id}
         rows={rows}
         offerings={inputs.offerings}
+        warnings={warnings}
         totals={results.totals}
         functions={functionalExpenses(results.lines)}
       />

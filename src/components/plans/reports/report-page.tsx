@@ -41,7 +41,7 @@ export function ReportPage({
         badge={
           <span className="inline-flex items-center gap-2 self-center">
             <PlanStatus state={status} inForce={inForce} />
-            <WarningsBadge setId={setId} warnings={warnings} reports={reports} />
+            <WarningsBadge setId={setId} warnings={warnings} />
           </span>
         }
         back={{ to: "/plans", label: "Planning" }}

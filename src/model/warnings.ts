@@ -1,57 +1,59 @@
 // The engine's warnings grouped by kind, for the warnings section.
 import type { PlanWarning } from "./reports.ts";
 
-// Platform names each kind only by its code (`plan_result_warnings.code`), so the app names them.
+// Platform names each kind only by its code (`plan_result_warnings.code`), so the app names them, in a few words.
 const kinds: Record<string, string> = {
-  area_on_non_program: "Non-program product with a program area",
-  block_date_mismatch: "Activity in a block on another day",
-  bonus_outside_area: "Bonus on another program area's product",
+  area_on_non_program: "Not a program, but in an area",
+  block_date_mismatch: "Block on another day",
+  bonus_outside_area: "Bonus outside its area",
   bonus_without_offerings: "Bonus with no offerings",
-  bonus_without_revenue: "Bonus on offerings with no revenue",
-  booking_cost_center: "Booking without one product or program area",
+  bonus_without_revenue: "Bonus with no revenue",
+  booking_cost_center: "Booking with no product or area",
+  breakeven_above_target: "Breaks even above target",
   capital_not_asset: "Capital not on an asset account",
-  capital_off_org: "Capital outside the Operations Plan",
-  capital_unranked: "Capital not on the ranked list",
+  capital_off_org: "Capital charged to an area",
+  capital_unranked: "Capital not ranked",
   closed_date: "On a closed day",
-  closed_date_in_area_plan: "Closed day in a program area's plan",
-  cost_off_programs: "Cost moved off the area's programs",
+  closed_date_in_area_plan: "Closed day in an area's plan",
+  cost_off_programs: "Cost moved off programs",
   many_rates: "More than one set of rates",
-  no_charter_rate: "Chartered boats with no charter rate",
-  no_cost_account: "Cost with no account",
+  never_breaks_even: "Never breaks even",
+  no_charter_rate: "No charter rate",
+  no_cost_account: "No account for a cost",
   // Saved before platform counted boats from its asset list (cyc-seattle/platform#126).
-  no_fleet_quantity: "Boats with no count",
-  no_hourly_rate: "Position with no hourly rate",
-  no_indirect_cost_rate: "Program with no indirect cost rate",
-  no_mtdc: "No offering counts toward MTDC",
-  no_paid_hours: "Position with no paid hours per year",
-  no_paid_hours_for_tax: "Payroll tax by the hour on a position with no paid hours",
-  no_program_settings: "Program with no staff level or sailors per coach",
-  no_rate: "Trip rate missing",
-  no_revenue_account: "Product with no revenue account",
+  no_fleet_quantity: "No boat count",
+  no_hourly_rate: "No hourly rate",
+  no_indirect_cost_rate: "No indirect cost rate",
+  no_max_capacity: "No max capacity",
+  no_mtdc: "Nothing counts toward MTDC",
+  no_paid_hours: "No paid hours",
+  no_paid_hours_for_tax: "No paid hours for a tax",
+  no_program_settings: "No program settings",
+  no_rate: "Rate missing",
+  no_revenue_account: "No revenue account",
   no_shared_costs: "No shared costs",
-  no_max_capacity: "Boat class with no max capacity",
   // Saved before platform renamed it no_max_capacity.
-  no_sailors_per_boat: "Boat class with no sailors per boat",
+  no_sailors_per_boat: "No sailors per boat",
   offering_in_wrong_plan: "Offering in the wrong plan",
   over_capacity: "Too many sailors",
-  over_inventory_boats: "More boats out than there are",
+  over_inventory_boats: "More boats than there are",
   // Saved before platform counted coach boats by boat class.
-  over_inventory_resource: "More equipment out than there is",
-  payroll_tax_basis: "Payroll tax with no clear basis",
-  position_double_booked: "Coach in two places at once",
-  position_overbooked: "Position charged more than its salary",
+  over_inventory_resource: "More equipment than there is",
+  payroll_tax_basis: "Payroll tax unclear",
   pool_without_offerings: "Shared cost with no offerings",
+  position_double_booked: "Coach double-booked",
+  position_overbooked: "Salary overbooked",
   product_without_offerings: "Product with no offerings",
-  program_area_without_offerings: "Program area with no offerings",
-  program_without_area: "Program with no program area",
-  revenue_account_differs: "Product's own revenue account not used",
+  program_area_without_offerings: "Area with no offerings",
+  program_without_area: "Program with no area",
+  revenue_account_differs: "Revenue account ignored",
   short_of_boats: "Too few boats",
   trip_without_staff: "Trip with no staff",
   unallocated_activity: "Activity with no staff",
   unknown_block: "Missing block",
-  unknown_cost_center: "Line on something missing",
+  unknown_cost_center: "Charged to something missing",
   unknown_offering: "Missing offering",
-  unknown_position: "Missing salaried position",
+  unknown_position: "Missing position",
   unknown_product: "Missing product",
   unknown_resource: "Missing resource",
   unknown_staff_level: "Staff level with no rate",
@@ -63,41 +65,8 @@ export function kindName(code: string): string {
   return kinds[code] ?? words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-export interface WarningKind {
-  code: string;
-  name: string;
-  warnings: PlanWarning[];
-}
-
-export interface WarningCategory {
-  name: string;
-  kinds: WarningKind[];
-}
-
-/**
- * Warnings by category, Schedule before Data, then by kind, the most common first, each kind's warnings by date. A
- * warning about no one date, such as a missing rate, comes first.
- */
-export function warningsByKind(warnings: PlanWarning[]): WarningCategory[] {
-  const sorted = [...warnings].sort(
-    (a, b) => (a.date ?? "").localeCompare(b.date ?? "") || a.area.localeCompare(b.area),
-  );
-  const categories = [
-    { name: "Schedule", own: sorted.filter((w) => w.category === "allocation") },
-    { name: "Data", own: sorted.filter((w) => w.category !== "allocation") },
-  ];
-  return categories
-    .filter((c) => c.own.length > 0)
-    .map(({ name, own }) => ({
-      name,
-      kinds: [...new Set(own.map((w) => w.code))]
-        .map((code) => ({ code, name: kindName(code), warnings: own.filter((w) => w.code === code) }))
-        .sort((a, b) => b.warnings.length - a.warnings.length || a.name.localeCompare(b.name)),
-    }));
-}
-
-/** Where a warning shows in place: on a calendar day, on its program, or only in the plan's list of every warning. */
-export type WarningPlace = "day" | "program" | "list";
+/** Where a warning also shows in place: on a calendar day, its program, its offering, or only in the warnings table. */
+export type WarningPlace = "day" | "program" | "offering" | "list";
 
 // About a program's settings or its product, named by the product's id.
 const programCodes = new Set([
@@ -107,6 +76,8 @@ const programCodes = new Set([
   "no_revenue_account",
   "product_without_offerings",
 ]);
+// About an offering's break even, named by the offering's key.
+const offeringCodes = new Set(["breakeven_above_target", "never_breaks_even"]);
 // About a block, a trip, or an activity, on its date, though they're data.
 const dayCodes = new Set(["no_charter_rate", "trip_without_staff", "no_program_settings"]);
 
@@ -116,6 +87,9 @@ export function placeOf(w: PlanWarning): WarningPlace {
   }
   if (w.subject && programCodes.has(w.code)) {
     return "program";
+  }
+  if (w.subject && offeringCodes.has(w.code)) {
+    return "offering";
   }
   return "list";
 }

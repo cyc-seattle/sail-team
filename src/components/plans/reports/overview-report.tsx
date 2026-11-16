@@ -17,15 +17,19 @@ import {
   type Fee,
   type FunctionalExpenses,
   type OverviewRow,
+  type PlanWarning,
   type ReportOffering,
   type Sort,
   type SortKey,
 } from "@/model/reports";
 import type { Totals } from "@/model/financial-plans";
+import { distinct } from "@/model/warnings";
 import { cn } from "@/lib/utils";
 import { Money } from "../money";
+import { WarningCount } from "../warning-mark";
 import { ReportSection } from "./report-page";
 import { SegmentedControl } from "./segmented-control";
+import { WarningsSection } from "./warnings-section";
 
 /** The name column stays put while the numbers scroll sideways on a phone. */
 const pinned = "sticky left-0 z-10 bg-background";
@@ -35,6 +39,24 @@ function AreaLink({ setId, row }: { setId: string; row: OverviewRow }) {
   return (
     <Link to="/plans/financial/$setId/$planId" params={{ setId, planId: row.report }} className="text-link underline">
       {row.name}
+    </Link>
+  );
+}
+
+/** How many errors and warnings an area has, linked to its own list of them. */
+function AreaWarnings({ setId, row, warnings }: { setId: string; row: OverviewRow; warnings: PlanWarning[] }) {
+  const own = distinct(warnings.filter((w) => w.area === row.report));
+  if (own.length === 0) {
+    return null;
+  }
+  return (
+    <Link
+      to="/plans/financial/$setId/$planId"
+      params={{ setId, planId: row.report }}
+      hash="warnings"
+      className="rounded-full text-xs hover:underline"
+    >
+      <WarningCount warnings={own} />
     </Link>
   );
 }
@@ -123,6 +145,8 @@ export interface OverviewReportProps {
   rows: OverviewRow[];
   /** Each program area's offerings, by its report's key. */
   offerings: Record<string, ReportOffering[]>;
+  /** Every warning: those about no program area are listed here, and each area's counted beside it. */
+  warnings: PlanWarning[];
   /** The organization's totals, as platform worked them out. */
   totals: Totals;
   /** The year's expenses by function, as Form 990 splits them. */
@@ -188,7 +212,7 @@ function NonProgram({ setId, row }: { setId: string; row: OverviewRow }) {
  * by program or by session, as the switch at the top says, and the schedule's weeks across every area, closed at
  * first. Fees and enrollment list program areas A to Z.
  */
-export function OverviewReport({ setId, rows, offerings, totals, functions }: OverviewReportProps) {
+export function OverviewReport({ setId, rows, offerings, warnings, totals, functions }: OverviewReportProps) {
   const [sort, setSort] = useState<Sort>(defaultSort);
   const [by, setBy] = useState<EnrollmentBy>("session");
   const nonProgram = rows.find((r) => r.report === "non-program");
@@ -213,6 +237,8 @@ export function OverviewReport({ setId, rows, offerings, totals, functions }: Ov
   const group = by === "session" ? "Session" : "Program";
   return (
     <>
+      <WarningsSection warnings={warnings.filter((w) => w.area === "non-program")} />
+
       <div className="flex justify-end">
         <SegmentedControl
           label="Group fees and enrollment"
@@ -253,7 +279,10 @@ export function OverviewReport({ setId, rows, offerings, totals, functions }: Ov
             {sorted.map((row) => (
               <TableRow key={row.report}>
                 <TableCell className={pinned}>
-                  <AreaLink setId={setId} row={row} />
+                  <span className="inline-flex items-center gap-2">
+                    <AreaLink setId={setId} row={row} />
+                    <AreaWarnings setId={setId} row={row} warnings={warnings} />
+                  </span>
                 </TableCell>
                 <Amount cents={row.revenue_cents} />
                 <Amount cents={row.direct_cents} />
