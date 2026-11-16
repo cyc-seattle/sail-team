@@ -143,7 +143,7 @@ function NonProgram({ setId, row }: { setId: string; row: OverviewRow }) {
   const net = netOf(row);
   const carriesShares = row.indirect_cents !== 0;
   return (
-    <ReportSection id="non-program" title="Non-program" half>
+    <ReportSection id="non-program" title="Non-program">
       <Table aria-label="Non-program">
         <TableHeader>
           <TableRow>

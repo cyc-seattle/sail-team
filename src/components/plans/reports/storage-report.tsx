@@ -12,7 +12,7 @@ const pinned = "sticky left-0 z-10 bg-background";
 export function StorageReport({ costs }: { costs: StorageCost[] }) {
   const total = costs.reduce((sum, c) => sum + c.cents, 0);
   return (
-    <ReportSection id="storage" title="Storage" half>
+    <ReportSection id="storage" title="Storage">
       {costs.length === 0 ? (
         <p className="text-sm text-muted-foreground">This plan has no storage costs on the Storage account yet.</p>
       ) : (

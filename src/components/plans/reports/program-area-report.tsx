@@ -318,7 +318,7 @@ export function ProgramAreaReport({
         />
       </ReportSection>
 
-      <ReportSection id="revenue-and-expenses" title="Revenue and expenses" half>
+      <ReportSection id="revenue-and-expenses" title="Revenue and expenses">
         <StatementTable
           label="Revenue and expenses"
           sections={[

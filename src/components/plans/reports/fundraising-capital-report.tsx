@@ -17,7 +17,7 @@ export function FundraisingCapitalReport({
 }) {
   return (
     <>
-      <ReportSection id="fundraising" title="Fundraising" half>
+      <ReportSection id="fundraising" title="Fundraising">
         <StatementTable
           label="Fundraising"
           sections={[
@@ -26,7 +26,7 @@ export function FundraisingCapitalReport({
           ]}
         />
       </ReportSection>
-      <ReportSection id="capital" title="Capital" half>
+      <ReportSection id="capital" title="Capital">
         <CapitalTable items={capital.items} />
       </ReportSection>
     </>
