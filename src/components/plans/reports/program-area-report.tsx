@@ -298,7 +298,7 @@ export function ProgramAreaReport({
   staffTime,
 }: ProgramAreaReportProps) {
   const [ownDay, setOwnDay] = useState<string | null>(null);
-  const labels = new Map(numberedOfferings(offerings).flatMap((g) => g.offerings.map((o) => [o.key, o.label])));
+  const numbered = new Map(numberedOfferings(offerings).flatMap((g) => g.offerings.map((o) => [o.key, o])));
   const charged = chargedToArea(offerings, total);
   return (
     <>
@@ -400,6 +400,7 @@ export function ProgramAreaReport({
             <TableHeader>
               <TableRow>
                 <TableHead className={pinned}>Trip</TableHead>
+                <TableHead>Program</TableHead>
                 <TableHead>Offering</TableHead>
                 <TableHead className="text-right">Nights</TableHead>
                 <TableHead className="text-right">Airfare per coach</TableHead>
@@ -410,7 +411,8 @@ export function ProgramAreaReport({
               {trips.map((t) => (
                 <TableRow key={t.key}>
                   <TableCell className={pinned}>{t.name}</TableCell>
-                  <TableCell>{labels.get(t.offering_key) ?? none}</TableCell>
+                  <TableCell>{numbered.get(t.offering_key)?.program ?? none}</TableCell>
+                  <TableCell>{numbered.get(t.offering_key)?.own ?? none}</TableCell>
                   <Num>{t.nights === null ? none : count(t.nights)}</Num>
                   <Amount cents={t.airfare_cents} whole />
                   <Num>{t.miles === null ? none : count(t.miles)}</Num>

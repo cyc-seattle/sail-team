@@ -103,7 +103,7 @@ export function PlanCalendar({ areas, closedDays, area, day, onAreaChange, onDay
             content: (
               <span className="truncate">
                 <span className="sr-only">{o.label}: </span>
-                {to > from && <span aria-hidden>{o.label.slice(program.length + 1)} · </span>}
+                {to > from && <span aria-hidden>{o.own} · </span>}
                 {o.estimated}/{o.max}
               </span>
             ),
@@ -296,8 +296,9 @@ export function PlanCalendar({ areas, closedDays, area, day, onAreaChange, onDay
                           >
                             <span className="block truncate font-medium">
                               {framed && <span className="sr-only">, </span>}
-                              {offerings.get(a.offering_key)?.label ?? a.offering_key}
+                              {programOf(a.offering_key)}
                             </span>{" "}
+                            <span className="block truncate">{offerings.get(a.offering_key)?.own}</span>{" "}
                             <span className="block truncate">{timeSpan(a.start_time, a.end_time)}</span>
                           </span>
                         );
@@ -321,7 +322,7 @@ export function PlanCalendar({ areas, closedDays, area, day, onAreaChange, onDay
           <BlockDetails
             block={open?.block}
             differs={open ? differing.get(open.block.key) : undefined}
-            label={(key) => offerings.get(key)?.label ?? key}
+            own={(key) => offerings.get(key)?.own ?? key}
             programOf={programOf}
             color={(key) => (open ? colorOf(open.block.key, key) : {})}
           />
@@ -347,13 +348,13 @@ const sharers = (programs: string[]) =>
 function BlockDetails({
   block,
   differs,
-  label,
+  own,
   programOf,
   color,
 }: {
   block: ScheduleBlock | undefined;
   differs: { how: string; usual: string[] } | undefined;
-  label: (offeringKey: string) => string;
+  own: (offeringKey: string) => string;
   programOf: (offeringKey: string) => string;
   color: (offeringKey: string) => CSSProperties;
 }) {
@@ -377,7 +378,9 @@ function BlockDetails({
                 style={color(a.offering_key)}
                 className="inline-block size-2.5 shrink-0 rounded-[3px] bg-(--program)"
               />
-              {label(a.offering_key)}
+              <span>
+                {programOf(a.offering_key)} <span className="text-muted-foreground">{own(a.offering_key)}</span>
+              </span>
             </span>
             <span className="pl-4 text-muted-foreground">
               {[

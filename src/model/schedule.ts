@@ -295,7 +295,7 @@ export function patternsOf(blocks: ScheduleBlock[], offerings: Map<string, Numbe
         const sessions = [...new Set(activities.map((a) => offerings.get(a.offering_key)))]
           .filter((o) => o !== undefined)
           .sort((a, b) => a.starts_on.localeCompare(b.starts_on))
-          .map((o) => o.label.slice(program.length + 1));
+          .map((o) => o.own);
         return {
           program,
           offerings: sessions.length > 0 ? `${program} ${sessionRuns(sessions)}` : program,
