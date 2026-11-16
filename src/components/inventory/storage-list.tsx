@@ -63,7 +63,7 @@ export function StorageList({ groups, actions }: { groups: StorageGroup[]; actio
           </TableHeader>
           {groups.map((g) => (
             <TableBody key={g.area?.id ?? "none"}>
-              <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableRow highlight={false} className="bg-muted/50">
                 <TableHead scope="rowgroup" colSpan={2} className={pinned + " bg-transparent"}>
                   <span className="inline-flex items-center gap-1">
                     {g.area?.name ?? "No location"}

@@ -198,7 +198,7 @@ export function AssetList({
               const rows = shown.filter((a) => a.kind === k.kind);
               return (
                 <TableBody key={k.kind}>
-                  <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableRow highlight={false} className="bg-muted/50">
                     <TableHead scope="rowgroup" colSpan={columns - 2} className={pinned + " bg-transparent"}>
                       {k.plural} <span className="font-normal text-muted-foreground tabular-nums">{rows.length}</span>
                     </TableHead>

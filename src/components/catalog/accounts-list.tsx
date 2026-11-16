@@ -48,7 +48,7 @@ export function AccountsList({ accounts, costAccounts }: { accounts: CatalogAcco
               .filter((t) => shown.some((a) => a.type === t.type))
               .map((t) => (
                 <TableBody key={t.type}>
-                  <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableRow highlight={false} className="bg-muted/50">
                     <TableHead scope="rowgroup" colSpan={8}>
                       {t.label}
                     </TableHead>
