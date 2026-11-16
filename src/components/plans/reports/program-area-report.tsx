@@ -1,4 +1,3 @@
-import { TriangleAlertIcon } from "lucide-react";
 import { Fragment, useState, type ReactNode } from "react";
 import { formatShare, type FixedCost, type StaffTime } from "@/model/assumptions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -41,37 +40,35 @@ function Amount({ cents, whole = false }: { cents: number | null; whole?: boolea
   return <TableCell className="text-right">{cents === null ? none : <Money cents={cents} whole={whole} />}</TableCell>;
 }
 
-/** A number that needs the planner's eye, such as fewer sailors' room than the offering's max. */
-function Flagged({ children, why }: { children: ReactNode; why: string }) {
+/** The engine's warnings about one offering's break even or capacity, from the given code. */
+const offeringWarnings = (warnings: PlanWarning[], o: ReportOffering, codes: string[]) =>
+  warnings.filter((w) => placeOf(w) === "offering" && w.subject === o.key && codes.includes(w.code));
+
+/** A number in an offering's row, with the engine's warnings about it beside it. */
+function Marked({ children, warnings }: { children: ReactNode; warnings: PlanWarning[] }) {
   return (
-    <TableCell className="text-right font-medium text-warning tabular-nums">
-      <span className="inline-flex items-center gap-1" title={why}>
-        <TriangleAlertIcon aria-hidden className="size-3.5" />
+    <TableCell className="text-right tabular-nums">
+      <span className="inline-flex items-center gap-1">
+        <WarningMark warnings={warnings} />
         {children}
-        <span className="sr-only">: {why}</span>
       </span>
     </TableCell>
   );
 }
 
-/** Its capacity: the most sailors its blocks can take, flagged when that's fewer than its max. */
-function Room({ offering: o }: { offering: ReportOffering }) {
+/** Its capacity: the most sailors its blocks can take. */
+function Room({ offering: o, warnings }: { offering: ReportOffering; warnings: PlanWarning[] }) {
   if (o.room == null) return <Num>{none}</Num>;
-  if (o.room < o.max) return <Flagged why={`Fewer than its max of ${o.max}`}>{count(o.room)}</Flagged>;
-  return <Num>{count(o.room)}</Num>;
+  return <Marked warnings={offeringWarnings(warnings, o, ["capacity_below_max"])}>{count(o.room)}</Marked>;
 }
 
-/** The fewest sailors at which the offering pays for itself, with the engine's warning when that's above its target. */
+/** The fewest sailors at which the offering pays for itself. */
 function Breakeven({ offering: o, warnings }: { offering: ReportOffering; warnings: PlanWarning[] }) {
   if (!o.max_set) return <Num>{none}</Num>;
-  const own = warnings.filter((w) => placeOf(w) === "offering" && w.subject === o.key);
   return (
-    <TableCell className="text-right tabular-nums">
-      <span className="inline-flex items-center gap-1">
-        <WarningMark warnings={own} />
-        {o.breakeven == null ? "Never" : count(o.breakeven)}
-      </span>
-    </TableCell>
+    <Marked warnings={offeringWarnings(warnings, o, ["breakeven_above_target", "never_breaks_even"])}>
+      {o.breakeven == null ? "Never" : count(o.breakeven)}
+    </Marked>
   );
 }
 
@@ -393,7 +390,7 @@ export function ProgramAreaReport({
             <>
               <Breakeven offering={o} warnings={warnings} />
               <Num>{count(o.max)}</Num>
-              <Room offering={o} />
+              <Room offering={o} warnings={warnings} />
               <Num>{count(o.estimated)}</Num>
               <Num>{count(o.estimated * o.days)}</Num>
               <Num>{hoursOf(o.estimated * o.hours)}</Num>

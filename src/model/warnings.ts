@@ -10,6 +10,7 @@ const kinds: Record<string, string> = {
   bonus_without_revenue: "Bonus with no revenue",
   booking_cost_center: "Booking with no product or area",
   breakeven_above_target: "Breaks even above target",
+  capacity_below_max: "Blocks take fewer than max",
   capital_not_asset: "Capital not on an asset account",
   capital_off_org: "Capital charged to an area",
   capital_unranked: "Capital not ranked",
@@ -76,8 +77,8 @@ const programCodes = new Set([
   "no_revenue_account",
   "product_without_offerings",
 ]);
-// About an offering's break even, named by the offering's key.
-const offeringCodes = new Set(["breakeven_above_target", "never_breaks_even"]);
+// About an offering's break even or capacity, named by the offering's key.
+const offeringCodes = new Set(["breakeven_above_target", "never_breaks_even", "capacity_below_max"]);
 // About a block, a trip, or an activity, on its date, though they're data.
 const dayCodes = new Set(["no_charter_rate", "trip_without_staff", "no_program_settings"]);
 

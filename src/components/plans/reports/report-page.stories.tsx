@@ -151,11 +151,11 @@ export const Assumptions: Story = {
 export const WarningsCounted: Story = {
   args: { ...Overview.args },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("link", { name: "1 error, 10 warnings" })).toHaveAttribute(
+    await expect(canvas.getByRole("link", { name: "1 error, 11 warnings" })).toHaveAttribute(
       "href",
       "/plans/financial/budget#warnings",
     );
-    await expect(canvas.getByRole("link", { name: "1 error, 8 warnings" })).toHaveAttribute(
+    await expect(canvas.getByRole("link", { name: "1 error, 9 warnings" })).toHaveAttribute(
       "href",
       "/plans/financial/budget/summer#warnings",
     );

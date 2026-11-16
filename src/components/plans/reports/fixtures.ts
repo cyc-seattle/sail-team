@@ -739,6 +739,16 @@ export const warnings: PlanWarning[] = [
     message: "Guppies Week 2 breaks even at 7. Target is 6.",
   },
   {
+    key: "w12",
+    code: "capacity_below_max",
+    category: "allocation",
+    severity: "warning",
+    subject: "Opti Camp-4",
+    area: "summer",
+    date: null,
+    message: "Opti Camp Week 5's blocks take 12. Max is 16.",
+  },
+  {
     key: "w5",
     code: "position_double_booked",
     category: "allocation",
