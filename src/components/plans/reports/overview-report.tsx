@@ -166,7 +166,7 @@ function Budget({ setId, areas, total }: { setId: string; areas: AreaOfferings[]
           };
           return (
             <Fragment key={row.report}>
-              <TableRow className="font-medium hover:bg-transparent">
+              <TableRow highlight={false} className="font-medium">
                 <TableCell className={cn(pinned, "pt-4")}>
                   <AreaLink setId={setId} row={row} />
                 </TableCell>

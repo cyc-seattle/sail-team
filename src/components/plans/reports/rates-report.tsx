@@ -8,9 +8,7 @@ export function RatesReport({ assumptions, storage }: { assumptions: OperationsA
   return (
     <>
       <OperationsAssumptionsView assumptions={assumptions} />
-      <div className="max-w-4xl">
-        <StorageReport costs={storage} />
-      </div>
+      <StorageReport costs={storage} />
     </>
   );
 }
