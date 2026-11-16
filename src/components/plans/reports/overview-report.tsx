@@ -225,9 +225,8 @@ function Share({ cents, of }: { cents: number; of: number }) {
   return <Count>{of === 0 ? "—" : percent.format(cents / of)}</Count>;
 }
 
-/** What's sold outside the programs. Once it carries no G&A, its net reduces G&A, or adds to it, before G&A is spread. */
+/** What's sold outside the programs, with its share of indirect costs only when it carries one. */
 function NonProgram({ setId, row }: { setId: string; row: OverviewRow }) {
-  const net = netOf(row);
   const carriesShares = row.indirect_cents !== 0;
   return (
     <ReportSection id="non-program" title="Non-program">
@@ -257,17 +256,10 @@ function NonProgram({ setId, row }: { setId: string; row: OverviewRow }) {
             <Amount cents={row.revenue_cents} />
             <Amount cents={row.direct_cents} />
             {carriesShares && <Amount cents={row.indirect_cents} />}
-            <Amount cents={net} colored />
+            <Amount cents={netOf(row)} colored />
           </TableRow>
         </TableBody>
       </Table>
-      {!carriesShares && net !== 0 && (
-        <p className="text-sm">
-          {net > 0 ? "Reduces G&A by " : "Adds "}
-          <Money cents={Math.abs(net)} whole />
-          {net > 0 ? "." : " to G&A."}
-        </p>
-      )}
     </ReportSection>
   );
 }

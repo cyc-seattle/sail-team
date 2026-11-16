@@ -35,14 +35,13 @@ export const ByRevenue: Story = {
   },
 };
 
-/** Once Non-program carries no G&A, its net reduces G&A instead. */
-export const NonProgramReducesGA: Story = {
+/** Once Non-program carries no G&A, it has no Indirect costs column. */
+export const NonProgramWithoutShares: Story = {
   args: {
     rows: overviewRows.map((r) => (r.report === "non-program" ? { ...r, indirect_cents: 0 } : r)),
   },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("table", { name: "Non-program" })).not.toHaveTextContent("Indirect costs");
-    await expect(canvas.getByText(/Reduces G&A by/)).toBeVisible();
   },
 };
 
