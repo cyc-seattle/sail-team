@@ -43,6 +43,7 @@ const offering = (program: string, n: number, estimated: number, max: number): N
   hours: 10,
   cogs_rate: null,
   note: null,
+  own: `Week ${n}`,
   label: `${program} Week ${n}`,
 });
 const offerings = new Map(

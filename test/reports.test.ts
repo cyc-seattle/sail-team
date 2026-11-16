@@ -104,6 +104,17 @@ describe("numberedOfferings", () => {
     ]);
   });
 
+  it("names each offering apart from its program too", () => {
+    const groups = numberedOfferings([
+      { ...offering("Guppies Sailing", "Summer", "2027-06-28"), name: "Guppies Sailing Week 2" },
+      { ...offering("Guppies Sailing", "Summer", "2027-06-21"), key: "w1", name: "Guppies Sailing Week 1" },
+    ]);
+    expect(groups[0]?.offerings.map((o) => [o.own, o.label])).toEqual([
+      ["Week 1", "Guppies Sailing Week 1"],
+      ["Week 2", "Guppies Sailing Week 2"],
+    ]);
+  });
+
   it("names offerings in one session by the day they start when their own names don't tell them apart", () => {
     const groups = numberedOfferings([
       offering("Guppies", "Summer", "2027-07-12"),

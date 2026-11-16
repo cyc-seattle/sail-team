@@ -142,8 +142,11 @@ export interface ReportOffering {
   note: string | null;
 }
 
-/** An offering with its name, its program and session, such as "J-Pod Spring" or "Guppies Week 3". */
-export type NumberedOffering = ReportOffering & { label: string };
+/**
+ * An offering with its name apart from its program, such as "Week 3", for where its program is already shown, and with
+ * it, such as "Guppies Week 3".
+ */
+export type NumberedOffering = ReportOffering & { own: string; label: string };
 
 const byStart = <T extends ReportOffering>(offerings: T[]): T[] =>
   [...offerings].sort(
@@ -190,7 +193,7 @@ export function numberedOfferings(offerings: ReportOffering[]): { program: strin
         : unique((o) => o.starts_on)
           ? (o: ReportOffering) => formatShort(o.starts_on)
           : (o: ReportOffering) => ownPart(o) ?? `${o.session} ${formatShort(o.starts_on)}`;
-    return { program, offerings: own.map((o) => ({ ...o, label: `${program} ${nameOf(o)}` })) };
+    return { program, offerings: own.map((o) => ({ ...o, own: nameOf(o), label: `${program} ${nameOf(o)}` })) };
   });
 }
 
