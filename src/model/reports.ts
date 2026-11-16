@@ -309,6 +309,11 @@ export function enrollment(offerings: ReportOffering[]): EnrollmentRow[] {
   }));
 }
 
+/** Each program's revenue and expenses, from its offerings' results, A to Z. */
+export function budget(offerings: ReportOffering[]): (InAndOut & { name: string })[] {
+  return groupsOf(offerings).map(({ name, offerings: own }) => ({ name, ...moneyOf(own) }));
+}
+
 /** The year's expenses by what they're for, as Form 990 splits them. Capital isn't an expense. */
 export interface FunctionalExpenses {
   program_cents: number;

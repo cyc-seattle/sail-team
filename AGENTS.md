@@ -83,8 +83,7 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   a Plan Admin sets or clears the date it's active from in its Active column. Its ⋯ menu freezes a draft (`status`) for
   good and archives it (`archived_at`), for a Plan Admin, and deletes a draft, for a Plan Writer. The menus follow `/permissions/me`: `canAdminPlans` in `access.ts`. `/plans/financial/<set>` is its Overview, and
   `/plans/financial/<set>/<report>` its other reports: `calendar`, `rates` (Assumptions), a Program Plan's
-  program area id, the same in every Financial Plan, or `non-program`; `storage` and `fundraising`, where Storage and
-  Fundraising and capital had their own, send people to their sections of Assumptions and Non-program. The Overview's
+  program area id, the same in every Financial Plan, or `non-program`. The Overview's
   Notes, closed at first, show the Financial Plan's note, then the Operations Plan's notes. Storage, on Assumptions, lists the lines on the Storage account, 7351 under 7350 Occupancy/Rent:
   what each area pays, then what every program shares. A program area's report shows each offering's term: one of the
   Operations Plan's `plan_terms`, which an offering names by `term_key`. The Calendar keeps the one program area it shows and its day in the address

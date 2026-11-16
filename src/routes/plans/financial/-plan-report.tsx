@@ -143,7 +143,9 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
         note={set.note}
         notes={inputs.notes["rates"] ?? null}
         rows={rows}
-        offerings={inputs.offerings}
+        offerings={Object.fromEntries(
+          Object.entries(inputs.offerings).map(([key, own]) => [key, withResults(own, results.pnl)]),
+        )}
         warnings={warnings}
         totals={results.totals}
         functions={functionalExpenses(results.lines)}

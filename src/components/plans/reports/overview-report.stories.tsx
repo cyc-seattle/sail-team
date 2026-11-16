@@ -72,6 +72,16 @@ export const Year: Story = {
   },
 };
 
+/** Each program area's budget, its programs under it, and what's charged to the area itself. */
+export const Budget: Story = {
+  play: async ({ canvas }) => {
+    const table = canvas.getByRole("table", { name: "Budget" });
+    await expect(within(table).getByRole("link", { name: "Summer" })).toBeVisible();
+    await expect(table).toHaveTextContent("Guppies");
+    await expect(table.querySelector("tfoot")).toHaveTextContent("All program areas");
+  },
+};
+
 /** Enrollment, then fees, as a program area's report orders them, each by program. */
 export const ByProgram: Story = {
   play: async ({ canvas }) => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  budget,
   capitalList,
   defaultSort,
   netOf,
@@ -173,6 +174,20 @@ describe("enrollment", () => {
     expect(enrollment(offerings)).toEqual([
       { name: "J-Pod", offerings: 2, sailors: 18, max: 32, sailor_days: 360 },
       { name: "K-Pod", offerings: 1, sailors: 12, max: 16, sailor_days: 240 },
+    ]);
+  });
+});
+
+describe("budget", () => {
+  it("adds up each program's revenue and expenses, A to Z", () => {
+    const offerings = [
+      { ...offering("K-Pod", "Spring", "2027-03-02"), revenue_cents: 500, expense_cents: 300 },
+      { ...offering("J-Pod", "Spring", "2027-03-01"), revenue_cents: 100, expense_cents: 50 },
+      { ...offering("J-Pod", "Fall", "2027-09-07"), revenue_cents: 200, expense_cents: 70 },
+    ];
+    expect(budget(offerings)).toEqual([
+      { name: "J-Pod", revenue_cents: 300, expense_cents: 120 },
+      { name: "K-Pod", revenue_cents: 500, expense_cents: 300 },
     ]);
   });
 });

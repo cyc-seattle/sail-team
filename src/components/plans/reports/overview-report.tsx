@@ -4,11 +4,13 @@ import { Fragment, useState, type ReactNode } from "react";
 import { InlineMarkdown } from "@/components/inline-markdown";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
+  budget,
   defaultSort,
   enrollment,
   grossOf,
   feeOf,
   fees,
+  moneyOf,
   netOf,
   nextSort,
   notesOf,
@@ -17,6 +19,7 @@ import {
   type EnrollmentRow,
   type Fee,
   type FunctionalExpenses,
+  type InAndOut,
   type OverviewRow,
   type PlanWarning,
   type ReportOffering,
@@ -122,6 +125,84 @@ function FeeRow({ fee, className }: { fee: Fee; className?: string }) {
   );
 }
 
+function InOut({ money }: { money: InAndOut }) {
+  return (
+    <>
+      <Amount cents={money.revenue_cents} />
+      <Amount cents={money.expense_cents} />
+      <Amount cents={money.revenue_cents - money.expense_cents} />
+    </>
+  );
+}
+
+/** A program area's total, as Revenue and expenses has it. */
+const areaMoney = (row: OverviewRow): InAndOut => ({
+  revenue_cents: row.revenue_cents,
+  expense_cents: row.direct_cents + row.indirect_cents,
+});
+
+/**
+ * Each program area's revenue and expenses, with its programs' under it, as a program area's report has them, and
+ * what's charged to the area itself rather than to its programs.
+ */
+function Budget({ setId, areas, total }: { setId: string; areas: AreaOfferings[]; total: InAndOut }) {
+  return (
+    <Table aria-label="Budget">
+      <TableHeader>
+        <TableRow>
+          <TableHead className={pinned}>Program</TableHead>
+          <TableHead className="text-right">Revenue</TableHead>
+          <TableHead className="text-right">Expenses</TableHead>
+          <TableHead className="text-right">Net</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {areas.map(({ row, offerings: own }) => {
+          const area = areaMoney(row);
+          const programs = moneyOf(own);
+          const charged = {
+            revenue_cents: area.revenue_cents - programs.revenue_cents,
+            expense_cents: area.expense_cents - programs.expense_cents,
+          };
+          return (
+            <Fragment key={row.report}>
+              <TableRow className="font-medium hover:bg-transparent">
+                <TableCell className={cn(pinned, "pt-4")}>
+                  <AreaLink setId={setId} row={row} />
+                </TableCell>
+                <InOut money={area} />
+              </TableRow>
+              {budget(own).map((p) => (
+                <TableRow key={p.name}>
+                  <TableCell className={cn(pinned, "pl-6")}>{p.name}</TableCell>
+                  <InOut money={p} />
+                </TableRow>
+              ))}
+              {(charged.revenue_cents !== 0 || charged.expense_cents !== 0) && (
+                <TableRow>
+                  <TableCell className={cn(pinned, "pl-6")}>Charged to the area</TableCell>
+                  <InOut money={charged} />
+                </TableRow>
+              )}
+            </Fragment>
+          );
+        })}
+      </TableBody>
+      <TableFooter className="bg-transparent">
+        <TableRow>
+          <TableCell className={pinned}>All program areas</TableCell>
+          <InOut money={total} />
+        </TableRow>
+      </TableFooter>
+    </Table>
+  );
+}
+
+interface AreaOfferings {
+  row: OverviewRow;
+  offerings: ReportOffering[];
+}
+
 export interface OverviewReportProps {
   setId: string;
   /** The Financial Plan's own note, in inline Markdown. */
@@ -129,7 +210,7 @@ export interface OverviewReportProps {
   /** The Operations Plan's notes, which every program follows. */
   notes: string[] | null;
   rows: OverviewRow[];
-  /** Each program area's offerings, by its report's key. */
+  /** Each program area's offerings with their results, by its report's key. */
   offerings: Record<string, ReportOffering[]>;
   warnings: PlanWarning[];
   /** The organization's totals, as platform worked them out. */
@@ -212,8 +293,9 @@ function Notes({ note, notes }: { note: string | null; notes: string[] | null })
 
 /**
  * A Financial Plan's year: its notes and the engine's warnings, both closed at first, then each program area from
- * revenue to net, sortable, Non-program on its own, the year's expenses by function and its total, then each program's
- * enrollment and fees, in the order a program area's report shows them. Enrollment and fees list program areas A to Z.
+ * revenue to net, sortable, then each program's budget, Non-program on its own, the year's expenses by function and its
+ * total, then each program's enrollment and fees, in the order a program area's report shows them. Budget, enrollment
+ * and fees list program areas A to Z.
  */
 export function OverviewReport({
   setId,
@@ -229,10 +311,10 @@ export function OverviewReport({
   const nonProgram = rows.find((r) => r.report === "non-program");
   const areaRows = rows.filter((r) => r.report !== "non-program");
   const sorted = sortRows(areaRows, sort);
-  const areas = [...areaRows]
-    .filter((r) => r.offerings > 0)
+  const everyArea: AreaOfferings[] = [...areaRows]
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((row) => ({ row, offerings: offerings[row.report] ?? [] }));
+  const areas = everyArea.filter((a) => a.row.offerings > 0);
   const total = totalOf(areaRows);
   const every = areas.flatMap((a) => a.offerings);
   const all = enrollment(every);
@@ -305,6 +387,10 @@ export function OverviewReport({
             </TableRow>
           </TableFooter>
         </Table>
+      </ReportSection>
+
+      <ReportSection id="budget" title="Budget">
+        <Budget setId={setId} areas={everyArea} total={areaMoney(total)} />
       </ReportSection>
 
       {nonProgram && <NonProgram setId={setId} row={nonProgram} />}
