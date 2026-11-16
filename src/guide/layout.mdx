@@ -12,7 +12,10 @@ import { Meta } from "@storybook/addon-docs/blocks";
 - A page has a title and no subtitle. Its status, such as a plan's Draft badge, sits beside the title, at the title's
   size, not among the buttons.
 - Actions go on the right, where a thumb reaches them on a phone.
-- Sections are stacked, one under the next, with room between them. Don't set dense sections side by side.
+- Sections are stacked, one under the next, with room between them, and each table is full width.
+- Two tables go side by side, each half width, only when both have one or two columns of values with short names, and
+  they belong together, such as Rates and Payroll taxes (`SectionPair`). A small table with no partner stays full
+  width, and two unrelated ones aren't paired just because they fit.
 - Headings follow the page: a page's sections are its top headings. Don't wrap every section in one heading such as
   "Rates".
 - Underline tabs (`TabsList variant="line"`) for named sections. `SegmentedControl` only for a two-way view switch, such

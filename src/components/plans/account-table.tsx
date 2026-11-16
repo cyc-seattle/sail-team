@@ -96,7 +96,7 @@ function AccountRows({
       </TableRow>
       {open &&
         lines.map((line) => (
-          <TableRow key={line.key} className="text-muted-foreground hover:bg-transparent">
+          <TableRow key={line.key} highlight={false} className="text-muted-foreground">
             <TableCell />
             <TableCell className="pl-7 whitespace-normal">
               <div className="text-foreground">{line.name}</div>
@@ -145,8 +145,8 @@ export function AccountTable({
         {groups.map((group, i) => (
           <Fragment key={group.title ?? i}>
             {group.title && (
-              <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={width} className={cn("font-medium", i > 0 && "pt-6")}>
+              <TableRow highlight={false}>
+                <TableCell colSpan={width} className={cn("font-medium", i > 0 && "pt-4")}>
                   {group.title}
                 </TableCell>
               </TableRow>
@@ -157,7 +157,8 @@ export function AccountTable({
             {group.footers?.map((f) => (
               <TableRow
                 key={f.name}
-                className={f.result ? "bg-muted/50 font-semibold hover:bg-muted/50" : "font-medium"}
+                highlight={false}
+                className={f.result ? "bg-muted/50 font-semibold" : "font-medium"}
               >
                 <TableCell />
                 <TableCell>{f.name}</TableCell>

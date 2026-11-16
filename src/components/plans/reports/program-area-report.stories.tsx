@@ -104,12 +104,12 @@ export const Summer: Story = {
   },
 };
 
-/** Its calendar shows only this area's offerings, so there's no area to choose. */
+/** Its calendar shows only this area's offerings. */
 export const Calendar: Story = {
   args: Summer.args!,
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("group", { name: "Year" })).toHaveTextContent("Guppies");
-    await expect(canvas.queryByRole("combobox")).toBeNull();
+    await expect(canvas.getByRole("group", { name: "Year" })).not.toHaveTextContent("J-Pod");
   },
 };
 

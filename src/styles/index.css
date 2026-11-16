@@ -27,6 +27,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-row-hover: var(--row-hover);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-info: var(--info);

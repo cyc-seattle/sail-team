@@ -115,7 +115,7 @@ describe("scheduleOf", () => {
       [
         "Tuesday practice",
         ["a"],
-        ["1 Head Coach, by the hour", "2 Coaches", "1 RIB", "3 420s, plus 3 sailors' own", "1 chartered RIB"],
+        ["1 Head Coach, by the hour", "2 Coaches", "1 RIB", "3 420s", "3 sailor-owned 420s", "1 chartered RIB"],
       ],
       [null, ["late"], []],
     ]);

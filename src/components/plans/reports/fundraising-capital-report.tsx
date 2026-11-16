@@ -61,7 +61,7 @@ export function CapitalTable({ items }: { items: CapitalItem[] }) {
       <TableBody>
         {rows(ranked)}
         {unranked.length > 0 && (
-          <TableRow className="hover:bg-transparent">
+          <TableRow highlight={false}>
             <TableCell />
             <TableCell colSpan={4} className="pt-6 font-medium">
               Not ranked

@@ -16,6 +16,7 @@ import { formatCents, formatExactCents } from "@/model/money";
 import { cn } from "@/lib/utils";
 import { AccountTable, type AccountTableGroup } from "./account-table";
 import { NoteInfo } from "./note-info";
+import { reportSections, SectionPair } from "./reports/report-page";
 
 const none = <span className="text-muted-foreground">—</span>;
 // Prices, salaries and nightly rates are whole dollars; hourly and per-mile rates keep their cents.
@@ -53,7 +54,7 @@ function Num({ children, className }: { children: ReactNode; className?: string 
 export function TableSection({ title, level, children }: { title: string; level: 2 | 3; children: ReactNode }) {
   const Heading = level === 2 ? "h2" : "h3";
   return (
-    <section aria-label={title} className={cn("grid content-start", level === 2 ? "gap-4" : "gap-1")}>
+    <section aria-label={title} className={cn("grid content-start", level === 2 ? "gap-3" : "gap-1")}>
       <Heading className={level === 2 ? "text-lg font-medium" : "text-sm font-medium"}>{title}</Heading>
       {children}
     </section>
@@ -172,39 +173,41 @@ function SalariedStaff({ a }: { a: OperationsAssumptions }) {
  */
 export function OperationsAssumptionsView({ assumptions: a }: { assumptions: OperationsAssumptions }) {
   return (
-    <div className="grid max-w-4xl gap-12">
-      {a.rates && (
-        <TableSection title="Rates" level={2}>
-          <RateTable label="Rates" head={["Rate", "Amount"]}>
-            <TableRow>
-              <TableCell>Lodging, per night</TableCell>
-              <Num>{money(a.rates.lodging_per_night_cents, true)}</Num>
-            </TableRow>
-            <TableRow>
-              <TableCell>Mileage, per mile</TableCell>
-              <Num>{money(a.rates.mileage_rate_cents)}</Num>
-            </TableRow>
-          </RateTable>
-        </TableSection>
-      )}
-      {a.payrollTaxes.length > 0 && (
-        <TableSection title="Payroll taxes" level={2}>
-          <RateTable label="Payroll taxes" head={["Tax", "Rate"]}>
-            {a.payrollTaxes.map((t) => (
-              <TableRow key={t.key}>
-                <TableCell>{t.name}</TableCell>
-                <Num>
-                  {t.wage_share !== null
-                    ? `${formatShare(t.wage_share)} of wages`
-                    : t.hourly_cents !== null
-                      ? `${formatExactCents(t.hourly_cents)} an hour worked`
-                      : none}
-                </Num>
+    <div className={reportSections}>
+      <SectionPair>
+        {a.rates && (
+          <TableSection title="Rates" level={2}>
+            <RateTable label="Rates" head={["Rate", "Amount"]}>
+              <TableRow>
+                <TableCell>Lodging, per night</TableCell>
+                <Num>{money(a.rates.lodging_per_night_cents, true)}</Num>
               </TableRow>
-            ))}
-          </RateTable>
-        </TableSection>
-      )}
+              <TableRow>
+                <TableCell>Mileage, per mile</TableCell>
+                <Num>{money(a.rates.mileage_rate_cents)}</Num>
+              </TableRow>
+            </RateTable>
+          </TableSection>
+        )}
+        {a.payrollTaxes.length > 0 && (
+          <TableSection title="Payroll taxes" level={2}>
+            <RateTable label="Payroll taxes" head={["Tax", "Rate"]}>
+              {a.payrollTaxes.map((t) => (
+                <TableRow key={t.key}>
+                  <TableCell>{t.name}</TableCell>
+                  <Num>
+                    {t.wage_share !== null
+                      ? `${formatShare(t.wage_share)} of wages`
+                      : t.hourly_cents !== null
+                        ? `${formatExactCents(t.hourly_cents)} an hour worked`
+                        : none}
+                  </Num>
+                </TableRow>
+              ))}
+            </RateTable>
+          </TableSection>
+        )}
+      </SectionPair>
       {a.staffLevels.length > 0 && (
         <TableSection title="Staff levels" level={2}>
           <RateTable label="Staff levels" head={["Level", "Per hour"]}>

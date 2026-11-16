@@ -1,6 +1,5 @@
 import { programColor } from "@cyc-seattle/platform/planning";
 import { useState, type CSSProperties } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { numberedOfferings, type NumberedOffering, type ReportOffering } from "@/model/reports";
 import {
   dayOf,
@@ -33,11 +32,8 @@ export interface PlanCalendarProps {
   areas: CalendarArea[];
   /** The days CSC is closed. */
   closedDays: { date: string; name: string }[];
-  /** The one area shown, or every area. With only one area, there's nothing to choose. */
-  area: string | null;
   /** The day shown, or the first with an activity. */
   day: string | null;
-  onAreaChange: (area: string | null) => void;
   onDayChange: (day: string) => void;
 }
 
@@ -57,10 +53,9 @@ interface Placed {
  * Every program area's calendar together: each offering over its weeks, its programs in shades of its area's color, then
  * a chosen day's activity blocks at their times, each opening to its staff, coach boats and boats.
  */
-export function PlanCalendar({ areas, closedDays, area, day, onAreaChange, onDayChange }: PlanCalendarProps) {
+export function PlanCalendar({ areas, closedDays, day, onDayChange }: PlanCalendarProps) {
   const [chosen, setChosen] = useState<string | null>(null);
-  const sorted = [...areas].sort((a, b) => a.name.localeCompare(b.name));
-  const shown = sorted.filter((a) => !area || a.key === area);
+  const shown = [...areas].sort((a, b) => a.name.localeCompare(b.name));
   const all = shown.flatMap((a) => a.blocks).sort((a, b) => a.date.localeCompare(b.date));
   const weeks = weeksOf(all);
   const today = day ?? all[0]?.date ?? null;
@@ -104,7 +99,7 @@ export function PlanCalendar({ areas, closedDays, area, day, onAreaChange, onDay
               <span className="truncate">
                 <span className="sr-only">{o.label}: </span>
                 {to > from && <span aria-hidden>{o.own} · </span>}
-                {o.estimated}/{o.max}
+                {o.estimated} of {o.max}
               </span>
             ),
           })),
@@ -131,35 +126,8 @@ export function PlanCalendar({ areas, closedDays, area, day, onAreaChange, onDay
   const colorOf = (blockKey: string, offeringKey: string) =>
     colors.get(`${areaOf.get(blockKey)} ${offerings.get(offeringKey)?.program}`) ?? {};
 
-  const filter = (
-    <Select
-      items={[{ value: "", label: "All program areas" }, ...sorted.map((a) => ({ value: a.key, label: a.name }))]}
-      value={area ?? ""}
-      onValueChange={(value) => {
-        setChosen(null);
-        onAreaChange(value ? String(value) : null);
-      }}
-    >
-      <SelectTrigger aria-label="Program area" className="w-56">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="">All program areas</SelectItem>
-        {sorted.map((a) => (
-          <SelectItem key={a.key} value={a.key}>
-            {a.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
   if (!today || weeks.length === 0) {
-    return (
-      <div className="grid gap-4">
-        {sorted.length > 1 && <div>{filter}</div>}
-        <p className="text-sm text-muted-foreground">No activities yet</p>
-      </div>
-    );
+    return <p className="text-sm text-muted-foreground">No activities yet</p>;
   }
 
   const days = weekDays(weekOf(today));
@@ -195,11 +163,10 @@ export function PlanCalendar({ areas, closedDays, area, day, onAreaChange, onDay
 
   return (
     <div className="grid gap-6">
-      {sorted.length > 1 && <div>{filter}</div>}
       <div className="grid gap-2">
         <SpanGrid
           label="Year"
-          columnWidth="3rem"
+          columnWidth="4rem"
           columns={weeks.map((w, i) => ({
             key: w,
             name: `Week of ${formatShortDay(w)}`,
@@ -216,7 +183,7 @@ export function PlanCalendar({ areas, closedDays, area, day, onAreaChange, onDay
           chosen={weekOf(today)}
           onChoose={(w) => choose(all.find((b) => weekOf(b.date) === w)?.date ?? w)}
         />
-        <p className="text-sm text-muted-foreground">Estimated/max sailors. Choose a week for its days.</p>
+        <p className="text-sm text-muted-foreground">Target of max sailors. Choose a week for its days.</p>
       </div>
 
       <section aria-labelledby="calendar-day" className="grid gap-3">
@@ -256,8 +223,8 @@ export function PlanCalendar({ areas, closedDays, area, day, onAreaChange, onDay
             <div className="absolute inset-y-0 right-2 left-16">
               {placed.map((p) => {
                 const programs = [...new Set(p.block.activities.map((a) => programOf(a.offering_key)))];
-                // A block of one activity, with no name of its own, is just that activity.
-                const framed = p.block.name !== null || p.block.activities.length > 1;
+                // A block of one activity is drawn as just that activity, without its own name.
+                const framed = p.block.activities.length > 1;
                 const title = p.block.name ?? programs.join(" and ");
                 const header = framed ? 20 : 0;
                 const odd = differing.has(p.block.key);
@@ -322,7 +289,7 @@ export function PlanCalendar({ areas, closedDays, area, day, onAreaChange, onDay
           <BlockDetails
             block={open?.block}
             differs={open ? differing.get(open.block.key) : undefined}
-            own={(key) => offerings.get(key)?.own ?? key}
+            offering={(key) => offerings.get(key)}
             programOf={programOf}
             color={(key) => (open ? colorOf(open.block.key, key) : {})}
           />
@@ -338,23 +305,17 @@ export function PlanCalendar({ areas, closedDays, area, day, onAreaChange, onDay
   );
 }
 
-/** Who a block's staff and boats are for: "Opti Camp and Sailqube Camp share:", or "Adventure Camp has:". */
-const sharers = (programs: string[]) =>
-  programs.length === 1
-    ? `${programs[0]} has:`
-    : `${programs.length > 2 ? `${programs.slice(0, -1).join(", ")}, and ${programs.at(-1)}` : programs.join(" and ")} share:`;
-
-/** One activity block in full: its activities and their times, setup and put-away, and what they share. */
+/** One activity block in full: its activities with their times and sailors, then its staff and boats, one to a line. */
 function BlockDetails({
   block,
   differs,
-  own,
+  offering,
   programOf,
   color,
 }: {
   block: ScheduleBlock | undefined;
   differs: { how: string; usual: string[] } | undefined;
-  own: (offeringKey: string) => string;
+  offering: (offeringKey: string) => NumberedOffering | undefined;
   programOf: (offeringKey: string) => string;
   color: (offeringKey: string) => CSSProperties;
 }) {
@@ -365,48 +326,65 @@ function BlockDetails({
       </aside>
     );
   }
-  const programs = [...new Set(block.activities.map((a) => programOf(a.offering_key)))];
+  const label = (key: string) => offering(key)?.label ?? key;
+  // A block of one activity goes by that activity's name, so it isn't said twice.
+  const alone = block.activities.length === 1 ? block.activities[0] : undefined;
+  const title = alone
+    ? label(alone.offering_key)
+    : (block.name ?? [...new Set(block.activities.map((a) => programOf(a.offering_key)))].join(" and "));
   return (
     <aside aria-label="Activity block" className="grid gap-3 rounded-lg border bg-card p-card text-sm">
-      <h4 className="font-medium">{block.name ?? programs.join(" and ")}</h4>
-      <ul className="grid gap-1">
-        {block.activities.map((a) => (
-          <li key={a.key} className="grid gap-0.5">
-            <span className="flex items-center gap-1.5">
-              <span
-                aria-hidden
-                style={color(a.offering_key)}
-                className="inline-block size-2.5 shrink-0 rounded-[3px] bg-(--program)"
-              />
-              <span>
-                {programOf(a.offering_key)} <span className="text-muted-foreground">{own(a.offering_key)}</span>
+      <h4 className="flex items-center gap-1.5 font-medium">
+        {alone && (
+          <span
+            aria-hidden
+            style={color(alone.offering_key)}
+            className="inline-block size-2.5 shrink-0 rounded-[3px] bg-(--program)"
+          />
+        )}
+        {title}
+      </h4>
+      <ul className="grid gap-2">
+        {block.activities.map((a) => {
+          const o = offering(a.offering_key);
+          return (
+            <li key={a.key} className="grid gap-0.5">
+              {!alone && (
+                <span className="flex items-center gap-1.5">
+                  <span
+                    aria-hidden
+                    style={color(a.offering_key)}
+                    className="inline-block size-2.5 shrink-0 rounded-[3px] bg-(--program)"
+                  />
+                  {label(a.offering_key)}
+                </span>
+              )}
+              <span className={cn("text-muted-foreground", !alone && "pl-4")}>
+                {timeSpan(a.start_time, a.end_time)}
+                {o && ` · ${o.estimated} of ${o.max} sailors`}
               </span>
-            </span>
-            <span className="pl-4 text-muted-foreground">
-              {[
-                timeSpan(a.start_time, a.end_time),
-                a.setup_minutes ? `${a.setup_minutes} min setup` : null,
-                a.putaway_minutes ? `${a.putaway_minutes} min put-away` : null,
-              ]
-                .filter(Boolean)
-                .join(", ")}
-            </span>
-          </li>
-        ))}
+              {a.setup_minutes || a.putaway_minutes ? (
+                <span className={cn("text-muted-foreground", !alone && "pl-4")}>
+                  {[
+                    a.setup_minutes ? `${a.setup_minutes} min setup` : null,
+                    a.putaway_minutes ? `${a.putaway_minutes} min put-away` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(", ")}
+                </span>
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
       {block.parts.length > 0 ? (
-        <div className="grid gap-1">
-          <p>{sharers(programs)}</p>
-          <ul className="flex flex-wrap gap-1">
-            {block.parts.map((p) => (
-              <li key={p} className="rounded-full border bg-muted px-2">
-                {p}
-              </li>
-            ))}
-          </ul>
-        </div>
+        <ul aria-label="Staff, coach boats and boats" className="grid gap-0.5 border-t pt-3">
+          {block.parts.map((p) => (
+            <li key={p}>{p}</li>
+          ))}
+        </ul>
       ) : (
-        <p className="text-muted-foreground">No staff, coach boats or boats yet</p>
+        <p className="border-t pt-3 text-muted-foreground">No staff, coach boats or boats yet</p>
       )}
       {differs && (
         <p className="text-warning">

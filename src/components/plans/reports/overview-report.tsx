@@ -89,7 +89,7 @@ function SortHead({
 /** A program area's name as a row above its programs or sessions. */
 function AreaRow({ setId, row, span }: { setId: string; row: OverviewRow; span: number }) {
   return (
-    <TableRow className="hover:bg-transparent">
+    <TableRow highlight={false}>
       <TableCell className={cn(pinned, "pt-4 font-medium")}>
         <AreaLink setId={setId} row={row} />
       </TableCell>

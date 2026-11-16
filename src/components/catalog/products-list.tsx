@@ -46,7 +46,7 @@ export function ProductsList({
           </TableHeader>
           {groups.map(({ area, products }) => (
             <TableBody key={area?.id ?? "none"}>
-              <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableRow highlight={false} className="bg-muted/50">
                 <TableHead scope="rowgroup" colSpan={4} className={pinned + " bg-transparent"}>
                   {area?.name ?? "No program area"}
                 </TableHead>
