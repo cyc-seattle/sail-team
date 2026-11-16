@@ -174,21 +174,12 @@ Then("Youth Racing's row shows revenue of $10,000 and net of $5,000", async ({ p
   await expect(cells.nth(5)).toHaveText("$5,000");
 });
 
-Then(
-  "I can switch to Assumptions, Youth Racing, Adult Sailing, Non-program, and Fundraising and capital",
-  async ({ page, club }) => {
-    const reports = page.getByRole("navigation", { name: "Reports" });
-    for (const name of [
-      "Assumptions",
-      club.area,
-      `Adult Sailing ${club.run}`,
-      "Non-program",
-      "Fundraising and capital",
-    ]) {
-      await expect(reports.getByRole("link", { name, exact: true })).toBeVisible();
-    }
-  },
-);
+Then("I can switch to Assumptions, Youth Racing, Adult Sailing, and Non-program", async ({ page, club }) => {
+  const reports = page.getByRole("navigation", { name: "Reports" });
+  for (const name of ["Assumptions", club.area, `Adult Sailing ${club.run}`, "Non-program"]) {
+    await expect(reports.getByRole("link", { name, exact: true })).toBeVisible();
+  }
+});
 
 // A program area's report.
 /** A Financial Plan whose camp has a coach at $30 an hour on ten 10-hour practices, and shares $1,000 of office costs. */
@@ -419,6 +410,19 @@ Given("the Operations Plan's note {string}", async ({ club }, note: string) => {
     `/items/plans?filter[financial_plan_id][_eq]=${opened.set}&filter[kind][_eq]=operations&fields=id`,
   );
   await club.notes(operations!.id, [note]);
+});
+
+// eslint-disable-next-line no-empty-pattern -- playwright-bdd reads a step's fixtures from this pattern.
+Given("the Financial Plan's note {string}", async ({}, note: string) => {
+  await asAdmin("PATCH", `/items/financial_plans/${opened.set}`, { note });
+});
+
+When("I open its notes", async ({ page }) => {
+  await page.locator("summary", { hasText: "Notes" }).click();
+});
+
+Then("I see the Financial Plan's note {string}", async ({ page }, note: string) => {
+  await expect(page.getByText(note, { exact: true })).toBeVisible();
 });
 
 When("I open the draft's Assumptions", async ({ page }) => {

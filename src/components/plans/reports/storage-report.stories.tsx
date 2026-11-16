@@ -1,17 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect } from "storybook/test";
+import { storageCosts } from "./fixtures";
 import { StorageReport } from "./storage-report";
 
 const meta = {
   component: StorageReport,
-  args: {
-    costs: [
-      { payer: "Doublehanded", kind: "area", name: "Storage (dinghy float and dry storage, by area)", cents: 699_500 },
-      { payer: "Summer", kind: "area", name: "Storage (dinghy float and dry storage, by area)", cents: 982_400 },
-      { payer: "Shared (G&A)", kind: "shared", name: "Self storage facility", cents: 172_800 },
-      { payer: "No program", kind: "unallocated", name: "Storage not allocated to programs", cents: 1_307_000 },
-    ],
-  },
+  args: { costs: storageCosts },
 } satisfies Meta<typeof StorageReport>;
 export default meta;
 type Story = StoryObj<typeof meta>;

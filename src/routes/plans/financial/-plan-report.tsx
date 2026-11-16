@@ -3,14 +3,12 @@ import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { FinancialPlanActions } from "@/components/plans/financial-plan-actions";
 import { OlderNumbers } from "@/components/plans/older-numbers";
-import { FundraisingCapitalReport } from "@/components/plans/reports/fundraising-capital-report";
 import { NonProgramReport } from "@/components/plans/reports/non-program-report";
 import { OverviewReport } from "@/components/plans/reports/overview-report";
 import { ProgramAreaReport, type ProgramAreaReportProps } from "@/components/plans/reports/program-area-report";
 import { PlanCalendar, type PlanCalendarProps } from "@/components/plans/reports/plan-calendar";
 import { RatesReport } from "@/components/plans/reports/rates-report";
 import { ReportPage } from "@/components/plans/reports/report-page";
-import { StorageReport } from "@/components/plans/reports/storage-report";
 import { NoAccess } from "@/components/shell/no-access";
 import { NoticePage } from "@/components/shell/notice-page";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -44,8 +42,7 @@ import {
 } from "@/model/reports";
 
 /**
- * One report of a Financial Plan, by its key: `overview`, `calendar`, `rates`, `storage`, a Program Plan's id,
- * `non-program` or `fundraising`.
+ * One report of a Financial Plan, by its key: `overview`, `calendar`, `rates`, a Program Plan's id, or `non-program`.
  */
 export function PlanReport({ setId, report }: { setId: string; report: string }) {
   const session = useSession();
@@ -144,8 +141,12 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
     return (
       <OverviewReport
         setId={set.id}
+        note={set.note}
+        notes={inputs.notes["rates"] ?? null}
         rows={rows}
-        offerings={inputs.offerings}
+        offerings={Object.fromEntries(
+          Object.entries(inputs.offerings).map(([key, own]) => [key, withResults(own, results.pnl)]),
+        )}
         warnings={warnings}
         totals={results.totals}
         functions={functionalExpenses(results.lines)}
@@ -170,20 +171,9 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
   }
   if (report === "rates") {
     return inputs.operations ? (
-      <RatesReport assumptions={inputs.operations} notes={inputs.notes["rates"] ?? null} />
+      <RatesReport assumptions={inputs.operations} storage={storageOf(results.lines, plans)} />
     ) : (
       <p className="text-sm text-muted-foreground">This Financial Plan has no Operations Plan yet.</p>
-    );
-  }
-  if (report === "storage") {
-    return <StorageReport costs={storageOf(results.lines, plans)} />;
-  }
-  if (report === "fundraising") {
-    return (
-      <FundraisingCapitalReport
-        fundraising={fundraisingOf(results.lines)}
-        capital={capitalList(results, inputs.capital)}
-      />
     );
   }
   if (report === "non-program") {
@@ -194,6 +184,8 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
           inputs.products,
         )}
         shared={sharedCostsOf(results.lines, operations?.id ?? null)}
+        fundraising={fundraisingOf(results.lines)}
+        capital={capitalList(results, inputs.capital)}
       />
     );
   }

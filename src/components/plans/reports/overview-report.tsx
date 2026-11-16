@@ -1,21 +1,25 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import { Fragment, useState, type ReactNode } from "react";
+import { InlineMarkdown } from "@/components/inline-markdown";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
+  budget,
   defaultSort,
   enrollment,
   grossOf,
   feeOf,
   fees,
+  moneyOf,
   netOf,
   nextSort,
+  notesOf,
   sortRows,
   totalOf,
-  type EnrollmentBy,
   type EnrollmentRow,
   type Fee,
   type FunctionalExpenses,
+  type InAndOut,
   type OverviewRow,
   type PlanWarning,
   type ReportOffering,
@@ -27,8 +31,9 @@ import { distinct } from "@/model/warnings";
 import { cn } from "@/lib/utils";
 import { Money } from "../money";
 import { WarningCount } from "../warning-mark";
+import { CollapsibleSection } from "./collapsible-section";
+import { NotesList } from "./notes-list";
 import { ReportSection } from "./report-page";
-import { SegmentedControl } from "./segmented-control";
 import { WarningsSection } from "./warnings-section";
 
 /** The name column stays put while the numbers scroll sideways on a phone. */
@@ -140,10 +145,92 @@ function FeeRow({ fee, className }: { fee: Fee; className?: string }) {
   );
 }
 
+function InOut({ money }: { money: InAndOut }) {
+  return (
+    <>
+      <Amount cents={money.revenue_cents} />
+      <Amount cents={money.expense_cents} />
+      <Amount cents={money.revenue_cents - money.expense_cents} />
+    </>
+  );
+}
+
+/** A program area's total, as Revenue and expenses has it. */
+const areaMoney = (row: OverviewRow): InAndOut => ({
+  revenue_cents: row.revenue_cents,
+  expense_cents: row.direct_cents + row.indirect_cents,
+});
+
+/**
+ * Each program area's revenue and expenses, with its programs' under it, as a program area's report has them, and
+ * what's charged to the area itself rather than to its programs.
+ */
+function Budget({ setId, areas, total }: { setId: string; areas: AreaOfferings[]; total: InAndOut }) {
+  return (
+    <Table aria-label="Budget">
+      <TableHeader>
+        <TableRow>
+          <TableHead className={pinned}>Program</TableHead>
+          <TableHead className="text-right">Revenue</TableHead>
+          <TableHead className="text-right">Expenses</TableHead>
+          <TableHead className="text-right">Net</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {areas.map(({ row, offerings: own }) => {
+          const area = areaMoney(row);
+          const programs = moneyOf(own);
+          const charged = {
+            revenue_cents: area.revenue_cents - programs.revenue_cents,
+            expense_cents: area.expense_cents - programs.expense_cents,
+          };
+          return (
+            <Fragment key={row.report}>
+              <TableRow highlight={false} className="font-medium">
+                <TableCell className={cn(pinned, "pt-4")}>
+                  <AreaLink setId={setId} row={row} />
+                </TableCell>
+                <InOut money={area} />
+              </TableRow>
+              {budget(own).map((p) => (
+                <TableRow key={p.name}>
+                  <TableCell className={cn(pinned, "pl-6")}>{p.name}</TableCell>
+                  <InOut money={p} />
+                </TableRow>
+              ))}
+              {(charged.revenue_cents !== 0 || charged.expense_cents !== 0) && (
+                <TableRow>
+                  <TableCell className={cn(pinned, "pl-6")}>Charged to the area</TableCell>
+                  <InOut money={charged} />
+                </TableRow>
+              )}
+            </Fragment>
+          );
+        })}
+      </TableBody>
+      <TableFooter className="bg-transparent">
+        <TableRow>
+          <TableCell className={pinned}>All program areas</TableCell>
+          <InOut money={total} />
+        </TableRow>
+      </TableFooter>
+    </Table>
+  );
+}
+
+interface AreaOfferings {
+  row: OverviewRow;
+  offerings: ReportOffering[];
+}
+
 export interface OverviewReportProps {
   setId: string;
+  /** The Financial Plan's own note, in inline Markdown. */
+  note: string | null;
+  /** The Operations Plan's notes, which every program follows. */
+  notes: string[] | null;
   rows: OverviewRow[];
-  /** Each program area's offerings, by its report's key. */
+  /** Each program area's offerings with their results, by its report's key. */
   offerings: Record<string, ReportOffering[]>;
   /** Every warning: those about no program area are listed here, and each area's counted beside it. */
   warnings: PlanWarning[];
@@ -159,9 +246,8 @@ function Share({ cents, of }: { cents: number; of: number }) {
   return <Count>{of === 0 ? "—" : percent.format(cents / of)}</Count>;
 }
 
-/** What's sold outside the programs. Once it carries no G&A, its net reduces G&A, or adds to it, before G&A is spread. */
+/** What's sold outside the programs, with its share of indirect costs only when it carries one. */
 function NonProgram({ setId, row }: { setId: string; row: OverviewRow }) {
-  const net = netOf(row);
   const carriesShares = row.indirect_cents !== 0;
   return (
     <ReportSection id="non-program" title="Non-program">
@@ -191,40 +277,60 @@ function NonProgram({ setId, row }: { setId: string; row: OverviewRow }) {
             <Amount cents={row.revenue_cents} />
             <Amount cents={row.direct_cents} />
             {carriesShares && <Amount cents={row.indirect_cents} />}
-            <Amount cents={net} colored />
+            <Amount cents={netOf(row)} colored />
           </TableRow>
         </TableBody>
       </Table>
-      {!carriesShares && net !== 0 && (
-        <p className="text-sm">
-          {net > 0 ? "Reduces G&A by " : "Adds "}
-          <Money cents={Math.abs(net)} whole />
-          {net > 0 ? "." : " to G&A."}
-        </p>
-      )}
     </ReportSection>
   );
 }
 
+/** The Financial Plan's note, then the notes every program follows, closed at first. Nothing when there are none. */
+function Notes({ note, notes }: { note: string | null; notes: string[] | null }) {
+  if (!note?.trim() && notesOf(notes).length === 0) {
+    return null;
+  }
+  return (
+    <CollapsibleSection title="Notes">
+      <div className="grid max-w-3xl gap-3 text-sm">
+        {note?.trim() && (
+          <p>
+            <InlineMarkdown text={note} />
+          </p>
+        )}
+        {notesOf(notes).length > 0 && <NotesList notes={notes} label="Notes" />}
+      </div>
+    </CollapsibleSection>
+  );
+}
+
 /**
- * A Financial Plan's year: the engine's warnings, closed at first, then each program area from revenue to net, sortable,
- * Non-program on its own, the year's expenses by function and its total, then each program's fees and enrollment, both
- * by program or by session, as the switch at the top says, and the schedule's weeks across every area, closed at
- * first. Fees and enrollment list program areas A to Z.
+ * A Financial Plan's year: its notes, closed at first, and the engine's warnings about no program area, then each program area from
+ * revenue to net, sortable, then each program's budget, Non-program on its own, the year's expenses by function and its
+ * total, then each program's enrollment and fees, in the order a program area's report shows them. Budget, enrollment
+ * and fees list program areas A to Z.
  */
-export function OverviewReport({ setId, rows, offerings, warnings, totals, functions }: OverviewReportProps) {
+export function OverviewReport({
+  setId,
+  note,
+  notes,
+  rows,
+  offerings,
+  warnings,
+  totals,
+  functions,
+}: OverviewReportProps) {
   const [sort, setSort] = useState<Sort>(defaultSort);
-  const [by, setBy] = useState<EnrollmentBy>("session");
   const nonProgram = rows.find((r) => r.report === "non-program");
   const areaRows = rows.filter((r) => r.report !== "non-program");
   const sorted = sortRows(areaRows, sort);
-  const areas = [...areaRows]
-    .filter((r) => r.offerings > 0)
+  const everyArea: AreaOfferings[] = [...areaRows]
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((row) => ({ row, offerings: offerings[row.report] ?? [] }));
+  const areas = everyArea.filter((a) => a.row.offerings > 0);
   const total = totalOf(areaRows);
   const every = areas.flatMap((a) => a.offerings);
-  const all = enrollment(every, "program");
+  const all = enrollment(every);
   const allTotal: EnrollmentRow = {
     name: "All programs",
     offerings: all.reduce((t, r) => t + r.offerings, 0),
@@ -234,22 +340,10 @@ export function OverviewReport({ setId, rows, offerings, warnings, totals, funct
   };
   const allFees = feeOf("All programs", every);
   const expenses = functions.program_cents + functions.management_cents + functions.fundraising_cents;
-  const group = by === "session" ? "Session" : "Program";
   return (
     <>
+      <Notes note={note} notes={notes} />
       <WarningsSection warnings={warnings.filter((w) => w.area === "non-program")} />
-
-      <div className="flex justify-end">
-        <SegmentedControl
-          label="Group fees and enrollment"
-          value={by}
-          onChange={setBy}
-          options={[
-            { value: "session", label: "By session" },
-            { value: "program", label: "By program" },
-          ]}
-        />
-      </div>
 
       <ReportSection id="revenue-and-expenses" title="Revenue and expenses">
         <Table aria-label="Revenue and expenses">
@@ -305,6 +399,10 @@ export function OverviewReport({ setId, rows, offerings, warnings, totals, funct
         </Table>
       </ReportSection>
 
+      <ReportSection id="budget" title="Budget">
+        <Budget setId={setId} areas={everyArea} total={areaMoney(total)} />
+      </ReportSection>
+
       {nonProgram && <NonProgram setId={setId} row={nonProgram} />}
 
       <ReportSection id="year" title="Year">
@@ -350,7 +448,8 @@ export function OverviewReport({ setId, rows, offerings, warnings, totals, funct
                 <TableCell className={pinned}>
                   <Link
                     to="/plans/financial/$setId/$planId"
-                    params={{ setId, planId: "fundraising" }}
+                    params={{ setId, planId: "non-program" }}
+                    hash="fundraising"
                     className="text-link underline"
                   >
                     Fundraising net
@@ -362,7 +461,7 @@ export function OverviewReport({ setId, rows, offerings, warnings, totals, funct
                 <TableCell className={pinned}>
                   <Link
                     to="/plans/financial/$setId/$planId"
-                    params={{ setId, planId: "fundraising" }}
+                    params={{ setId, planId: "non-program" }}
                     hash="capital"
                     className="text-link underline"
                   >
@@ -383,37 +482,11 @@ export function OverviewReport({ setId, rows, offerings, warnings, totals, funct
         </div>
       </ReportSection>
 
-      <ReportSection id="program-fees" title="Program fees">
-        <Table aria-label="Program fees">
-          <TableHeader>
-            <TableRow>
-              <TableHead className={pinned}>{group}</TableHead>
-              <TableHead className="text-right">Per offering</TableHead>
-              <TableHead className="text-right">Per day</TableHead>
-              <TableHead className="text-right">Per hour</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {areas.map(({ row, offerings: own }) => (
-              <Fragment key={row.report}>
-                <AreaRow setId={setId} row={row} span={3} />
-                {fees(own, by).map((fee) => (
-                  <FeeRow key={fee.name} fee={fee} className="pl-6" />
-                ))}
-              </Fragment>
-            ))}
-          </TableBody>
-          <TableFooter className="bg-transparent">
-            <FeeRow fee={allFees} />
-          </TableFooter>
-        </Table>
-      </ReportSection>
-
       <ReportSection id="enrollment" title="Enrollment">
         <Table aria-label="Enrollment">
           <TableHeader>
             <TableRow>
-              <TableHead className={pinned}>{group}</TableHead>
+              <TableHead className={pinned}>Program</TableHead>
               <TableHead className="text-right">Offerings</TableHead>
               <TableHead className="text-right">Sailors</TableHead>
               <TableHead className="text-right">Max</TableHead>
@@ -424,7 +497,7 @@ export function OverviewReport({ setId, rows, offerings, warnings, totals, funct
             {areas.map(({ row, offerings: own }) => (
               <Fragment key={row.report}>
                 <AreaRow setId={setId} row={row} span={4} />
-                {enrollment(own, by).map((e) => (
+                {enrollment(own).map((e) => (
                   <TableRow key={e.name}>
                     <TableCell className={cn(pinned, "pl-6")}>{e.name}</TableCell>
                     <EnrollmentCells row={e} />
@@ -438,6 +511,32 @@ export function OverviewReport({ setId, rows, offerings, warnings, totals, funct
               <TableCell className={pinned}>{allTotal.name}</TableCell>
               <EnrollmentCells row={allTotal} />
             </TableRow>
+          </TableFooter>
+        </Table>
+      </ReportSection>
+
+      <ReportSection id="fees" title="Fees">
+        <Table aria-label="Fees">
+          <TableHeader>
+            <TableRow>
+              <TableHead className={pinned}>Program</TableHead>
+              <TableHead className="text-right">Per offering</TableHead>
+              <TableHead className="text-right">Per day</TableHead>
+              <TableHead className="text-right">Per hour</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {areas.map(({ row, offerings: own }) => (
+              <Fragment key={row.report}>
+                <AreaRow setId={setId} row={row} span={3} />
+                {fees(own).map((fee) => (
+                  <FeeRow key={fee.name} fee={fee} className="pl-6" />
+                ))}
+              </Fragment>
+            ))}
+          </TableBody>
+          <TableFooter className="bg-transparent">
+            <FeeRow fee={allFees} />
           </TableFooter>
         </Table>
       </ReportSection>

@@ -16,8 +16,7 @@ export const Route = createFileRoute("/plans/financial/$setId/$planId")({
 });
 
 /**
- * One of a Financial Plan's other reports: the Calendar, Assumptions, a program area's, Non-program, or Fundraising and
- * capital.
+ * One of a Financial Plan's other reports: the Calendar, Assumptions, a program area's, or Non-program.
  */
 function Report() {
   const { setId, planId } = Route.useParams();

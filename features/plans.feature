@@ -16,7 +16,7 @@ Feature: Seeing the Financial Plans
   are given, and warns where they break a limit, such as a practice on a day CSC is closed.
 
   Planning is where planners, and anyone else who can read plans, see the Financial Plans as a set of reports: an
-  Overview, the Assumptions, one for each program area, Non-program, and Fundraising and capital. A program area's
+  Overview, the Assumptions, one for each program area, and Non-program, with fundraising and capital. A program area's
   report includes its coaches' wages, its RIBs, and its share of the shared costs, such as the office, worked out with
   the other plans in the same Financial Plan. A Plan Writer can rename any Financial Plan, change its note,
   duplicate one, and delete a draft here. A Plan Admin can also freeze a draft, make one active from a date,
@@ -69,7 +69,7 @@ Feature: Seeing the Financial Plans
       Then its Overview has a row for Youth Racing, Adult Sailing, and all program areas
       And Non-program has its own section
       And Youth Racing's row shows revenue of $10,000 and net of $5,000
-      And I can switch to Assumptions, Youth Racing, Adult Sailing, Non-program, and Fundraising and capital
+      And I can switch to Assumptions, Youth Racing, Adult Sailing, and Non-program
 
   Rule: A program area's report shows its revenue and expenses, with its wages and its share of the shared costs
 
@@ -131,16 +131,20 @@ Feature: Seeing the Financial Plans
       Then its offering's enrollment shows a target of 10 sailors, and its fees a fee of $1,000
       And its assumptions show the program's Lead coach, 5 sailors per coach, and the note "Sail in pairs"
 
-  Rule: Assumptions show the notes every program follows and the rates every plan uses
+  Rule: The Overview shows the Financial Plan's note and the notes every program follows, and Assumptions the rates every plan uses
 
-    Scenario: The Operations Plan's notes and a coach's pay
+    Scenario: The notes, and a coach's pay
       Given I'm a planner who can read plans
       And a draft Financial Plan whose Operations Plan pays coaches $30 an hour and has $1,000 of office costs
+      And the Financial Plan's note "Two coaches on summer mornings"
       And the Operations Plan's note "No more than 4 RIBs on the water"
       And I've signed in
+      When I open the draft
+      And I open its notes
+      Then I see the Financial Plan's note "Two coaches on summer mornings"
+      And I see the note "No more than 4 RIBs on the water"
       When I open the draft's Assumptions
-      Then I see the note "No more than 4 RIBs on the water"
-      And I see the coach's pay of $30.00 an hour
+      Then I see the coach's pay of $30.00 an hour
 
   Rule: A program area's calendar shows its offerings over the year, then a day's activity blocks at their times
 

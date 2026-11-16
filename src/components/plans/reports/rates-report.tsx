@@ -1,19 +1,14 @@
 import type { OperationsAssumptions } from "@/model/assumptions";
+import type { StorageCost } from "@/model/reports";
 import { OperationsAssumptionsView } from "../assumptions";
-import { ReportSection } from "./report-page";
-import { NotesList } from "./notes-list";
+import { StorageReport } from "./storage-report";
 
-/**
- * The notes the planning agent follows across every program, then the rates every plan in a Financial Plan uses, which
- * only a Plan Admin changes.
- */
-export function RatesReport({ assumptions, notes }: { assumptions: OperationsAssumptions; notes: string[] | null }) {
+/** The rates every plan in a Financial Plan uses, which only a Plan Admin changes, then what storage costs. */
+export function RatesReport({ assumptions, storage }: { assumptions: OperationsAssumptions; storage: StorageCost[] }) {
   return (
     <>
-      <ReportSection id="notes" title="Notes">
-        <NotesList notes={notes} label="Notes" />
-      </ReportSection>
       <OperationsAssumptionsView assumptions={assumptions} />
+      <StorageReport costs={storage} />
     </>
   );
 }
