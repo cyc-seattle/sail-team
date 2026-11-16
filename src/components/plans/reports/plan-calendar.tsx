@@ -104,7 +104,7 @@ export function PlanCalendar({ areas, closedDays, day, onDayChange, warnings = [
             content: (
               <span className="truncate">
                 <span className="sr-only">{o.label}: </span>
-                {to > from && <span aria-hidden>{o.label.slice(program.length + 1)} · </span>}
+                {to > from && <span aria-hidden>{o.own} · </span>}
                 {o.estimated} of {o.max}
               </span>
             ),
@@ -273,8 +273,9 @@ export function PlanCalendar({ areas, closedDays, day, onDayChange, warnings = [
                           >
                             <span className="block truncate font-medium">
                               {framed && <span className="sr-only">, </span>}
-                              {offerings.get(a.offering_key)?.label ?? a.offering_key}
+                              {programOf(a.offering_key)}
                             </span>{" "}
+                            <span className="block truncate">{offerings.get(a.offering_key)?.own}</span>{" "}
                             <span className="block truncate">{timeSpan(a.start_time, a.end_time)}</span>
                           </span>
                         );
