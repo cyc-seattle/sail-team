@@ -438,7 +438,7 @@ export function PlanningPage({ plans, actions }: { plans: ListedPlan[]; actions:
           </TableHeader>
           {years.map((year) => (
             <TableBody key={year}>
-              <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableRow highlight={false} className="bg-muted/50">
                 <TableHead scope="rowgroup" colSpan={7} className="tabular-nums">
                   {year}
                 </TableHead>

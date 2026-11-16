@@ -191,14 +191,14 @@ function GroupedTable({
         {terms.map(({ term, programs: own }) => (
           <Fragment key={term ?? ""}>
             {showTerms && (
-              <TableRow className="font-semibold hover:bg-transparent">
+              <TableRow highlight={false} className="font-semibold">
                 <TableCell className={cn(pinned, "pt-4")}>{term ?? "No term"}</TableCell>
                 {subtotals(own.flatMap((p) => p.offerings))}
               </TableRow>
             )}
             {own.map(({ program, offerings: listed }) => (
               <Fragment key={program}>
-                <TableRow className="font-medium hover:bg-transparent">
+                <TableRow highlight={false} className="font-medium">
                   <TableCell className={cn(pinned, showTerms ? "pl-5" : "pt-4")}>{program}</TableCell>
                   {subtotals(listed)}
                 </TableRow>
@@ -249,7 +249,7 @@ function EnrollmentSums({ offerings }: { offerings: ReportOffering[] }) {
   );
 }
 
-const totalRow = "border-t-2 font-semibold hover:bg-transparent";
+const totalRow = "border-t-2 font-semibold";
 
 export interface ProgramAreaReportProps {
   /** The program area's name, such as Summer. */
@@ -298,7 +298,7 @@ export function ProgramAreaReport({
   staffTime,
 }: ProgramAreaReportProps) {
   const [ownDay, setOwnDay] = useState<string | null>(null);
-  const labels = new Map(numberedOfferings(offerings).flatMap((g) => g.offerings.map((o) => [o.key, o.label])));
+  const numbered = new Map(numberedOfferings(offerings).flatMap((g) => g.offerings.map((o) => [o.key, o])));
   const charged = chargedToArea(offerings, total);
   return (
     <>
@@ -337,12 +337,12 @@ export function ProgramAreaReport({
           footer={
             <>
               {charged && (
-                <TableRow className="border-t-2 hover:bg-transparent">
+                <TableRow highlight={false} className="border-t-2">
                   <TableCell className={pinned}>Charged to the area</TableCell>
                   <InOut money={charged} />
                 </TableRow>
               )}
-              <TableRow className={totalRow}>
+              <TableRow highlight={false} className={totalRow}>
                 <TableCell className={pinned}>Total</TableCell>
                 <InOut money={total ?? moneyOf(offerings)} />
               </TableRow>
@@ -368,7 +368,7 @@ export function ProgramAreaReport({
           )}
           sums={(own) => <EnrollmentSums offerings={own} />}
           footer={
-            <TableRow className={totalRow}>
+            <TableRow highlight={false} className={totalRow}>
               <TableCell className={pinned}>Total</TableCell>
               <EnrollmentSums offerings={offerings} />
             </TableRow>
@@ -398,6 +398,7 @@ export function ProgramAreaReport({
             <TableHeader>
               <TableRow>
                 <TableHead className={pinned}>Trip</TableHead>
+                <TableHead>Program</TableHead>
                 <TableHead>Offering</TableHead>
                 <TableHead className="text-right">Nights</TableHead>
                 <TableHead className="text-right">Airfare per coach</TableHead>
@@ -408,7 +409,8 @@ export function ProgramAreaReport({
               {trips.map((t) => (
                 <TableRow key={t.key}>
                   <TableCell className={pinned}>{t.name}</TableCell>
-                  <TableCell>{labels.get(t.offering_key) ?? none}</TableCell>
+                  <TableCell>{numbered.get(t.offering_key)?.program ?? none}</TableCell>
+                  <TableCell>{numbered.get(t.offering_key)?.own ?? none}</TableCell>
                   <Num>{t.nights === null ? none : count(t.nights)}</Num>
                   <Amount cents={t.airfare_cents} whole />
                   <Num>{t.miles === null ? none : count(t.miles)}</Num>

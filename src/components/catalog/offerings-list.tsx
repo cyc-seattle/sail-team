@@ -18,7 +18,7 @@ export function OfferingsList({ offerings, products }: { offerings: CatalogOffer
           </TableHeader>
           {groups.map(({ program, offerings }) => (
             <TableBody key={program.id}>
-              <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableRow highlight={false} className="bg-muted/50">
                 <TableHead scope="rowgroup">{program.name}</TableHead>
               </TableRow>
               {offerings.map((o) => (
