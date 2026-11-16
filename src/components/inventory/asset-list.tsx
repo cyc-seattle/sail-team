@@ -455,7 +455,9 @@ function DeleteDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Delete {name}?</DialogTitle>
-          <DialogDescription>Use Dispose of for one CSC no longer has. This can&apos;t be undone.</DialogDescription>
+          <DialogDescription>
+            This can&apos;t be undone. If it was sold or scrapped, use Dispose of instead.
+          </DialogDescription>
         </DialogHeader>
         {state === "failed" && (
           <p role="alert" className="text-sm text-destructive">
