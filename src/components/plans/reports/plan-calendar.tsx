@@ -2,7 +2,7 @@ import { programColor } from "@cyc-seattle/platform/planning";
 import { useState, type CSSProperties } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { numberedOfferings, type NumberedOffering, type PlanWarning, type ReportOffering } from "@/model/reports";
-import { distinct, placeOf, worstOf } from "@/model/warnings";
+import { distinct, placeOf, warningCount, worstOf } from "@/model/warnings";
 import {
   dayOf,
   differences,
@@ -223,7 +223,7 @@ export function PlanCalendar({
                   {i === 0 || monthOf(w) !== monthOf(weeks[i - 1]!) ? monthOf(w) : " "}
                 </span>
                 <span className="text-xs">{dayOf(w)}</span>
-                <WeekMark worst={worstOf(dayWarnings.filter((x) => x.date && weekOf(x.date) === w))} />
+                <WeekMark warnings={dayWarnings.filter((x) => x.date && weekOf(x.date) === w)} />
               </>
             ),
           }))}
@@ -323,7 +323,7 @@ export function PlanCalendar({
                     </span>
                     {own.length > 0 && (
                       <>
-                        <span className="sr-only">, {own.length === 1 ? "1 warning" : `${own.length} warnings`}</span>
+                        <span className="sr-only">, {warningCount(own)}</span>
                         <span aria-hidden className="absolute -top-1.5 -left-1.5 rounded-full bg-background p-px">
                           <SeverityIcon severity={worstOf(own)!} className="size-3" />
                         </span>
@@ -444,12 +444,13 @@ function BlockDetails({
 }
 
 /** A week's worst warning, under its day in the year's heading, or a blank of the same height. */
-function WeekMark({ worst }: { worst: "error" | "warning" | null }) {
+function WeekMark({ warnings }: { warnings: PlanWarning[] }) {
+  const worst = worstOf(warnings);
   return (
     <span className="flex h-4 justify-center">
       {worst && (
         <>
-          <span className="sr-only">, {worst === "error" ? "has errors" : "has warnings"}</span>
+          <span className="sr-only">, {warningCount(warnings)}</span>
           <SeverityIcon severity={worst} className="size-3" />
         </>
       )}
@@ -465,7 +466,7 @@ function DayMark({ warnings }: { warnings: PlanWarning[] }) {
   }
   return (
     <>
-      <span className="sr-only">, {warnings.length === 1 ? "1 warning" : `${warnings.length} warnings`}</span>
+      <span className="sr-only">, {warningCount(warnings)}</span>
       <SeverityIcon severity={worst} className="size-3" />
     </>
   );
