@@ -27,8 +27,10 @@ import {
   type SortKey,
 } from "@/model/reports";
 import type { Totals } from "@/model/financial-plans";
+import { distinct } from "@/model/warnings";
 import { cn } from "@/lib/utils";
 import { Money } from "../money";
+import { WarningCount } from "../warning-mark";
 import { CollapsibleSection } from "./collapsible-section";
 import { NotesList } from "./notes-list";
 import { ReportSection } from "./report-page";
@@ -42,6 +44,24 @@ function AreaLink({ setId, row }: { setId: string; row: OverviewRow }) {
   return (
     <Link to="/plans/financial/$setId/$planId" params={{ setId, planId: row.report }} className="text-link underline">
       {row.name}
+    </Link>
+  );
+}
+
+/** How many errors and warnings an area has, linked to its own list of them. */
+function AreaWarnings({ setId, row, warnings }: { setId: string; row: OverviewRow; warnings: PlanWarning[] }) {
+  const own = distinct(warnings.filter((w) => w.area === row.report));
+  if (own.length === 0) {
+    return null;
+  }
+  return (
+    <Link
+      to="/plans/financial/$setId/$planId"
+      params={{ setId, planId: row.report }}
+      hash="warnings"
+      className="rounded-full text-xs hover:underline"
+    >
+      <WarningCount warnings={own} />
     </Link>
   );
 }
@@ -212,6 +232,7 @@ export interface OverviewReportProps {
   rows: OverviewRow[];
   /** Each program area's offerings with their results, by its report's key. */
   offerings: Record<string, ReportOffering[]>;
+  /** Every warning: those about no program area are listed here, and each area's counted beside it. */
   warnings: PlanWarning[];
   /** The organization's totals, as platform worked them out. */
   totals: Totals;
@@ -284,7 +305,7 @@ function Notes({ note, notes }: { note: string | null; notes: string[] | null })
 }
 
 /**
- * A Financial Plan's year: its notes and the engine's warnings, both closed at first, then each program area from
+ * A Financial Plan's year: its notes, closed at first, and the engine's warnings about no program area, then each program area from
  * revenue to net, sortable, then each program's budget, Non-program on its own, the year's expenses by function and its
  * total, then each program's enrollment and fees, in the order a program area's report shows them. Budget, enrollment
  * and fees list program areas A to Z.
@@ -321,14 +342,8 @@ export function OverviewReport({
   const expenses = functions.program_cents + functions.management_cents + functions.fundraising_cents;
   return (
     <>
-      <div className="grid gap-2">
-        <Notes note={note} notes={notes} />
-        <WarningsSection
-          warnings={warnings}
-          setId={setId}
-          areas={Object.fromEntries(rows.map((r) => [r.report, r.name]))}
-        />
-      </div>
+      <Notes note={note} notes={notes} />
+      <WarningsSection warnings={warnings.filter((w) => w.area === "non-program")} />
 
       <ReportSection id="revenue-and-expenses" title="Revenue and expenses">
         <Table aria-label="Revenue and expenses">
@@ -358,7 +373,10 @@ export function OverviewReport({
             {sorted.map((row) => (
               <TableRow key={row.report}>
                 <TableCell className={pinned}>
-                  <AreaLink setId={setId} row={row} />
+                  <span className="inline-flex items-center gap-2">
+                    <AreaLink setId={setId} row={row} />
+                    <AreaWarnings setId={setId} row={row} warnings={warnings} />
+                  </span>
                 </TableCell>
                 <Amount cents={row.revenue_cents} />
                 <Amount cents={row.direct_cents} />

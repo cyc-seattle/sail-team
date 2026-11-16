@@ -1,51 +1,64 @@
 import { describe, expect, it } from "vitest";
 import type { PlanWarning } from "../src/model/reports.ts";
-import { kindName, warningsByKind } from "../src/model/warnings.ts";
+import { bySeverity, distinct, kindName, placeOf, warningCount } from "../src/model/warnings.ts";
 
-const warning = (key: string, code: string, category: PlanWarning["category"], date: string | null): PlanWarning => ({
-  key,
-  code,
-  category,
+const warning = (over: Partial<PlanWarning>): PlanWarning => ({
+  key: "a",
+  code: "short_of_boats",
+  category: "allocation",
+  severity: "warning",
+  subject: null,
   area: "summer",
-  date,
-  message: key,
+  date: null,
+  message: "a",
+  ...over,
 });
 
-describe("warningsByKind", () => {
-  it("groups by schedule, then data, then kind, the most common first, each kind by date", () => {
-    const groups = warningsByKind([
-      warning("c", "no_rate", "data", null),
-      warning("b", "over_capacity", "allocation", "2027-07-13"),
-      warning("d", "closed_date", "allocation", "2027-07-05"),
-      warning("a", "over_capacity", "allocation", "2027-07-12"),
-      warning("e", "some_new_code", null, null),
-    ]);
-    expect(groups.map((g) => [g.name, g.kinds.map((k) => [k.name, k.warnings.map((w) => w.key).join("")])])).toEqual([
-      [
-        "Schedule",
-        [
-          ["Too many sailors", "ab"],
-          ["On a closed day", "d"],
-        ],
-      ],
-      [
-        "Data",
-        [
-          ["Some new code", "e"],
-          ["Trip rate missing", "c"],
-        ],
-      ],
-    ]);
+describe("placeOf", () => {
+  it("puts a dated schedule warning in a program area on its day", () => {
+    expect(placeOf(warning({ date: "2027-07-12" }))).toBe("day");
+    expect(placeOf(warning({ date: "2027-07-12", area: "non-program" }))).toBe("list");
   });
 
-  it("leaves out a category with no warnings", () => {
-    expect(warningsByKind([warning("a", "no_rate", "data", null)]).map((g) => g.name)).toEqual(["Data"]);
+  it("puts a warning about a program's product on the program, and one about break even on the offering", () => {
+    expect(placeOf(warning({ code: "no_indirect_cost_rate", category: "data", subject: "p" }))).toBe("program");
+    expect(placeOf(warning({ code: "breakeven_above_target", category: "data", subject: "o" }))).toBe("offering");
+  });
+
+  it("leaves a warning with nowhere to go in the table only", () => {
+    expect(placeOf(warning({ code: "unknown_block", category: "data", subject: "b" }))).toBe("list");
+    expect(placeOf(warning({ code: "no_indirect_cost_rate", category: "data" }))).toBe("list");
+  });
+});
+
+describe("distinct", () => {
+  it("keeps one of a warning the engine repeats in each plan", () => {
+    const one = warning({ key: "1", date: "2027-07-12", subject: "RIB" });
+    expect(distinct([one, { ...one, key: "2", area: "doublehanded" }])).toEqual([one]);
+  });
+});
+
+describe("bySeverity", () => {
+  it("puts errors first, then by date, an undated one first", () => {
+    const sorted = [
+      warning({ key: "b", date: "2027-07-13" }),
+      warning({ key: "c", severity: "error", date: "2027-07-14" }),
+      warning({ key: "a" }),
+    ].sort(bySeverity);
+    expect(sorted.map((w) => w.key)).toEqual(["c", "a", "b"]);
+  });
+});
+
+describe("warningCount", () => {
+  it("counts errors and warnings in words", () => {
+    expect(warningCount([warning({ severity: "error" }), warning({}), warning({})])).toBe("1 error, 2 warnings");
+    expect(warningCount([warning({})])).toBe("1 warning");
   });
 });
 
 describe("kindName", () => {
-  it("names a kind the app doesn't know by its code in words", () => {
-    expect(kindName("over_capacity")).toBe("Too many sailors");
-    expect(kindName("brand_new")).toBe("Brand new");
+  it("names a known kind, and puts an unknown code in words", () => {
+    expect(kindName("short_of_boats")).toBe("Too few boats");
+    expect(kindName("some_new_code")).toBe("Some new code");
   });
 });

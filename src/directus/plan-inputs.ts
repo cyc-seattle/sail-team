@@ -325,11 +325,20 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
           "end_time",
           "on_water_minutes",
         ]),
-        rowsOf<Omit<PlanProgram, "staff_level_id"> & { product_id: { name: string }; staff_level_id: Named | null }>(
-          "plan_programs",
-          planIds,
-          ["plan_id", "product_id.name", "staff_level_id.name", "sailors_per_coach", "indirect_cost_rate", "notes"],
-        ),
+        rowsOf<
+          Omit<PlanProgram, "staff_level_id"> & {
+            product_id: { id: string; name: string };
+            staff_level_id: Named | null;
+          }
+        >("plan_programs", planIds, [
+          "plan_id",
+          "product_id.id",
+          "product_id.name",
+          "staff_level_id.name",
+          "sailors_per_coach",
+          "indirect_cost_rate",
+          "notes",
+        ]),
         ops ? operationsAssumptions(ops.id, planIds) : null,
         rowsOf<BudgetRow>("plan_budget_lines", planIds, [
           "plan_id",
@@ -469,6 +478,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
             programs.map((p) => ({
               plan_id: p.plan_id,
               name: p.product_id.name,
+              program_id: p.product_id.id,
               staff_level: p.staff_level_id?.name ?? null,
               sailors_per_coach: p.sailors_per_coach,
               indirect_cost_rate: p.indirect_cost_rate ?? null,

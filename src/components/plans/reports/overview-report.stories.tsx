@@ -113,6 +113,3 @@ export const NoNotes: Story = {
     await expect(canvas.queryByText("Notes", { selector: "h2" })).toBeNull();
   },
 };
-
-/** A plan with nothing to warn about has no warnings card. */
-export const NoWarnings: Story = { args: { warnings: [] } };

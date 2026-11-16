@@ -1,35 +1,30 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, userEvent } from "storybook/test";
-import { withRouter } from "../../../../.storybook/with-router";
+import { expect, fn, userEvent } from "storybook/test";
 import { warnings } from "./fixtures";
 import { WarningsSection } from "./warnings-section";
 
 const meta = {
   component: WarningsSection,
-  decorators: [withRouter("/plans/financial/budget", ["/plans/financial/$setId", "/plans/financial/$setId/$planId"])],
-  args: { warnings: warnings.filter((w) => w.area === "summer") },
+  args: { warnings: warnings.filter((w) => w.area === "summer"), onDay: fn() },
 } satisfies Meta<typeof WarningsSection>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** A program area's own warnings, closed at first, then all shown: by schedule and data, then by kind, the most common first, each kind by date. */
+/** A program area's warnings, errors first, then by date. Each date opens that day on the calendar. */
 export const ProgramArea: Story = {
-  play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByText("3 warnings", { selector: "h2" }));
-    const schedule = canvas.getByRole("region", { name: "Schedule" });
-    await expect(schedule).toHaveTextContent("Too many sailors (2)");
-    await expect(canvas.getByRole("region", { name: "Data" })).toHaveTextContent(
-      "Program with no staff level or sailors per coach (1)",
-    );
-    await expect(canvas.getByRole("list", { name: "Too many sailors" }).querySelectorAll("li")).toHaveLength(2);
+  play: async ({ canvas, args }) => {
+    const rows = canvas.getByRole("table", { name: "Warnings" }).querySelectorAll("tbody tr");
+    await expect(rows[0]).toHaveTextContent("Too few boats");
+    await expect(rows[0]).toHaveTextContent("Error");
+    await userEvent.click(canvas.getByRole("button", { name: "Mon, Jul 5" }));
+    await expect(args.onDay).toHaveBeenCalledWith("2027-07-05");
   },
 };
 
-/** On the Overview, each warning names its program area. */
+/** The Overview's, about no program area, with no calendar to open. */
 export const Overview: Story = {
-  args: { warnings, setId: "budget", areas: { summer: "Summer", doublehanded: "Doublehanded" } },
+  render: () => <WarningsSection warnings={warnings.filter((w) => w.area === "non-program")} />,
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByText("4 warnings", { selector: "h2" }));
-    await expect(canvas.getByRole("link", { name: "Doublehanded" })).toBeVisible();
+    await expect(canvas.getByRole("table", { name: "Warnings" })).toHaveTextContent("Capital not ranked");
   },
 };

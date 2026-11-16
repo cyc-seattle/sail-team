@@ -449,20 +449,21 @@ Given("a draft with a practice on a closed day", async ({ club }) => {
   opened.set = set;
 });
 
-When("I open its warnings", async ({ page }) => {
-  await page.locator("summary", { hasText: /\d+ warnings?/ }).click();
-});
-
-When("I open the draft", async ({ page }) => {
-  await page.goto(`${await app()}/plans/financial/${opened.set}`);
-});
+const closedDayWarning = (page: Page) =>
+  page.getByRole("table", { name: "Warnings" }).getByRole("row").filter({ hasText: CLOSED_DAY });
 
 Then("a warning says the practice falls on a closed day, on that day", async ({ page }) => {
-  const closed = page
-    .getByRole("list", { name: "On a closed day" })
-    .getByRole("listitem")
-    .filter({ hasText: CLOSED_DAY });
-  await expect(closed).toContainText("Jul 5");
+  await expect(closedDayWarning(page)).toContainText("On a closed day");
+  await expect(closedDayWarning(page)).toContainText("Jul 5");
+});
+
+When("I open that day from the warning", async ({ page }) => {
+  await closedDayWarning(page).getByRole("button", { name: /Jul 5/ }).click();
+});
+
+Then("the calendar shows the day, with the warning under it", async ({ page }) => {
+  const day = page.getByRole("region", { name: /July 5/ });
+  await expect(day.getByRole("listitem").filter({ hasText: CLOSED_DAY })).toBeVisible();
 });
 
 Then("no plan, version, or amount appears", async ({ page }) => {

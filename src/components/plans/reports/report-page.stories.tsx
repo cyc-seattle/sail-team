@@ -52,6 +52,7 @@ const meta = {
     inForce: { when: "now", from: "2026-07-01", to: null },
     reports,
     current: "overview",
+    warnings,
     children: null,
   },
 } satisfies Meta<typeof ReportPage>;
@@ -145,6 +146,31 @@ export const NonProgram: Story = {
 
 export const Assumptions: Story = {
   args: { current: "rates", children: <RatesReport assumptions={reportAssumptions} storage={storageCosts} /> },
+};
+
+/** The count beside its name links to the Overview's warnings, where each area's count links to its own. */
+export const WarningsCounted: Story = {
+  args: { ...Overview.args },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("link", { name: "1 error, 11 warnings" })).toHaveAttribute(
+      "href",
+      "/plans/financial/budget#warnings",
+    );
+    await expect(canvas.getByRole("link", { name: "1 error, 9 warnings" })).toHaveAttribute(
+      "href",
+      "/plans/financial/budget/summer#warnings",
+    );
+    await expect(canvas.getByRole("table", { name: "Warnings" })).toHaveTextContent("Launch ramp repair");
+  },
+};
+
+/** A day with warnings lists them under its date. */
+export const SummerDayWithWarnings: Story = {
+  args: { ...Summer.args },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: /^Week of Jul 12/ }));
+    await expect(canvas.getByText(/need 4 RIBs/, { selector: "li span" })).toBeVisible();
+  },
 };
 
 export const Draft: Story = { args: { ...Overview.args, name: "Two more coaches", status: "draft" } };

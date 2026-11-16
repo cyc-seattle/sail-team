@@ -1,4 +1,3 @@
-import { TriangleAlertIcon } from "lucide-react";
 import { Fragment, useState, type ReactNode } from "react";
 import { formatShare, type FixedCost, type StaffTime } from "@/model/assumptions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -15,6 +14,7 @@ import {
   type ReportOffering,
   type Trip,
 } from "@/model/reports";
+import { placeOf } from "@/model/warnings";
 import { cn } from "@/lib/utils";
 import { BudgetLines, StaffTimeTable } from "../assumptions";
 import { Money } from "../money";
@@ -23,9 +23,10 @@ import { CollapsibleSection } from "./collapsible-section";
 import { OfferingName } from "./offering-name";
 import { ReportSection } from "./report-page";
 import { NotesList } from "./notes-list";
+import { WarningMark } from "../warning-mark";
+import { WarningsSection } from "./warnings-section";
 import { PlanCalendar } from "./plan-calendar";
 import { StatementTable } from "./statement-table";
-import { WarningsSection } from "./warnings-section";
 
 const pinned = "sticky left-0 z-10 bg-background";
 const count = (n: number) => n.toLocaleString("en-US");
@@ -39,34 +40,36 @@ function Amount({ cents, whole = false }: { cents: number | null; whole?: boolea
   return <TableCell className="text-right">{cents === null ? none : <Money cents={cents} whole={whole} />}</TableCell>;
 }
 
-/** A number that needs the planner's eye, such as fewer sailors' room than the offering's max. */
-function Flagged({ children, why }: { children: ReactNode; why: string }) {
+/** The engine's warnings about one offering's break even or capacity, from the given code. */
+const offeringWarnings = (warnings: PlanWarning[], o: ReportOffering, codes: string[]) =>
+  warnings.filter((w) => placeOf(w) === "offering" && w.subject === o.key && codes.includes(w.code));
+
+/** A number in an offering's row, with the engine's warnings about it beside it. */
+function Marked({ children, warnings }: { children: ReactNode; warnings: PlanWarning[] }) {
   return (
-    <TableCell className="text-right font-medium text-warning tabular-nums">
-      <span className="inline-flex items-center gap-1" title={why}>
-        <TriangleAlertIcon aria-hidden className="size-3.5" />
+    <TableCell className="text-right tabular-nums">
+      <span className="inline-flex items-center gap-1">
+        <WarningMark warnings={warnings} />
         {children}
-        <span className="sr-only">: {why}</span>
       </span>
     </TableCell>
   );
 }
 
-/** Its capacity: the most sailors its blocks can take, flagged when that's fewer than its max. */
-function Room({ offering: o }: { offering: ReportOffering }) {
+/** Its capacity: the most sailors its blocks can take. */
+function Room({ offering: o, warnings }: { offering: ReportOffering; warnings: PlanWarning[] }) {
   if (o.room == null) return <Num>{none}</Num>;
-  if (o.room < o.max) return <Flagged why={`Fewer than its max of ${o.max}`}>{count(o.room)}</Flagged>;
-  return <Num>{count(o.room)}</Num>;
+  return <Marked warnings={offeringWarnings(warnings, o, ["capacity_below_max"])}>{count(o.room)}</Marked>;
 }
 
-/** The fewest sailors at which the offering pays for itself, flagged when that's more than its target. */
-function Breakeven({ offering: o }: { offering: ReportOffering }) {
+/** The fewest sailors at which the offering pays for itself. */
+function Breakeven({ offering: o, warnings }: { offering: ReportOffering; warnings: PlanWarning[] }) {
   if (!o.max_set) return <Num>{none}</Num>;
-  if (o.breakeven == null) return <Flagged why="It loses money even when full">Never</Flagged>;
-  if (o.breakeven > o.estimated) {
-    return <Flagged why={`More than its target of ${o.estimated}`}>{count(o.breakeven)}</Flagged>;
-  }
-  return <Num>{count(o.breakeven)}</Num>;
+  return (
+    <Marked warnings={offeringWarnings(warnings, o, ["breakeven_above_target", "never_breaks_even"])}>
+      {o.breakeven == null ? "Never" : count(o.breakeven)}
+    </Marked>
+  );
 }
 
 /** A fee divided by days or hours, or nothing to show when the offering has none. */
@@ -83,9 +86,11 @@ function AreaAssumptions({
   programs,
   fixedCosts,
   staffTime,
+  warnings,
 }: {
   area: string;
   notes: string[] | null;
+  warnings: PlanWarning[];
   programs: ProgramSettings[];
   fixedCosts: FixedCost[];
   staffTime: StaffTime[];
@@ -101,7 +106,10 @@ function AreaAssumptions({
         </section>
         {programs.map((p) => (
           <section key={p.name} aria-label={p.name} className="grid gap-2 border-t pt-4">
-            <h3 className="text-sm font-medium">{p.name}</h3>
+            <h3 className="flex items-center gap-1 text-sm font-medium">
+              {p.name}
+              <WarningMark warnings={programWarnings(warnings, p.program_id)} />
+            </h3>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
               <dt className="text-muted-foreground">Staff level</dt>
               <dd>{p.staff_level ?? none}</dd>
@@ -132,6 +140,10 @@ function AreaAssumptions({
   );
 }
 
+/** The warnings shown on a program: about its settings or its product. */
+const programWarnings = (warnings: PlanWarning[], programId: string | null | undefined) =>
+  programId ? warnings.filter((w) => placeOf(w) === "program" && w.subject === programId) : [];
+
 /** A column of an offerings table, with what it means when that isn't plain from its name. */
 interface Column {
   name: string;
@@ -161,8 +173,10 @@ function GroupedTable({
   cells,
   sums,
   footer,
+  warnings = [],
 }: {
   label: string;
+  warnings?: PlanWarning[];
   head: Column[];
   offerings: ReportOffering[];
   cells: (o: ReportOffering) => ReactNode;
@@ -199,7 +213,12 @@ function GroupedTable({
             {own.map(({ program, offerings: listed }) => (
               <Fragment key={program}>
                 <TableRow highlight={false} className="font-medium">
-                  <TableCell className={cn(pinned, showTerms ? "pl-5" : "pt-4")}>{program}</TableCell>
+                  <TableCell className={cn(pinned, showTerms ? "pl-5" : "pt-4")}>
+                    <span className="inline-flex items-center gap-1">
+                      {program}
+                      <WarningMark warnings={programWarnings(warnings, listed[0]?.program_id)} />
+                    </span>
+                  </TableCell>
                   {subtotals(listed)}
                 </TableRow>
                 {listed.map((o) => (
@@ -302,9 +321,16 @@ export function ProgramAreaReport({
   const charged = chargedToArea(offerings, total);
   return (
     <>
+      <WarningsSection warnings={warnings} onDay={(d) => (onDayChange ?? setOwnDay)(d)} />
       <div className="grid gap-2">
-        <WarningsSection warnings={warnings} />
-        <AreaAssumptions area={area} notes={notes} programs={programs} fixedCosts={fixedCosts} staffTime={staffTime} />
+        <AreaAssumptions
+          area={area}
+          notes={notes}
+          programs={programs}
+          fixedCosts={fixedCosts}
+          staffTime={staffTime}
+          warnings={warnings}
+        />
       </div>
 
       <ReportSection id="calendar" title="Calendar">
@@ -313,6 +339,7 @@ export function ProgramAreaReport({
           closedDays={closedDays}
           day={day === undefined ? ownDay : day}
           onDayChange={onDayChange ?? setOwnDay}
+          warnings={warnings}
         />
       </ReportSection>
 
@@ -330,6 +357,7 @@ export function ProgramAreaReport({
       <ReportSection id="budget" title="Budget">
         <GroupedTable
           label="Budget"
+          warnings={warnings}
           head={budgetHead}
           offerings={offerings}
           cells={(o) => <InOut money={moneyOf([o])} />}
@@ -358,9 +386,9 @@ export function ProgramAreaReport({
           offerings={offerings}
           cells={(o) => (
             <>
-              <Breakeven offering={o} />
+              <Breakeven offering={o} warnings={warnings} />
               <Num>{count(o.max)}</Num>
-              <Room offering={o} />
+              <Room offering={o} warnings={warnings} />
               <Num>{count(o.estimated)}</Num>
               <Num>{count(o.estimated * o.days)}</Num>
               <Num>{hoursOf(o.estimated * o.hours)}</Num>
