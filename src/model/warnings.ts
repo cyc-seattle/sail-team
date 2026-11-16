@@ -127,3 +127,7 @@ export function warningCount(warnings: PlanWarning[]): string {
     .filter(Boolean)
     .join(", ");
 }
+
+/** The warnings about one row, which name its key as their subject. None for a row with no key. */
+export const about = (warnings: PlanWarning[], key: string | null | undefined) =>
+  key ? warnings.filter((w) => w.subject === key) : [];

@@ -38,6 +38,8 @@ export interface OperationsAssumptions {
   boatRates: {
     key: string;
     boat_class: string;
+    /** Its boat class's id, which the engine's warnings about the class name. */
+    boat_class_id?: string;
     fuel_per_hour_cents: number | null;
     maintenance_per_boat_hour_cents: number;
     charter_per_day_cents: number | null;

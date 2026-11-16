@@ -129,11 +129,11 @@ async function operationsAssumptions(
       // Every field, since platform adds the fuel and charter rates (cyc-seattle/platform#126).
       rowsOf<{
         key: string;
-        boat_class_id: { name: string };
+        boat_class_id: { id: string; name: string };
         maintenance_per_boat_hour_cents: number;
         fuel_per_hour_cents?: number | null;
         charter_per_day_cents?: number | null;
-      }>("plan_boat_rates", [operations], ["*", "boat_class_id.name"]),
+      }>("plan_boat_rates", [operations], ["*", "boat_class_id.id", "boat_class_id.name"]),
       rowsOf<BonusRow>("plan_bonus_owners", planIds, [
         "id",
         "key",
@@ -203,6 +203,7 @@ async function operationsAssumptions(
       .map((b) => ({
         key: b.key,
         boat_class: b.boat_class_id.name,
+        boat_class_id: b.boat_class_id.id,
         fuel_per_hour_cents: b.fuel_per_hour_cents ?? null,
         maintenance_per_boat_hour_cents: b.maintenance_per_boat_hour_cents,
         charter_per_day_cents: b.charter_per_day_cents ?? null,
@@ -268,7 +269,7 @@ export interface PlanInputs {
   /** The Operations Plan's terms, by start date. */
   terms: Term[];
   /** What each of the Operations Plan's offerings sells, such as boat storage. */
-  products: { key: string; product: string }[];
+  products: { key: string; product: string; product_id?: string }[];
   /** Each program area's programs' settings, by its report's key. */
   programs: Record<string, ProgramSettings[]>;
   operations: OperationsAssumptions | null;
@@ -307,9 +308,15 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         rowsOf<
           PlanOffering & {
             term_key?: string | null;
-            product_id: { name: string; programs: { id: string; color: string | null }[] };
+            product_id: { id: string; name: string; programs: { id: string; color: string | null }[] };
           }
-        >("plan_offerings", planIds, ["*", "product_id.name", "product_id.programs.id", "product_id.programs.color"]),
+        >("plan_offerings", planIds, [
+          "*",
+          "product_id.id",
+          "product_id.name",
+          "product_id.programs.id",
+          "product_id.programs.color",
+        ]),
         rowsOf<PlanActivity>("plan_activities", planIds, [
           "id",
           "key",
@@ -472,7 +479,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         ),
         products: offerings
           .filter((o) => o.plan_id === ops?.id)
-          .map((o) => ({ key: o.key, product: o.product_id.name })),
+          .map((o) => ({ key: o.key, product: o.product_id.name, product_id: o.product_id.id })),
         programs: byReport(
           byName(
             programs.map((p) => ({

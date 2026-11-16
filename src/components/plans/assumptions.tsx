@@ -13,9 +13,12 @@ import {
 } from "@/model/assumptions";
 import { formatDay } from "@/model/dates";
 import { formatCents, formatExactCents } from "@/model/money";
+import type { PlanWarning } from "@/model/reports";
+import { about } from "@/model/warnings";
 import { cn } from "@/lib/utils";
 import { AccountTable, type AccountTableGroup } from "./account-table";
 import { NoteInfo } from "./note-info";
+import { WarningMark } from "./warning-mark";
 import { reportSections, SectionPair } from "./reports/report-page";
 
 const none = <span className="text-muted-foreground">—</span>;
@@ -51,11 +54,25 @@ function Num({ children, className }: { children: ReactNode; className?: string 
  * A titled part of the assumptions: a section of its own, with an h2, on the Assumptions tab, and a smaller one, with
  * an h3, inside a program area's.
  */
-export function TableSection({ title, level, children }: { title: string; level: 2 | 3; children: ReactNode }) {
+export function TableSection({
+  title,
+  level,
+  warnings = [],
+  children,
+}: {
+  title: string;
+  level: 2 | 3;
+  /** The engine's warnings about the whole section, such as more than one set of rates. */
+  warnings?: PlanWarning[];
+  children: ReactNode;
+}) {
   const Heading = level === 2 ? "h2" : "h3";
   return (
     <section aria-label={title} className={cn("grid content-start", level === 2 ? "gap-3" : "gap-1")}>
-      <Heading className={level === 2 ? "text-lg font-medium" : "text-sm font-medium"}>{title}</Heading>
+      <Heading className={cn("flex items-center gap-1", level === 2 ? "text-lg font-medium" : "text-sm font-medium")}>
+        {title}
+        <WarningMark warnings={warnings} />
+      </Heading>
       {children}
     </section>
   );
@@ -89,6 +106,18 @@ function RateTable({
       </TableHeader>
       <TableBody>{children}</TableBody>
     </Table>
+  );
+}
+
+/** A row's name, with the engine's warnings about it beside it. */
+function NameCell({ children, warnings }: { children: ReactNode; warnings: PlanWarning[] }) {
+  return (
+    <TableCell>
+      <span className="inline-flex items-center gap-1">
+        {children}
+        <WarningMark warnings={warnings} />
+      </span>
+    </TableCell>
   );
 }
 
@@ -139,7 +168,7 @@ function SalaryCell({ cents, hours }: { cents: number; hours: number | null }) {
 }
 
 /** The salaried positions: what each is paid, and the hours booked to programs. */
-function SalariedStaff({ a }: { a: OperationsAssumptions }) {
+function SalariedStaff({ a, warnings }: { a: OperationsAssumptions; warnings: PlanWarning[] }) {
   const pools = new Set(a.positions.map((p) => p.remainder_pool));
   // Where the rest of each salary goes is said once when it's the same for every position.
   const samePool = pools.size === 1 ? [...pools][0] : undefined;
@@ -153,7 +182,7 @@ function SalariedStaff({ a }: { a: OperationsAssumptions }) {
       >
         {a.positions.map((p) => (
           <TableRow key={p.key}>
-            <TableCell>{p.name}</TableCell>
+            <NameCell warnings={about(warnings, p.key)}>{p.name}</NameCell>
             <SalaryCell cents={p.annual_salary_cents} hours={p.paid_hours_per_year} />
             <Num>{count(p.paid_hours_per_year)}</Num>
             <Num>{money(p.hourly_coaching_rate_cents)}</Num>
@@ -171,19 +200,26 @@ function SalariedStaff({ a }: { a: OperationsAssumptions }) {
 /**
  * The rates the Operations Plan sets for the year, each kind in its own section when it has any.
  */
-export function OperationsAssumptionsView({ assumptions: a }: { assumptions: OperationsAssumptions }) {
+export function OperationsAssumptionsView({
+  assumptions: a,
+  warnings = [],
+}: {
+  assumptions: OperationsAssumptions;
+  /** Every warning in the Financial Plan; each shows on the row it names. */
+  warnings?: PlanWarning[];
+}) {
   return (
     <div className={reportSections}>
       <SectionPair>
         {a.rates && (
-          <TableSection title="Rates" level={2}>
+          <TableSection title="Rates" level={2} warnings={warnings.filter((w) => w.code === "many_rates")}>
             <RateTable label="Rates" head={["Rate", "Amount"]}>
               <TableRow>
-                <TableCell>Lodging, per night</TableCell>
+                <NameCell warnings={about(warnings, "lodging_per_night_cents")}>Lodging, per night</NameCell>
                 <Num>{money(a.rates.lodging_per_night_cents, true)}</Num>
               </TableRow>
               <TableRow>
-                <TableCell>Mileage, per mile</TableCell>
+                <NameCell warnings={about(warnings, "mileage_rate_cents")}>Mileage, per mile</NameCell>
                 <Num>{money(a.rates.mileage_rate_cents)}</Num>
               </TableRow>
             </RateTable>
@@ -194,7 +230,7 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
             <RateTable label="Payroll taxes" head={["Tax", "Rate"]}>
               {a.payrollTaxes.map((t) => (
                 <TableRow key={t.key}>
-                  <TableCell>{t.name}</TableCell>
+                  <NameCell warnings={about(warnings, t.key)}>{t.name}</NameCell>
                   <Num>
                     {t.wage_share !== null
                       ? `${formatShare(t.wage_share)} of wages`
@@ -213,20 +249,20 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
           <RateTable label="Staff levels" head={["Level", "Per hour"]}>
             {a.staffLevels.map((l) => (
               <TableRow key={l.id}>
-                <TableCell>{l.name}</TableCell>
+                <NameCell warnings={about(warnings, l.id)}>{l.name}</NameCell>
                 <Num>{l.hourly_rate_cents === 0 ? "Volunteer" : money(l.hourly_rate_cents)}</Num>
               </TableRow>
             ))}
           </RateTable>
         </TableSection>
       )}
-      {a.positions.length > 0 && <SalariedStaff a={a} />}
+      {a.positions.length > 0 && <SalariedStaff a={a} warnings={warnings} />}
       {a.salariedHours.length > 0 && (
         <TableSection title="Salaried hours on programs" level={2}>
           <RateTable label="Salaried hours on programs" head={["Position", "Program", "Hours"]} text={["Program"]}>
             {a.salariedHours.map((h) => (
               <TableRow key={h.key}>
-                <TableCell>{h.position}</TableCell>
+                <NameCell warnings={about(warnings, h.key)}>{h.position}</NameCell>
                 <TableCell>{h.booked_to}</TableCell>
                 <Num>{count(h.hours)}</Num>
               </TableRow>
@@ -251,6 +287,7 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
                   key: b.key,
                   number: b.account.number,
                   name: b.role_name,
+                  warnings: about(warnings, b.key),
                   values: [
                     share(b.bonus_rate),
                     b.basis === "before_shared_costs" ? "Before shared costs" : "After shared costs",
@@ -290,7 +327,7 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
               .sort((x, y) => x.boat_class.localeCompare(y.boat_class, undefined, { numeric: true }))
               .map((b) => (
                 <TableRow key={b.key}>
-                  <TableCell>{b.boat_class}</TableCell>
+                  <NameCell warnings={about(warnings, b.boat_class_id)}>{b.boat_class}</NameCell>
                   <Num>{money(b.fuel_per_hour_cents)}</Num>
                   <Num>{money(b.maintenance_per_boat_hour_cents)}</Num>
                   <Num>{money(b.charter_per_day_cents, true)}</Num>
@@ -299,8 +336,8 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
           </RateTable>
         </TableSection>
       )}
-      <BudgetLines costsTitle="Fixed costs and G&A" lines={a.fixedCosts} level={2} />
-      {a.staffTime.length > 0 && <StaffTimeTable lines={a.staffTime} level={2} />}
+      <BudgetLines costsTitle="Fixed costs and G&A" lines={a.fixedCosts} level={2} warnings={warnings} />
+      {a.staffTime.length > 0 && <StaffTimeTable lines={a.staffTime} level={2} warnings={warnings} />}
       {a.closedDays.length > 0 && (
         <TableSection title="Closed days" level={2}>
           <RateTable label="Closed days" head={["Date", "Closed for"]} text={["Closed for"]}>
@@ -321,11 +358,27 @@ export function OperationsAssumptionsView({ assumptions: a }: { assumptions: Ope
  * A plan's budget lines: its fixed costs, then any revenue, each under what it's charged to, such as G&A. Leaving MTDC
  * out applies only to a cost.
  */
-export function BudgetLines({ costsTitle, lines, level }: { costsTitle: string; lines: FixedCost[]; level: 2 | 3 }) {
+export function BudgetLines({
+  costsTitle,
+  lines,
+  level,
+  warnings = [],
+}: {
+  costsTitle: string;
+  lines: FixedCost[];
+  level: 2 | 3;
+  warnings?: PlanWarning[];
+}) {
   return (
     <>
-      <BudgetTable title={costsTitle} lines={lines.filter((l) => !l.revenue)} cost level={level} />
-      <BudgetTable title="Other revenue" lines={lines.filter((l) => l.revenue)} cost={false} level={level} />
+      <BudgetTable title={costsTitle} lines={lines.filter((l) => !l.revenue)} cost level={level} warnings={warnings} />
+      <BudgetTable
+        title="Other revenue"
+        lines={lines.filter((l) => l.revenue)}
+        cost={false}
+        level={level}
+        warnings={warnings}
+      />
     </>
   );
 }
@@ -335,11 +388,13 @@ function BudgetTable({
   lines,
   cost,
   level,
+  warnings,
 }: {
   title: string;
   lines: FixedCost[];
   cost: boolean;
   level: 2 | 3;
+  warnings: PlanWarning[];
 }) {
   if (lines.length === 0) {
     return null;
@@ -351,6 +406,7 @@ function BudgetTable({
       number: c.account.number,
       name: c.name,
       note: c.note,
+      warnings: about(warnings, c.key),
       values: [money(c.amount_cents, true), ...(cost ? [inMtdc(c.in_mtdc)] : [])],
     })),
   }));
@@ -367,7 +423,15 @@ function BudgetTable({
 }
 
 /** Hourly staff time outside the programs, at a staff level's rate. */
-export function StaffTimeTable({ lines, level }: { lines: StaffTime[]; level: 2 | 3 }) {
+export function StaffTimeTable({
+  lines,
+  level,
+  warnings = [],
+}: {
+  lines: StaffTime[];
+  level: 2 | 3;
+  warnings?: PlanWarning[];
+}) {
   const title = "Staff time outside programs";
   return (
     <TableSection title={title} level={level}>
@@ -382,6 +446,7 @@ export function StaffTimeTable({ lines, level }: { lines: StaffTime[]; level: 2 
               number: l.account.number,
               name: l.name,
               note: l.note,
+              warnings: about(warnings, l.key),
               values: [l.staff_level ?? none, count(l.hours), l.charged_to],
             })),
           },

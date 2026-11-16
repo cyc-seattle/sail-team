@@ -1,9 +1,11 @@
-import { ExternalLinkIcon, TriangleAlertIcon } from "lucide-react";
+import { ExternalLinkIcon } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import type { AccountAmount, CapitalItem } from "@/model/reports";
+import type { AccountAmount, CapitalItem, PlanWarning } from "@/model/reports";
+import { about } from "@/model/warnings";
 import { Money } from "../money";
 import { NoteInfo } from "../note-info";
+import { WarningMark } from "../warning-mark";
 import { ReportSection } from "./report-page";
 import { StatementTable } from "./statement-table";
 
@@ -11,9 +13,11 @@ import { StatementTable } from "./statement-table";
 export function FundraisingCapitalReport({
   fundraising,
   capital,
+  warnings = [],
 }: {
   fundraising: { revenue: AccountAmount[]; costs: AccountAmount[] };
   capital: { items: CapitalItem[]; available_cents: number };
+  warnings?: PlanWarning[];
 }) {
   return (
     <>
@@ -27,7 +31,7 @@ export function FundraisingCapitalReport({
         />
       </ReportSection>
       <ReportSection id="capital" title="Capital">
-        <CapitalTable items={capital.items} />
+        <CapitalTable items={capital.items} warnings={warnings} />
       </ReportSection>
     </>
   );
@@ -35,9 +39,10 @@ export function FundraisingCapitalReport({
 
 /**
  * The planned purchases, most needed first, with a running total and a line where what's left after operations and
- * fundraising runs out. Capital entered as a budget line has no rank, so it comes last, with a warning.
+ * fundraising runs out. Capital entered as a budget line has no rank, so it comes last. Each item shows the engine's
+ * warnings about it.
  */
-export function CapitalTable({ items }: { items: CapitalItem[] }) {
+export function CapitalTable({ items, warnings = [] }: { items: CapitalItem[]; warnings?: PlanWarning[] }) {
   if (items.length === 0) {
     return <p className="text-sm text-muted-foreground">No capital purchases are planned.</p>;
   }
@@ -46,7 +51,9 @@ export function CapitalTable({ items }: { items: CapitalItem[] }) {
   // The money runs out before the first item it doesn't cover, ranked or not.
   const runsOut = items.find((i) => !i.funded)?.key;
   const rows = (list: CapitalItem[]) =>
-    list.map((item) => <ItemRow key={item.key} item={item} runsOut={item.key === runsOut} />);
+    list.map((item) => (
+      <ItemRow key={item.key} item={item} runsOut={item.key === runsOut} warnings={about(warnings, item.key)} />
+    ));
   return (
     <Table aria-label="Capital">
       <TableHeader>
@@ -83,7 +90,7 @@ export function CapitalTable({ items }: { items: CapitalItem[] }) {
 }
 
 /** One purchase. The first the money doesn't cover has a line above it, and it and every one after it are muted. */
-function ItemRow({ item, runsOut }: { item: CapitalItem; runsOut: boolean }) {
+function ItemRow({ item, runsOut, warnings }: { item: CapitalItem; runsOut: boolean; warnings: PlanWarning[] }) {
   return (
     <TableRow className={cn(!item.funded && "text-muted-foreground", runsOut && "border-t-2 border-t-warning")}>
       <TableCell className="text-right align-top tabular-nums">{item.rank}</TableCell>
@@ -92,6 +99,7 @@ function ItemRow({ item, runsOut }: { item: CapitalItem; runsOut: boolean }) {
           {runsOut && <span className="sr-only">The money runs out here.</span>}
           {item.name}
           <NoteInfo note={item.note} />
+          <WarningMark warnings={warnings} />
           {item.link && (
             <a
               href={item.link}
@@ -106,7 +114,6 @@ function ItemRow({ item, runsOut }: { item: CapitalItem; runsOut: boolean }) {
         </span>
         {item.rank === null && (
           <span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-            <TriangleAlertIcon aria-hidden className="size-3.5 text-warning" />
             Entered as a budget line, so it has no rank. Add it to the capital list to rank it.
           </span>
         )}

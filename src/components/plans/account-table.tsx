@@ -2,7 +2,9 @@ import { ChevronRightIcon } from "lucide-react";
 import { Fragment, useState, type ReactNode } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import type { PlanWarning } from "@/model/reports";
 import { NoteInfo } from "./note-info";
+import { WarningMark } from "./warning-mark";
 
 /** A column after the account's name: a number, on the right, unless it's `text`. */
 export interface AccountColumn {
@@ -26,6 +28,8 @@ export interface AccountTableRow {
   number: string | null;
   name: string;
   note?: string | null;
+  /** The engine's warnings about it, marked beside its name. */
+  warnings?: PlanWarning[];
   values: ReactNode[];
   /** The lines it adds up, which it opens to. */
   lines?: AccountLine[];
@@ -89,6 +93,7 @@ function AccountRows({
             <span className={cn("flex items-center gap-1", indent && "pl-5")}>
               {row.name}
               <NoteInfo note={row.note} />
+              <WarningMark warnings={row.warnings ?? []} />
             </span>
           )}
         </TableCell>

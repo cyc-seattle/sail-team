@@ -1,7 +1,7 @@
 import { OctagonAlertIcon, TriangleAlertIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { PlanWarning } from "@/model/reports";
-import { bySeverity, warningCount, worstOf } from "@/model/warnings";
+import { bySeverity, distinct, warningCount, worstOf } from "@/model/warnings";
 import { cn } from "@/lib/utils";
 
 /** An error's or a warning's icon, in its color. */
@@ -60,7 +60,8 @@ export function WarningList({ warnings, className }: { warnings: PlanWarning[]; 
  * The engine's warnings about one thing, behind an icon beside it, in the worst one's color: shown on hover, or on a tap
  * on a phone. Nothing when there are none.
  */
-export function WarningMark({ warnings, className }: { warnings: PlanWarning[]; className?: string }) {
+export function WarningMark({ warnings: given, className }: { warnings: PlanWarning[]; className?: string }) {
+  const warnings = distinct(given);
   const worst = worstOf(warnings);
   if (!worst) {
     return null;

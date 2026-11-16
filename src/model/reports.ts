@@ -549,6 +549,8 @@ export function sharedCostsOf(lines: (Line & Pick<PlanLine, "plan">)[], operatio
 /** Something sold outside the programs, such as boat storage, with its revenue and its own costs. */
 export interface Product {
   name: string;
+  /** The product's id, which the engine's warnings about it name. None for a row that isn't one product. */
+  id?: string;
   revenue_cents: number;
   direct_cents: number;
 }
@@ -563,15 +565,17 @@ const UNALLOCATED = "Unallocated indirect costs";
  */
 export function productsOf(
   lines: (Line & Pick<PlanLine, "cost_center_key">)[],
-  offerings: { key: string; product: string }[],
+  offerings: { key: string; product: string; product_id?: string }[],
 ): Product[] {
   const productOf = new Map(offerings.map((o) => [o.key, o.product]));
+  const idOf = new Map(offerings.flatMap((o) => (o.product_id ? [[o.product, o.product_id] as const] : [])));
   const products = new Map<string, Product>();
   for (const line of operating(lines).filter((l) => !isShare(l))) {
     const name = line.key.startsWith("unrecovered:")
       ? UNALLOCATED
       : ((line.cost_center_key && productOf.get(line.cost_center_key)) ?? "Organization");
-    const product = products.get(name) ?? { name, revenue_cents: 0, direct_cents: 0 };
+    const id = idOf.get(name);
+    const product = products.get(name) ?? { name, ...(id && { id }), revenue_cents: 0, direct_cents: 0 };
     products.set(name, {
       ...product,
       revenue_cents: product.revenue_cents + (line.revenue ? line.amount_cents : 0),

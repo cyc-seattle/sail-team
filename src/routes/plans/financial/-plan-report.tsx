@@ -171,7 +171,7 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
   }
   if (report === "rates") {
     return inputs.operations ? (
-      <RatesReport assumptions={inputs.operations} storage={storageOf(results.lines, plans)} />
+      <RatesReport assumptions={inputs.operations} storage={storageOf(results.lines, plans)} warnings={warnings} />
     ) : (
       <p className="text-sm text-muted-foreground">This Financial Plan has no Operations Plan yet.</p>
     );
@@ -186,6 +186,7 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
         shared={sharedCostsOf(results.lines, operations?.id ?? null)}
         fundraising={fundraisingOf(results.lines)}
         capital={capitalList(results, inputs.capital)}
+        warnings={warnings}
       />
     );
   }
@@ -195,7 +196,7 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
     <AreaReport
       area={reportName(area)}
       notes={inputs.notes[report] ?? null}
-      warnings={warnings.filter((w) => w.area === report)}
+      warnings={warnings}
       statement={statementOf(results.lines.filter((l) => l.plan === area.id))}
       total={areaTotal(results.pnl, area.program_area_id)}
       programs={inputs.programs[report] ?? []}

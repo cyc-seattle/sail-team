@@ -1,7 +1,9 @@
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { AccountAmount, CapitalItem, Product, SharedCost } from "@/model/reports";
+import type { AccountAmount, CapitalItem, PlanWarning, Product, SharedCost } from "@/model/reports";
+import { about } from "@/model/warnings";
 import { AccountTable } from "../account-table";
 import { Money } from "../money";
+import { WarningMark } from "../warning-mark";
 import { FundraisingCapitalReport } from "./fundraising-capital-report";
 import { ReportSection } from "./report-page";
 
@@ -34,11 +36,14 @@ export function NonProgramReport({
   shared,
   fundraising,
   capital,
+  warnings = [],
 }: {
   products: Product[];
   shared: SharedCost[];
   fundraising: { revenue: AccountAmount[]; costs: AccountAmount[] };
   capital: { items: CapitalItem[]; available_cents: number };
+  /** Every warning in the Financial Plan; each shows on the row it names. */
+  warnings?: PlanWarning[];
 }) {
   const total = {
     revenue_cents: add(products, (p) => p.revenue_cents),
@@ -61,7 +66,12 @@ export function NonProgramReport({
         <TableBody>
           {products.map((p) => (
             <TableRow key={p.name}>
-              <TableCell className={pinned}>{p.name}</TableCell>
+              <TableCell className={pinned}>
+                <span className="inline-flex items-center gap-1">
+                  {p.name}
+                  <WarningMark warnings={about(warnings, p.id)} />
+                </span>
+              </TableCell>
               <Amount cents={p.revenue_cents} />
               <Amount cents={p.direct_cents} />
               <Amount cents={p.revenue_cents - p.direct_cents} colored />
@@ -78,7 +88,11 @@ export function NonProgramReport({
         </TableFooter>
       </Table>
 
-      <ReportSection id="shared-costs" title="Shared costs">
+      <ReportSection
+        id="shared-costs"
+        title="Shared costs"
+        warnings={warnings.filter((w) => w.code === "no_shared_costs" || w.code === "pool_without_offerings")}
+      >
         <AccountTable
           label="Shared costs"
           columns={[{ head: "Allocated" }, { head: "Unallocated" }, { head: "Total" }]}
@@ -107,7 +121,7 @@ export function NonProgramReport({
         />
       </ReportSection>
 
-      <FundraisingCapitalReport fundraising={fundraising} capital={capital} />
+      <FundraisingCapitalReport fundraising={fundraising} capital={capital} warnings={warnings} />
     </>
   );
 }

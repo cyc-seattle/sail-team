@@ -167,7 +167,7 @@ describe("reading a Financial Plan's inputs from Directus", () => {
       fuel_per_hour_cents: 50,
       charter_per_day_cents: null,
     });
-    expect(products).toEqual([{ key: "key:Boat storage", product: "Boat storage" }]);
+    expect(products).toEqual([{ key: "key:Boat storage", product: "Boat storage", product_id: expect.any(String) }]);
   });
 
   it("reads the Operations Plan's other inputs, naming the accounts, pools and positions their rows point at", async () => {
