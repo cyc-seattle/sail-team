@@ -38,6 +38,8 @@ function Signed() {
       return (
         <AppShell
           name={displayName(session.me)}
+          email={session.me.email}
+          role={session.me.role?.name}
           pages={pagesFor(session.permissions)}
           tools={toolsFor(session.me.role?.name, appDirectus().url)}
           onSignOut={() => void signOutOfApp()}

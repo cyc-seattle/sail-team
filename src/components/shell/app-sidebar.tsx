@@ -24,11 +24,15 @@ const item = "min-h-tap data-[status=active]:bg-sidebar-accent data-[status=acti
  */
 export function AppSidebar({
   name,
+  email,
+  role,
   pages,
   tools,
   onSignOut,
 }: {
   name: string;
+  email?: string | null | undefined;
+  role?: string | null | undefined;
   pages: NavItem[];
   tools: ExternalLink[];
   onSignOut: () => void;
@@ -70,7 +74,7 @@ export function AppSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <AccountMenu name={name} tools={tools} onSignOut={onSignOut} />
+        <AccountMenu name={name} email={email} role={role} tools={tools} onSignOut={onSignOut} />
       </SidebarFooter>
     </Sidebar>
   );

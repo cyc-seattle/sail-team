@@ -20,6 +20,8 @@ const meta = {
   parameters: { layout: "fullscreen" },
   args: {
     name: "Robin Tiller",
+    email: "robin.tiller@example.org",
+    role: "Crew",
     pages: staff,
     tools: toolsFor("Crew", directus),
     onSignOut: fn(),
@@ -124,6 +126,8 @@ export const AccountMenuOpen: Story = {
     const body = await openSidebar(context);
     await context.userEvent.click(await body.findByRole("button", { name: "Robin Tiller" }));
     await waitFor(async () => expect(await body.findByText("Signed in as Robin Tiller")).toBeVisible());
+    await expect(body.getByText("robin.tiller@example.org")).toBeVisible();
+    await expect(body.getByText("Role: Crew")).toBeVisible();
     await expect(body.getByRole("menuitem", { name: "Sign out" })).toBeVisible();
   },
 };
