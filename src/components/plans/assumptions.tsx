@@ -12,11 +12,13 @@ import {
   type StaffTime,
 } from "@/model/assumptions";
 import { formatDay } from "@/model/dates";
+import type { BonusResult } from "@/model/financial-plans";
 import { formatCents, formatExactCents } from "@/model/money";
 import type { PlanWarning } from "@/model/reports";
 import { about } from "@/model/warnings";
 import { cn } from "@/lib/utils";
 import { AccountTable, type AccountTableGroup } from "./account-table";
+import { Money } from "./money";
 import { NoteInfo } from "./note-info";
 import { WarningMark } from "./warning-mark";
 import { reportSections, SectionPair } from "./reports/report-page";
@@ -150,6 +152,33 @@ function BonusCell({ bonuses }: { bonuses: Bonus[] }) {
   );
 }
 
+/** Each bonus in term order, then on its offerings in no term. */
+const byTerm = (rows: BonusResult[]) =>
+  [...rows].sort(
+    (a, b) =>
+      (a.term_starts_on ?? "￿").localeCompare(b.term_starts_on ?? "￿") || a.role_name.localeCompare(b.role_name),
+  );
+
+/** What each bonus pays in each term, on its products' net there. */
+function BonusAmounts({ bonuses }: { bonuses: BonusResult[] }) {
+  return (
+    <RateTable label="Bonus amounts" head={["Role", "Term", "Net", "Bonus"]} text={["Term"]}>
+      {byTerm(bonuses).map((b) => (
+        <TableRow key={`${b.bonus_owner_key} ${b.term_name ?? ""}`}>
+          <TableCell>{b.role_name}</TableCell>
+          <TableCell>{b.term_name ?? "No term"}</TableCell>
+          <Num>
+            <Money cents={b.net_cents} colored />
+          </Num>
+          <Num>
+            <Money cents={b.bonus_cents} />
+          </Num>
+        </TableRow>
+      ))}
+    </RateTable>
+  );
+}
+
 /** A salary, with what it comes to an hour over its paid hours behind an info icon. */
 function SalaryCell({ cents, hours }: { cents: number; hours: number | null }) {
   return (
@@ -202,9 +231,12 @@ function SalariedStaff({ a, warnings }: { a: OperationsAssumptions; warnings: Pl
  */
 export function OperationsAssumptionsView({
   assumptions: a,
+  bonusAmounts = [],
   warnings = [],
 }: {
   assumptions: OperationsAssumptions;
+  /** What each bonus pays, from the results. None until platform has worked them out. */
+  bonusAmounts?: BonusResult[];
   /** Every warning in the Financial Plan; each shows on the row it names. */
   warnings?: PlanWarning[];
 }) {
@@ -298,6 +330,7 @@ export function OperationsAssumptionsView({
               },
             ]}
           />
+          {bonusAmounts.length > 0 && <BonusAmounts bonuses={bonusAmounts} />}
         </TableSection>
       )}
       {a.charges.length > 0 && (

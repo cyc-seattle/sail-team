@@ -4,6 +4,7 @@ import {
   inForce,
   platformRelease,
   today,
+  type BonusResult,
   type CapitalResult,
   type FinancialPlanSummary,
   type InForce,
@@ -119,7 +120,7 @@ async function readPlans(setId: string): Promise<Plan[]> {
  */
 async function readResults(setId: string): Promise<Results | null> {
   const bySet = { financial_plan_id: { _eq: setId } };
-  const [totals, pnl, lines, warnings, capital] = await Promise.all([
+  const [totals, pnl, lines, warnings, capital, bonuses] = await Promise.all([
     readAll<Totals & { calculated_at: string | null; platform_version: string | null }>("plan_results", bySet, [
       ...totalFields,
       "platform_version",
@@ -180,6 +181,14 @@ async function readResults(setId: string): Promise<Results | null> {
       "running_cents",
       "funded",
     ]),
+    readAll<Omit<BonusResult, "role_name"> & { name: string }>("plan_result_bonuses", bySet, [
+      "bonus_owner_key",
+      "name",
+      "term_name",
+      "term_starts_on",
+      "net_cents",
+      "bonus_cents",
+    ]),
   ]);
   if (!totals[0]) {
     return null;
@@ -207,6 +216,7 @@ async function readResults(setId: string): Promise<Results | null> {
     })),
     warnings: warnings.map(({ plan_id, ...w }) => ({ ...w, plan: plan_id })),
     capital: capital.map(({ item_key, ...c }) => ({ ...c, key: item_key })).sort((a, b) => a.rank - b.rank),
+    bonuses: bonuses.map(({ name, ...b }) => ({ ...b, role_name: name })),
   };
 }
 

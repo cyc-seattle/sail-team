@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, screen, userEvent, waitFor, within } from "storybook/test";
 import { OperationsAssumptionsView } from "./assumptions";
-import { reportAssumptions } from "./reports/fixtures";
+import { bonusAmounts, reportAssumptions } from "./reports/fixtures";
 
 const meta = {
   component: OperationsAssumptionsView,
@@ -40,6 +40,21 @@ export const Bonuses: Story = {
     await expect(within(table).getByRole("row", { name: /Summer Director/ })).toHaveTextContent(
       "5030Summer Director5%Before shared costsGuppies, Opti Camp—",
     );
+  },
+};
+
+/** What each bonus pays in each term, in term order, then on its offerings in no term. A loss pays nothing. */
+export const BonusAmounts: Story = {
+  args: { bonusAmounts },
+  play: async ({ canvas }) => {
+    const rows = within(canvas.getByRole("table", { name: "Bonus amounts" })).getAllByRole("row");
+    await expect(rows.map((r) => r.textContent)).toEqual([
+      "RoleTermNetBonus",
+      "Program DirectorSummer 2027$45,123.40$4,512.34",
+      "Summer DirectorSummer 2027$31,000.00$1,550.00",
+      "Summer DirectorFall 2027−$1,200.50$0.00",
+      "Program DirectorNo term$18,000.00$1,800.00",
+    ]);
   },
 };
 

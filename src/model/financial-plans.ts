@@ -237,6 +237,19 @@ export interface Results {
   warnings: ResultWarning[];
   /** None in results worked out before capital was ranked. */
   capital: CapitalResult[];
+  bonuses: BonusResult[];
+}
+
+/** What a bonus pays on its products' net in one term, or on the year for its offerings in no term. */
+export interface BonusResult {
+  bonus_owner_key: string;
+  role_name: string;
+  /** Null for its offerings in no term. */
+  term_name: string | null;
+  term_starts_on: string | null;
+  /** Below zero when its products lose money, and then it pays nothing. */
+  net_cents: number;
+  bonus_cents: number;
 }
 
 /**
