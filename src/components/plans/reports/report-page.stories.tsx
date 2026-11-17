@@ -3,6 +3,7 @@ import { expect, userEvent } from "storybook/test";
 
 import {
   areaOfferings,
+  bonusAmounts,
   capital,
   doublehandedOfferings,
   doublehandedPrograms,
@@ -161,7 +162,14 @@ export const Assumptions: Story = {
   args: {
     current: "rates",
     warnings: everyWarning,
-    children: <RatesReport assumptions={reportAssumptions} storage={storageCosts} warnings={everyWarning} />,
+    children: (
+      <RatesReport
+        assumptions={reportAssumptions}
+        storage={storageCosts}
+        bonusAmounts={bonusAmounts}
+        warnings={everyWarning}
+      />
+    ),
   },
 };
 

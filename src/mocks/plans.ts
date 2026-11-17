@@ -751,6 +751,16 @@ function results(setRow: Row, calculatedAt: string, platformVersion: string | nu
       breakeven_enrollment: (p as { breakeven_enrollment?: number | null }).breakeven_enrollment ?? null,
       ...resultTerm((p as { term_key?: string | null }).term_key),
     })),
+    plan_result_bonuses: out.bonuses.map((b) => ({
+      financial_plan_id: setId,
+      plan_id: areaPlan(b.program_area_id),
+      bonus_owner_key: b.bonus_owner_key,
+      name: b.role_name,
+      bonus_rate: b.bonus_rate,
+      net_cents: b.net_cents,
+      bonus_cents: b.bonus_cents,
+      ...resultTerm(b.term_key),
+    })),
     plan_result_capital: out.capital.map((item) => ({
       financial_plan_id: setId,
       rank: item.rank,
@@ -780,9 +790,14 @@ const worked = [
   results(twoCoaches, "2027-04-02T23:05:00Z", "1.38.1+engine.9f8e7d6c5b4a"),
 ];
 const resultTables = Object.fromEntries(
-  ["plan_results", "plan_result_lines", "plan_result_pnl", "plan_result_warnings", "plan_result_capital"].map(
-    (table) => [table, worked.flatMap((r) => r[table] ?? [])],
-  ),
+  [
+    "plan_results",
+    "plan_result_lines",
+    "plan_result_pnl",
+    "plan_result_warnings",
+    "plan_result_capital",
+    "plan_result_bonuses",
+  ].map((table) => [table, worked.flatMap((r) => r[table] ?? [])]),
 );
 resultTables["plan_results"]!.push({
   ...worked[0]!["plan_results"]![0]!,

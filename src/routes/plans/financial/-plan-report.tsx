@@ -171,7 +171,12 @@ function Report({ plan, inputs, report }: { plan: FinancialPlan; inputs: PlanInp
   }
   if (report === "rates") {
     return inputs.operations ? (
-      <RatesReport assumptions={inputs.operations} storage={storageOf(results.lines, plans)} warnings={warnings} />
+      <RatesReport
+        assumptions={inputs.operations}
+        storage={storageOf(results.lines, plans)}
+        bonusAmounts={results.bonuses}
+        warnings={warnings}
+      />
     ) : (
       <p className="text-sm text-muted-foreground">This Financial Plan has no Operations Plan yet.</p>
     );

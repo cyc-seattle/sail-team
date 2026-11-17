@@ -1,7 +1,7 @@
 // Made-up numbers for the Planning report wireframes. Never real figures.
 import type { Bonus, FixedCost, OperationsAssumptions, StaffTime } from "@/model/assumptions";
 import type { ScheduleBlock, ScheduledActivity } from "@/model/schedule";
-import type { ListedPlan, Totals } from "@/model/financial-plans";
+import type { BonusResult, ListedPlan, Totals } from "@/model/financial-plans";
 import type {
   StorageCost,
   AccountAmount,
@@ -445,6 +445,42 @@ const programDirectorBonus: Bonus = {
   account: { number: "5030", name: "Salaries" },
   position: "Program Director",
 };
+
+/** What each bonus pays: Summer Director's on a loss in Fall pays nothing, and Program Director's no-term offerings on the year. */
+export const bonusAmounts: BonusResult[] = [
+  {
+    bonus_owner_key: "summer",
+    role_name: "Summer Director",
+    term_name: "Fall 2027",
+    term_starts_on: "2027-09-01",
+    net_cents: -120_050,
+    bonus_cents: 0,
+  },
+  {
+    bonus_owner_key: "pd-bonus",
+    role_name: "Program Director",
+    term_name: null,
+    term_starts_on: null,
+    net_cents: 1_800_000,
+    bonus_cents: 180_000,
+  },
+  {
+    bonus_owner_key: "pd-bonus",
+    role_name: "Program Director",
+    term_name: "Summer 2027",
+    term_starts_on: "2027-06-16",
+    net_cents: 4_512_340,
+    bonus_cents: 451_234,
+  },
+  {
+    bonus_owner_key: "summer",
+    role_name: "Summer Director",
+    term_name: "Summer 2027",
+    term_starts_on: "2027-06-16",
+    net_cents: 3_100_000,
+    bonus_cents: 155_000,
+  },
+];
 
 const fixedCost = (
   key: string,
