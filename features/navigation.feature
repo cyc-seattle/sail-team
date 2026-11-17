@@ -12,7 +12,7 @@ Feature: Getting around
     And I've signed in
     Then I can open Home, Planning, Rosters, and Links from the menu
     And the menu offers Support
-    And my account menu shows my name
+    And my account menu shows my name, my email, and my role
 
     Examples:
       | screen |
@@ -25,7 +25,7 @@ Feature: Getting around
     And I've signed in
     Then I can open Home, Rosters, Household, and Links from the menu
     But the menu doesn't offer Planning
-    And my account menu shows my name
+    And my account menu shows my name, my email, and my role
 
     Examples:
       | screen |

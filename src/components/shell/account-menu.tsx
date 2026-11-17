@@ -13,15 +13,20 @@ import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui
 import type { ExternalLink } from "@/model/nav";
 
 /**
- * The signed-in person's menu, at the foot of the sidebar, with the tools their role gets. A long name or email is cut
- * short to fit. Sign out also ends an admin's impersonation (platform's docs/access.md).
+ * The signed-in person's menu, at the foot of the sidebar, with the tools their role gets. It names the account they
+ * signed in with, its email and role, so someone with two emails can tell which they're using. A long name or email is
+ * cut short to fit. Sign out also ends an admin's impersonation (platform's docs/access.md).
  */
 export function AccountMenu({
   name,
+  email,
+  role,
   tools = [],
   onSignOut,
 }: {
   name: string;
+  email?: string | null | undefined;
+  role?: string | null | undefined;
   tools?: ExternalLink[];
   onSignOut: () => void;
 }) {
@@ -35,7 +40,11 @@ export function AccountMenu({
           </DropdownMenuTrigger>
           <DropdownMenuContent side="top">
             <DropdownMenuGroup>
-              <DropdownMenuLabel className="break-all">Signed in as {name}</DropdownMenuLabel>
+              <DropdownMenuLabel className="break-all">
+                <span className="block">Signed in as {name}</span>
+                {email && email !== name && <span className="block font-normal">{email}</span>}
+                {role && <span className="block font-normal">Role: {role}</span>}
+              </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             {tools.length > 0 && (

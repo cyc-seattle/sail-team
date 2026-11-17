@@ -130,12 +130,15 @@ Then("the menu doesn't offer Planning", async ({ page }) => {
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
-Then("my account menu shows my name", async ({ page, visitor }) => {
+Then("my account menu shows my name, my email, and my role", async ({ page, visitor }) => {
   if (screen.size === "phone" && !(await page.getByRole("dialog").count())) {
     await page.getByRole("button", { name: "More" }).click();
   }
   // Exact, since the Household page's cards have an "Edit <name>" button too.
   await page.getByRole("button", { name: visitor.name, exact: true }).click();
   await expect(page.getByText(`Signed in as ${visitor.name}`)).toBeVisible();
+  await expect(page.getByText(visitor.email, { exact: true })).toBeVisible();
+  // The role depends on the visitor: Community, or Team once platform's hook moves a parent on a team.
+  await expect(page.getByText(/^Role: \w+$/)).toBeVisible();
   await expect(page.getByRole("menuitemradio", { name: "Dark" })).toBeVisible();
 });
