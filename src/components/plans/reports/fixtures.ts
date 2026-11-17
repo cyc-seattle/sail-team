@@ -446,7 +446,7 @@ const programDirectorBonus: Bonus = {
   position: "Program Director",
 };
 
-/** What each bonus pays: Summer Director's on a loss in Fall pays nothing, and Program Director's no-term offerings on the year. */
+/** What each bonus pays: Summer Director's on a loss in Fall pays nothing, and Program Director's on its offerings in no term. */
 export const bonusAmounts: BonusResult[] = [
   {
     bonus_owner_key: "summer",

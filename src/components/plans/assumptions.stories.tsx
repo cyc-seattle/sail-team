@@ -43,7 +43,7 @@ export const Bonuses: Story = {
   },
 };
 
-/** What each bonus pays in each term, in term order, then on the year. A loss pays nothing. */
+/** What each bonus pays in each term, in term order, then on its offerings in no term. A loss pays nothing. */
 export const BonusAmounts: Story = {
   args: { bonusAmounts },
   play: async ({ canvas }) => {
@@ -53,7 +53,7 @@ export const BonusAmounts: Story = {
       "Program DirectorSummer 2027$45,123.40$4,512.34",
       "Summer DirectorSummer 2027$31,000.00$1,550.00",
       "Summer DirectorFall 2027−$1,200.50$0.00",
-      "Program DirectorYear$18,000.00$1,800.00",
+      "Program DirectorNo term$18,000.00$1,800.00",
     ]);
   },
 };

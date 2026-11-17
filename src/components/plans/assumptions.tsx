@@ -152,7 +152,7 @@ function BonusCell({ bonuses }: { bonuses: Bonus[] }) {
   );
 }
 
-/** Each bonus in term order, then on the year, which its offerings in no term are paid on. */
+/** Each bonus in term order, then on its offerings in no term. */
 const byTerm = (rows: BonusResult[]) =>
   [...rows].sort(
     (a, b) =>
@@ -166,7 +166,7 @@ function BonusAmounts({ bonuses }: { bonuses: BonusResult[] }) {
       {byTerm(bonuses).map((b) => (
         <TableRow key={`${b.bonus_owner_key} ${b.term_name ?? ""}`}>
           <TableCell>{b.role_name}</TableCell>
-          <TableCell>{b.term_name ?? "Year"}</TableCell>
+          <TableCell>{b.term_name ?? "No term"}</TableCell>
           <Num>
             <Money cents={b.net_cents} colored />
           </Num>

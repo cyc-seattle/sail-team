@@ -244,7 +244,7 @@ export interface Results {
 export interface BonusResult {
   bonus_owner_key: string;
   role_name: string;
-  /** Null on the year. */
+  /** Null for its offerings in no term. */
   term_name: string | null;
   term_starts_on: string | null;
   /** Below zero when its products lose money, and then it pays nothing. */
