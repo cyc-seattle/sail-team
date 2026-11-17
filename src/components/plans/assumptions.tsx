@@ -18,6 +18,7 @@ import type { PlanWarning } from "@/model/reports";
 import { about } from "@/model/warnings";
 import { cn } from "@/lib/utils";
 import { AccountTable, type AccountTableGroup } from "./account-table";
+import { Money } from "./money";
 import { NoteInfo } from "./note-info";
 import { WarningMark } from "./warning-mark";
 import { reportSections, SectionPair } from "./reports/report-page";
@@ -166,8 +167,12 @@ function BonusAmounts({ bonuses }: { bonuses: BonusResult[] }) {
         <TableRow key={`${b.bonus_owner_key} ${b.term_name ?? ""}`}>
           <TableCell>{b.role_name}</TableCell>
           <TableCell>{b.term_name ?? "Year"}</TableCell>
-          <Num>{money(b.net_cents)}</Num>
-          <Num>{money(b.bonus_cents)}</Num>
+          <Num>
+            <Money cents={b.net_cents} colored />
+          </Num>
+          <Num>
+            <Money cents={b.bonus_cents} />
+          </Num>
         </TableRow>
       ))}
     </RateTable>
