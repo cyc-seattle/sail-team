@@ -6,7 +6,7 @@ import { catalogTables } from "./catalog";
 import { homeTables } from "./home";
 import { inventoryTables } from "./inventory";
 import { engine, tables } from "./plans";
-import { rosterTables } from "./roster";
+import { logins, rosterTables } from "./roster";
 
 export interface MockSession {
   me: Me | null;
@@ -23,18 +23,19 @@ type Row = Record<string, unknown>;
 
 /**
  * Whether a row matches a Directus filter's `_eq` and `_in` conditions, inside any `_and`. Other conditions match every
- * row. `$CURRENT_USER` is `me`.
+ * row. `$CURRENT_USER` and `$CURRENT_USER.person_id` are read from `vars`.
  */
-function matches(row: Row, filter: Record<string, Record<string, unknown>>, me?: string): boolean {
+function matches(row: Row, filter: Record<string, Record<string, unknown>>, vars: Record<string, unknown>): boolean {
   return Object.entries(filter).every(([field, condition]) => {
     if (field === "_and") {
-      return (condition as unknown as Record<string, Record<string, unknown>>[]).every((f) => matches(row, f, me));
+      return (condition as unknown as Record<string, Record<string, unknown>>[]).every((f) => matches(row, f, vars));
     }
     // A related row is matched by its id, as Directus matches a foreign key.
     const raw = row[field];
     const value = raw !== null && typeof raw === "object" && "id" in raw ? (raw as Row)["id"] : raw;
     if ("_eq" in condition) {
-      return value === (condition["_eq"] === "$CURRENT_USER" ? me : condition["_eq"]);
+      const eq = condition["_eq"];
+      return value === (typeof eq === "string" && eq in vars ? vars[eq] : eq);
     }
     if ("_in" in condition) {
       return (condition["_in"] as unknown[]).includes(value);
@@ -63,6 +64,11 @@ function shape(row: Row, fields: string | null): Row {
 
 /** Directus's answers for one made-up session, at `directusUrl`. A `null` user is a visitor with no session. */
 export function handlers(directusUrl: string, session: MockSession = { me: planner, permissions: plannerPermissions }) {
+  // Directus reads a login with no person as null, which matches no one.
+  const vars = {
+    $CURRENT_USER: session.me?.id,
+    "$CURRENT_USER.person_id": session.me ? (logins[session.me.id] ?? null) : undefined,
+  };
   return [
     http.get(`${directusUrl}/users/me`, () => (session.me ? HttpResponse.json({ data: session.me }) : forbidden())),
     http.post(`${directusUrl}/auth/logout`, () => new HttpResponse(null, { status: 204 })),
@@ -73,7 +79,7 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
     http.get(`${directusUrl}/users`, ({ request }) => {
       const query = new URL(request.url).searchParams;
       const filter = query.get("filter");
-      const rows = tables["directus_users"]!.filter((r) => !filter || matches(r, JSON.parse(filter), session.me?.id));
+      const rows = tables["directus_users"]!.filter((r) => !filter || matches(r, JSON.parse(filter), vars));
       return HttpResponse.json({ data: rows.map((r) => shape(r, query.get("fields"))) });
     }),
     http.get(`${directusUrl}/permissions/me`, () =>
@@ -99,7 +105,7 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
         rosterTables[table] ??
         homeTables[table] ??
         []
-      ).filter((r) => !filter || matches(r, JSON.parse(filter), session.me?.id));
+      ).filter((r) => !filter || matches(r, JSON.parse(filter), vars));
       return HttpResponse.json({ data: rows.map((r) => shape(r, query.get("fields"))) });
     }),
     http.patch(`${directusUrl}/items/:table/:id`, async ({ params, request }) => {

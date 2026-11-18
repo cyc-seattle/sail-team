@@ -33,7 +33,6 @@ export const parentPermissions: Permissions = {
     "date_of_birth",
     "household_id",
     "share_contact",
-    "directus_user_id",
   ]),
   households: read("partial", ["id", "share_contact"]),
   schools: read("partial", ["id", "name"]),

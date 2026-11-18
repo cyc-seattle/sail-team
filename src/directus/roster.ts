@@ -138,5 +138,5 @@ export const teamsQuery = (permissions: Permissions) =>
 export const myIdQuery = queryOptions({
   queryKey: ["rosters", "me"],
   queryFn: async (): Promise<string | null> =>
-    (await readAll<{ id: string }>("people", ["id"], { directus_user_id: { _eq: "$CURRENT_USER" } }))[0]?.id ?? null,
+    (await readAll<{ id: string }>("people", ["id"], { id: { _eq: "$CURRENT_USER.person_id" } }))[0]?.id ?? null,
 });

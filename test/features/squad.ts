@@ -177,11 +177,11 @@ export class Squad {
     });
     visitor.personId = person.id;
     await expect
-      .poll(async () => (await asAdmin("GET", `/items/people/${person.id}?fields=directus_user_id`)).directus_user_id, {
+      .poll(async () => (await asAdmin("GET", `/users/${visitor.directusUserId}?fields=person_id`)).person_id, {
         timeout: 60_000,
         intervals: [1_000],
       })
-      .toBe(visitor.directusUserId);
+      .toBe(person.id);
     return person.id;
   }
 
