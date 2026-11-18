@@ -32,6 +32,9 @@ export const rosterIds = {
   household: "00000000-0000-4000-8000-000000000741",
 };
 
+/** Each login's person, as `directus_users.person_id` links them. */
+export const logins: Record<string, string> = { [planner.id]: rosterIds.me };
+
 // Mia has three guardians, so a roster shows how several read.
 const miasSecond = "00000000-0000-4000-8000-000000000727";
 const miasThird = "00000000-0000-4000-8000-000000000728";
@@ -67,7 +70,6 @@ const person = (id: string, first: string, last: string, rest: Record<string, un
   date_of_birth: null,
   household_id: null,
   share_contact: null,
-  directus_user_id: null,
   ...rest,
 });
 
@@ -140,7 +142,6 @@ export const rosterTables: Record<string, Record<string, unknown>[]> = {
       email: planner.email,
       phone: "+1 206 555 0110",
       share_contact: true,
-      directus_user_id: planner.id,
       household_id: rosterIds.household,
     }),
     person(rosterIds.coParent, "Sam", "Tiller", {

@@ -123,7 +123,7 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   them (`canSeeRosters`).
 - `src/directus/household.ts` reads the signed-in person's household: the people Clubspot links through a shared
   sailor, which platform's sync groups (`people.household_id`). It finds their own record by
-  `directus_user_id = $CURRENT_USER`, then their household with its `members`, since the query guard refuses a Team
+  `id = $CURRENT_USER.person_id`, the person their login is linked to (a person can have several logins), then their household with its `members`, since the query guard refuses a Team
   user's filter on `household_id`, and their guardian links, which make them a guardian or a sailor
   (`src/model/household.ts`). `/household` shows them, and anyone in it, children included, changes each person's display
   name and phone, and a sailor's school: one of the known `schools` (`school_id`), or none with the one typed in after

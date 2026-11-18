@@ -29,7 +29,7 @@ export const householdQuery = queryOptions({
   queryKey: ["household"],
   queryFn: async (): Promise<Household | null> => {
     const [me] = await readAll<{ id: string; household_id: string | null }>("people", ["id", "household_id"], {
-      directus_user_id: { _eq: "$CURRENT_USER" },
+      id: { _eq: "$CURRENT_USER.person_id" },
     });
     if (!me?.household_id) {
       return null;
