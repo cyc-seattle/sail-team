@@ -105,6 +105,18 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   Google Group), Offerings (`catalog_offerings`, under their program), Accounts (the chart of accounts by type, and
   where each cost the planning engine works out is booked, `organization_cost_accounts`), and Qualifications, each with
   the others it also meets. It reads only the tables the person can read.
+- `src/directus/crew.ts` reads and writes Crew ([cyc-seattle/platform#263](https://github.com/cyc-seattle/platform/issues/263)):
+  `crew_members`, each someone already in People; `crew_positions`, each with the qualifications it needs;
+  `crew_terms`, one crew member in one position, maybe in a program or program area, from a day to a day; and
+  `crew_qualifications`, each earned on a day and maybe expiring on one. The app never says "term", which already
+  means the part of the year an offering runs in: a crew member holds a position. `/crew` lists everyone by name, with
+  their current positions and what they're missing or must renew in the next 90 days (`src/model/crew.ts`), its
+  filters kept in the address; `/crew/<id>` is one crew member, with their positions, qualifications, and website
+  profile; and `/crew/positions` lists each position with who holds it today. A Crew Writer adds someone found in
+  People by name or email, and changes everything here, a photo going into platform's public Website folder. A term's
+  pay shows only to those who read it (`canSeePay`). Crew Readers and Writers see Crew (`canSeeCrew`, from
+  `crew_qualifications`), not the CRM and Plan policies, who read only who holds which position. Until platform's
+  Crew schema is in its published types, its writes go by path.
 - `src/directus/announcements.ts` reads `announcements`, which everyone who signs in reads: a title, a Markdown body,
   drawn without its raw HTML, and the day it was posted (`published_on`). The
   [`weekly-announcement`](.agents/skills/weekly-announcement/SKILL.md) skill writes the week's roundup.

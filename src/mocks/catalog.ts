@@ -88,6 +88,7 @@ const qualifications = [
   { id: id(9401), name: "US Sailing Level 2" },
   { id: id(9402), name: "Powerboat Safety" },
   { id: id(9403), name: "First Aid and CPR" },
+  { id: id(9404), name: "SafeSport" },
 ];
 
 /** The catalog's tables, as Directus returns them. */

@@ -1,4 +1,5 @@
 import { canRead, canSeeHousehold, canSeeRosters, type Permissions } from "@/directus/access";
+import { canSeeCrew } from "@/directus/crew";
 
 /** A page of this app. */
 export interface NavItem {
@@ -11,6 +12,7 @@ const sections: (NavItem & { shown: (permissions: Permissions) => boolean })[] =
   { to: "/plans", label: "Planning", shown: (p) => canRead(p, "plans") },
   { to: "/inventory", label: "Inventory", shown: (p) => canRead(p, "assets") },
   { to: "/roster", label: "Rosters", shown: canSeeRosters },
+  { to: "/crew", label: "Crew", shown: canSeeCrew },
   { to: "/household", label: "Household", shown: canSeeHousehold },
   // Accounts, not products, which a team's household reads too.
   { to: "/catalog", label: "Catalog", shown: (p) => canRead(p, "accounts") },

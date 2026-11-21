@@ -2,6 +2,7 @@ import {
   ChartColumnIcon,
   CircleIcon,
   ContactIcon,
+  IdCardIcon,
   BookOpenIcon,
   HouseIcon,
   LinkIcon,
@@ -16,6 +17,7 @@ const icons: Record<string, LucideIcon> = {
   "/inventory": PackageIcon,
   "/catalog": BookOpenIcon,
   "/roster": UsersIcon,
+  "/crew": IdCardIcon,
   "/household": ContactIcon,
   "/links": LinkIcon,
 };

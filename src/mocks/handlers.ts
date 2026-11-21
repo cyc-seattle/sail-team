@@ -3,6 +3,7 @@ import type { Permissions } from "@/directus/access";
 import type { Me } from "@/directus/sign-in";
 import { planner, plannerPermissions } from "./fixtures";
 import { catalogTables } from "./catalog";
+import { crewTables, photo } from "./crew";
 import { homeTables } from "./home";
 import { inventoryTables } from "./inventory";
 import { engine, tables } from "./plans";
@@ -22,13 +23,16 @@ const forbidden = () =>
 type Row = Record<string, unknown>;
 
 /**
- * Whether a row matches a Directus filter's `_eq` and `_in` conditions, inside any `_and`. Other conditions match every
+ * Whether a row matches a Directus filter's `_eq`, `_in`, and `_icontains` conditions, inside any `_and` or `_or`. Other conditions match every
  * row. `$CURRENT_USER` and `$CURRENT_USER.person_id` are read from `vars`.
  */
 function matches(row: Row, filter: Record<string, Record<string, unknown>>, vars: Record<string, unknown>): boolean {
   return Object.entries(filter).every(([field, condition]) => {
     if (field === "_and") {
       return (condition as unknown as Record<string, Record<string, unknown>>[]).every((f) => matches(row, f, vars));
+    }
+    if (field === "_or") {
+      return (condition as unknown as Record<string, Record<string, unknown>>[]).some((f) => matches(row, f, vars));
     }
     // A related row is matched by its id, as Directus matches a foreign key.
     const raw = row[field];
@@ -39,6 +43,11 @@ function matches(row: Row, filter: Record<string, Record<string, unknown>>, vars
     }
     if ("_in" in condition) {
       return (condition["_in"] as unknown[]).includes(value);
+    }
+    if ("_icontains" in condition) {
+      return String(value ?? "")
+        .toLowerCase()
+        .includes(String(condition["_icontains"]).toLowerCase());
     }
     return true;
   });
@@ -61,6 +70,18 @@ function shape(row: Row, fields: string | null): Row {
       }),
   );
 }
+
+/** A made-up table by name, from whichever area has it. Crew's comes first, for its people. */
+const tableOf = (table: string): Row[] | undefined =>
+  crewTables[table] ??
+  inventoryTables[table] ??
+  catalogTables[table] ??
+  tables[table] ??
+  rosterTables[table] ??
+  homeTables[table];
+
+/** The tables a made-up session can add to and delete from. */
+const writable = (table: string): Row[] | undefined => crewTables[table] ?? inventoryTables[table];
 
 /** Directus's answers for one made-up session, at `directusUrl`. A `null` user is a visitor with no session. */
 export function handlers(directusUrl: string, session: MockSession = { me: planner, permissions: plannerPermissions }) {
@@ -87,9 +108,7 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
     ),
     http.get(`${directusUrl}/items/:table/:id`, ({ params, request }) => {
       const table = params["table"] as string;
-      const row = (inventoryTables[table] ?? catalogTables[table] ?? tables[table] ?? rosterTables[table])?.find(
-        (r) => r["id"] === params["id"],
-      );
+      const row = tableOf(table)?.find((r) => r["id"] === params["id"]);
       return row
         ? HttpResponse.json({ data: shape(row, new URL(request.url).searchParams.get("fields")) })
         : forbidden();
@@ -98,21 +117,12 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
       const query = new URL(request.url).searchParams;
       const filter = query.get("filter");
       const table = params["table"] as string;
-      const rows = (
-        inventoryTables[table] ??
-        catalogTables[table] ??
-        tables[table] ??
-        rosterTables[table] ??
-        homeTables[table] ??
-        []
-      ).filter((r) => !filter || matches(r, JSON.parse(filter), vars));
+      const rows = (tableOf(table) ?? []).filter((r) => !filter || matches(r, JSON.parse(filter), vars));
       return HttpResponse.json({ data: rows.map((r) => shape(r, query.get("fields"))) });
     }),
     http.patch(`${directusUrl}/items/:table/:id`, async ({ params, request }) => {
       const table = params["table"] as string;
-      const row = (inventoryTables[table] ?? catalogTables[table] ?? tables[table] ?? rosterTables[table])?.find(
-        (r) => r["id"] === params["id"],
-      );
+      const row = tableOf(table)?.find((r) => r["id"] === params["id"]);
       if (!row) {
         return forbidden();
       }
@@ -127,6 +137,14 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
         boats.push(...nested.create.map((b) => ({ id: crypto.randomUUID(), asset_id: row["id"], ...b })));
         changes["boats"] = boats;
       }
+      // A position's qualifications, changed with it.
+      if (table === "crew_positions" && changes["qualifications"]) {
+        const nested = changes["qualifications"] as { create: Row[]; delete: string[] };
+        changes["qualifications"] = [
+          ...(row["qualifications"] as Row[]).filter((q) => !nested.delete.includes(q["id"] as string)),
+          ...nested.create.map((q) => ({ id: crypto.randomUUID(), ...q })),
+        ];
+      }
       // A picked school is saved by its id, and read back with its name, as Directus expands the relation.
       if (changes["school_id"]) {
         changes["school_id"] = rosterTables["schools"]!.find((s) => s["id"] === changes["school_id"]) ?? null;
@@ -137,13 +155,24 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
     // A new asset, with its boat details, or a new boat class.
     http.post(`${directusUrl}/items/:table`, async ({ params, request }) => {
       const table = params["table"] as string;
-      const rows = inventoryTables[table];
+      const rows = writable(table);
       if (!rows) {
         // Another handler's table, such as a Financial Plan's.
         return undefined;
       }
       const body = (await request.json()) as Row;
       const row: Row = { id: crypto.randomUUID(), ...body };
+      // A new crew member's person, read back with their name, as Directus expands the relation.
+      if (table === "crew_members") {
+        const person = crewTables["people"]!.find((p) => p["id"] === body["person_id"]);
+        Object.assign(row, { website_name: null, website_bio: null, website_photo: null, person_id: person });
+      }
+      if (table === "crew_positions") {
+        row["qualifications"] = ((body["qualifications"] as Row[] | undefined) ?? []).map((q) => ({
+          id: crypto.randomUUID(),
+          ...q,
+        }));
+      }
       if (table === "assets") {
         row["boats"] = ((body["boats"] as Row[] | undefined) ?? []).map((b) => ({
           id: crypto.randomUUID(),
@@ -161,7 +190,7 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
           asset["boats"] = (asset["boats"] as Row[]).filter((b) => b["id"] !== params["id"]);
         }
       }
-      const rows = inventoryTables[table];
+      const rows = writable(table);
       if (!rows) {
         return undefined;
       }
@@ -172,6 +201,12 @@ export function handlers(directusUrl: string, session: MockSession = { me: plann
       rows.splice(at, 1);
       return new HttpResponse(null, { status: 204 });
     }),
+    // A photo, made up from its id, and a new one uploaded.
+    http.get(
+      `${directusUrl}/assets/:id`,
+      ({ params }) => new HttpResponse(photo(params["id"] as string), { headers: { "Content-Type": "image/svg+xml" } }),
+    ),
+    http.post(`${directusUrl}/files`, () => HttpResponse.json({ data: { id: crypto.randomUUID() } })),
     http.get(`${directusUrl}/frozen-plans/engine`, () => HttpResponse.json({ platform_version: engine })),
     // A draft recalculated with today's engine. Made up, they come out the same.
     http.post(`${directusUrl}/frozen-plans/drafts/:id/results`, ({ params }) => {

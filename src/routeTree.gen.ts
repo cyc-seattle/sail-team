@@ -16,6 +16,9 @@ import { Route as CatalogIndexRouteImport } from './routes/catalog/index'
 import { Route as CatalogAccountsRouteImport } from './routes/catalog/accounts'
 import { Route as CatalogOfferingsRouteImport } from './routes/catalog/offerings'
 import { Route as CatalogQualificationsRouteImport } from './routes/catalog/qualifications'
+import { Route as CrewIndexRouteImport } from './routes/crew/index'
+import { Route as CrewMemberIdRouteImport } from './routes/crew/$memberId'
+import { Route as CrewPositionsRouteImport } from './routes/crew/positions'
 import { Route as InventoryIndexRouteImport } from './routes/inventory/index'
 import { Route as InventoryClassesRouteImport } from './routes/inventory/classes'
 import { Route as InventoryStorageRouteImport } from './routes/inventory/storage'
@@ -61,6 +64,21 @@ const CatalogOfferingsRoute = CatalogOfferingsRouteImport.update({
 const CatalogQualificationsRoute = CatalogQualificationsRouteImport.update({
   id: '/catalog/qualifications',
   path: '/catalog/qualifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CrewIndexRoute = CrewIndexRouteImport.update({
+  id: '/crew/',
+  path: '/crew/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CrewMemberIdRoute = CrewMemberIdRouteImport.update({
+  id: '/crew/$memberId',
+  path: '/crew/$memberId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CrewPositionsRoute = CrewPositionsRouteImport.update({
+  id: '/crew/positions',
+  path: '/crew/positions',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InventoryIndexRoute = InventoryIndexRouteImport.update({
@@ -128,10 +146,13 @@ export interface FileRoutesByFullPath {
   '/catalog/accounts': typeof CatalogAccountsRoute
   '/catalog/offerings': typeof CatalogOfferingsRoute
   '/catalog/qualifications': typeof CatalogQualificationsRoute
+  '/crew/$memberId': typeof CrewMemberIdRoute
+  '/crew/positions': typeof CrewPositionsRoute
   '/inventory/classes': typeof InventoryClassesRoute
   '/inventory/storage': typeof InventoryStorageRoute
   '/roster/$teamId': typeof RosterTeamIdRoute
   '/catalog/': typeof CatalogIndexRoute
+  '/crew/': typeof CrewIndexRoute
   '/inventory/': typeof InventoryIndexRoute
   '/plans/': typeof PlansIndexRoute
   '/roster/': typeof RosterIndexRoute
@@ -148,10 +169,13 @@ export interface FileRoutesByTo {
   '/catalog/accounts': typeof CatalogAccountsRoute
   '/catalog/offerings': typeof CatalogOfferingsRoute
   '/catalog/qualifications': typeof CatalogQualificationsRoute
+  '/crew/$memberId': typeof CrewMemberIdRoute
+  '/crew/positions': typeof CrewPositionsRoute
   '/inventory/classes': typeof InventoryClassesRoute
   '/inventory/storage': typeof InventoryStorageRoute
   '/roster/$teamId': typeof RosterTeamIdRoute
   '/catalog': typeof CatalogIndexRoute
+  '/crew': typeof CrewIndexRoute
   '/inventory': typeof InventoryIndexRoute
   '/plans': typeof PlansIndexRoute
   '/roster': typeof RosterIndexRoute
@@ -169,10 +193,13 @@ export interface FileRoutesById {
   '/catalog/accounts': typeof CatalogAccountsRoute
   '/catalog/offerings': typeof CatalogOfferingsRoute
   '/catalog/qualifications': typeof CatalogQualificationsRoute
+  '/crew/$memberId': typeof CrewMemberIdRoute
+  '/crew/positions': typeof CrewPositionsRoute
   '/inventory/classes': typeof InventoryClassesRoute
   '/inventory/storage': typeof InventoryStorageRoute
   '/roster/$teamId': typeof RosterTeamIdRoute
   '/catalog/': typeof CatalogIndexRoute
+  '/crew/': typeof CrewIndexRoute
   '/inventory/': typeof InventoryIndexRoute
   '/plans/': typeof PlansIndexRoute
   '/roster/': typeof RosterIndexRoute
@@ -191,10 +218,13 @@ export interface FileRouteTypes {
     | '/catalog/accounts'
     | '/catalog/offerings'
     | '/catalog/qualifications'
+    | '/crew/$memberId'
+    | '/crew/positions'
     | '/inventory/classes'
     | '/inventory/storage'
     | '/roster/$teamId'
     | '/catalog/'
+    | '/crew/'
     | '/inventory/'
     | '/plans/'
     | '/roster/'
@@ -211,10 +241,13 @@ export interface FileRouteTypes {
     | '/catalog/accounts'
     | '/catalog/offerings'
     | '/catalog/qualifications'
+    | '/crew/$memberId'
+    | '/crew/positions'
     | '/inventory/classes'
     | '/inventory/storage'
     | '/roster/$teamId'
     | '/catalog'
+    | '/crew'
     | '/inventory'
     | '/plans'
     | '/roster'
@@ -231,10 +264,13 @@ export interface FileRouteTypes {
     | '/catalog/accounts'
     | '/catalog/offerings'
     | '/catalog/qualifications'
+    | '/crew/$memberId'
+    | '/crew/positions'
     | '/inventory/classes'
     | '/inventory/storage'
     | '/roster/$teamId'
     | '/catalog/'
+    | '/crew/'
     | '/inventory/'
     | '/plans/'
     | '/roster/'
@@ -252,10 +288,13 @@ export interface RootRouteChildren {
   CatalogAccountsRoute: typeof CatalogAccountsRoute
   CatalogOfferingsRoute: typeof CatalogOfferingsRoute
   CatalogQualificationsRoute: typeof CatalogQualificationsRoute
+  CrewMemberIdRoute: typeof CrewMemberIdRoute
+  CrewPositionsRoute: typeof CrewPositionsRoute
   InventoryClassesRoute: typeof InventoryClassesRoute
   InventoryStorageRoute: typeof InventoryStorageRoute
   RosterTeamIdRoute: typeof RosterTeamIdRoute
   CatalogIndexRoute: typeof CatalogIndexRoute
+  CrewIndexRoute: typeof CrewIndexRoute
   InventoryIndexRoute: typeof InventoryIndexRoute
   PlansIndexRoute: typeof PlansIndexRoute
   RosterIndexRoute: typeof RosterIndexRoute
@@ -315,6 +354,27 @@ declare module '@tanstack/react-router' {
       path: '/catalog/qualifications'
       fullPath: '/catalog/qualifications'
       preLoaderRoute: typeof CatalogQualificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/crew/': {
+      id: '/crew/'
+      path: '/crew'
+      fullPath: '/crew/'
+      preLoaderRoute: typeof CrewIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/crew/$memberId': {
+      id: '/crew/$memberId'
+      path: '/crew/$memberId'
+      fullPath: '/crew/$memberId'
+      preLoaderRoute: typeof CrewMemberIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/crew/positions': {
+      id: '/crew/positions'
+      path: '/crew/positions'
+      fullPath: '/crew/positions'
+      preLoaderRoute: typeof CrewPositionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/inventory/': {
@@ -404,10 +464,13 @@ const rootRouteChildren: RootRouteChildren = {
   CatalogAccountsRoute: CatalogAccountsRoute,
   CatalogOfferingsRoute: CatalogOfferingsRoute,
   CatalogQualificationsRoute: CatalogQualificationsRoute,
+  CrewMemberIdRoute: CrewMemberIdRoute,
+  CrewPositionsRoute: CrewPositionsRoute,
   InventoryClassesRoute: InventoryClassesRoute,
   InventoryStorageRoute: InventoryStorageRoute,
   RosterTeamIdRoute: RosterTeamIdRoute,
   CatalogIndexRoute: CatalogIndexRoute,
+  CrewIndexRoute: CrewIndexRoute,
   InventoryIndexRoute: InventoryIndexRoute,
   PlansIndexRoute: PlansIndexRoute,
   RosterIndexRoute: RosterIndexRoute,
