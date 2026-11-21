@@ -56,7 +56,7 @@ type Pending =
   | { kind: "delete" };
 
 /**
- * One crew member: the positions they hold and have held, their qualifications, what their positions need that they're
+ * One crew member: how to reach them, the positions they hold and have held, their qualifications, what their positions need that they're
  * missing, and what the website shows of them. A Crew Writer changes each of them here.
  */
 export function MemberView({
@@ -98,13 +98,6 @@ export function MemberView({
       <PageHeader
         title={name}
         back={{ to: "/crew", label: "Crew" }}
-        badge={
-          member.person.email && (
-            <a href={`mailto:${member.person.email}`} className="text-sm text-link hover:underline">
-              {member.person.email}
-            </a>
-          )
-        }
         actions={
           <RowMenu
             label={`More for ${name}`}
@@ -116,6 +109,21 @@ export function MemberView({
           />
         }
       />
+
+      <ReportSection id="contact" title="Contact information">
+        <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
+          <dt className="text-muted-foreground">Email</dt>
+          <dd>
+            {member.person.email ? (
+              <a href={`mailto:${member.person.email}`} className="text-link hover:underline">
+                {member.person.email}
+              </a>
+            ) : (
+              <span className="text-muted-foreground">Not on file</span>
+            )}
+          </dd>
+        </dl>
+      </ReportSection>
 
       <ReportSection
         id="positions"

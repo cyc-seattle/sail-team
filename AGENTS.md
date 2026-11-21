@@ -111,8 +111,8 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   `crew_qualifications`, each earned on a day and maybe expiring on one. The app never says "term", which already
   means the part of the year an offering runs in: a crew member holds a position. `/crew` lists everyone by name, with
   their current positions and what they're missing or must renew in the next 90 days (`src/model/crew.ts`), its
-  filters kept in the address; `/crew/<id>` is one crew member, with their positions, qualifications, and website
-  profile; and `/crew/positions` lists each position with who holds it today. A Crew Writer adds someone found in
+  filters kept in the address; `/crew/<id>` is one crew member, with their email, positions, qualifications, and website
+  profile, whose name the website takes from People, first name only for anyone under 18; and `/crew/positions` lists each position with who holds it today. A Crew Writer adds someone found in
   People by name or email, and changes everything here, a photo going into platform's public Website folder. A term's
   pay shows only to those who read it (`canSeePay`). Crew Readers and Writers see Crew (`canSeeCrew`, from
   `crew_qualifications`), not the CRM and Plan policies, who read only who holds which position. Until platform's

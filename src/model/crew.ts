@@ -13,21 +13,18 @@ export interface CrewPerson {
 export interface CrewMember {
   id: string;
   person: CrewPerson;
-  website_name: string | null;
   website_bio: string | null;
   /** A file in the Website folder, which anyone can see. */
   website_photo: string | null;
   on_website: boolean;
 }
 
-export type WebsiteProfile = Pick<CrewMember, "website_name" | "website_bio" | "website_photo" | "on_website">;
+export type WebsiteProfile = Pick<CrewMember, "website_bio" | "website_photo" | "on_website">;
 
 /** A job, such as Treasurer or Parent Coordinator. */
 export interface CrewPosition {
   id: string;
   name: string;
-  /** What the website and lists call someone in it. Blank uses the name. */
-  title: string | null;
   description: string | null;
   /** The qualifications someone in it needs. */
   qualification_ids: string[];

@@ -50,7 +50,6 @@ const person = (first: string) => people.find((p) => p["first_name"] === first)!
 const member = (n: number, first: string, profile: Row = {}): Row => ({
   id: id(9720 + n),
   person_id: person(first),
-  website_name: null,
   website_bio: null,
   website_photo: null,
   on_website: false,
@@ -59,50 +58,41 @@ const member = (n: number, first: string, profile: Row = {}): Row => ({
 
 const members: Row[] = [
   member(0, "Alex", {
-    website_name: "Alex Rivera",
     website_bio: "Alex has run CSC's sailing programs since 2019, after a decade coaching high school teams.",
     website_photo: id(9790),
     on_website: true,
   }),
-  member(1, "Sam", { website_name: "Sam Chen", on_website: true }),
+  member(1, "Sam", { on_website: true }),
   member(2, "Priya", {
-    website_name: "Priya Patel",
     website_bio: "Priya has coached the race team since 2023.",
     website_photo: id(9791),
     on_website: true,
   }),
-  member(3, "Jordan", { website_name: "Jordan" }),
+  member(3, "Jordan"),
   member(4, "Casey"),
-  member(5, "Morgan", { website_name: "Morgan Park" }),
-  member(6, "Taylor", { website_name: "Taylor Brooks", on_website: true }),
-  member(7, "Riley", { website_name: "Riley", on_website: true }),
-  member(8, "Pat", { website_name: "Pat Doe", on_website: true }),
+  member(5, "Morgan"),
+  member(6, "Taylor", { on_website: true }),
+  member(7, "Riley", { on_website: true }),
+  member(8, "Pat", { on_website: true }),
 ];
 const memberId = (first: string) => members.find((m) => (m["person_id"] as Row)["first_name"] === first)!["id"];
 
-const position = (
-  n: number,
-  name: string,
-  title: string | null,
-  needs: unknown[],
-  description: string | null = null,
-) => ({
+const position = (n: number, name: string, needs: unknown[], description: string | null = null) => ({
   id: id(9740 + n),
   name,
-  title,
   description,
   qualifications: needs.map((q, i) => ({ id: id(9760 + n * 5 + i), qualification_id: q })),
 });
 
 const positions: Row[] = [
-  position(0, "Sailing Director", null, [firstAid, safeSport], "Runs every program. Hired by the CSC Board."),
-  position(1, "Treasurer", null, [], "Keeps the books and the budget. Elected by the CSC Board, even years."),
-  position(2, "Director 1A", "Director", [], "A seat on the CSC Board. Elected by members, odd years."),
-  position(3, "Director 2A", "Director", []),
-  position(4, "Head Coach", null, [firstAid, safeSport, level2]),
-  position(5, "Sailing Instructor", null, [firstAid, safeSport, level1]),
-  position(6, "Parent Coordinator", null, [safeSport], "Helps a team's coach with families, travel, and food."),
-  position(7, "Area Director", "Director", [firstAid], "Runs one program area, such as Summer."),
+  position(0, "Sailing Director", [firstAid, safeSport], "Runs every program. Hired by the CSC Board."),
+  position(1, "Treasurer", [], "Keeps the books and the budget. Elected by the CSC Board, even years."),
+  position(2, "Director 1A", [], "A seat on the CSC Board. Elected by members, odd years."),
+  position(3, "Director 2A", []),
+  position(4, "Head Coach", [firstAid, safeSport, level2]),
+  position(5, "Sailing Instructor", [firstAid, safeSport, level1]),
+  position(6, "Parent Coordinator", [safeSport], "Helps a team's coach with families, travel, and food."),
+  position(7, "Area Director", [firstAid], "Runs one program area, such as Summer."),
 ];
 const positionId = (name: string) => positions.find((p) => p["name"] === name)!["id"];
 

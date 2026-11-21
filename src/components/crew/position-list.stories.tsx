@@ -72,7 +72,6 @@ export const AddAPosition: Story = {
     await waitFor(() =>
       expect(args.actions.onCreate).toHaveBeenCalledWith({
         name: "Dockmaster",
-        title: null,
         description: null,
         qualification_ids: [crew.qualifications.find((q) => q.name === "Powerboat Safety")!.id],
       }),

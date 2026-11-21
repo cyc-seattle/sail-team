@@ -31,7 +31,10 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Their positions, current first, then ended ones; their qualifications, with one expiring soon; and their profile. */
+/**
+ * Their email; their positions, current first, then ended ones; their qualifications, with one expiring soon; and their
+ * profile, whose name comes from People.
+ */
 export const Writer: Story = {
   play: async ({ canvas }) => {
     const positions = within(canvas.getByRole("table", { name: "Positions" }));
@@ -43,7 +46,11 @@ export const Writer: Story = {
     ).toEqual(["Parent Coordinator", "Head Coach", "Sailing Instructor"]);
     await expect(positions.getByRole("row", { name: /Head Coach/ })).toHaveTextContent("Head Coach");
     await expect(canvas.getByRole("row", { name: /First Aid and CPR/ })).toHaveTextContent(/in \d+ days/);
-    await expect(canvas.getByRole("textbox", { name: "Name on the website" })).toHaveValue("Priya Patel");
+    await expect(canvas.getByRole("link", { name: "priya.patel@example.org" })).toHaveAttribute(
+      "href",
+      "mailto:priya.patel@example.org",
+    );
+    await expect(canvas.queryByRole("textbox", { name: "Name on the website" })).not.toBeInTheDocument();
     await expect(canvas.queryByRole("button", { name: "More for Priya Patel" })).not.toBeInTheDocument();
   },
 };

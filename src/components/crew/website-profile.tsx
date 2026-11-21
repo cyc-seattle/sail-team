@@ -5,7 +5,6 @@ import { FormField } from "@/components/form-field";
 import { LabeledSwitch } from "@/components/labeled-switch";
 import { ReportSection } from "@/components/plans/reports/report-page";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { WebsiteProfile as Profile } from "@/model/crew";
 import { SaveFailed } from "./row-menu";
@@ -18,7 +17,8 @@ export interface ProfileActions {
 }
 
 /**
- * What the public website shows of a crew member: whether it shows them at all, their name, bio, and photo. A Crew
+ * What the public website shows of a crew member: whether it shows them at all, their bio, and their photo. Their
+ * name comes from People, first name only for anyone under 18. A Crew
  * Writer changes it here, with Save and Discard; anyone else reads it.
  */
 export function WebsiteProfile({
@@ -37,7 +37,6 @@ export function WebsiteProfile({
   const [uploading, setUploading] = useState(false);
   const file = useRef<HTMLInputElement>(null);
   const dirty =
-    (draft.website_name ?? "") !== (profile.website_name ?? "") ||
     (draft.website_bio ?? "") !== (profile.website_bio ?? "") ||
     draft.website_photo !== profile.website_photo ||
     draft.on_website !== profile.on_website;
@@ -48,7 +47,6 @@ export function WebsiteProfile({
   });
   const set = (changes: Partial<Profile>) => setDraft({ ...draft, ...changes });
   const readOnly = !actions;
-  const noName = draft.on_website && !draft.website_name?.trim();
 
   return (
     <ReportSection id="website" title="Website">
@@ -60,7 +58,6 @@ export function WebsiteProfile({
             () =>
               actions!.onSave({
                 ...draft,
-                website_name: draft.website_name?.trim() || null,
                 website_bio: draft.website_bio?.trim() || null,
               }),
             setState,
@@ -128,27 +125,6 @@ export function WebsiteProfile({
               )}
             </div>
             <div className="grid content-start gap-4">
-              <FormField
-                label="Name on the website"
-                hint={
-                  noName ? (
-                    <p role="alert" className="text-sm text-destructive">
-                      Add a name to show them on the website.
-                    </p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">For anyone under 18, first name only.</p>
-                  )
-                }
-              >
-                {(id) => (
-                  <Input
-                    id={id}
-                    value={draft.website_name ?? ""}
-                    onChange={(e) => set({ website_name: e.target.value })}
-                    aria-invalid={noName || undefined}
-                  />
-                )}
-              </FormField>
               <FormField label="Bio">
                 {(id) => (
                   <Textarea

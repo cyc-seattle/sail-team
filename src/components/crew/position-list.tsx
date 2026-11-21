@@ -35,7 +35,7 @@ export interface PositionActions {
 type Pending = { kind: "add" } | { kind: "edit" | "delete"; position: CrewPosition };
 
 /**
- * Every position, by name: what someone in it is called, the qualifications it needs, and who holds it today, with the
+ * Every position, by name: the qualifications it needs, and who holds it today, with the
  * program or program area they hold it in. A Crew Writer adds and changes positions, and deletes one no one has held.
  */
 export function PositionList({
@@ -67,7 +67,6 @@ export function PositionList({
           <TableHeader>
             <TableRow>
               <TableHead>Position</TableHead>
-              <TableHead>Website title</TableHead>
               <TableHead>Qualifications</TableHead>
               <TableHead>Held by</TableHead>
               <TableHead>
@@ -88,7 +87,6 @@ export function PositionList({
                     </div>
                   )}
                 </TableCell>
-                <TableCell className="align-top">{r.position.title}</TableCell>
                 <TableCell className="align-top">{r.needs.join(", ")}</TableCell>
                 <TableCell className="align-top">
                   {r.holders.length === 0 ? (

@@ -29,7 +29,6 @@ const catalog: CatalogQualification[] = [
 const position = (id: string, needs: string[] = []): CrewPosition => ({
   id,
   name: id,
-  title: null,
   description: null,
   qualification_ids: needs,
   links: [],
@@ -64,7 +63,6 @@ const held = (
 const member = (id: string, first: string): CrewMember => ({
   id,
   person: { id: `p-${id}`, first_name: first, last_name: "Example", email: `${first.toLowerCase()}@example.org` },
-  website_name: null,
   website_bio: null,
   website_photo: null,
   on_website: false,

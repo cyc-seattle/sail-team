@@ -24,14 +24,7 @@ export const WEBSITE_FOLDER = "1dac44d4-d8ae-4ad1-9e11-f6b4da138a19";
 
 const personFields = ["id", "first_name", "last_name", "email"];
 
-const memberFields = [
-  "id",
-  "website_name",
-  "website_bio",
-  "website_photo",
-  "on_website",
-  ...personFields.map((f) => `person_id.${f}`),
-];
+const memberFields = ["id", "website_bio", "website_photo", "on_website", ...personFields.map((f) => `person_id.${f}`)];
 
 const termFields = [
   "id",
@@ -78,7 +71,6 @@ export const crewQuery = (permissions: Permissions | undefined) =>
           readAll<PositionRow>("crew_positions", undefined, [
             "id",
             "name",
-            "title",
             "description",
             "qualifications.id",
             "qualifications.qualification_id",

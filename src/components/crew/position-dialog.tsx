@@ -11,8 +11,8 @@ import { SaveFailed } from "./row-menu";
 import { runSave, type SaveState } from "./save";
 
 /**
- * A dialog that adds a position, or changes one: its name, what the website calls someone in it, what it does and how
- * it's filled, and the qualifications it needs.
+ * A dialog that adds a position, or changes one: its name, what it does and how it's filled, and the qualifications
+ * it needs.
  */
 export function PositionDialog({
   open,
@@ -56,7 +56,6 @@ function PositionForm({
   onDone: () => void;
 }) {
   const [name, setName] = useState(position?.name ?? "");
-  const [title, setTitle] = useState(position?.title ?? "");
   const [description, setDescription] = useState(position?.description ?? "");
   const [needs, setNeeds] = useState(position?.qualification_ids ?? []);
   const [state, setState] = useState<SaveState>({ kind: "idle" });
@@ -70,7 +69,6 @@ function PositionForm({
           () =>
             onSave({
               name: name.trim(),
-              title: title.trim() || null,
               description: description.trim() || null,
               // In the catalog's order, so the list reads the same each time.
               qualification_ids: qualifications.filter((q) => needs.includes(q.id)).map((q) => q.id),
@@ -83,22 +81,17 @@ function PositionForm({
       <DialogHeader>
         <DialogTitle>{position ? "Edit position" : "Add position"}</DialogTitle>
       </DialogHeader>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label="Name">
-          {(id) => (
-            <Input
-              id={id}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Such as Treasurer"
-              required
-            />
-          )}
-        </FormField>
-        <FormField label="Title on the website">
-          {(id) => <Input id={id} value={title} onChange={(e) => setTitle(e.target.value)} />}
-        </FormField>
-      </div>
+      <FormField label="Name">
+        {(id) => (
+          <Input
+            id={id}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Such as Treasurer"
+            required
+          />
+        )}
+      </FormField>
       <FormField label="Description">
         {(id) => <Textarea id={id} rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />}
       </FormField>
