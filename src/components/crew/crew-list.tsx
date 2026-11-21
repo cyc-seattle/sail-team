@@ -1,3 +1,4 @@
+import { BooleanCheck } from "@/components/boolean-check";
 import { Link } from "@tanstack/react-router";
 import { CheckIcon, PlusIcon, SearchIcon } from "lucide-react";
 import { useState } from "react";
@@ -195,7 +196,9 @@ export function CrewList({
                     qualificationName={qualificationName}
                   />
                 </TableCell>
-                <TableCell>{r.member.on_website ? "On" : "Off"}</TableCell>
+                <TableCell>
+                  <BooleanCheck checked={r.member.on_website} label="On the website" />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -241,7 +244,10 @@ function MemberCard({ row, qualificationName }: { row: CrewRow; qualificationNam
         >
           {row.name}
         </Link>
-        {row.member.on_website && <span className="text-muted-foreground">On the website</span>}
+        <span className="flex items-center gap-2 text-muted-foreground">
+          <BooleanCheck checked={row.member.on_website} label="On the website" />
+          <span aria-hidden>Website</span>
+        </span>
       </div>
       <Positions row={row} />
       <QualificationStatus

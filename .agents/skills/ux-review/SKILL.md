@@ -49,7 +49,8 @@ each against its page of the guide:
    A control shown to someone whose permissions don't allow it.
 5. **Layout, color, and type.** The Layout and Color and type pages: actions on the right, default sorts, account
    numbers in their own left column, headers that wrap, mixed units, things hidden behind toggles, raw colors, sizes
-   off the scale.
+   off the scale. A boolean shown as text (Yes, No, On, Off, True, False, or a blank for no) instead of a read-only
+   `BooleanCheck` (`src/components/boolean-check.tsx`): search the change for `? "Yes"`, `"On"`, and the like.
 6. **Screenshots.** For a PR, its description shows laptop and phone, before and after for an existing page, and light
    and dark when colors change (AGENTS.md).
 

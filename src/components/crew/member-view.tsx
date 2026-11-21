@@ -1,3 +1,4 @@
+import { BooleanCheck } from "@/components/boolean-check";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { NoteInfo } from "@/components/plans/note-info";
@@ -184,7 +185,9 @@ export function MemberView({
                         <TableCell className="text-right">
                           {t.hourly_rate_cents != null && <Money cents={t.hourly_rate_cents} />}
                         </TableCell>
-                        <TableCell>{t.profit_share ? "Yes" : ""}</TableCell>
+                        <TableCell>
+                          <BooleanCheck checked={t.profit_share ?? false} label="Profit share" />
+                        </TableCell>
                       </>
                     )}
                     <TableCell className="text-right">
