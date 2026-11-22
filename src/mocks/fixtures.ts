@@ -76,7 +76,7 @@ export const plannerPermissions: Permissions = {
   products: read("full"),
   programs: read("full"),
   google_groups: read("full"),
-  catalog_offerings: read("full"),
+  offerings: read("full"),
   organization_cost_accounts: read("full"),
   qualifications: read("full"),
   qualification_covers: read("full"),

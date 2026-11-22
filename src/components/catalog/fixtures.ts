@@ -14,7 +14,7 @@ export const catalog: Catalog = {
       google_group: google_group_id as { name: string; email: string } | null,
     })),
   })),
-  offerings: catalogTables["catalog_offerings"] as unknown as Catalog["offerings"],
+  offerings: catalogTables["offerings"] as unknown as Catalog["offerings"],
   accounts: catalogTables["accounts"] as unknown as Catalog["accounts"],
   costAccounts: tables["organization_cost_accounts"] as unknown as Catalog["costAccounts"],
   qualifications: catalogTables["qualifications"]!.map((q) => ({

@@ -48,7 +48,16 @@ export const catalogQuery = (permissions: Permissions | undefined) =>
             ? ["programs.google_group_id.name", "programs.google_group_id.email"]
             : []),
         ]),
-        readIf<CatalogOffering>(permissions, "catalog_offerings", ["id", "name", "program_id"]),
+        readIf<CatalogOffering>(permissions, "offerings", [
+          "id",
+          "name",
+          "program_id",
+          "starts_on",
+          "ends_on",
+          "price_cents",
+          "capacity",
+          "archived_at",
+        ]),
         readIf<CatalogAccount>(permissions, "accounts", [
           "id",
           "number",
