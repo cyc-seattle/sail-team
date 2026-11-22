@@ -4,7 +4,7 @@ import { offeringsByProgram, type CatalogOffering, type CatalogProduct } from "@
 import { formatDays } from "@/model/dates";
 import { formatCents } from "@/model/money";
 
-/** What CSC sells that hasn't ended, under its program, with its dates, price, and how many sailors it takes. */
+/** What CSC sells that hasn't ended, under its program, with its dates, price and capacity. */
 export function OfferingsList({
   offerings,
   products,
@@ -26,7 +26,7 @@ export function OfferingsList({
               <TableHead>Offering</TableHead>
               <TableHead>Dates</TableHead>
               <TableHead className="text-right">Price</TableHead>
-              <TableHead className="text-right">Sailors</TableHead>
+              <TableHead className="text-right">Capacity</TableHead>
             </TableRow>
           </TableHeader>
           {groups.map(({ program, offerings }) => (
