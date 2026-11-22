@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent } from "storybook/test";
+import { BooleanCheck } from "@/components/boolean-check";
 import { AccountTable } from "./account-table";
 import { Money } from "./money";
 
@@ -10,7 +11,7 @@ const meta = {
   args: {
     label: "Fixed costs and G&A",
     nameHead: "Cost",
-    columns: [{ head: "Amount" }, { head: "Left out of MTDC", text: true }],
+    columns: [{ head: "Amount" }, { head: "MTDC", text: true }],
     groups: [
       {
         title: "G&A",
@@ -20,19 +21,26 @@ const meta = {
             number: "6110",
             name: "Insurance",
             note: "Renews in March.",
-            values: [...amount(900_000), "—"],
+            values: [...amount(900_000), <BooleanCheck key="mtdc" checked label="In MTDC" />],
           },
           {
             key: "rent",
             number: "6310",
             name: "Clubhouse fee",
-            values: [...amount(1_200_000), "Yes"],
+            values: [...amount(1_200_000), <BooleanCheck key="mtdc" checked={false} label="In MTDC" />],
           },
         ],
       },
       {
         title: "Space",
-        rows: [{ key: "floats", number: "6320", name: "Dinghy floats", values: [...amount(800_000), "—"] }],
+        rows: [
+          {
+            key: "floats",
+            number: "6320",
+            name: "Dinghy floats",
+            values: [...amount(800_000), <BooleanCheck key="mtdc" checked label="In MTDC" />],
+          },
+        ],
         footers: [{ name: "Total", values: [...amount(2_900_000), null] }],
       },
     ],

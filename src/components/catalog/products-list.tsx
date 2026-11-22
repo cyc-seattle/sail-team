@@ -1,3 +1,4 @@
+import { BooleanCheck } from "@/components/boolean-check";
 import { programColor } from "@cyc-seattle/platform/planning";
 import { AccountCells, AccountHeads } from "@/components/account-cells";
 import { ReportSection } from "@/components/plans/reports/report-page";
@@ -69,7 +70,7 @@ export function ProductsList({
                       </span>
                     </TableCell>
                     <TableCell>{kindLabels[product.kind]}</TableCell>
-                    <TableCell>{program?.team ? "Yes" : ""}</TableCell>
+                    <TableCell>{program && <BooleanCheck checked={program.team} label="Roster" />}</TableCell>
                     <TableCell className="whitespace-nowrap">
                       {program?.google_group && (
                         <a href={groupUrl(program.google_group.email)} className="text-link underline">

@@ -80,6 +80,39 @@ export const plannerPermissions: Permissions = {
   organization_cost_accounts: read("full"),
   qualifications: read("full"),
   qualification_covers: read("full"),
+  // A Crew Writer too, so `mise run dev` shows Crew.
+  crew_members: write(),
+  crew_positions: write(),
+  crew_terms: write(),
+  crew_qualifications: write(),
+  crew_position_qualifications: write(),
+  staff_levels: read("partial", ["id", "name", "archived_at"]),
+};
+
+const crewRead = (fields = ["*"]) => read("full", fields);
+
+/** A Crew Reader, who sees Crew but changes none of it, and never a term's pay. */
+export const crewReaderPermissions: Permissions = {
+  crew_members: crewRead(),
+  crew_positions: crewRead(),
+  crew_terms: crewRead([
+    "id",
+    "crew_member_id",
+    "position_id",
+    "program_id",
+    "program_area_id",
+    "starts_on",
+    "ends_on",
+    "note",
+  ]),
+  crew_qualifications: crewRead(),
+  crew_position_qualifications: crewRead(),
+  people: read("full", ["id", "first_name", "last_name", "email"]),
+  programs: read("full", ["id", "name"]),
+  program_areas: read("full", ["id", "name"]),
+  qualifications: read("full"),
+  qualification_covers: read("full"),
+  staff_levels: read("full", ["id", "name", "archived_at"]),
 };
 
 /** A Catalog Reader, who reads the inventory but changes none of it, and reads no plans. */

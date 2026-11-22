@@ -98,7 +98,7 @@ const staffRoles = [
   { id: id(91), name: "Instructor", sort: 1 },
   { id: id(92), name: "Coach", sort: 2 },
 ];
-const staffLevels = (
+export const staffLevels = (
   [
     [94, "Junior Instructor", 0, "junior"],
     [95, "Instructor", 0, "standard"],

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parentPermissions, plannerPermissions } from "../src/mocks/fixtures.ts";
+import { crewReaderPermissions, parentPermissions, plannerPermissions } from "../src/mocks/fixtures.ts";
 import { navFor, pagesFor, toolsFor } from "../src/model/nav.ts";
 
 const directus = "https://directus.example.org";
@@ -8,14 +8,22 @@ const studio = { href: directus, label: "Directus" };
 const impersonate = { href: "https://login.example.org/if/admin/#/identity/users", label: "Sign in as someone" };
 
 describe("navFor", () => {
-  it("shows Planning to someone who can read plans, Inventory to someone who can read assets, Rosters to a household on a team, Household to a household, and Catalog to someone who can read accounts", () => {
+  it("shows Planning to someone who can read plans, Inventory to someone who can read assets, Rosters to a household on a team, Crew to a Crew Reader or Writer, Household to a household, and Catalog to someone who can read accounts", () => {
     expect(navFor(plannerPermissions)).toEqual([
       { to: "/plans", label: "Planning" },
       { to: "/inventory", label: "Inventory" },
       { to: "/roster", label: "Rosters" },
+      { to: "/crew", label: "Crew" },
       { to: "/household", label: "Household" },
       { to: "/catalog", label: "Catalog" },
     ]);
+  });
+
+  it("shows Crew to a Crew Reader, but not to someone who reads only who holds which position", () => {
+    expect(navFor(crewReaderPermissions)).toContainEqual({ to: "/crew", label: "Crew" });
+    const crmReader = { ...crewReaderPermissions };
+    delete crmReader["crew_qualifications"];
+    expect(navFor(crmReader)).not.toContainEqual({ to: "/crew", label: "Crew" });
   });
 
   it("hides Rosters from a household on no team", () => {

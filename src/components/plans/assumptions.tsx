@@ -1,5 +1,5 @@
+import { BooleanCheck } from "@/components/boolean-check";
 import type { ReactNode } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -28,10 +28,8 @@ const none = <span className="text-muted-foreground">—</span>;
 const money = (cents: number | null, whole = false) => (cents === null ? none : formatCents(cents, whole));
 const share = (value: number | null | undefined) => (value === null || value === undefined ? none : formatShare(value));
 const count = (value: number | null) => (value === null ? none : value.toLocaleString("en-US"));
-/** Whether a cost counts toward MTDC, as a checkbox to read, not change. */
-const inMtdc = (counts: boolean) => (
-  <Checkbox checked={counts} readOnly aria-label={counts ? "In MTDC" : "Not in MTDC"} />
-);
+/** Whether a cost counts toward MTDC. */
+const inMtdc = (counts: boolean) => <BooleanCheck checked={counts} label="In MTDC" />;
 const mtdc = "MTDC";
 
 /** Accounts in the order of the chart of accounts, then by name. */
