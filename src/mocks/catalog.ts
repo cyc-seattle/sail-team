@@ -1,5 +1,6 @@
 // Made-up catalog details, for local work and tests. Never real club data.
 import { tables } from "./plans";
+import { rosterTables } from "./roster";
 
 type Row = Record<string, unknown>;
 
@@ -77,10 +78,23 @@ const products: Row[] = tables["products"]!.map((p) => {
 
 const programId = (name: string) => `program-${tables["products"]!.find((p) => p["name"] === name)!["id"] as string}`;
 
-const offering = (n: number, program: string, name: string) => ({
+const offering = (
+  n: number,
+  program: string,
+  name: string,
+  [starts_on, ends_on]: [string, string],
+  price_cents: number | null,
+  capacity: number | null,
+  archived_at: string | null = null,
+) => ({
   id: id(9300 + n),
   program_id: programId(program),
   name,
+  starts_on,
+  ends_on,
+  price_cents,
+  capacity,
+  archived_at,
 });
 
 const qualifications = [
@@ -94,13 +108,17 @@ const qualifications = [
 export const catalogTables: Record<string, Row[]> = {
   accounts,
   products,
-  catalog_offerings: [
-    offering(1, "Guppies", "week 1"),
-    offering(2, "Guppies", "week 2"),
-    offering(3, "Guppies", "week 10"),
-    offering(4, "J-Pod", "fall practices"),
-    offering(5, "J-Pod", "spring practices"),
-    offering(6, "Opti Camp", "week 1"),
+  // With the roster's, since Directus keeps them in one table.
+  offerings: [
+    offering(1, "Guppies", "Week 1", ["2027-06-21", "2027-06-25"], 67500, 12),
+    offering(2, "Guppies", "Week 2", ["2027-06-28", "2027-07-02"], 67500, 12),
+    offering(3, "Guppies", "Week 10", ["2027-08-23", "2027-08-27"], 67500, 12),
+    offering(4, "J-Pod", "Fall", ["2027-09-07", "2027-11-07"], 61000, 15),
+    offering(5, "J-Pod", "Spring", ["2027-03-01", "2027-05-23"], 85000, 15),
+    offering(6, "Opti Camp", "Week 1", ["2027-06-21", "2027-06-25"], 65050, null),
+    offering(7, "Guppies", "Week 1", ["2026-06-22", "2026-06-26"], null, 12),
+    offering(8, "Opti Camp", "Week 2", ["2027-06-28", "2027-07-02"], 65000, 10, "2026-11-01T00:00:00Z"),
+    ...rosterTables["offerings"]!,
   ],
   qualifications,
   // Level 2 also meets a Level 1 requirement.

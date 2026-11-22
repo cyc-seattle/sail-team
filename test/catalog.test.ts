@@ -39,17 +39,50 @@ describe("productsByArea", () => {
 });
 
 describe("offeringsByProgram", () => {
-  it("puts offerings under their program, with numbers in order", () => {
+  const offering = (
+    id: string,
+    name: string,
+    starts_on: string,
+    ends_on: string,
+    archived_at: string | null = null,
+  ) => ({
+    id,
+    name,
+    program_id: "p-g",
+    starts_on,
+    ends_on,
+    price_cents: 67500,
+    capacity: 12,
+    archived_at,
+  });
+
+  it("puts offerings under their program, by the day they start, then by name with numbers in order", () => {
     const groups = offeringsByProgram(
       [
-        { id: "1", name: "week 10", program_id: "p-g" },
-        { id: "2", name: "week 2", program_id: "p-g" },
+        offering("1", "Week 10", "2027-08-23", "2027-08-27"),
+        offering("2", "Week 2", "2027-06-28", "2027-07-02"),
+        offering("3", "Week 1b", "2027-06-21", "2027-06-25"),
+        offering("4", "Week 1a", "2027-06-21", "2027-06-25"),
       ],
       [product("g", "Guppies", "summer"), product("j", "J-Pod", "dh")],
+      "2026-11-21",
     );
     expect(groups.map((g) => [g.program.name, g.offerings.map((o) => o.name)])).toEqual([
-      ["Guppies", ["week 2", "week 10"]],
+      ["Guppies", ["Week 1a", "Week 1b", "Week 2", "Week 10"]],
     ]);
+  });
+
+  it("leaves out an offering that has ended, or is archived", () => {
+    const groups = offeringsByProgram(
+      [
+        offering("1", "Last summer", "2026-06-22", "2026-06-26"),
+        offering("2", "Cancelled", "2027-06-21", "2027-06-25", "2026-11-01T00:00:00Z"),
+        offering("3", "Ends today", "2026-11-01", "2026-11-21"),
+      ],
+      [product("g", "Guppies", "summer")],
+      "2026-11-21",
+    );
+    expect(groups.flatMap((g) => g.offerings.map((o) => o.name))).toEqual(["Ends today"]);
   });
 });
 

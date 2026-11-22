@@ -40,11 +40,16 @@ export interface CatalogArea {
   revenue_account_id: string | null;
 }
 
-/** An offering of a program that plans and Clubspot both point to, such as "J-Pod · fall practices". */
+/** What CSC sells: one program for one dated period, such as Guppies week 3 of summer 2027. */
 export interface CatalogOffering {
   id: string;
-  name: string;
+  name: string | null;
   program_id: string;
+  starts_on: string | null;
+  ends_on: string | null;
+  price_cents: number | null;
+  capacity: number | null;
+  archived_at: string | null;
 }
 
 export interface Qualification {
@@ -124,16 +129,25 @@ export function productsByArea(areas: CatalogArea[], products: CatalogProduct[])
   return groups.filter((g) => g.products.length > 0);
 }
 
-/** Offerings under their program, programs by name, each program's offerings by name with numbers in order. */
+/**
+ * Offerings that haven't ended by `today` and aren't archived, under their program: programs by name, each program's
+ * offerings by the day they start, then by name with numbers in order.
+ */
 export function offeringsByProgram(
   offerings: CatalogOffering[],
   products: CatalogProduct[],
+  today: string,
 ): { program: CatalogProgram; offerings: CatalogOffering[] }[] {
+  const current = offerings.filter((o) => o.archived_at === null && (o.ends_on === null || o.ends_on >= today));
   const programs = products.flatMap((p) => p.programs).sort((a, b) => byName.compare(a.name, b.name));
   return programs
     .map((program) => ({
       program,
-      offerings: offerings.filter((o) => o.program_id === program.id).sort((a, b) => byName.compare(a.name, b.name)),
+      offerings: current
+        .filter((o) => o.program_id === program.id)
+        .sort(
+          (a, b) => (a.starts_on ?? "").localeCompare(b.starts_on ?? "") || byName.compare(a.name ?? "", b.name ?? ""),
+        ),
     }))
     .filter((g) => g.offerings.length > 0);
 }
