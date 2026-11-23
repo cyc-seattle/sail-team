@@ -120,6 +120,8 @@ export interface ReportOffering {
   /** Its program's id and the color the catalog gives it, for the program's color on the Calendar. */
   program_id?: string | null;
   program_color?: string | null;
+  /** Its program's place in lists, from the catalog. Programs with none come after, by name. */
+  program_sort?: number | null;
   starts_on: string;
   ends_on: string;
   /** What one sailor pays for the whole offering. */
@@ -158,6 +160,12 @@ const byStart = <T extends ReportOffering>(offerings: T[]): T[] =>
       a.key.localeCompare(b.key),
   );
 
+/** The programs `offerings` are in, by the catalog's sort order, then A to Z for programs with none. */
+function programsOf(offerings: ReportOffering[]): string[] {
+  const sortOf = new Map(offerings.map((o) => [o.program, o.program_sort ?? Number.POSITIVE_INFINITY]));
+  return [...sortOf.keys()].sort((a, b) => sortOf.get(a)! - sortOf.get(b)! || a.localeCompare(b));
+}
+
 const shortDay = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 const formatShort = (date: string) => shortDay.format(new Date(`${date}T00:00:00Z`));
 
@@ -176,13 +184,12 @@ function ownPart(o: ReportOffering): string | null {
 /**
  * Offerings grouped by program, each program's by start date and named the way that tells them apart: by session, as the
  * Overview names them ("J-Pod Spring"), or where a program has several in one session, by what their own names add
- * ("Adult Learn to Sail Weekday Jul", "Guppies week of Jul 13"), or else by the day they start. Programs come in the order
- * their first offering starts.
+ * ("Adult Learn to Sail Weekday Jul", "Guppies week of Jul 13"), or else by the day they start. Programs come in the
+ * catalog's sort order, then A to Z.
  */
 export function numberedOfferings(offerings: ReportOffering[]): { program: string; offerings: NumberedOffering[] }[] {
   const sorted = byStart(offerings);
-  const programs = [...new Set(sorted.map((o) => o.program))];
-  return programs.map((program) => {
+  return programsOf(sorted).map((program) => {
     const own = sorted.filter((o) => o.program === program);
     const unique = (name: (o: ReportOffering) => string | null) => {
       const names = own.map(name);
@@ -206,8 +213,8 @@ export interface TermGroup {
 }
 
 /**
- * Offerings by term, in the order the terms start, with the offerings in no term last, then by program, in the order
- * each starts in the term, then by start date. Each keeps its name with its program, such as Guppies Week 3.
+ * Offerings by term, in the order the terms start, with the offerings in no term last, then by program, in the
+ * catalog's order, then by start date. Each keeps its name with its program, such as Guppies Week 3.
  */
 export function byTermAndProgram(offerings: ReportOffering[]): TermGroup[] {
   const sorted = byStart(numberedOfferings(offerings).flatMap((g) => g.offerings));
@@ -216,7 +223,7 @@ export function byTermAndProgram(offerings: ReportOffering[]): TermGroup[] {
     const own = sorted.filter((o) => (o.term ?? null) === term);
     return {
       term,
-      programs: [...new Set(own.map((o) => o.program))].map((program) => ({
+      programs: programsOf(own).map((program) => ({
         program,
         offerings: own.filter((o) => o.program === program),
       })),
@@ -261,11 +268,10 @@ export function chargedToArea(offerings: ReportOffering[], area: InAndOut | null
   return rest.revenue_cents === 0 && rest.expense_cents === 0 ? null : rest;
 }
 
-/** Offerings by program, A to Z, each program's in the order they start. */
+/** Offerings by program, in the catalog's order, each program's in the order they start. */
 function groupsOf(offerings: ReportOffering[]): { name: string; offerings: ReportOffering[] }[] {
   const sorted = byStart(offerings);
-  const names = [...new Set(sorted.map((o) => o.program))].sort((a, b) => a.localeCompare(b));
-  return names.map((name) => ({ name, offerings: sorted.filter((o) => o.program === name) }));
+  return programsOf(sorted).map((name) => ({ name, offerings: sorted.filter((o) => o.program === name) }));
 }
 
 /** What a sailor pays in a program, on average: for an offering, for a day, and for an hour on the water. */
@@ -713,6 +719,7 @@ export function reportOffering(
     program: string;
     program_id?: string | null;
     program_color?: string | null;
+    program_sort?: number | null;
     estimated: number;
   },
   activities: Pick<PlanActivity, "date" | "kind" | "uses_boats" | "start_time" | "end_time" | "on_water_minutes">[],
@@ -726,6 +733,7 @@ export function reportOffering(
     name: offering.name,
     program_id: offering.program_id ?? null,
     program_color: offering.program_color ?? null,
+    program_sort: offering.program_sort ?? null,
     starts_on: offering.starts_on,
     ends_on: offering.ends_on,
     fee_cents: offering.price_cents ?? 0,
