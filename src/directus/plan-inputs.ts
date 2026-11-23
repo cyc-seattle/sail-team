@@ -308,7 +308,11 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         rowsOf<
           PlanOffering & {
             term_key?: string | null;
-            product_id: { id: string; name: string; programs: { id: string; color: string | null }[] };
+            product_id: {
+              id: string;
+              name: string;
+              programs: { id: string; color: string | null; sort: number | null }[];
+            };
           }
         >("plan_offerings", planIds, [
           "*",
@@ -316,6 +320,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
           "product_id.name",
           "product_id.programs.id",
           "product_id.programs.color",
+          "product_id.programs.sort",
         ]),
         rowsOf<PlanActivity>("plan_activities", planIds, [
           "id",
@@ -471,6 +476,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
                   program: o.product_id.name,
                   program_id: o.product_id.programs[0]?.id ?? null,
                   program_color: o.product_id.programs[0]?.color ?? null,
+                  program_sort: o.product_id.programs[0]?.sort ?? null,
                   estimated: plannedEnrollment(o) ?? 0,
                 },
                 activities.filter((a) => a.offering_id === o.id),

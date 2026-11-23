@@ -79,7 +79,7 @@ const offering = (program: string, session: string, starts_on: string): ReportOf
 });
 
 describe("numberedOfferings", () => {
-  it("names each program's offerings by session, by start date, programs in the order they start", () => {
+  it("names each program's offerings by session, by start date, programs A to Z", () => {
     const groups = numberedOfferings([
       offering("K-Pod", "Fall", "2027-09-08"),
       offering("J-Pod", "Fall", "2027-09-07"),
@@ -89,6 +89,23 @@ describe("numberedOfferings", () => {
     expect(groups.map((g) => [g.program, g.offerings.map((o) => o.label)])).toEqual([
       ["J-Pod", ["J-Pod Spring", "J-Pod Fall"]],
       ["K-Pod", ["K-Pod Spring", "K-Pod Fall"]],
+    ]);
+  });
+
+  it("puts programs in the catalog's sort order, then those with none A to Z, whenever they start", () => {
+    const groups = numberedOfferings([
+      offering("Youth Beginner", "Week 1", "2027-06-28"),
+      offering("Teen Sailing", "Week 1", "2027-06-28"),
+      { ...offering("Youth Advanced", "Week 2", "2027-07-05"), program_sort: 2 },
+      { ...offering("Guppies Sailing", "Week 1", "2027-06-28"), program_sort: 1 },
+      offering("Teen Adventure", "Week 4", "2027-07-19"),
+    ]);
+    expect(groups.map((g) => g.program)).toEqual([
+      "Guppies Sailing",
+      "Youth Advanced",
+      "Teen Adventure",
+      "Teen Sailing",
+      "Youth Beginner",
     ]);
   });
 
