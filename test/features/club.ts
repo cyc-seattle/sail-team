@@ -237,6 +237,19 @@ export class Club {
     });
   }
 
+  /** The camp's program's indirect cost rate in `plan`, such as 0.5 to pay half its direct costs toward shared costs. */
+  async indirectCostRate(plan: string, rate: number): Promise<void> {
+    const [row]: { id: string }[] = await asAdmin(
+      "GET",
+      `/items/plan_programs?filter[plan_id][_eq]=${plan}&filter[product_id][_eq]=${this.productId}&fields=id`,
+    );
+    if (row) {
+      await asAdmin("PATCH", `/items/plan_programs/${row.id}`, { indirect_cost_rate: rate });
+    } else {
+      await this.inPlan("plan_programs", plan, { product_id: this.productId, indirect_cost_rate: rate });
+    }
+  }
+
   /** A plan's notes, in the planner's own words. */
   async notes(plan: string, notes: string[]): Promise<void> {
     await asAdmin("PATCH", `/items/plans/${plan}`, { notes });

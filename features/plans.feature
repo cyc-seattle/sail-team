@@ -17,8 +17,8 @@ Feature: Seeing the Financial Plans
 
   Planning is where planners, and anyone else who can read plans, see the Financial Plans as a set of reports: an
   Overview, the Assumptions, one for each program area, and Non-program, with fundraising and capital. A program area's
-  report includes its coaches' wages, its RIBs, and its share of the shared costs, such as the office, worked out with
-  the other plans in the same Financial Plan. A Plan Writer can rename any Financial Plan, change its note,
+  report includes its coaches' wages, its RIBs, and its share of the shared costs, such as the office: each program's
+  indirect cost rate times its own direct costs. A Plan Writer can rename any Financial Plan, change its note,
   duplicate one, and delete a draft here. A Plan Admin can also freeze a draft, make one active from a date,
   and archive one, from its report or right in Planning's list. Everything else about a plan is changed through their AI. Every plan and number here is made up for
   the run.
@@ -75,20 +75,21 @@ Feature: Seeing the Financial Plans
 
     Scenario: A Program Plan in a frozen Financial Plan
       Given I'm a planner who can read plans
-      And a frozen Financial Plan whose Youth Racing offering took in $10,000, paid $3,000 of coaches' wages, and paid $1,000 of shared costs
+      And a frozen Financial Plan whose Youth Racing offering took in $10,000, paid $3,000 of coaches' wages, and pays 50% of them toward the office
       And I've signed in
       When I open Youth Racing's report in that Financial Plan
-      Then it shows $10,000 of revenue, $3,000 of coaches' wages, and $1,000 of the office
+      Then it shows $10,000 of revenue, $3,000 of coaches' wages, and $1,500 of the office
       And opening the coaches' wages shows how they were worked out
 
     Scenario: A Program Plan in a draft
       Given I'm a planner who can read plans
       And a draft Financial Plan whose Operations Plan pays coaches $30 an hour and has $1,000 of office costs
       And its only Program Plan has an offering with a coach on every practice, 100 hours in all
+      And its program pays 50% of its direct costs toward the shared costs
       And I've signed in
       When I open Youth Racing's report in the draft
       Then it shows $3,000 of coaches' wages
-      And it shows the $1,000 of the office
+      And it shows $1,500 of the office
 
   Rule: A program area's budget shows revenue, expenses and net for each term, and each program within it
 
@@ -104,11 +105,11 @@ Feature: Seeing the Financial Plans
 
     Scenario: A Financial Plan started from it doesn't change its numbers
       Given I'm a planner who can read plans
-      And a frozen Financial Plan named "Budget" whose Youth Racing offering paid $1,000 of office costs
-      And a Financial Plan started from "Budget" with $2,000 of office costs
+      And a frozen Financial Plan named "Budget" whose Youth Racing offering spent $5,000 and paid 20% of it toward the office
+      And a Financial Plan started from "Budget" whose program pays 40%
       And I've signed in
       When I open Youth Racing's report in "Budget"
-      Then it shows the $1,000 of the office
+      Then it shows $1,000 of the office
 
   Rule: A draft's P&L is worked out again after every change to it, wherever the change is made
 
