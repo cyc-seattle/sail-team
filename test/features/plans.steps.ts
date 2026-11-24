@@ -44,7 +44,10 @@ const planRow = (page: Page, name: string) =>
 
 async function openPlanning(page: Page): Promise<void> {
   await page.goto(`${await app()}/plans`);
-  await expect(page.getByRole("table", { name: "Financial Plans" })).toBeVisible({ timeout: 30_000 });
+  // Someone who can't read plans is told so instead of shown the list.
+  const list = page.getByRole("table", { name: "Financial Plans" });
+  const refused = page.getByRole("heading", { name: "You don't have access to plans" });
+  await expect(list.or(refused)).toBeVisible({ timeout: 30_000 });
 }
 
 /** A plan's details on Planning: when it was frozen, what it started from, and its note. */
@@ -149,7 +152,7 @@ Given(
   },
 );
 
-When("I open that Financial Plan", async ({ page }) => {
+When(/^I open (?:that Financial Plan|the draft)$/, async ({ page }) => {
   await page.goto(`${await app()}/plans/financial/${opened.set}`);
 });
 
@@ -182,20 +185,25 @@ Then("I can switch to Assumptions, Youth Racing, Adult Sailing, and Non-program"
 });
 
 // A program area's report.
-/** A Financial Plan whose camp has a coach at $30 an hour on ten 10-hour practices, and shares $1,000 of office costs. */
-async function coachedCamp(club: Club): Promise<string> {
+/** A Financial Plan whose camp has a coach at $30 an hour on ten 10-hour practices, and $1,000 of office costs. */
+async function coachedCamp(club: Club): Promise<{ set: string; youth: string }> {
   const { set, operations, youth } = await draftWithPlans(club, "Budget");
   const level = await club.coachRate(operations, 3_000);
   await club.office(operations, 100_000);
   const camp = await club.offering(youth, OFFERING, 10, 100_000);
   await club.practices(youth, camp["id"] as string, campDays(club), "08:00:00", "18:00:00", level);
-  return set;
+  return { set, youth };
 }
 
+/** The Youth Racing plan of the draft a scenario made with `coachedCamp`. */
+let campPlan: string | undefined;
+
 Given(
-  "a frozen Financial Plan whose Youth Racing offering took in $10,000, paid $3,000 of coaches' wages, and paid $1,000 of shared costs",
+  "a frozen Financial Plan whose Youth Racing offering took in $10,000, paid $3,000 of coaches' wages, and pays 50% of them toward the office",
   async ({ club }) => {
-    opened.set = await coachedCamp(club);
+    const { set, youth } = await coachedCamp(club);
+    await club.indirectCostRate(youth, 0.5);
+    opened.set = set;
     await club.freeze(opened.set);
   },
 );
@@ -203,9 +211,13 @@ Given(
 Given(
   "a draft Financial Plan whose Operations Plan pays coaches $30 an hour and has $1,000 of office costs",
   async ({ club }) => {
-    opened.set = await coachedCamp(club);
+    ({ set: opened.set, youth: campPlan } = await coachedCamp(club));
   },
 );
+
+Given("its program pays 50% of its direct costs toward the shared costs", async ({ club }) => {
+  await club.indirectCostRate(campPlan!, 0.5);
+});
 
 Given("its only Program Plan has an offering with a coach on every practice, 100 hours in all", async () => {
   // Ten days of camp from 8am to 6pm, each in a block with one coach, made with the Financial Plan above.
@@ -263,10 +275,10 @@ When("I open Youth Racing's report in {string}", async ({ page, club }, name: st
 const statementRow = (page: Page, name: RegExp) =>
   page.getByRole("table", { name: "Revenue and expenses" }).getByRole("row", { name });
 
-Then("it shows $10,000 of revenue, $3,000 of coaches' wages, and $1,000 of the office", async ({ page }) => {
+Then("it shows $10,000 of revenue, $3,000 of coaches' wages, and $1,500 of the office", async ({ page }) => {
   await expect(statementRow(page, /Total revenue/)).toContainText("$10,000");
   await expect(statementRow(page, /coachWages/)).toContainText("$3,000");
-  await expect(statementRow(page, /^Office/)).toContainText("$1,000");
+  await expect(statementRow(page, /^Office/)).toContainText("$1,500");
 });
 
 // The engine's wording may change, so this checks only that a line under the account explains it with a formula.
@@ -284,26 +296,27 @@ Then("it shows $3,000 of coaches' wages", async ({ page }) => {
   await expect(statementRow(page, /coachWages/)).toContainText("$3,000");
 });
 
-Then("it shows the $1,000 of the office", async ({ page }) => {
-  await expect(statementRow(page, /^Office/)).toContainText("$1,000");
+Then(/^it shows (\$[\d,]+) of the office$/, async ({ page }, amount: string) => {
+  await expect(statementRow(page, /^Office/)).toContainText(amount);
 });
 
 // A frozen Financial Plan keeps its P&L.
 Given(
-  "a frozen Financial Plan named {string} whose Youth Racing offering paid $1,000 of office costs",
+  "a frozen Financial Plan named {string} whose Youth Racing offering spent $5,000 and paid 20% of it toward the office",
   async ({ club }, name: string) => {
     named.clear();
     const { set, operations, youth } = await draftWithPlans(club, name);
     await club.office(operations, 100_000);
     await club.offering(youth, OFFERING, 10, 100_000, 500_000);
+    await club.indirectCostRate(youth, 0.2);
     await club.freeze(set);
     named.set(name, set);
   },
 );
 
-Given("a Financial Plan started from {string} with $2,000 of office costs", async ({ club }, name: string) => {
+Given("a Financial Plan started from {string} whose program pays 40%", async ({ club }, name: string) => {
   const { set, plans } = await club.startFrom(named.get(name)!, `After ${name}`);
-  await club.setLine(plans.get("operations")!, "Office rent", 200_000);
+  await club.indirectCostRate(plans.get(club.areaId!)!, 0.4);
   await club.freeze(set);
 });
 
@@ -490,6 +503,7 @@ When("I rename it {string} and note it {string}", async ({ page }, name: string,
   await dialog.getByLabel("Note").fill(note);
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog).toBeHidden();
+  named.set(name, new URL(page.url()).pathname.split("/").pop()!);
 });
 
 Then("the page is titled {string}", async ({ page }, name: string) => {

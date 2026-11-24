@@ -57,6 +57,15 @@ export function sessionKeeper({ directusUrl, fetch, signInAgain, now }: SessionK
       ended = false;
     },
 
+    /**
+     * Stops keeping the session, once any renewal in flight has finished. Sign-out waits for this, since a renewal that
+     * lands after Directus's logout sets a new session cookie, and the person stays signed in.
+     */
+    async stop(): Promise<void> {
+      armed = false;
+      await renewing;
+    },
+
     /** Renews the session if it's been an hour, as when the page comes back into view after a while away. */
     async renewIfDue(): Promise<void> {
       if (armed && !ended && now() - lastRenewed >= renewEveryMs) {

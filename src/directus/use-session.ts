@@ -27,7 +27,8 @@ export function useSession(): SignIn {
   return useSuspenseQuery(sessionQuery).data;
 }
 
-export function signOutOfApp() {
+export async function signOutOfApp() {
+  await appDirectus().keeper.stop();
   return signOut({
     client: appDirectus().client,
     signOutUrl: signOutUrl(window.location.hostname),

@@ -86,4 +86,25 @@ describe("sessionKeeper", () => {
     await keeper.renewIfDue();
     expect(calls).toEqual([refresh, refresh]);
   });
+
+  it("stops once the renewal in flight has finished, so it can't outlast a sign-out", async () => {
+    let answer!: (response: Response) => void;
+    const fetch = vi.fn(() => new Promise<Response>((resolve) => (answer = resolve)));
+    const keeper = sessionKeeper({ directusUrl, fetch, signInAgain: vi.fn(), now: () => 0 });
+    keeper.arm();
+    void keeper.renewIfDue();
+    const stopped = keeper.stop();
+    expect(await settled(stopped)).toBe(false);
+    answer(new Response("{}", { status: 200 }));
+    expect(await settled(stopped)).toBe(true);
+  });
+
+  it("neither renews nor retries once stopped", async () => {
+    const { keeper, calls } = setup({ [plans]: [401] });
+    keeper.arm();
+    await keeper.stop();
+    await keeper.renewIfDue();
+    expect((await keeper.fetch(plans)).status).toBe(401);
+    expect(calls).toEqual([plans]);
+  });
 });
