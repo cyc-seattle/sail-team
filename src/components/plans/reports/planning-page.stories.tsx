@@ -125,7 +125,8 @@ export const FreezingADraft: Story = {
   play: async ({ args, canvas }) => {
     await userEvent.click(canvas.getByRole("button", { name: "More for Fall re-plan" }));
     await userEvent.click(await screen.findByRole("menuitem", { name: "Freeze" }));
-    await expect(await screen.findByText(/can't go back to a draft/)).toBeVisible();
+    // The dialog fades in from opacity 0, so the description is in the page a frame before it's visible.
+    await waitFor(() => expect(screen.getByText(/can't go back to a draft/)).toBeVisible());
     await userEvent.click(screen.getByRole("button", { name: "Freeze" }));
     await waitFor(() =>
       expect(args.actions.onFreeze).toHaveBeenCalledWith(expect.objectContaining({ id: "two-coaches" })),
