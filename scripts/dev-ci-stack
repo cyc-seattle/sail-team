@@ -9,4 +9,4 @@ if [[ ! -f $target ]]; then
 fi
 VITE_DIRECTUS_URL=$(node -p "require('./$target').directus.url") \
   VITE_AUTHENTIK_URL=$(node -p "require('./$target').authentik.url") \
-  exec pnpm exec vite
+  exec pnpm exec vite --port 5173 --strictPort

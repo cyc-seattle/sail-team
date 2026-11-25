@@ -11,5 +11,5 @@ export const ciStack: CiStackTarget | undefined = file
   ? (JSON.parse(readFileSync(file, "utf8")) as CiStackTarget)
   : undefined;
 
-/** Where playwright.config.ts serves the app against a CI stack. */
-export const ciAppUrl = `http://localhost:${process.env["SAIL_TEAM_PORT"] ?? "4173"}`;
+/** Where playwright.config.ts serves the app against a CI stack, which must be on its `CI_STACK_REDIRECTS`. */
+export const ciAppUrl = "http://localhost:4173";

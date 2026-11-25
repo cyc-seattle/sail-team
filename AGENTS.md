@@ -33,10 +33,12 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
 - `mise run ci-stack`: start platform's CI stack in containers, from `.platform`, a checkout of the platform release
   `package.json` names. It needs Docker and Directus's license in `DIRECTUS_LICENSE_KEY`. `mise run ci-stack-down`
   stops it: stop it the same day, since the license allows a throwaway Directus only if it's gone within 24 hours.
+  Its Directus sends a sign-in back only to the app on ports 4173 and 5173 (`CI_STACK_REDIRECTS` in
+  `scripts/ci-stack`).
 - `mise run integration-ci`: run the journeys against the CI stack, with the app built for it and served on
-  `http://localhost:4173` (`SAIL_TEAM_PORT`)
+  `http://localhost:4173`
 - `mise run ci-seed`: fill the CI stack with platform's sample data, and print its logins
-- `mise run dev-ci-stack`: serve the app locally against the CI stack, in place of made-up data
+- `mise run dev-ci-stack`: serve the app on `http://localhost:5173` against the CI stack, in place of made-up data
 
 ## Layout
 

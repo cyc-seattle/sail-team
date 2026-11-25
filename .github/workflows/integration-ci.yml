@@ -84,6 +84,9 @@ jobs:
       - run: mise run ci-stack
         if: steps.license.outputs.skip != 'true'
         working-directory: .platform
+        env:
+          # Where Directus may send a sign-in back to: the app as playwright.config.ts serves it.
+          CI_STACK_REDIRECTS: http://localhost:4173,http://localhost:4173/
       - run: mise run integration-ci -- --shard=${{ matrix.shard }}/2
         if: steps.license.outputs.skip != 'true'
       - name: The stack's logs

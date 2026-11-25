@@ -3,6 +3,9 @@
 # does. Needs Docker, and the license in DIRECTUS_LICENSE_KEY. Stop it with `mise run ci-stack-down` the same day.
 set -euo pipefail
 
+# Where Directus may send a sign-in back to: the app as the journeys serve it, and Vite's dev server.
+export CI_STACK_REDIRECTS=${CI_STACK_REDIRECTS:-http://localhost:4173,http://localhost:4173/,http://localhost:5173,http://localhost:5173/}
+
 version=$(node -p 'require("@cyc-seattle/platform/package.json").version')
 if [[ ! -d .platform ]]; then
   git clone --quiet https://github.com/cyc-seattle/platform.git .platform
