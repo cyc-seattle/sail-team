@@ -79,7 +79,7 @@ export const test = base.extend<{ visitor: Visitor; club: Club; squad: Squad; po
 /** The Financial Plan a scenario opens, set by its Given steps. A worker runs one scenario at a time. */
 export const opened: { set?: string } = {};
 
-/** The app's address, such as `https://dev.cycsail.team`. */
+/** The app's address. */
 export const app = appUrl;
 
 /** Runs `signIn` once no other worker is signing in: Directus gives up on Authentik's token when it's slow. */
@@ -114,7 +114,7 @@ export async function signIn(page: Page, visitor: Visitor): Promise<void> {
 
     const query = encodeURIComponent(`to:"${visitor.email}"`);
     await expect
-      // Dev's Authentik sometimes takes over a minute to send it.
+      // Authentik sometimes takes over a minute to send it.
       .poll(async () => (await mailpit(`/api/v1/search?query=${query}`)).messages?.[0]?.ID, {
         timeout: 120_000,
         intervals: [2_000],
@@ -126,7 +126,7 @@ export async function signIn(page: Page, visitor: Visitor): Promise<void> {
     assert.ok(href, "The sign-in email has no link.");
     await page.goto(href.replace(/&amp;/g, "&"));
     await page.getByRole("button", { name: "Continue" }).click();
-    // Authentik, then Directus, send the browser back. Dev's Authentik can take a minute over the authorize step.
+    // Authentik, then Directus, send the browser back. Authentik can take a minute over the authorize step.
     const { host } = new URL(await app());
     await page.waitForURL((url) => url.host === host, { timeout: 120_000 });
   });

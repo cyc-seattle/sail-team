@@ -68,11 +68,6 @@ run = "./scripts/stack preview"
 description = "Apply $PULUMI_STACK"
 run = "./scripts/stack up --yes"
 
-# Needs the dev deploy, so it isn't part of ci.
-[tasks.integration]
-description = "Run the journeys in a browser against dev"
-run = ["pnpm exec bddgen", "pnpm exec playwright test --pass-with-no-tests"]
-
 # The CI stack runs from .platform, a checkout of the platform release package.json names (AGENTS.md).
 [tasks.ci-stack]
 description = "Start platform's CI stack in containers, from .platform"
@@ -88,6 +83,7 @@ description = "Fill the CI stack's Directus with platform's sample data, for scr
 dir = "{{config_root}}/.platform"
 run = "mise run ci-seed"
 
+# Needs a CI stack, so it isn't part of ci.
 [tasks.integration-ci]
 description = "Run the journeys in a browser against the CI stack"
 run = ["pnpm exec bddgen", "pnpm exec playwright test"]

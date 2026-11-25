@@ -29,14 +29,13 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
 - `mise run format`: fix formatting and lint
 - `mise run test`: run the tests with Vitest
 - `mise run build`: build into `dist/`
-- `mise run integration`: run the journeys in `features/` in a browser against dev. It isn't part of `ci`.
 - `mise run ci-stack`: start platform's CI stack in containers, from `.platform`, a checkout of the platform release
   `package.json` names. It needs Docker and Directus's license in `DIRECTUS_LICENSE_KEY`. `mise run ci-stack-down`
   stops it: stop it the same day, since the license allows a throwaway Directus only if it's gone within 24 hours.
   Its Directus sends a sign-in back only to the app on ports 4173 and 5173 (`CI_STACK_REDIRECTS` in
   `scripts/ci-stack`).
-- `mise run integration-ci`: run the journeys against the CI stack, with the app built for it and served on
-  `http://localhost:4173`
+- `mise run integration-ci`: run the journeys in `features/` in a browser against the CI stack, with the app built
+  for it and served on `http://localhost:4173`. It isn't part of `ci`.
 - `mise run ci-seed`: fill the CI stack with platform's sample data, and print its logins
 - `mise run dev-ci-stack`: serve the app on `http://localhost:5173` against the CI stack, in place of made-up data
 
@@ -155,8 +154,7 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
 - `src/mocks/` answers Directus's requests with made-up people and permissions, in `mise run dev` and in tests. Never
   put real club data there.
 - `mise run integration-ci` runs the journeys against a CI stack, reading its services and logins from
-  `.platform/.ci-stack/target.json` (`CI_STACK_TARGET`, `test/features/target.ts`). `mise run integration` runs them
-  against dev, as your ADC login (deploy-dev in Actions), with `PULUMI_STACK=dev`. Each scenario's visitor is made up for it (`test/features/visitors.ts`): a Directus user on the
+  `.platform/.ci-stack/target.json` (`CI_STACK_TARGET`, `test/features/target.ts`). Each scenario's visitor is made up for it (`test/features/visitors.ts`): a Directus user on the
   Community role and, for a planner, a person in a group that gives their Plan policies (Plan Reader; Plan Writer; or Plan
   Writer and Plan Admin), the way the club gives policies.
   The sign-in journeys sign in through Authentik's emailed link, which Authentik sends to Mailpit, one at a
@@ -165,9 +163,9 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   product, and Financial Plans, each holding an Operations Plan and an area's plan with its program's settings and
   blocks, frozen the way a Plan Admin freezes them, so platform works out their results. A rosters scenario makes a team, its divisions, and
   households (`test/features/squad.ts`), with the Clubspot rows
-  clubspot-sync would read them from, and waits for platform's hook to move a parent on a team to the Team role. Dev's and the CI stack's `backend:frozenPlansDeletable` lets their admin delete them afterwards; prod refuses it.
-  Everything is deleted when the scenario ends, and a later run deletes what an earlier one left. The steps refuse any
-  environment but a CI stack or dev, and never touch prod's users.
+  clubspot-sync would read them from, and waits for platform's hook to move a parent on a team to the Team role. The CI stack's `backend:frozenPlansDeletable` lets its admin delete them afterwards; prod refuses it.
+  Everything is deleted when the scenario ends, and a later run on the same stack deletes what an earlier one left.
+  The steps reach only the CI stack that `CI_STACK_TARGET` names, never prod.
 - `features/` holds the journeys in Gherkin, with their steps in `test/features/`. Each is living documentation of how
   the app behaves for a club member, so write it in their words. A scenario tagged `@fixme` is agreed but not built
   yet: a features PR adds it, and the PR that builds it removes the tag.
@@ -186,31 +184,27 @@ point `PLAYWRIGHT_BROWSERS_PATH` at a matching set of browsers in a git-ignored 
 domain. The image is Caddy serving `dist/` (`Dockerfile`, `Caddyfile`), with a content security
 policy that lets the page call only itself and Directus.
 
-- A PR's push runs only CI, and once CI passes a maintainer merges it, squashed.
-  Contributors push branches and open PRs; only maintainers merge. A push to `main` deploys it to dev, at
-  `https://dev.cycsail.team/plans`, previews prod, and applies prod once a maintainer approves. Prod runs the image dev
-  built for the same commit. All of it goes through the org's `deploy.yml` (`.github/workflows/pull-request.yml`).
-  `gh workflow run pull-request.yml --ref main` retries main's deploys. Only `main` deploys to dev; a branch can't.
+- A PR's push runs CI and the journeys, and once both pass a maintainer merges it, squashed.
+  Contributors push branches and open PRs; only maintainers merge. A push to `main` previews prod, and applies prod
+  once a maintainer approves. The deploy runs the image tagged with the commit, and builds and pushes it when the
+  registry hasn't got it yet (`deployedImage` in `stacks/app/cluster.ts`). All of it goes through the org's
+  `deploy.yml` (`.github/workflows/pull-request.yml`). `gh workflow run pull-request.yml --ref main` retries main's
+  deploy.
 - `integration-ci.yml` runs the journeys on every PR and every push to `main`, on a CI stack started from the
   platform release `package.json` names (platform's `docs/testing.md`, "From another repo"). Its `integration` job
   passes only when they do, so it's the one to require. It needs the `DIRECTUS_LICENSE_KEY` secret, and skips with a notice without it, as on a PR from a fork. When the journeys fail, it
-  uploads `test-results/` as `test-results-ci`, kept 7 days.
-- After each dev deploy, `main`'s run starts `integration.yml`, which runs the journeys against what's on dev. Deploys
-  take dev's lock first, so the tests may run on a newer commit than the one that started them, and a run skips itself
-  when nothing new is on dev since the last one. A failed run opens or comments on the
-  `Integration tests failed on dev` issue, assigned to the maintainer, naming the commits merged since the last green
-  run, and a green run closes it. When the journeys fail, the run uploads `test-results/` as the `test-results-dev` artifact, kept 7 days: each
-  failed scenario's page snapshot (`error-context.md`) and trace.
-- `nightly.yml` is the backstop: it deploys `main` to dev each night and runs the journeys, under the same dev lock. A
-  failed night opens or comments on the `Nightly integration run failed` issue, and a green night closes it. Run it
-  early with `gh workflow run nightly.yml`.
+  uploads `test-results/` as `test-results-ci`, kept 7 days: each failed scenario's page snapshot
+  (`error-context.md`) and trace.
 - Never force-push. To bring a branch up to date, merge `origin/main` into it.
-- When the journeys fail on dev, reproduce the failure locally against dev before you push a fix:
-  `PULUMI_STACK=dev mise run integration`.
-- `mise run preview` and `mise run deploy` act on `$PULUMI_STACK`, which defaults to `prod`. Locally, set
-  `PULUMI_STACK=dev`, and preview before every apply. Local deploys are only for breaking glass.
+- When the journeys fail, reproduce the failure locally on a CI stack of your own before you push a fix:
+  `mise run ci-stack`, `mise run integration-ci`, then `mise run ci-stack-down`.
+- `mise run preview` and `mise run deploy` act on `$PULUMI_STACK`, which defaults to `prod`. Preview before every
+  apply. Local deploys are only for breaking glass.
+- Dev is being removed ([cyc-seattle/platform#171](https://github.com/cyc-seattle/platform/issues/171)): nothing
+  deploys to it. Its stack, `stacks/app/Pulumi.dev.yaml`, stays only until it's destroyed with
+  `PULUMI_STACK=dev ./scripts/stack destroy`, and a later PR removes it.
 - Prod's stack also holds the domain's A record (`apexRecord` in `stacks/app/cluster.ts`), adopted from isthmia's
-  portal. Dev's domain is under platform's records.
+  portal.
 - Directus already allows `https://<domain>` as an origin and a sign-in redirect, because the portal was there, so the
   app needs nothing from platform's Directus settings.
 

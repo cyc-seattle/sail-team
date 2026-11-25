@@ -1,13 +1,13 @@
 name: pull-request
 
-# A PR runs only CI. Main's push deploys dev, starts the journeys there in integration.yml, then
-# previews prod and deploys it once a maintainer approves (cyc-seattle/platform#280).
+# A PR runs CI, and integration-ci.yml runs the journeys, so a PR merges only once both pass. Main's push
+# previews prod and deploys it once a maintainer approves (cyc-seattle/platform#171).
 on:
   pull_request:
     types: [opened, synchronize, reopened]
   push:
     branches: [main]
-  # Retries main's deploys.
+  # Retries main's deploy.
   workflow_dispatch:
 
 permissions:
@@ -16,31 +16,11 @@ permissions:
 jobs:
   ci:
     if: github.event_name == 'pull_request'
-    uses: cyc-seattle/.github/.github/workflows/ci.yml@v4.0.0
-  dev:
-    if: github.ref == 'refs/heads/main'
-    uses: cyc-seattle/.github/.github/workflows/deploy.yml@v4.0.0
-    permissions:
-      id-token: write
-      contents: read
-    with:
-      environment: dev
-      task: deploy
-  # A run started with GITHUB_TOKEN may start only a workflow_dispatch, so the tests run in a
-  # workflow of their own, which keeps them out of this run.
-  start-integration:
-    needs: dev
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-    steps:
-      - run: gh workflow run integration.yml -R "$GITHUB_REPOSITORY" --ref main
-        env:
-          GH_TOKEN: ${{ github.token }}
+    uses: cyc-seattle/.github/.github/workflows/ci.yml@v5.0.0
   # Runs merged code with prod credentials before anyone approves, which is safe only because main requires a PR.
   prod-preview:
-    needs: dev
-    uses: cyc-seattle/.github/.github/workflows/deploy.yml@v4.0.0
+    if: github.ref == 'refs/heads/main'
+    uses: cyc-seattle/.github/.github/workflows/deploy.yml@v5.0.0
     permissions:
       id-token: write
       contents: read
@@ -51,7 +31,7 @@ jobs:
   prod:
     needs: prod-preview
     if: needs.prod-preview.outputs.changes == 'true'
-    uses: cyc-seattle/.github/.github/workflows/deploy.yml@v4.0.0
+    uses: cyc-seattle/.github/.github/workflows/deploy.yml@v5.0.0
     permissions:
       id-token: write
       contents: read

@@ -18,7 +18,7 @@ const app = new WebService("sail-team", {
   ...(replicas > 1 && { minAvailable: 1, spreadAcrossZones: true }),
   hostname: platform.domain,
   paths,
-  image: deployedImage(cluster, "sail-team", "../.."),
+  image: await deployedImage(cluster, "sail-team", "../.."),
   port: 8080,
   env: [{ name: "DIRECTUS_ORIGIN", value: `https://directus.${platform.domain}` }],
   requests: { cpu: "50m", memory: "64Mi" },
