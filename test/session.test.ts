@@ -48,7 +48,7 @@ describe("decideSignIn", () => {
 describe("the sign-in addresses", () => {
   it("finds Directus beside the app", () => {
     expect(directusUrlFor("cycsail.team")).toBe("https://directus.cycsail.team");
-    expect(directusUrlFor("dev.cycsail.team")).toBe("https://directus.dev.cycsail.team");
+    expect(directusUrlFor("example.org")).toBe("https://directus.example.org");
   });
 
   it("finds the Directus the build names", () => {
@@ -61,7 +61,7 @@ describe("the sign-in addresses", () => {
   });
 
   it("signs out through Authentik beside the app", () => {
-    expect(signOutUrl("dev.cycsail.team")).toBe("https://login.dev.cycsail.team/flows/-/default/invalidation/");
+    expect(signOutUrl("example.org")).toBe("https://login.example.org/flows/-/default/invalidation/");
   });
 
   it("signs out through the Authentik the build names", () => {

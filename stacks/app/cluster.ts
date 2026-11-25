@@ -8,8 +8,6 @@ import { clusterProvider, readPlatformOutputs, type PlatformOutputs } from "@cyc
 // The cluster and image helpers every app on the platform uses, as in platform's own src/app/cluster.ts, which its
 // package doesn't export.
 
-export const isDev = pulumi.getStack() === "dev";
-
 export interface Cluster {
   platform: PlatformOutputs;
   provider: k8s.Provider;
@@ -75,7 +73,7 @@ export async function deployedImage(
 }
 
 /**
- * The A record for the environment's apex, `platform.domain`, which prod's Cloud DNS holds and dev's wildcard covers.
+ * The A record for the environment's apex, `platform.domain`, which prod's Cloud DNS holds.
  * It was isthmia's portal's, and is adopted here as it stands (sail-team#1).
  */
 export async function apexRecord({ platform }: Cluster): Promise<gcp.dns.RecordSet> {

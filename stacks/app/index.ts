@@ -1,6 +1,6 @@
 import * as pulumi from "@pulumi/pulumi";
 import { WebService } from "@cyc-seattle/platform";
-import { apexRecord, deployedImage, isDev, loadCluster } from "./cluster.ts";
+import { apexRecord, deployedImage, loadCluster } from "./cluster.ts";
 
 // sail-team serves the environment's whole domain (sail-team#1). "/" alone would do now that isthmia's portal is
 // gone. The longer prefixes stay so the route the Gateway serves doesn't change.
@@ -30,8 +30,6 @@ const app = new WebService("sail-team", {
   ],
 });
 
-if (!isDev) {
-  await apexRecord(cluster);
-}
+await apexRecord(cluster);
 
 export const url = app.url;

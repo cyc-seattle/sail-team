@@ -198,11 +198,9 @@ policy that lets the page call only itself and Directus.
 - Never force-push. To bring a branch up to date, merge `origin/main` into it.
 - When the journeys fail, reproduce the failure locally on a CI stack of your own before you push a fix:
   `mise run ci-stack`, `mise run integration-ci`, then `mise run ci-stack-down`.
-- `mise run preview` and `mise run deploy` act on `$PULUMI_STACK`, which defaults to `prod`. Preview before every
+- Prod is the only stack: there's no dev ([cyc-seattle/platform#171](https://github.com/cyc-seattle/platform/issues/171)).
+  `mise run preview` and `mise run deploy` act on `$PULUMI_STACK`, which defaults to `prod`. Preview before every
   apply. Local deploys are only for breaking glass.
-- Dev is being removed ([cyc-seattle/platform#171](https://github.com/cyc-seattle/platform/issues/171)): nothing
-  deploys to it. Its stack, `stacks/app/Pulumi.dev.yaml`, stays only until it's destroyed with
-  `PULUMI_STACK=dev ./scripts/stack destroy`, and a later PR removes it.
 - Prod's stack also holds the domain's A record (`apexRecord` in `stacks/app/cluster.ts`), adopted from isthmia's
   portal.
 - Directus already allows `https://<domain>` as an origin and a sign-in redirect, because the portal was there, so the

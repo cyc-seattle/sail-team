@@ -2,7 +2,7 @@ name: integration-ci
 
 # The journeys, in a browser against a throwaway CI stack in each job: platform's Directus, Authentik, Mailpit and the
 # fakes in containers on the runner, from the release package.json names (platform's docs/testing.md, "From another
-# repo"). Nothing touches GCP or dev's lock.
+# repo"). Nothing touches GCP.
 on:
   pull_request:
     types: [opened, synchronize, reopened]
