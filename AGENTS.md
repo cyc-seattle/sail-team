@@ -44,6 +44,8 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
 - `src/routes/` holds TanStack Router's file routes. A file's path is its URL: `src/routes/plans/index.tsx` is `/plans`.
   The router plugin regenerates `src/routeTree.gen.ts` on every build and dev run. Commit it, and never edit it.
 - `src/router.ts` makes the router. Tests make their own with a memory history.
+- `public/` is served as it is. `public/sign-in/` holds the logo and photo on the sign-in page, which platform's
+  Authentik links to (`stacks/authentik/index.ts`), so renaming one breaks that page.
 - `src/components/ui/` holds shadcn's components on Base UI, `src/components/` the club's own, each with a story beside
   it. `src/components/plans/` holds Planning's shared parts: Page Header, Money, Assumptions, Version Badge, the
   Financial Plan Actions, and the Plan Details Dialog. `src/components/plans/reports/` holds Planning itself: the
