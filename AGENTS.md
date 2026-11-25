@@ -191,11 +191,10 @@ policy that lets the page call only itself and Directus.
   `https://dev.cycsail.team/plans`, previews prod, and applies prod once a maintainer approves. Prod runs the image dev
   built for the same commit. All of it goes through the org's `deploy.yml` (`.github/workflows/pull-request.yml`).
   `gh workflow run pull-request.yml --ref main` retries main's deploys. Only `main` deploys to dev; a branch can't.
-- `integration-ci.yml` runs the journeys on every PR and every push to `main`, each shard on a CI stack of its own,
-  started from the platform release `package.json` names (platform's `docs/testing.md`, "From another repo"). Its
-  `integration` job passes only when every shard does, so it's the one to require. It needs the
-  `DIRECTUS_LICENSE_KEY` secret, and skips with a notice without it, as on a PR from a fork. When the journeys fail, it
-  uploads `test-results/` as `test-results-ci-<shard>`, kept 7 days.
+- `integration-ci.yml` runs the journeys on every PR and every push to `main`, on a CI stack started from the
+  platform release `package.json` names (platform's `docs/testing.md`, "From another repo"). Its `integration` job
+  passes only when they do, so it's the one to require. It needs the `DIRECTUS_LICENSE_KEY` secret, and skips with a notice without it, as on a PR from a fork. When the journeys fail, it
+  uploads `test-results/` as `test-results-ci`, kept 7 days.
 - After each dev deploy, `main`'s run starts `integration.yml`, which runs the journeys against what's on dev. Deploys
   take dev's lock first, so the tests may run on a newer commit than the one that started them, and a run skips itself
   when nothing new is on dev since the last one. A failed run opens or comments on the

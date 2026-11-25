@@ -18,15 +18,11 @@ permissions:
   contents: read
 
 jobs:
-  shard:
-    name: shard ${{ matrix.shard }}
+  # Every journey runs in about two minutes on one stack, far less than starting another, so there's one job.
+  journeys:
     runs-on: ubuntu-latest
     # A licensed Directus that's gone within 24 hours never spends an activation (platform's docs/backend.md).
     timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2]
     env:
       DIRECTUS_LICENSE_KEY: ${{ secrets.DIRECTUS_LICENSE_KEY }}
       MISE_TASK_RUN_AUTO_INSTALL: "false"
@@ -87,7 +83,7 @@ jobs:
         env:
           # Where Directus may send a sign-in back to: the app as playwright.config.ts serves it.
           CI_STACK_REDIRECTS: http://localhost:4173,http://localhost:4173/
-      - run: mise run integration-ci -- --shard=${{ matrix.shard }}/2
+      - run: mise run integration-ci
         if: steps.license.outputs.skip != 'true'
       - name: The stack's logs
         if: failure() && steps.license.outputs.skip != 'true'
@@ -96,14 +92,14 @@ jobs:
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure() && steps.license.outputs.skip != 'true'
         with:
-          name: test-results-ci-${{ matrix.shard }}
+          name: test-results-ci
           path: test-results/
           retention-days: 7
 
-  # One check to require, whatever the shards are.
+  # One check to require, whatever jobs the journeys are split into.
   integration:
-    needs: shard
+    needs: journeys
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - run: '[[ "${{ needs.shard.result }}" == success ]]'
+      - run: '[[ "${{ needs.journeys.result }}" == success ]]'
