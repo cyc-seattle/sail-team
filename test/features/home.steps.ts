@@ -2,7 +2,7 @@ import { expect } from "@playwright/test";
 import { createBdd } from "playwright-bdd";
 import { app, test } from "./fixtures";
 
-// Steps for features/home.feature, against dev.
+// Steps for features/home.feature.
 
 const { Given, When, Then } = createBdd(test);
 

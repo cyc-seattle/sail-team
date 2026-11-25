@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { expect } from "@playwright/test";
 import { asAdmin, newRunId } from "./support";
 
-// A made-up organization's Financial Plans on dev, made by dev's admin and deleted when the scenario ends: the
+// A made-up organization's Financial Plans, made by Directus's admin and deleted when the scenario ends: the
 // organization, its accounts, a Youth Racing area and product, and Financial Plans that each hold an Operations Plan
 // and Youth Racing's plan. Every figure is made up.
 
@@ -311,8 +311,8 @@ export class Club {
 
   /**
    * Deletes everything the scenario made. Financial Plans go first, the ones a visitor started in the app before the
-   * ones they were started from, each with its plans, their rows, and its results. Then the rest, newest first. Dev's
-   * `backend:frozenPlansDeletable` lets its first admin delete frozen ones; prod refuses it.
+   * ones they were started from, each with its plans, their rows, and its results. Then the rest, newest first. Dev's and the CI
+   * stack's `backend:frozenPlansDeletable` lets the admin delete frozen ones; prod refuses it.
    */
   async cleanUp(): Promise<void> {
     const made = this.made.filter((m) => m.collection === "financial_plans").map((m) => m.id);

@@ -4,7 +4,7 @@ import { test } from "./fixtures";
 import { setRole } from "./squad";
 import { giveThroughGroup, makeDirectusUser } from "./visitors";
 
-// Steps for features/navigation.feature, against dev, at the sizes AGENTS.md reviews every UI change at.
+// Steps for features/navigation.feature, at the sizes AGENTS.md reviews every UI change at.
 
 const { Given, When, Then } = createBdd(test);
 

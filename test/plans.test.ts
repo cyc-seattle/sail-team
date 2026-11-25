@@ -93,7 +93,7 @@ describe("reading Financial Plans from Directus", () => {
       expect.objectContaining({ code: "closed_date", plan: ids.summerBudget, date: "2027-07-05" }),
     );
     expect(results?.warnings).toContainEqual(
-      expect.objectContaining({ code: "unallocated_activity", plan: ids.doublehandedBudget }),
+      expect.objectContaining({ code: "trip_without_staff", plan: ids.doublehandedBudget }),
     );
   });
 

@@ -1,15 +1,15 @@
 import { expect } from "@playwright/test";
 import { createBdd } from "playwright-bdd";
 import { app, signIn, signInWithPassword, test } from "./fixtures";
-import { devPlatform } from "./support";
+import { authentikUrl } from "./support";
 import { giveThroughGroup, makeDirectusUser } from "./visitors";
 
-// Steps for features/sign-in.feature, against dev. Each scenario that signs in does so as a made-up visitor through
-// Authentik's emailed link, which dev's Authentik sends to Mailpit. Other journeys' "I've signed in" skips Authentik.
+// Steps for features/sign-in.feature. Each scenario that signs in does so as a made-up visitor through Authentik's
+// emailed link, which Authentik sends to Mailpit. Other journeys' "I've signed in" skips Authentik.
 
 const { Given, When, Then } = createBdd(test);
 
-const escaped = (domain: string) => domain.replace(/\./g, "\\.");
+const escaped = (url: string) => url.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
 
 Given("I'm a planner who can read plans", async ({ visitor }) => {
   await makeDirectusUser(visitor);
@@ -37,8 +37,7 @@ When(/^I open Planning (?:without|before) signing in$/, async ({ page }) => {
 });
 
 Then("I'm on the sign-in page", async ({ page }) => {
-  const { domain } = await devPlatform();
-  await expect(page).toHaveURL(new RegExp(`^https://login\\.${escaped(domain)}/if/flow/`));
+  await expect(page).toHaveURL(new RegExp(`^${escaped(await authentikUrl())}/if/flow/`));
   await expect(page.locator('input[name="uidField"]')).toBeVisible();
 });
 
@@ -57,8 +56,7 @@ When("I've signed in", async ({ page, visitor }) => {
 });
 
 Then("I'm back on Planning", async ({ page }) => {
-  const { domain } = await devPlatform();
-  await expect(page).toHaveURL(new RegExp(`^https://${escaped(domain)}/plans`));
+  await expect(page).toHaveURL(new RegExp(`^${escaped(await app())}/plans`));
   await expect(page.getByRole("heading", { level: 1, name: "Planning" })).toBeVisible();
 });
 

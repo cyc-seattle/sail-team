@@ -3,7 +3,7 @@ import { expect } from "@playwright/test";
 import { asAdmin, newRunId } from "./support";
 import type { Visitor } from "./visitors";
 
-// Made-up programs and families on dev, made by dev's admin and deleted when the scenario ends. Each offering and
+// Made-up programs and families, made by Directus's admin and deleted when the scenario ends. Each offering and
 // registration is the one clubspot-sync would make from Clubspot's mirrors, as platform's own features make them, so
 // a sync run leaves them be. Every name is made up.
 

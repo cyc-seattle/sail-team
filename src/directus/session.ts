@@ -26,9 +26,12 @@ export function decideSignIn(input: SignInInput): SignInAction {
   return { kind: "redirect", url: input.signInUrl };
 }
 
-/** Directus for the app at `hostname`: `cycsail.team` → `https://directus.cycsail.team`. */
-export function directusUrlFor(hostname: string): string {
-  return `https://directus.${hostname}`;
+/**
+ * Directus for the app at `hostname`: `cycsail.team` → `https://directus.cycsail.team`, unless the build names one, as
+ * it does for a CI stack, whose Directus is on a port of its own.
+ */
+export function directusUrlFor(hostname: string, configured?: string): string {
+  return configured || `https://directus.${hostname}`;
 }
 
 /** Directus's Authentik sign-in, which sends the browser back to `page` once Directus has a session. */
@@ -37,11 +40,11 @@ export function signInUrl(directusUrl: string, page: string): string {
 }
 
 /**
- * Authentik's sign-out at `login.<hostname>`, which ends its session, and any impersonation with it. It finishes on
- * Authentik's home page, which platform sends on to the app.
+ * Authentik's sign-out at `login.<hostname>`, or the one the build names, which ends its session, and any impersonation
+ * with it. It finishes on Authentik's home page, which platform sends on to the app.
  */
-export function signOutUrl(hostname: string): string {
-  return `https://login.${hostname}/flows/-/default/invalidation/`;
+export function signOutUrl(hostname: string, configured?: string): string {
+  return `${configured || `https://login.${hostname}`}/flows/-/default/invalidation/`;
 }
 
 /** A stored redirect time, or `null` when there's none or it isn't a number. */

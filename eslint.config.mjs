@@ -5,7 +5,17 @@ import storybook from "eslint-plugin-storybook";
 import globals from "globals";
 
 export default [
-  { ignores: ["src/routeTree.gen.ts", "storybook-static", ".features-gen", "test-results", "playwright-report"] },
+  {
+    ignores: [
+      "src/routeTree.gen.ts",
+      "storybook-static",
+      ".features-gen",
+      "test-results",
+      "playwright-report",
+      ".features-app",
+      ".platform",
+    ],
+  },
   ...base,
   {
     files: ["src/**/*.{ts,tsx}", "public/**/*.js", ".storybook/**/*.tsx"],

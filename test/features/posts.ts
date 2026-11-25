@@ -1,6 +1,6 @@
 import { asAdmin, newRunId } from "./support";
 
-// Made-up announcements and links on dev, for the home page's and Links' journeys, each titled so a later run can find
+// Made-up announcements and links, for the home page's and Links' journeys, each titled so a later run can find
 // and delete what an earlier one left.
 
 const prefix = "Journey ";

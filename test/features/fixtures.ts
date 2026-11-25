@@ -7,10 +7,10 @@ import { Club } from "./club";
 import { Fleet } from "./fleet";
 import { Posts } from "./posts";
 import { Squad } from "./squad";
-import { asAdmin, authentikLock, devPlatform, proxyOk } from "./support";
+import { appUrl, asAdmin, authentikLock, directusUrl, mailpit } from "./support";
 import { cleanUp, newVisitor, type Visitor } from "./visitors";
 
-// What every journey's steps share: the scenario's made-up visitor, and its made-up club's plans on dev.
+// What every journey's steps share: the scenario's made-up visitor, and its made-up club's plans.
 
 export const test = base.extend<{ visitor: Visitor; club: Club; squad: Squad; posts: Posts; fleet: Fleet }>({
   visitor: [
@@ -79,10 +79,10 @@ export const test = base.extend<{ visitor: Visitor; club: Club; squad: Squad; po
 /** The Financial Plan a scenario opens, set by its Given steps. A worker runs one scenario at a time. */
 export const opened: { set?: string } = {};
 
-/** The app's address on dev, such as `https://dev.cycsail.team`. */
-export const app = async () => `https://${(await devPlatform()).domain}`;
+/** The app's address, such as `https://dev.cycsail.team`. */
+export const app = appUrl;
 
-/** Runs `signIn` once no other worker is signing in: Directus gives up on Authentik's token when dev's is slow. */
+/** Runs `signIn` once no other worker is signing in: Directus gives up on Authentik's token when it's slow. */
 async function oneAtATime(signIn: () => Promise<void>) {
   while (
     !(await mkdir(authentikLock).then(
@@ -103,8 +103,8 @@ async function oneAtATime(signIn: () => Promise<void>) {
 }
 
 /**
- * Signs in on Authentik's sign-in page, which the browser must be on, through the emailed link dev's Authentik sends
- * to Mailpit, and waits to be sent back to the app.
+ * Signs in on Authentik's sign-in page, which the browser must be on, through the emailed link Authentik sends to
+ * Mailpit, and waits to be sent back to the app.
  */
 export async function signIn(page: Page, visitor: Visitor): Promise<void> {
   await oneAtATime(async () => {
@@ -115,20 +115,20 @@ export async function signIn(page: Page, visitor: Visitor): Promise<void> {
     const query = encodeURIComponent(`to:"${visitor.email}"`);
     await expect
       // Dev's Authentik sometimes takes over a minute to send it.
-      .poll(async () => (await proxyOk("mailpit", 8025, `/api/v1/search?query=${query}`)).messages?.[0]?.ID, {
+      .poll(async () => (await mailpit(`/api/v1/search?query=${query}`)).messages?.[0]?.ID, {
         timeout: 120_000,
         intervals: [2_000],
       })
       .toBeTruthy();
-    const found = await proxyOk("mailpit", 8025, `/api/v1/search?query=${query}`);
-    const message = await proxyOk("mailpit", 8025, `/api/v1/message/${found.messages[0].ID}`);
+    const found = await mailpit(`/api/v1/search?query=${query}`);
+    const message = await mailpit(`/api/v1/message/${found.messages[0].ID}`);
     const href = /href="([^"]+)"/.exec(message.HTML)?.[1];
     assert.ok(href, "The sign-in email has no link.");
     await page.goto(href.replace(/&amp;/g, "&"));
     await page.getByRole("button", { name: "Continue" }).click();
     // Authentik, then Directus, send the browser back. Dev's Authentik can take a minute over the authorize step.
-    const { domain } = await devPlatform();
-    await page.waitForURL((url) => url.host === domain, { timeout: 120_000 });
+    const { host } = new URL(await app());
+    await page.waitForURL((url) => url.host === host, { timeout: 120_000 });
   });
 }
 
@@ -139,9 +139,8 @@ export async function signIn(page: Page, visitor: Visitor): Promise<void> {
 export async function signInWithPassword(page: Page, visitor: Visitor): Promise<void> {
   const password = randomBytes(24).toString("base64url");
   await asAdmin("PATCH", `/users/${visitor.directusUserId}`, { provider: "default", password });
-  const { domain } = await devPlatform();
-  const response = await page.request.post(`https://directus.${domain}/auth/login`, {
+  const response = await page.request.post(`${await directusUrl()}/auth/login`, {
     data: { email: visitor.email, password, mode: "session" },
   });
-  assert.ok(response.ok(), `Can't sign in to dev's Directus as ${visitor.email}: ${response.status()}`);
+  assert.ok(response.ok(), `Can't sign in to Directus as ${visitor.email}: ${response.status()}`);
 }

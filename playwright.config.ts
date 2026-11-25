@@ -1,7 +1,9 @@
 import { defineConfig } from "@playwright/test";
 import { defineBddConfig } from "playwright-bdd";
+import { ciAppUrl, ciStack } from "./test/features/target";
 
-// The journeys, in a browser against dev. A scenario tagged @fixme is written but not built yet.
+// The journeys, in a browser against a CI stack when CI_STACK_TARGET is set, or else dev. A scenario tagged @fixme is
+// written but not built yet.
 const testDir = defineBddConfig({
   features: "features/*.feature",
   steps: "test/features/*.ts",
@@ -24,8 +26,17 @@ export default defineConfig({
   globalSetup: "./test/features/global-setup.ts",
   expect: { timeout: 30_000 },
   reporter: "list",
+  // Against a CI stack, the app is built for its Directus and Authentik and served here.
+  ...(ciStack && {
+    webServer: {
+      command: `pnpm exec vite build --outDir .features-app && pnpm exec vite preview --outDir .features-app --port ${new URL(ciAppUrl).port} --strictPort`,
+      url: ciAppUrl,
+      env: { VITE_DIRECTUS_URL: ciStack.directus.url, VITE_AUTHENTIK_URL: ciStack.authentik.url },
+      timeout: 180_000,
+    },
+  }),
   use: {
-    baseURL: process.env["SAIL_TEAM_URL"] ?? "https://dev.cycsail.team",
+    baseURL: ciStack ? ciAppUrl : (process.env["SAIL_TEAM_URL"] ?? "https://dev.cycsail.team"),
     // A typical laptop (AGENTS.md). A phone scenario sets its own.
     viewport: { width: 1440, height: 900 },
     trace: "retain-on-failure",

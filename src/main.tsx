@@ -15,7 +15,8 @@ if (next) {
 
 const router = makeRouter();
 
-if (import.meta.env.DEV) {
+// Made-up data, unless the dev server is pointed at a real Directus, such as a CI stack's (AGENTS.md).
+if (import.meta.env.DEV && !import.meta.env.VITE_DIRECTUS_URL) {
   const { startMocks } = await import("./mocks/browser.ts");
   await startMocks();
 }

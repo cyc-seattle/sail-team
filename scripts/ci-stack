@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Starts platform's CI stack from .platform, a checkout of the release package.json names, as integration-ci.yml
+# does. Needs Docker, and the license in DIRECTUS_LICENSE_KEY. Stop it with `mise run ci-stack-down` the same day.
+set -euo pipefail
+
+version=$(node -p 'require("@cyc-seattle/platform/package.json").version')
+if [[ ! -d .platform ]]; then
+  git clone --quiet https://github.com/cyc-seattle/platform.git .platform
+fi
+git -C .platform fetch --quiet --tags origin
+git -C .platform checkout --quiet "v$version"
+cd .platform
+mise trust --quiet
+mise run install
+mise run ci-stack

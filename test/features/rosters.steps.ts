@@ -5,7 +5,7 @@ import { app, test } from "./fixtures";
 import { hasRole, setRole, type Program, type Squad } from "./squad";
 import { makeDirectusUser, type Visitor } from "./visitors";
 
-// Steps for features/rosters.feature, against dev, with made-up programs and families (./squad.ts). Directus's rules
+// Steps for features/rosters.feature, with made-up programs and families (./squad.ts). Directus's rules
 // decide what the visitor sees, so these check what the page shows, not what it asked for.
 
 const { Given, When, Then } = createBdd(test);
@@ -55,7 +55,7 @@ async function another(squad: Squad, first: string, shares: boolean) {
 /** A sailor's row in the roster's table, which the journeys see at a laptop's size. */
 const row = (page: Page, sailor: string) => page.getByRole("row").filter({ hasText: sailor });
 
-/** The run's sailors the roster shows, by name. Dev's other teams show too, so only the run's own rows count. */
+/** The run's sailors the roster shows, by name. Other runs' teams can show too, so only the run's own rows count. */
 async function shows(page: Page, run: string, sailors: string[]) {
   await expect(page.getByRole("row").filter({ hasText: `Halyard ${run}` })).toHaveCount(sailors.length);
   for (const sailor of sailors) {

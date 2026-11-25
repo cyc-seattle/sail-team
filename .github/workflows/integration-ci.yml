@@ -1,0 +1,106 @@
+name: integration-ci
+
+# The journeys, in a browser against a throwaway CI stack in each job: platform's Directus, Authentik, Mailpit and the
+# fakes in containers on the runner, from the release package.json names (platform's docs/testing.md, "From another
+# repo"). Nothing touches GCP or dev's lock.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: integration-ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  shard:
+    name: shard ${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    # A licensed Directus that's gone within 24 hours never spends an activation (platform's docs/backend.md).
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    env:
+      DIRECTUS_LICENSE_KEY: ${{ secrets.DIRECTUS_LICENSE_KEY }}
+      MISE_TASK_RUN_AUTO_INSTALL: "false"
+    steps:
+      # A PR from a fork gets no secrets, and unlicensed Directus refuses platform's schema.
+      - name: Skip without the license
+        id: license
+        run: |
+          if [[ -z "$DIRECTUS_LICENSE_KEY" ]]; then
+            echo "::notice::No DIRECTUS_LICENSE_KEY, as on a PR from a fork, so the journeys don't run."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.license.outputs.skip != 'true'
+      - uses: jdx/mise-action@924e7c586e33d7d4bae9c14e26c5d22e2beb6e78 # v5.3.0
+        if: steps.license.outputs.skip != 'true'
+        with:
+          # The journeys need neither gcloud nor Pulumi.
+          install_args: node pnpm
+      - if: steps.license.outputs.skip != 'true'
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+      - name: Find platform's release
+        id: platform
+        if: steps.license.outputs.skip != 'true'
+        run: echo "version=$(node -p 'require("@cyc-seattle/platform/package.json").version')" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.license.outputs.skip != 'true'
+        with:
+          repository: cyc-seattle/platform
+          ref: v${{ steps.platform.outputs.version }}
+          path: .platform
+          # The planning engine is stamped with the latest release tag (platform's stacks/backend/engine-files.ts).
+          fetch-depth: 0
+      - uses: jdx/mise-action@924e7c586e33d7d4bae9c14e26c5d22e2beb6e78 # v5.3.0
+        if: steps.license.outputs.skip != 'true'
+        with:
+          working_directory: .platform
+      - run: mise run install
+        if: steps.license.outputs.skip != 'true'
+        working-directory: .platform
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Find the cached stack
+        id: key
+        if: steps.license.outputs.skip != 'true'
+        working-directory: .platform
+        run: echo "key=$(mise exec -- node scripts/ci-stack/index.ts key)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        if: steps.license.outputs.skip != 'true'
+        with:
+          path: .platform/.ci-stack-cache
+          key: ${{ steps.key.outputs.key }}
+      - run: mise run ci-stack
+        if: steps.license.outputs.skip != 'true'
+        working-directory: .platform
+      - run: mise run integration-ci -- --shard=${{ matrix.shard }}/2
+        if: steps.license.outputs.skip != 'true'
+      - name: The stack's logs
+        if: failure() && steps.license.outputs.skip != 'true'
+        working-directory: .platform
+        run: mise exec -- node scripts/ci-stack/index.ts logs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure() && steps.license.outputs.skip != 'true'
+        with:
+          name: test-results-ci-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 7
+
+  # One check to require, whatever the shards are.
+  integration:
+    needs: shard
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: '[[ "${{ needs.shard.result }}" == success ]]'
