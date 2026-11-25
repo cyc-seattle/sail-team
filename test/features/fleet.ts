@@ -1,6 +1,6 @@
 import { asAdmin, newRunId } from "./support";
 
-// A made-up boat class on dev, for Inventory's journeys, named so a later run can find and delete what an earlier one
+// A made-up boat class, for Inventory's journeys, named so a later run can find and delete what an earlier one
 // left, with the boats a scenario adds to it.
 
 const prefix = "Journey ";

@@ -11,7 +11,7 @@ let app: { client: Client; url: string; keeper: SessionKeeper } | undefined;
 /** The app's own Directus, beside whatever hostname serves it. Made on first use, so tests can load routes. */
 export function appDirectus() {
   if (!app) {
-    const url = directusUrlFor(window.location.hostname);
+    const url = directusUrlFor(window.location.hostname, import.meta.env.VITE_DIRECTUS_URL);
     const keeper = sessionKeeper({
       directusUrl: url,
       fetch: (input, init) => globalThis.fetch(input, init),

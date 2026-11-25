@@ -1,7 +1,7 @@
 Feature: Signing in to sail-team
   sail-team has no sign-in of its own. Directus decides who someone is and what they may see, and the app
-  shows only what Directus lets them read. These journeys run in a browser against dev, as people made
-  up for each run.
+  shows only what Directus lets them read. These journeys run in a browser against a throwaway test copy
+  of the platform, as people made up for each run.
 
   Scenario: Someone who isn't signed in is sent to sign in
     When I open Planning without signing in

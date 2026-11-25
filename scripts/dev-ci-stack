@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Serves the app with Vite against the CI stack's Directus and Authentik, which `mise run ci-stack` started.
+set -euo pipefail
+
+target=.platform/.ci-stack/target.json
+if [[ ! -f $target ]]; then
+  echo "No CI stack: run \`mise run ci-stack\` first." >&2
+  exit 1
+fi
+VITE_DIRECTUS_URL=$(node -p "require('./$target').directus.url") \
+  VITE_AUTHENTIK_URL=$(node -p "require('./$target').authentik.url") \
+  exec pnpm exec vite --port 5173 --strictPort

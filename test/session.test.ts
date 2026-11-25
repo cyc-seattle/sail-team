@@ -51,12 +51,23 @@ describe("the sign-in addresses", () => {
     expect(directusUrlFor("dev.cycsail.team")).toBe("https://directus.dev.cycsail.team");
   });
 
+  it("finds the Directus the build names", () => {
+    expect(directusUrlFor("localhost", "http://localhost:10000")).toBe("http://localhost:10000");
+    expect(directusUrlFor("cycsail.team", "")).toBe("https://directus.cycsail.team");
+  });
+
   it("sends the browser back to the page it came from", () => {
     expect(signInUrl("https://directus.example.org", "https://example.org/plans")).toBe(url);
   });
 
   it("signs out through Authentik beside the app", () => {
     expect(signOutUrl("dev.cycsail.team")).toBe("https://login.dev.cycsail.team/flows/-/default/invalidation/");
+  });
+
+  it("signs out through the Authentik the build names", () => {
+    expect(signOutUrl("localhost", "http://localhost:10004")).toBe(
+      "http://localhost:10004/flows/-/default/invalidation/",
+    );
   });
 });
 

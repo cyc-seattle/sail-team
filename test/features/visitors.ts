@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import { asAdmin, authentikUsers, newRunId } from "./support";
 
-// Made-up people who sign in on dev, each with an email no one else has, deleted when the scenario ends. Directus
+// Made-up people who sign in, each with an email no one else has, deleted when the scenario ends. Directus
 // checks a new user's email against IANA's TLDs, so they can't use `.test`.
 const domain = "example.com";
 const prefix = "sail-team.visitor.";
@@ -31,7 +31,7 @@ export function newVisitor(): Visitor {
 async function idOf(collection: "roles" | "policies", name: string): Promise<string> {
   const [found] = await asAdmin("GET", `/${collection}?filter[name][_eq]=${encodeURIComponent(name)}&fields=id`);
   if (!found) {
-    throw new Error(`Dev's Directus has no ${collection === "roles" ? "role" : "policy"} named ${name}.`);
+    throw new Error(`Directus has no ${collection === "roles" ? "role" : "policy"} named ${name}.`);
   }
   return found.id;
 }

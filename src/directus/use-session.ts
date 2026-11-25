@@ -31,7 +31,7 @@ export async function signOutOfApp() {
   await appDirectus().keeper.stop();
   return signOut({
     client: appDirectus().client,
-    signOutUrl: signOutUrl(window.location.hostname),
+    signOutUrl: signOutUrl(window.location.hostname, import.meta.env.VITE_AUTHENTIK_URL),
     navigate: (url) => window.location.assign(url),
   });
 }

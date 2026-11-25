@@ -3,7 +3,7 @@ import { createBdd } from "playwright-bdd";
 import { app, test } from "./fixtures";
 import { giveThroughGroup, makeDirectusUser } from "./visitors";
 
-// Steps for features/inventory.feature, against dev, with a made-up boat class (./fleet.ts).
+// Steps for features/inventory.feature, with a made-up boat class (./fleet.ts).
 
 const { Given, When, Then } = createBdd(test);
 

@@ -4,7 +4,7 @@ import type { Club } from "./club";
 import { app, opened, test } from "./fixtures";
 import { asAdmin } from "./support";
 
-// Steps for features/plans.feature, against dev, with a made-up organization's Financial Plans (./club.ts).
+// Steps for features/plans.feature, with a made-up organization's Financial Plans (./club.ts).
 
 const { Given, When, Then } = createBdd(test);
 

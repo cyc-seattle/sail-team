@@ -70,8 +70,32 @@ run = "./scripts/stack up --yes"
 
 # Needs the dev deploy, so it isn't part of ci.
 [tasks.integration]
-description = "Run the sign-in journeys in a browser against dev"
+description = "Run the journeys in a browser against dev"
 run = ["pnpm exec bddgen", "pnpm exec playwright test --pass-with-no-tests"]
+
+# The CI stack runs from .platform, a checkout of the platform release package.json names (AGENTS.md).
+[tasks.ci-stack]
+description = "Start platform's CI stack in containers, from .platform"
+run = "./scripts/ci-stack"
+
+[tasks.ci-stack-down]
+description = "Stop the CI stack"
+dir = "{{config_root}}/.platform"
+run = "mise run ci-stack-down"
+
+[tasks.ci-seed]
+description = "Fill the CI stack's Directus with platform's sample data, for screenshots"
+dir = "{{config_root}}/.platform"
+run = "mise run ci-seed"
+
+[tasks.integration-ci]
+description = "Run the journeys in a browser against the CI stack"
+run = ["pnpm exec bddgen", "pnpm exec playwright test"]
+env.CI_STACK_TARGET = "{{config_root}}/.platform/.ci-stack/target.json"
+
+[tasks.dev-ci-stack]
+description = "Serve the app locally against the CI stack's Directus, in place of made-up data"
+run = "./scripts/dev-ci-stack"
 
 [tasks.ci]
 description = "Run all checks and tests"

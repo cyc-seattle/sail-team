@@ -28,7 +28,7 @@ jobs:
       task: deploy
   # A run started with GITHUB_TOKEN may start only a workflow_dispatch, so the tests run in a
   # workflow of their own, which keeps them out of this run.
-  integration:
+  start-integration:
     needs: dev
     runs-on: ubuntu-latest
     permissions:

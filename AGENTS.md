@@ -30,6 +30,15 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
 - `mise run test`: run the tests with Vitest
 - `mise run build`: build into `dist/`
 - `mise run integration`: run the journeys in `features/` in a browser against dev. It isn't part of `ci`.
+- `mise run ci-stack`: start platform's CI stack in containers, from `.platform`, a checkout of the platform release
+  `package.json` names. It needs Docker and Directus's license in `DIRECTUS_LICENSE_KEY`. `mise run ci-stack-down`
+  stops it: stop it the same day, since the license allows a throwaway Directus only if it's gone within 24 hours.
+  Its Directus sends a sign-in back only to the app on ports 4173 and 5173 (`CI_STACK_REDIRECTS` in
+  `scripts/ci-stack`).
+- `mise run integration-ci`: run the journeys against the CI stack, with the app built for it and served on
+  `http://localhost:4173`
+- `mise run ci-seed`: fill the CI stack with platform's sample data, and print its logins
+- `mise run dev-ci-stack`: serve the app on `http://localhost:5173` against the CI stack, in place of made-up data
 
 ## Layout
 
@@ -145,19 +154,20 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   Directus still checks every edit.
 - `src/mocks/` answers Directus's requests with made-up people and permissions, in `mise run dev` and in tests. Never
   put real club data there.
-- `mise run integration` runs the journeys against dev, as your ADC login (deploy-dev in Actions), with
-  `PULUMI_STACK=dev`. Each scenario's visitor is made up for it (`test/features/visitors.ts`): a Directus user on the
+- `mise run integration-ci` runs the journeys against a CI stack, reading its services and logins from
+  `.platform/.ci-stack/target.json` (`CI_STACK_TARGET`, `test/features/target.ts`). `mise run integration` runs them
+  against dev, as your ADC login (deploy-dev in Actions), with `PULUMI_STACK=dev`. Each scenario's visitor is made up for it (`test/features/visitors.ts`): a Directus user on the
   Community role and, for a planner, a person in a group that gives their Plan policies (Plan Reader; Plan Writer; or Plan
   Writer and Plan Admin), the way the club gives policies.
-  The sign-in journeys sign in through Authentik's emailed link, which dev's Authentik sends to Mailpit, one at a
+  The sign-in journeys sign in through Authentik's emailed link, which Authentik sends to Mailpit, one at a
   time. Every other journey gives its visitor a password and signs in to Directus directly, three scenarios at a
   time. A plans scenario also makes a made-up organization (`test/features/club.ts`): its accounts, a program area and
   product, and Financial Plans, each holding an Operations Plan and an area's plan with its program's settings and
   blocks, frozen the way a Plan Admin freezes them, so platform works out their results. A rosters scenario makes a team, its divisions, and
   households (`test/features/squad.ts`), with the Clubspot rows
-  clubspot-sync would read them from, and waits for platform's hook to move a parent on a team to the Team role. Dev's `backend:frozenPlansDeletable` lets its admin delete them afterwards; prod refuses it. Everything is deleted when
-  the scenario ends, and a later run deletes what an earlier one left. The steps refuse any environment but dev, and
-  never touch prod's users.
+  clubspot-sync would read them from, and waits for platform's hook to move a parent on a team to the Team role. Dev's and the CI stack's `backend:frozenPlansDeletable` lets their admin delete them afterwards; prod refuses it.
+  Everything is deleted when the scenario ends, and a later run deletes what an earlier one left. The steps refuse any
+  environment but a CI stack or dev, and never touch prod's users.
 - `features/` holds the journeys in Gherkin, with their steps in `test/features/`. Each is living documentation of how
   the app behaves for a club member, so write it in their words. A scenario tagged `@fixme` is agreed but not built
   yet: a features PR adds it, and the PR that builds it removes the tag.
@@ -181,6 +191,10 @@ policy that lets the page call only itself and Directus.
   `https://dev.cycsail.team/plans`, previews prod, and applies prod once a maintainer approves. Prod runs the image dev
   built for the same commit. All of it goes through the org's `deploy.yml` (`.github/workflows/pull-request.yml`).
   `gh workflow run pull-request.yml --ref main` retries main's deploys. Only `main` deploys to dev; a branch can't.
+- `integration-ci.yml` runs the journeys on every PR and every push to `main`, on a CI stack started from the
+  platform release `package.json` names (platform's `docs/testing.md`, "From another repo"). Its `integration` job
+  passes only when they do, so it's the one to require. It needs the `DIRECTUS_LICENSE_KEY` secret, and skips with a notice without it, as on a PR from a fork. When the journeys fail, it
+  uploads `test-results/` as `test-results-ci`, kept 7 days.
 - After each dev deploy, `main`'s run starts `integration.yml`, which runs the journeys against what's on dev. Deploys
   take dev's lock first, so the tests may run on a newer commit than the one that started them, and a run skips itself
   when nothing new is on dev since the last one. A failed run opens or comments on the
@@ -216,7 +230,9 @@ that changes a page or component shows them there:
 - Host them on the `screenshots` branch, which is never merged: commit them to `pr-<number>/` on it, push, and embed
   each with `https://raw.githubusercontent.com/cyc-seattle/sail-team/<commit>/pr-<number>/<name>.png`, using that
   commit's SHA so the link never changes. Never put them on the PR's own branch, or only in `.plans/`.
-- Storybook or Playwright's `page.screenshot()` can take them. Storybook's Laptop and Phone viewports use these sizes,
+- Storybook or Playwright's `page.screenshot()` can take them. For a page with real data, take them on a CI stack of
+  your own, never on prod: `mise run ci-stack`, `mise run ci-seed`, then `mise run dev-ci-stack`, and sign in as one
+  of the sample logins `ci-seed` prints. Run `mise run ci-stack-down` the same day. Storybook's Laptop and Phone viewports use these sizes,
   the story tests run at both, and the journeys run at the laptop's (`playwright.config.ts`).
 
 Before asking for review, run the [`ux-review`](.agents/skills/ux-review/SKILL.md) skill on the change, and fix what it

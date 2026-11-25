@@ -5,7 +5,7 @@ import { hasRole, type Squad } from "./squad";
 import { asAdmin } from "./support";
 import { makeDirectusUser, type Visitor } from "./visitors";
 
-// Steps for features/household.feature, against dev, with a made-up household (./squad.ts).
+// Steps for features/household.feature, with a made-up household (./squad.ts).
 
 const { Given, When, Then } = createBdd(test);
 

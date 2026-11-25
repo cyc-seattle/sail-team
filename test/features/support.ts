@@ -2,10 +2,11 @@ import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { GoogleAuth } from "google-auth-library";
+import { ciAppUrl, ciStack } from "./target";
 
-// What the journeys reach on dev, as whatever identity ADC holds (deploy-dev in Actions): the cluster, through its
-// API, for the Secrets and Mailpit, and dev's Directus as its built-in admin. Ported from isthmia's
-// test/features/support.ts. Never point any of it at prod.
+// What the journeys reach: a CI stack's services, as its target.json gives them, or dev's, as whatever identity ADC
+// holds (deploy-dev in Actions): the cluster, through its API, for the Secrets and Mailpit, and dev's Directus as its
+// built-in admin. Ported from isthmia's test/features/support.ts. Never point any of it at prod.
 
 /** Where workers take turns at Authentik's sign-in. ./global-setup.ts clears one a killed run left. */
 export const authentikLock = join(tmpdir(), "sail-team-journeys-authentik.lock");
@@ -70,6 +71,21 @@ export function devPlatform(): Promise<DevPlatform> {
   return platform;
 }
 
+/** The app's address, such as `https://dev.cycsail.team`. */
+export async function appUrl(): Promise<string> {
+  return ciStack ? ciAppUrl : `https://${(await devPlatform()).domain}`;
+}
+
+/** Directus's address, such as `https://directus.dev.cycsail.team`. */
+export async function directusUrl(): Promise<string> {
+  return ciStack ? ciStack.directus.url : `https://directus.${(await devPlatform()).domain}`;
+}
+
+/** Authentik's address, such as `https://login.dev.cycsail.team`. */
+export async function authentikUrl(): Promise<string> {
+  return ciStack ? ciStack.authentik.url : `https://login.${(await devPlatform()).domain}`;
+}
+
 /** Calls dev's cluster API through its DNS-based endpoint, with the caller's Google token. */
 async function kube(method: string, path: string) {
   const { clusterEndpoint } = await devPlatform();
@@ -94,6 +110,18 @@ export async function proxyOk(service: string, port: number, path: string): Prom
   return response.body;
 }
 
+/** Calls Mailpit's API, which must succeed. */
+export async function mailpit(path: string): Promise<any> {
+  if (!ciStack) {
+    return proxyOk("mailpit", 8025, path);
+  }
+  const response = await http(`${ciStack.services["mailpit:8025"]}${path}`);
+  if (!response.ok) {
+    throw new Error(`GET mailpit${path}: ${response.status} ${await response.text()}`);
+  }
+  return response.json();
+}
+
 /** One key of a Secret in dev's namespace. */
 export async function secretValue(name: string, key: string): Promise<string> {
   const response = await kube("GET", `${await namespaced("", "secrets")}/${name}`);
@@ -116,10 +144,16 @@ async function deploymentEnv(deployment: string, name: string): Promise<string> 
 
 let admin: Promise<{ baseUrl: string; token: string }> | undefined;
 
-/** Signs in to dev's Directus as its built-in admin, with the password in the `directus` Secret. */
+/**
+ * Directus as its built-in admin: a CI stack's static token, or dev's, signed in with the password in the `directus`
+ * Secret.
+ */
 function directusAdmin() {
   admin ??= (async () => {
-    const baseUrl = `https://directus.${(await devPlatform()).domain}`;
+    if (ciStack) {
+      return { baseUrl: ciStack.directus.url, token: ciStack.directus.adminToken };
+    }
+    const baseUrl = await directusUrl();
     const email = await deploymentEnv("directus", "ADMIN_EMAIL");
     const password = await secretValue("directus", "ADMIN_PASSWORD");
     const response = await http(`${baseUrl}/auth/login`, {
@@ -135,7 +169,7 @@ function directusAdmin() {
   return admin;
 }
 
-/** A Directus REST call as dev's admin, which must succeed. Returns the response's `data`. */
+/** A Directus REST call as its admin, which must succeed. Returns the response's `data`. */
 export async function asAdmin(method: string, path: string, body?: unknown): Promise<any> {
   for (let attempt = 1; ; attempt++) {
     const { baseUrl, token } = await directusAdmin();
@@ -162,10 +196,10 @@ export async function asAdmin(method: string, path: string, body?: unknown): Pro
   }
 }
 
-/** Calls Authentik's users API on dev, with the bootstrap token Authentik's stack wrote to its Secret. */
+/** Calls Authentik's users API with its bootstrap token: a CI stack's, or the one dev's stack wrote to its Secret. */
 export async function authentikUsers(method: string, path: string): Promise<any> {
-  const api = `https://login.${(await devPlatform()).domain}/api/v3/core/users`;
-  const token = await secretValue("authentik", "AUTHENTIK_BOOTSTRAP_TOKEN");
+  const api = `${await authentikUrl()}/api/v3/core/users`;
+  const token = ciStack ? ciStack.authentik.token : await secretValue("authentik", "AUTHENTIK_BOOTSTRAP_TOKEN");
   const response = await http(`${api}${path}`, { method, headers: { authorization: `Bearer ${token}` } });
   if (!response.ok) {
     throw new Error(`${method} ${api}${path}: ${response.status} ${await response.text()}`);
