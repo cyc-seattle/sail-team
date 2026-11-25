@@ -311,8 +311,8 @@ export class Club {
 
   /**
    * Deletes everything the scenario made. Financial Plans go first, the ones a visitor started in the app before the
-   * ones they were started from, each with its plans, their rows, and its results. Then the rest, newest first. Dev's and the CI
-   * stack's `backend:frozenPlansDeletable` lets the admin delete frozen ones; prod refuses it.
+   * ones they were started from, each with its plans, their rows, and its results. Then the rest, newest first. The CI stack's
+   * `backend:frozenPlansDeletable` lets the admin delete frozen ones; prod refuses it.
    */
   async cleanUp(): Promise<void> {
     const made = this.made.filter((m) => m.collection === "financial_plans").map((m) => m.id);

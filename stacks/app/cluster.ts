@@ -27,13 +27,33 @@ export function commitSha(): string {
 }
 
 /**
- * The app's image, by digest. Dev builds it from this commit and pushes it to the environment's registry, tagged with
- * the commit. Prod looks it up by that tag, so prod runs exactly what dev ran.
+ * The app's image, by digest, tagged with the commit. Each tag is pushed once: if it's in the environment's registry,
+ * the deploy runs it as it is. Otherwise the deploy builds and pushes it (cyc-seattle/platform#171).
  */
-export function deployedImage({ platform }: Cluster, name: string, context: string): pulumi.Output<string> {
+export async function deployedImage(
+  { platform }: Cluster,
+  name: string,
+  context: string,
+): Promise<pulumi.Output<string>> {
   const tag = `${platform.registry}/${name}:${commitSha()}`;
-  if (isDev) {
-    return new docker.Image(name, {
+  const [host = "", project = "", repositoryId = ""] = platform.registry.split("/");
+  const found = await gcp.artifactregistry
+    .getDockerImage({
+      location: host.replace(/-docker\.pkg\.dev$/, ""),
+      project,
+      repositoryId,
+      imageName: `${name}:${commitSha()}`,
+    })
+    .then(
+      (image) => image.selfLink,
+      () => undefined,
+    );
+  if (found !== undefined) {
+    return pulumi.output(found);
+  }
+  return new docker.Image(
+    name,
+    {
       tags: [tag],
       context: { location: context },
       platforms: ["linux/amd64"],
@@ -47,20 +67,11 @@ export function deployedImage({ platform }: Cluster, name: string, context: stri
           password: gcp.organizations.getClientConfigOutput({}).accessToken,
         },
       ],
-    }).ref;
-  }
-  const [host = "", project = "", repositoryId = ""] = platform.registry.split("/");
-  const image = gcp.artifactregistry
-    .getDockerImage({
-      location: host.replace(/-docker\.pkg\.dev$/, ""),
-      project,
-      repositoryId,
-      imageName: `${name}:${commitSha()}`,
-    })
-    .catch((error: unknown) => {
-      throw new Error(`Can't find ${tag}. Dev builds it: deploy this commit to dev first. (${String(error)})`);
-    });
-  return pulumi.output(image).apply((found) => found.selfLink);
+    },
+    // The provider deletes an image's tags with it. The next deploy finds the tag and drops the resource, and the
+    // pods still run that tag (cyc-seattle/platform#72).
+    { retainOnDelete: true },
+  ).ref;
 }
 
 /**
