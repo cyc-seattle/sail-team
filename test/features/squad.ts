@@ -77,7 +77,7 @@ export class Squad {
       program_id: program["id"],
     });
     const offering = await this.create("offerings", {
-      program_id: program["id"],
+      product_id: program["product_id"],
       starts_on: startsOn,
       ends_on: endsOn,
       capacity: null,

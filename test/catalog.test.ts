@@ -48,7 +48,7 @@ describe("offeringsByProgram", () => {
   ) => ({
     id,
     name,
-    program_id: "p-g",
+    product_id: "g",
     starts_on,
     ends_on,
     price_cents: 67500,

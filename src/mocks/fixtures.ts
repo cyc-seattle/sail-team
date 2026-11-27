@@ -38,8 +38,9 @@ export const parentPermissions: Permissions = {
   schools: read("partial", ["id", "name"]),
   contacts: read("partial", ["subject_id", "contact_id", "relationship_type"]),
   registrations: read("partial", ["id", "person_id", "offering_id", "status"]),
-  offerings: read("partial", ["id", "program_id", "starts_on", "ends_on"]),
-  programs: read("partial", ["id", "name"]),
+  offerings: read("partial", ["id", "product_id", "starts_on", "ends_on"]),
+  programs: read("partial", ["id", "name", "product_id"]),
+  products: read("partial", ["id", "name"]),
   program_areas: read("partial", ["id", "name"]),
 };
 
@@ -50,7 +51,7 @@ export const parentPermissions: Permissions = {
 export const teamPermissions: Permissions = {
   ...parentPermissions,
   programs: read("partial", ["id", "name", "team", "product_id", "google_group_id"]),
-  products: read("partial", ["id", "program_area_id"]),
+  products: read("partial", ["id", "name", "program_area_id"]),
   google_groups: read("partial", ["id", "name", "email"]),
 };
 
