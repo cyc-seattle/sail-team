@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { ReportSection } from "@/components/plans/reports/report-page";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { offeringsByProgram, type CatalogOffering, type CatalogProduct } from "@/model/catalog";
@@ -9,14 +10,17 @@ export function OfferingsList({
   offerings,
   products,
   today,
+  actions,
 }: {
   offerings: CatalogOffering[];
   products: CatalogProduct[];
   today: string;
+  /** Its buttons, such as Sync from plan for a Catalog Writer. */
+  actions?: ReactNode;
 }) {
   const groups = offeringsByProgram(offerings, products, today);
   return (
-    <ReportSection id="offerings" title="Offerings">
+    <ReportSection id="offerings" title="Offerings" actions={actions}>
       {groups.length === 0 ? (
         <p className="text-sm text-muted-foreground">No offerings coming up.</p>
       ) : (

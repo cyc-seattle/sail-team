@@ -6,6 +6,7 @@ import { catalogTables } from "./catalog";
 import { crewTables, photo } from "./crew";
 import { homeTables } from "./home";
 import { inventoryTables } from "./inventory";
+import { planSyncTables } from "./plan-sync";
 import { engine, tables } from "./plans";
 import { logins, rosterTables } from "./roster";
 
@@ -73,6 +74,7 @@ function shape(row: Row, fields: string | null): Row {
 
 /** A made-up table by name, from whichever area has it. Crew's comes first, for its people. */
 const tableOf = (table: string): Row[] | undefined =>
+  planSyncTables[table] ??
   crewTables[table] ??
   inventoryTables[table] ??
   catalogTables[table] ??
