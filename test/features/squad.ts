@@ -69,12 +69,23 @@ export class Squad {
       start_date: startsOn,
       end_date: endsOn,
     });
-    const session = await this.create("clubspot_sessions", { id: this.key("session"), camp_id: camp["id"] });
+    const session = await this.create("clubspot_sessions", {
+      id: this.key("session"),
+      camp_id: camp["id"],
+      start_date: startsOn,
+      end_date: endsOn,
+    });
     const klass = await this.create("clubspot_classes", {
       id: this.key("class"),
       name: `Class ${this.run}`,
       camp_id: camp["id"],
       program_id: program["id"],
+    });
+    // An offering is its class in one session (cyc-seattle/platform#395): here, the camp's only one.
+    await this.create("clubspot_session_classes", {
+      id: `${session["id"]}:${klass["id"]}`,
+      session_id: session["id"],
+      class_id: klass["id"],
     });
     const offering = await this.create("offerings", {
       product_id: program["product_id"],
@@ -82,7 +93,7 @@ export class Squad {
       ends_on: endsOn,
       capacity: null,
       clubspot_class_id: klass["id"],
-      clubspot_session_id: null,
+      clubspot_session_id: session["id"],
     });
     return {
       name: programName,
