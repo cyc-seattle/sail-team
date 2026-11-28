@@ -81,11 +81,11 @@ describe("the sync's review", () => {
     );
     expect(rows.map(describeRow)).toEqual([
       { action: "Add", what: "Tue, Mar 2, 4 pm–7 pm" },
-      { action: "Skipped", what: "Mon, Jun 21: no start or end time in the plan" },
+      { action: "Skipped", what: "Mon, Jun 21: no start or end time" },
       { action: "Change", what: "Price: $375 to $395" },
       {
         action: "Archive",
-        what: "The offering, which the plan in force doesn't plan. 4 registered.",
+        what: "Offering not in the plan in force. 4 registered.",
       },
     ]);
   });
@@ -103,6 +103,6 @@ describe("a schedule in words", () => {
     expect(
       scheduleText([1, 2, 3, 4, 5].map((weekday) => ({ weekday, start_time: "09:00:00", end_time: "15:00:00" }))),
     ).toBe("Mon–Fri 9 am–3 pm");
-    expect(scheduleText([])).toBe("No schedule");
+    expect(scheduleText([])).toBe("none");
   });
 });

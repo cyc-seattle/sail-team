@@ -112,23 +112,20 @@ export function PlanSyncReview({
   return (
     <ReportSection id="sync" title="Sync from plan" actions={controls}>
       {sync.state === "none" && (
-        <p className="text-sm text-muted-foreground">
-          No Financial Plan is in force for {sync.year}, so there's nothing to sync.
-        </p>
+        <p className="text-sm text-muted-foreground">No Financial Plan is in force for {sync.year}.</p>
       )}
       {sync.state === "draft" && (
         <p className="text-sm text-muted-foreground">
-          “{sync.plan.name}” is in force for {sync.year}, but it's a draft. Once it's frozen, its offerings can be
-          synced.
+          The plan in force for {sync.year}, “{sync.plan.name}”, is a draft. Freeze it to sync it.
         </p>
       )}
       {sync.state === "ready" && (
         <div className="grid gap-6">
           <p className="text-sm text-muted-foreground">
-            What “{sync.plan.name}”, the plan in force for {sync.year}, plans that the catalog doesn't have yet. Tick
-            what to apply. What you leave shows again next time.
+            Compares “{sync.plan.name}”, the plan in force for {sync.year}, with the catalog. Rows you don't apply show
+            again next time.
           </p>
-          {groups.length === 0 && <p className="text-sm">The catalog has everything the plan plans.</p>}
+          {groups.length === 0 && <p className="text-sm">No differences.</p>}
           {shown.map((g) => (
             <section key={g.area?.id ?? "none"} aria-label={g.area?.name ?? "No program area"} className="grid gap-4">
               <GroupHeading
@@ -224,7 +221,7 @@ const ACTIVITY_LINES: Record<string, (n: number) => string> = {
   "add-activity": (n) => `Add ${n} ${n === 1 ? "activity" : "activities"}`,
   "change-activity": (n) => `Change ${n} ${n === 1 ? "activity" : "activities"}`,
   "archive-activity": (n) => `Archive ${n} ${n === 1 ? "activity" : "activities"}`,
-  skipped: (n) => `${n} ${n === 1 ? "activity" : "activities"} skipped: no start or end time in the plan`,
+  skipped: (n) => `${n} ${n === 1 ? "activity" : "activities"} skipped: no start or end time`,
 };
 
 /** An offering's activities of one kind, under one line that ticks them all, opening to each one. */
@@ -258,7 +255,7 @@ function Activities({
       <details open={failed > 0} className="min-w-0 flex-1">
         <summary className="cursor-pointer text-sm">
           <span className={own.length === 0 ? "text-muted-foreground" : undefined}>{line}</span>
-          {failed > 0 && <span className="ml-2 text-destructive">{failed} couldn't be applied</span>}
+          {failed > 0 && <span className="ml-2 text-destructive">{failed} not applied</span>}
         </summary>
         <ul className="mt-1 grid gap-1">
           {rows.map((r) => (
@@ -307,7 +304,7 @@ function Row({
       </label>
       {error && (
         <p role="alert" className="ml-6 text-sm text-destructive">
-          Couldn't apply: {error}
+          Not applied: {error}
         </p>
       )}
     </li>

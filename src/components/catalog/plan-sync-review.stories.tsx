@@ -98,14 +98,16 @@ type Story = StoryObj<typeof meta>;
 export const Ready: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: "Apply 9 changes" })).toBeEnabled();
-    await expect(canvas.getByRole("checkbox", { name: /Archive: The offering.*4 registered/ })).not.toBeChecked();
+    await expect(
+      canvas.getByRole("checkbox", { name: /Archive: Offering not in the plan in force. 4 registered/ }),
+    ).not.toBeChecked();
   },
 };
 
 /** Ticking an archive with registrations adds it to what's applied. */
 export const TickAnArchive: Story = {
   play: async ({ canvas, args, userEvent }) => {
-    await userEvent.click(canvas.getByRole("checkbox", { name: /Archive: The offering/ }));
+    await userEvent.click(canvas.getByRole("checkbox", { name: /Archive: Offering not in the plan/ }));
     await userEvent.click(canvas.getByRole("button", { name: "Apply 10 changes" }));
     await waitFor(() => expect(args.onApply).toHaveBeenCalled());
     await expect((args.onApply as ReturnType<typeof fn>).mock.calls[0]![0]).toHaveLength(10);
@@ -117,7 +119,7 @@ export const Failed: Story = {
   args: { onApply: fn(async () => new Map([["week-1:price_cents", "You don't have permission to access this."]])) },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Apply 9 changes" }));
-    await expect(await canvas.findByRole("alert")).toHaveTextContent("Couldn't apply: You don't have permission");
+    await expect(await canvas.findByRole("alert")).toHaveTextContent("Not applied: You don't have permission");
   },
 };
 
@@ -125,7 +127,7 @@ export const Failed: Story = {
 export const Draft: Story = {
   args: { sync: { state: "draft", year: 2027, years: [2027], plan: { ...plan, name: "2027 Plan", status: "draft" } } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/it's a draft/)).toBeInTheDocument();
+    await expect(canvas.getByText(/is a draft/)).toBeInTheDocument();
   },
 };
 

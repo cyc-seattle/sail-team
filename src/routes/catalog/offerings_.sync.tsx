@@ -24,7 +24,7 @@ function SyncPage() {
   const session = useSession();
   const permissions = session.kind === "signed-in" ? session.permissions : undefined;
   if (!canWrite(permissions, "offerings", "update")) {
-    return <NoAccess what="the sync from plan" />;
+    return <NoAccess what="syncing from the plan" />;
   }
   return (
     <CatalogPage current="offerings">

@@ -166,7 +166,7 @@ function dayRuns(weekdays: number[]): string {
 
 /** A schedule as people read it, such as "Tue & Thu 4:15–7:30 pm" or "Mon–Fri 9 am–3 pm". Days at the same times go together. */
 export function scheduleText(days: ScheduleDay[]): string {
-  if (days.length === 0) return "No schedule";
+  if (days.length === 0) return "none";
   const byTimes = new Map<string, number[]>();
   for (const d of [...days].sort((a, b) => a.weekday - b.weekday)) {
     const key = `${clock(d.start_time)}–${clock(d.end_time)}`;
@@ -220,10 +220,10 @@ export function describeRow(row: SyncRow): { action: string; what: string } {
         action: "Archive",
         what:
           row.registrations > 0
-            ? `The offering, which the plan in force doesn't plan. ${row.registrations} registered.`
-            : "The offering, which the plan in force doesn't plan.",
+            ? `Offering not in the plan in force. ${row.registrations} registered.`
+            : "Offering not in the plan in force.",
       };
     case "skipped":
-      return { action: "Skipped", what: `${day(row.date)}: no start or end time in the plan` };
+      return { action: "Skipped", what: `${day(row.date)}: no start or end time` };
   }
 }
