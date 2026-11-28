@@ -307,22 +307,36 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         capitalItems,
         termRows,
       ] = await Promise.all([
+        // Its product and name are its catalog offering's (cyc-seattle/platform#395).
         rowsOf<
-          Omit<PlanOffering, "product_id"> & {
-            product_id: {
+          Omit<PlanOffering, "offering_id"> & {
+            offering_id: {
               id: string;
-              name: string;
-              programs: { id: string; color: string | null; sort: number | null }[];
+              name: string | null;
+              product_id: {
+                id: string;
+                name: string;
+                programs: { id: string; color: string | null; sort: number | null }[];
+              };
             };
           }
         >("plan_offerings", planIds, [
           "*",
-          "product_id.id",
-          "product_id.name",
-          "product_id.programs.id",
-          "product_id.programs.color",
-          "product_id.programs.sort",
-        ]),
+          "offering_id.id",
+          "offering_id.name",
+          "offering_id.product_id.id",
+          "offering_id.product_id.name",
+          "offering_id.product_id.programs.id",
+          "offering_id.product_id.programs.color",
+          "offering_id.product_id.programs.sort",
+        ]).then((rows) =>
+          rows.map(({ offering_id: planned, ...o }) => ({
+            ...o,
+            offering_id: planned.id,
+            name: planned.name ?? planned.product_id.name,
+            product_id: planned.product_id,
+          })),
+        ),
         rowsOf<PlanActivity>("plan_activities", planIds, [
           "id",
           "plan_id",

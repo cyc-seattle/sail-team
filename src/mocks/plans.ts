@@ -353,8 +353,7 @@ function operations(plan: string): Copy {
     c.add("plan_terms", termRow(name!), { name, starts_on, ends_on });
   }
   c.add("plan_offerings", "Boat storage", {
-    product_id: products.storage.id,
-    name: "Boat storage 2027",
+    offering_id: catalogOffering(products.storage.id, "Boat storage 2027"),
     term_id: null,
     starts_on: "2027-01-01",
     ends_on: "2027-12-31",
@@ -367,6 +366,14 @@ function operations(plan: string): Copy {
   return c;
 }
 
+/** The catalog's offerings the plans plan, each named once: every Financial Plan of the year plans the same. */
+const catalogOfferings = new Map<string, { id: string; product_id: string; name: string }>();
+const catalogOffering = (productId: string, name: string): string => {
+  const id = `catalog:${name}`;
+  catalogOfferings.set(id, { id, product_id: productId, name });
+  return id;
+};
+
 const offering = (
   c: Copy,
   name: string,
@@ -377,8 +384,7 @@ const offering = (
   fields: { capacity: number; target: number; price: number; cogs?: number; note?: string },
 ) =>
   c.add("plan_offerings", name, {
-    product_id: p.id,
-    name,
+    offering_id: catalogOffering(p.id, name),
     term_id: term && c.op(termRow(term)),
     starts_on,
     ends_on,
@@ -687,6 +693,7 @@ function results(setRow: Row, calculatedAt: string, platformVersion: string | nu
   const planIds = own.map((p) => p.id);
   const data = {
     ...catalog,
+    offerings: [...catalogOfferings.values()],
     fiscal_year: 2027,
     plans: own.map(({ id, kind, program_area_id }) => ({ id, kind, program_area_id })),
     ...Object.fromEntries(rowTables.map((table) => [table, rowsOf(planIds, table)])),
@@ -859,12 +866,13 @@ export const tables: Record<string, Row[]> = {
   plan_block_staff: rowsOf(planIds, "plan_block_staff").map((r) => ({ ...r, staff_level_id: staffLevel(r) })),
   // A program's own row, with the color a Catalog Writer gave Guppies; the rest take one from the palette.
   plan_offerings: rowsOf(planIds, "plan_offerings").map((r) => {
-    const product = catalog.products.find((p) => p.id === r["product_id"])!;
+    const planned = catalogOfferings.get(r["offering_id"] as string)!;
+    const product = catalog.products.find((p) => p.id === planned.product_id)!;
     const programs =
       product.kind === "program"
         ? [{ id: `program-${product.id}`, color: product.id === products.guppies.id ? "#0274c7" : null }]
         : [];
-    return { ...r, product_id: { ...named(product), programs } };
+    return { ...r, offering_id: { id: planned.id, name: planned.name, product_id: { ...named(product), programs } } };
   }),
   plan_boat_rates: rowsOf(planIds, "plan_boat_rates").map((r) => ({
     ...r,

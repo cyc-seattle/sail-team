@@ -164,9 +164,10 @@ export class Club {
 
   /** An offering in `plan` of `sailors` at `price` cents each, with `costs` cents of its own costs. Returns it. */
   async offering(plan: string, name: string, sailors: number, price: number, costs = 0, extra: Row = {}): Promise<Row> {
+    // A plan offering plans a catalog offering, which names its product and itself (cyc-seattle/platform#395).
+    const catalog = await this.create("offerings", { product_id: this.productId, name });
     const offering = await this.inPlan("plan_offerings", plan, {
-      product_id: this.productId,
-      name,
+      offering_id: catalog["id"],
       starts_on: `${this.year}-07-05`,
       ends_on: `${this.year}-07-16`,
       capacity: sailors,
