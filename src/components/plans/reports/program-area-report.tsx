@@ -445,8 +445,8 @@ export function ProgramAreaReport({
                       <WarningMark warnings={about(warnings, t.key)} />
                     </span>
                   </TableCell>
-                  <TableCell>{numbered.get(t.offering_key)?.program ?? none}</TableCell>
-                  <TableCell>{numbered.get(t.offering_key)?.own ?? none}</TableCell>
+                  <TableCell>{numbered.get(t.offering_id)?.program ?? none}</TableCell>
+                  <TableCell>{numbered.get(t.offering_id)?.own ?? none}</TableCell>
                   <Num>{t.nights === null ? none : count(t.nights)}</Num>
                   <Amount cents={t.airfare_cents} whole />
                   <Num>{t.miles === null ? none : count(t.miles)}</Num>

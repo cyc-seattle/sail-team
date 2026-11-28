@@ -91,7 +91,7 @@ export function PlanCalendar({ areas, closedDays, day, onDayChange, warnings = [
         const spans = own.flatMap((o) =>
           runsOf(
             a.blocks
-              .filter((b) => b.activities.some((x) => x.offering_key === o.key))
+              .filter((b) => b.activities.some((x) => x.offering_id === o.key))
               .map((b) => weeks.indexOf(weekOf(b.date))),
           ).map(([from, to]) => ({
             key: `${o.key} ${from}`,
@@ -231,7 +231,7 @@ export function PlanCalendar({ areas, closedDays, day, onDayChange, warnings = [
             )}
             <div className="absolute inset-y-0 right-2 left-16">
               {placed.map((p) => {
-                const programs = [...new Set(p.block.activities.map((a) => programOf(a.offering_key)))];
+                const programs = [...new Set(p.block.activities.map((a) => programOf(a.offering_id)))];
                 // A block of one activity is drawn as just that activity, without its own name.
                 const framed = p.block.activities.length > 1;
                 const title = p.block.name ?? programs.join(" and ");
@@ -263,7 +263,7 @@ export function PlanCalendar({ areas, closedDays, day, onDayChange, warnings = [
                           <span
                             key={a.key}
                             style={{
-                              ...colorOf(p.block.key, a.offering_key),
+                              ...colorOf(p.block.key, a.offering_id),
                               top: top(start) - top(p.start),
                               height: top(minutes(a.end_time, 12 * 60)) - top(start) - header,
                               left: `${(i / own.length) * 100}%`,
@@ -273,9 +273,9 @@ export function PlanCalendar({ areas, closedDays, day, onDayChange, warnings = [
                           >
                             <span className="block truncate font-medium">
                               {framed && <span className="sr-only">, </span>}
-                              {programOf(a.offering_key)}
+                              {programOf(a.offering_id)}
                             </span>{" "}
-                            <span className="block truncate">{offerings.get(a.offering_key)?.own}</span>{" "}
+                            <span className="block truncate">{offerings.get(a.offering_id)?.own}</span>{" "}
                             <span className="block truncate">{timeSpan(a.start_time, a.end_time)}</span>
                           </span>
                         );
@@ -348,15 +348,15 @@ function BlockDetails({
   // A block of one activity goes by that activity's name, so it isn't said twice.
   const alone = block.activities.length === 1 ? block.activities[0] : undefined;
   const title = alone
-    ? label(alone.offering_key)
-    : (block.name ?? [...new Set(block.activities.map((a) => programOf(a.offering_key)))].join(" and "));
+    ? label(alone.offering_id)
+    : (block.name ?? [...new Set(block.activities.map((a) => programOf(a.offering_id)))].join(" and "));
   return (
     <aside aria-label="Activity block" className="grid gap-3 rounded-lg border bg-card p-card text-sm">
       <h4 className="flex items-center gap-1.5 font-medium">
         {alone && (
           <span
             aria-hidden
-            style={color(alone.offering_key)}
+            style={color(alone.offering_id)}
             className="inline-block size-2.5 shrink-0 rounded-[3px] bg-(--program)"
           />
         )}
@@ -364,17 +364,17 @@ function BlockDetails({
       </h4>
       <ul className="grid gap-2">
         {block.activities.map((a) => {
-          const o = offering(a.offering_key);
+          const o = offering(a.offering_id);
           return (
             <li key={a.key} className="grid gap-0.5">
               {!alone && (
                 <span className="flex items-center gap-1.5">
                   <span
                     aria-hidden
-                    style={color(a.offering_key)}
+                    style={color(a.offering_id)}
                     className="inline-block size-2.5 shrink-0 rounded-[3px] bg-(--program)"
                   />
-                  {label(a.offering_key)}
+                  {label(a.offering_id)}
                 </span>
               )}
               <span className={cn("text-muted-foreground", !alone && "pl-4")}>

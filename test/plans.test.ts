@@ -116,7 +116,7 @@ describe("reading a Financial Plan's inputs from Directus", () => {
 
   it("reads each program area's offerings, with their days and one sailor's hours on the water", async () => {
     const { offerings } = await inputs(ids.budget);
-    expect(offerings[ids.summer]?.find((o) => o.key === "key:Guppies Week 2")).toMatchObject({
+    expect(offerings[ids.summer]?.find((o) => o.key === `${ids.summerBudget}:Guppies Week 2`)).toMatchObject({
       program: "Guppies",
       session: "Week 2",
       fee_cents: 39_500,
@@ -153,7 +153,7 @@ describe("reading a Financial Plan's inputs from Directus", () => {
     ]);
     expect(operations?.bonuses).toEqual([
       {
-        key: "key:Program Director bonus",
+        key: `${ids.opsBudget}:Program Director bonus`,
         role_name: "Program Director",
         bonus_rate: 0.05,
         basis: "after_shared_costs",
@@ -167,7 +167,9 @@ describe("reading a Financial Plan's inputs from Directus", () => {
       fuel_per_hour_cents: 50,
       charter_per_day_cents: null,
     });
-    expect(products).toEqual([{ key: "key:Boat storage", product: "Boat storage", product_id: expect.any(String) }]);
+    expect(products).toEqual([
+      { key: `${ids.opsBudget}:Boat storage`, product: "Boat storage", product_id: expect.any(String) },
+    ]);
   });
 
   it("reads the Operations Plan's other inputs, naming the accounts, pools and positions their rows point at", async () => {
@@ -195,7 +197,12 @@ describe("reading a Financial Plan's inputs from Directus", () => {
       expect.objectContaining({ name: "Winter boat repairs", staff_level: "Instructor", hours: 120 }),
     ]);
     expect(operations?.salariedHours).toEqual([
-      { key: "key:Program Director on Guppies", position: "Program Director", booked_to: "Guppies", hours: 200 },
+      {
+        key: `${ids.opsBudget}:Program Director on Guppies`,
+        position: "Program Director",
+        booked_to: "Guppies",
+        hours: 200,
+      },
     ]);
     expect(operations?.closedDays.map((d) => d.date)).toEqual(["2027-07-05"]);
   });
@@ -205,9 +212,9 @@ describe("reading a Financial Plan's inputs from Directus", () => {
     const summer = schedule[ids.summer]!;
     const dock = summer.find((b) => b.date === "2027-06-21" && b.name === "Morning dock");
     expect(dock?.parts).toEqual(["3 Instructors", "2 RIBs", "6 Sailqubes"]);
-    expect(dock?.activities.map((a) => [a.offering_key, a.setup_minutes, a.on_water_minutes])).toEqual([
-      ["key:Guppies Week 1", 30, 180],
-      ["key:Sea Otters Week 1", 30, 180],
+    expect(dock?.activities.map((a) => [a.offering_id, a.setup_minutes, a.on_water_minutes])).toEqual([
+      [`${ids.summerBudget}:Guppies Week 1`, 30, 180],
+      [`${ids.summerBudget}:Sea Otters Week 1`, 30, 180],
     ]);
     // "J-Pod 2027-03-02" only repeats the program and the date.
     expect(schedule[ids.doublehanded]?.[0]).toMatchObject({
@@ -227,15 +234,15 @@ describe("reading a Financial Plan's inputs from Directus", () => {
     const { trips, offerings } = await inputs(ids.budget);
     expect(trips[ids.doublehanded]).toEqual([
       expect.objectContaining({
-        key: "key:Fall regatta",
-        offering_key: "key:J-Pod Fall",
+        key: `${ids.doublehandedBudget}:Fall regatta`,
+        offering_id: `${ids.doublehandedBudget}:J-Pod Fall`,
         name: "Fall regatta",
         nights: 2,
         airfare_cents: null,
         miles: 240,
       }),
     ]);
-    const opti = offerings[ids.summer]?.find((o) => o.key === "key:Opti Camp Week 1");
+    const opti = offerings[ids.summer]?.find((o) => o.key === `${ids.summerBudget}:Opti Camp Week 1`);
     expect(opti).toMatchObject({ cogs_rate: 0.04, note: "Lunch is included." });
   });
 
@@ -316,7 +323,7 @@ describe("the shared costs", () => {
     name,
     account_number: "6110",
     account_name: "Insurance",
-    cost_center_key: null,
+    cost_center_id: null,
     cost_center_type: "org",
     amount_cents,
     revenue: false,

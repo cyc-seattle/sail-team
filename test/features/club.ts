@@ -41,7 +41,7 @@ export class Club {
 
   /** A row in `plan`. Deleting its Financial Plan deletes it. */
   private async inPlan(collection: string, plan: string, fields: Row): Promise<Row> {
-    return asAdmin("POST", `/items/${collection}`, { id: randomUUID(), plan_id: plan, key: randomUUID(), ...fields });
+    return asAdmin("POST", `/items/${collection}`, { id: randomUUID(), plan_id: plan, ...fields });
   }
 
   /** The organization, its accounts, and the Youth Racing area and its product. */
@@ -179,7 +179,7 @@ export class Club {
         name: `${name} costs`,
         account_id: this.accounts["costs"],
         cost_center_type: "offering",
-        cost_center_key: offering["key"],
+        cost_center_id: offering["id"],
         amount_cents: costs,
         fiscal_year: this.year,
       });
@@ -187,14 +187,14 @@ export class Club {
     return offering;
   }
 
-  /** A term named `name` in the Operations Plan `plan`, from `starts` to `ends` (`MM-DD`) this year. Returns its key. */
+  /** A term named `name` in the Operations Plan `plan`, from `starts` to `ends` (`MM-DD`) this year. Returns its id. */
   async term(plan: string, name: string, starts: string, ends: string): Promise<string> {
     const term = await this.inPlan("plan_terms", plan, {
       name,
       starts_on: `${this.year}-${starts}`,
       ends_on: `${this.year}-${ends}`,
     });
-    return term["key"] as string;
+    return term["id"] as string;
   }
 
   /**
@@ -280,7 +280,7 @@ export class Club {
       name: "Office rent",
       account_id: this.accounts["office"],
       cost_center_type: "pool",
-      cost_center_key: pool["key"],
+      cost_center_id: pool["id"],
       amount_cents: cents,
       fiscal_year: this.year,
     });

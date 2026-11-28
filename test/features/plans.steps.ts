@@ -230,8 +230,8 @@ Given(
     const { set, operations, youth } = await draftWithPlans(club, "Budget");
     const inSummer = await club.term(operations, summer, "07-01", "08-31");
     const inFall = await club.term(operations, fall, "09-01", "11-30");
-    await club.offering(youth, `${OFFERING} summer`, 1, 2_000_000, 0, { term_key: inSummer });
-    await club.offering(youth, `${OFFERING} fall`, 1, 0, 500_000, { term_key: inFall });
+    await club.offering(youth, `${OFFERING} summer`, 1, 2_000_000, 0, { term_id: inSummer });
+    await club.offering(youth, `${OFFERING} fall`, 1, 0, 500_000, { term_id: inFall });
     opened.set = set;
     await club.freeze(opened.set);
   },

@@ -162,7 +162,7 @@ function BonusAmounts({ bonuses }: { bonuses: BonusResult[] }) {
   return (
     <RateTable label="Bonus amounts" head={["Role", "Term", "Net", "Bonus"]} text={["Term"]}>
       {byTerm(bonuses).map((b) => (
-        <TableRow key={`${b.bonus_owner_key} ${b.term_name ?? ""}`}>
+        <TableRow key={`${b.bonus_owner_id} ${b.term_name ?? ""}`}>
           <TableCell>{b.role_name}</TableCell>
           <TableCell>{b.term_name ?? "No term"}</TableCell>
           <Num>
