@@ -76,7 +76,7 @@ const products: Row[] = tables["products"]!.map((p) => {
   };
 });
 
-const programId = (name: string) => `program-${tables["products"]!.find((p) => p["name"] === name)!["id"] as string}`;
+const productId = (name: string) => tables["products"]!.find((p) => p["name"] === name)!["id"] as string;
 
 const offering = (
   n: number,
@@ -88,7 +88,7 @@ const offering = (
   archived_at: string | null = null,
 ) => ({
   id: id(9300 + n),
-  program_id: programId(program),
+  product_id: productId(program),
   name,
   starts_on,
   ends_on,

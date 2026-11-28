@@ -8,6 +8,8 @@ export interface GoogleGroup {
 
 export interface ProgramRow {
   id: string;
+  /** The product it's a program of, which its offerings belong to. */
+  productId: string;
   name: string;
   /** Null when the person can't read whether a program is a team. */
   team?: boolean | null;
@@ -17,7 +19,7 @@ export interface ProgramRow {
 }
 export interface OfferingRow {
   id: string;
-  program_id: string;
+  product_id: string;
   starts_on: string | null;
   ends_on: string | null;
 }
@@ -88,19 +90,19 @@ export function monthsBefore(today: string, months: number): string {
 }
 
 /**
- * Each program's current or most recent offering: the one that started last, by `today`. A program with none started
+ * Each product's current or most recent offering: the one that started last, by `today`. A product with none started
  * yet gets the one starting soonest.
  */
 export function currentOfferings(offerings: OfferingRow[], today: string): OfferingRow[] {
-  const byProgram = new Map<string, OfferingRow>();
+  const byProduct = new Map<string, OfferingRow>();
   const started = (o: OfferingRow) => o.starts_on !== null && o.starts_on <= today;
   for (const offering of offerings) {
-    const held = byProgram.get(offering.program_id);
+    const held = byProduct.get(offering.product_id);
     if (!held || better(offering, held)) {
-      byProgram.set(offering.program_id, offering);
+      byProduct.set(offering.product_id, offering);
     }
   }
-  return [...byProgram.values()];
+  return [...byProduct.values()];
 
   function better(a: OfferingRow, b: OfferingRow): boolean {
     if (started(a) !== started(b)) {
@@ -137,7 +139,7 @@ export function buildTeams(rows: {
   contacts: ContactRow[];
   people: PersonRow[];
 }): TeamRoster[] {
-  const programs = new Map(rows.programs.map((p) => [p.id, p]));
+  const programs = new Map(rows.programs.map((p) => [p.productId, p]));
   const people = new Map(rows.people.map((p) => [p.id, p]));
   const guardiansOf = new Map<string, string[]>();
   for (const link of rows.contacts) {
@@ -147,7 +149,7 @@ export function buildTeams(rows: {
   }
   const teams = new Map<string, TeamRoster>();
   for (const offering of rows.offerings) {
-    const program = programs.get(offering.program_id);
+    const program = programs.get(offering.product_id);
     if (program?.team !== true) {
       continue;
     }
