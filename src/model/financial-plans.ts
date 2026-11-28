@@ -157,7 +157,7 @@ export interface PlanLine {
   account_number: string | null;
   account_name: string;
   /** What it's charged to: an offering's key, for most lines. */
-  cost_center_key: string | null;
+  cost_center_id: string | null;
   cost_center_type: "offering" | "product" | "program_area" | "pool" | "org";
   amount_cents: number;
   revenue: boolean;
@@ -173,7 +173,7 @@ export interface PlanLine {
 /** The term a row is for, as it was when platform worked the row out. All null for offerings in no term. */
 export interface ResultTerm {
   /** The Operations Plan's key for it. */
-  term_key: string | null;
+  term_id: string | null;
   /** Such as Summer 2027. */
   term_name: string | null;
   term_starts_on: string | null;
@@ -185,7 +185,7 @@ export interface ResultTerm {
  */
 export interface PnlRow extends ResultTerm {
   level: Pnl["level"] | "program_area_term";
-  subject_key: string;
+  subject_id: string;
   name: string;
   revenue_cents: number;
   expense_cents: number;
@@ -208,7 +208,7 @@ export interface ResultWarning {
   /** Error: the plan can't run as allocated for the sailors expected. None in results from before platform set it. */
   severity: "warning" | "error" | null;
   /** The key of the row it's about, such as a product's id or a boat class's name. None in older results. */
-  subject_key: string | null;
+  subject_id: string | null;
   plan: string | null;
   date: string | null;
 }
@@ -242,7 +242,7 @@ export interface Results {
 
 /** What a bonus pays on its products' net in one term, or on the year for its offerings in no term. */
 export interface BonusResult {
-  bonus_owner_key: string;
+  bonus_owner_id: string;
   role_name: string;
   /** Null for its offerings in no term. */
   term_name: string | null;

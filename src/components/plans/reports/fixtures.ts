@@ -186,7 +186,7 @@ const termOffering = (
   key: `${program}-${session}`,
   program,
   session,
-  term_key: `term-${session.toLowerCase()}`,
+  term_id: `term-${session.toLowerCase()}`,
   term: `${session} 2027`,
   starts_on,
   ends_on,
@@ -234,7 +234,7 @@ export const doublehandedSchedule: ScheduleBlock[] = doublehandedOfferings.flatM
       activities: [
         {
           key: `${o.key} ${date}`,
-          offering_key: o.key,
+          offering_id: o.key,
           kind: "practice",
           start_time: "16:00:00",
           end_time: "19:00:00",
@@ -449,7 +449,7 @@ const programDirectorBonus: Bonus = {
 /** What each bonus pays: Summer Director's on a loss in Fall pays nothing, and Program Director's on its offerings in no term. */
 export const bonusAmounts: BonusResult[] = [
   {
-    bonus_owner_key: "summer",
+    bonus_owner_id: "summer",
     role_name: "Summer Director",
     term_name: "Fall 2027",
     term_starts_on: "2027-09-01",
@@ -457,7 +457,7 @@ export const bonusAmounts: BonusResult[] = [
     bonus_cents: 0,
   },
   {
-    bonus_owner_key: "pd-bonus",
+    bonus_owner_id: "pd-bonus",
     role_name: "Program Director",
     term_name: null,
     term_starts_on: null,
@@ -465,7 +465,7 @@ export const bonusAmounts: BonusResult[] = [
     bonus_cents: 180_000,
   },
   {
-    bonus_owner_key: "pd-bonus",
+    bonus_owner_id: "pd-bonus",
     role_name: "Program Director",
     term_name: "Summer 2027",
     term_starts_on: "2027-06-16",
@@ -473,7 +473,7 @@ export const bonusAmounts: BonusResult[] = [
     bonus_cents: 451_234,
   },
   {
-    bonus_owner_key: "summer",
+    bonus_owner_id: "summer",
     role_name: "Summer Director",
     term_name: "Summer 2027",
     term_starts_on: "2027-06-16",
@@ -925,9 +925,9 @@ export const planningPlans: ListedPlan[] = [
   }),
 ];
 
-const scheduled = (key: string, offering_key: string, start_time: string, end_time: string): ScheduledActivity => ({
+const scheduled = (key: string, offering_id: string, start_time: string, end_time: string): ScheduledActivity => ({
   key,
-  offering_key,
+  offering_id,
   kind: "practice",
   start_time,
   end_time,
@@ -985,7 +985,7 @@ export const closedDays = [{ date: "2027-07-05", name: "Independence Day, observ
 export const doublehandedTrips: Trip[] = [
   {
     key: "fall-regatta",
-    offering_key: "J-Pod-Fall",
+    offering_id: "J-Pod-Fall",
     name: "Fall regatta",
     nights: 2,
     airfare_cents: null,
@@ -993,7 +993,7 @@ export const doublehandedTrips: Trip[] = [
   },
   {
     key: "nationals",
-    offering_key: "K-Pod-Summer",
+    offering_id: "K-Pod-Summer",
     name: "Nationals",
     nights: 5,
     airfare_cents: 45_000,

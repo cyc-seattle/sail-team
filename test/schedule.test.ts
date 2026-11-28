@@ -15,7 +15,7 @@ import {
 
 const activity = (key: string, offering: string, start: string, end = "12:00:00") => ({
   key,
-  offering_key: offering,
+  offering_id: offering,
   kind: "practice" as const,
   start_time: start,
   end_time: end,
@@ -24,7 +24,7 @@ const activity = (key: string, offering: string, start: string, end = "12:00:00"
   on_water_minutes: 120,
 });
 const block = (date: string, parts: string[], ...activities: ReturnType<typeof activity>[]): ScheduleBlock => ({
-  key: `b ${date} ${activities.map((a) => a.offering_key).join()}`,
+  key: `b ${date} ${activities.map((a) => a.offering_id).join()}`,
   date,
   name: "Morning dock",
   activities,
@@ -84,7 +84,6 @@ describe("scheduleOf", () => {
   it("lists each block by date, with what it shares, and an activity in no block on its own", () => {
     const row = (key: string, start: string, block_id: string | null) => ({
       id: key,
-      key,
       offering_id: "o",
       block_id,
       date: "2027-03-02",
@@ -97,7 +96,7 @@ describe("scheduleOf", () => {
       putaway_minutes: null,
     });
     const schedule = scheduleOf(
-      [{ id: "b", key: "b", date: "2027-03-02", name: "Tuesday practice" }],
+      [{ id: "b", date: "2027-03-02", name: "Tuesday practice" }],
       [row("late", "17:00:00", null), row("a", "16:00:00", "b")],
       {
         staff: [
@@ -109,7 +108,6 @@ describe("scheduleOf", () => {
           { block_id: "b", boat_class: "RIB", count: 1, chartered: 1, sailor_owned: null },
         ],
       },
-      () => "J-Pod 1",
     );
     expect(schedule.map((b) => [b.name, b.activities.map((a) => a.key), b.parts])).toEqual([
       [
@@ -125,7 +123,7 @@ describe("scheduleOf", () => {
 
 describe("scheduleOf's parts", () => {
   it("lists a block's parts the same way whatever order they come in", () => {
-    const row = { id: "a", key: "a", offering_id: "o", date: "2027-07-05", kind: "practice" as const };
+    const row = { id: "a", offering_id: "o", date: "2027-07-05", kind: "practice" as const };
     const at = { uses_boats: true, start_time: null, end_time: null, on_water_minutes: null, setup_minutes: null };
     const boats = [
       { block_id: "x", boat_class: "Qube", count: 1, chartered: null, sailor_owned: null },
@@ -133,19 +131,18 @@ describe("scheduleOf's parts", () => {
     ];
     const partsOf = (order: typeof boats) =>
       scheduleOf(
-        [{ id: "x", key: "x", date: "2027-07-05", name: null }],
+        [{ id: "x", date: "2027-07-05", name: null }],
         [{ ...row, ...at, block_id: "x", putaway_minutes: null }],
         { staff: [], boats: order },
-        () => "o",
       )[0]?.parts;
     expect(partsOf(boats)).toEqual(partsOf([...boats].reverse()));
   });
 
   it("lists a block's chartered boats after the club's own", () => {
-    const row = { id: "a", key: "a", offering_id: "o", date: "2027-07-05", kind: "practice" as const };
+    const row = { id: "a", offering_id: "o", date: "2027-07-05", kind: "practice" as const };
     const at = { uses_boats: true, start_time: null, end_time: null, on_water_minutes: null, setup_minutes: null };
     const [block] = scheduleOf(
-      [{ id: "x", key: "x", date: "2027-07-05", name: null }],
+      [{ id: "x", date: "2027-07-05", name: null }],
       [{ ...row, ...at, block_id: "x", putaway_minutes: null }],
       {
         staff: [{ block_id: "x", staff_level: "Coach", position: null, count: 2, pay: null }],
@@ -155,7 +152,6 @@ describe("scheduleOf's parts", () => {
           { block_id: "x", boat_class: "420", count: 0, chartered: 2, sailor_owned: null },
         ],
       },
-      () => "o",
     );
     expect(block?.parts).toEqual(["2 Coaches", "2 RIBs", "6 Optis", "1 chartered RIB", "2 chartered 420s"]);
   });

@@ -5,7 +5,7 @@ import { onWaterMinutes, type NumberedOffering } from "./reports.ts";
 /** One activity on a program area's schedule. */
 export interface ScheduledActivity {
   key: string;
-  offering_key: string;
+  offering_id: string;
   kind: PlanActivity["kind"];
   start_time: string | null;
   end_time: string | null;
@@ -27,11 +27,10 @@ export interface ScheduleBlock {
   parts: string[];
 }
 
-type BlockRow = { id: string; key: string; date: string; name: string | null };
+type BlockRow = { id: string; date: string; name: string | null };
 type ActivityRow = Pick<
   PlanActivity,
   | "id"
-  | "key"
   | "offering_id"
   | "block_id"
   | "date"
@@ -80,16 +79,11 @@ export function blockName(name: string, date: string, known: string[]): string |
   return /[\p{L}\p{N}]/u.test(rest) ? own : null;
 }
 
-/** A program area's activities by date and start time, each in its block, with the offering keys they belong to. */
-export function scheduleOf(
-  blocks: BlockRow[],
-  activities: ActivityRow[],
-  parts: BlockParts,
-  offeringKey: (offeringId: string) => string,
-): ScheduleBlock[] {
+/** A program area's activities by date and start time, each in its block, with the offerings they belong to. */
+export function scheduleOf(blocks: BlockRow[], activities: ActivityRow[], parts: BlockParts): ScheduleBlock[] {
   const scheduled = (a: ActivityRow): ScheduledActivity => ({
-    key: a.key,
-    offering_key: offeringKey(a.offering_id),
+    key: a.id,
+    offering_id: a.offering_id,
     kind: a.kind,
     start_time: a.start_time,
     end_time: a.end_time,
@@ -98,7 +92,7 @@ export function scheduleOf(
     on_water_minutes: onWaterMinutes(a),
   });
   const byStart = (a: ScheduledActivity, b: ScheduledActivity) =>
-    (a.start_time ?? "").localeCompare(b.start_time ?? "") || a.offering_key.localeCompare(b.offering_key);
+    (a.start_time ?? "").localeCompare(b.start_time ?? "") || a.offering_id.localeCompare(b.offering_id);
   // Each kind sorted, so blocks with the same parts list them alike, whatever order Directus returns them in.
   const partsOf = (id: string) => [
     ...parts.staff
@@ -123,7 +117,7 @@ export function scheduleOf(
       .sort(),
   ];
   const shared: ScheduleBlock[] = blocks.map((b) => ({
-    key: b.key,
+    key: b.id,
     date: b.date,
     name: b.name,
     activities: activities
@@ -135,7 +129,7 @@ export function scheduleOf(
   const blockIds = new Set(blocks.map((b) => b.id));
   const alone: ScheduleBlock[] = activities
     .filter((a) => !a.block_id || !blockIds.has(a.block_id))
-    .map((a) => ({ key: a.key, date: a.date, name: null, activities: [scheduled(a)], parts: [] }));
+    .map((a) => ({ key: a.id, date: a.date, name: null, activities: [scheduled(a)], parts: [] }));
   const first = (b: ScheduleBlock) => b.activities[0]?.start_time ?? "";
   return [...shared, ...alone]
     .filter((b) => b.activities.length > 0)
@@ -256,7 +250,7 @@ export function differences(parts: string[], usual: string[]): string {
 
 /** The area's blocks as patterns, in the order they first run. */
 export function patternsOf(blocks: ScheduleBlock[], offerings: Map<string, NumberedOffering>): Pattern[] {
-  const programOf = (a: ScheduledActivity) => offerings.get(a.offering_key)?.program ?? a.offering_key;
+  const programOf = (a: ScheduledActivity) => offerings.get(a.offering_id)?.program ?? a.offering_id;
   const times = (b: ScheduleBlock) =>
     b.activities.map((a) => `${programOf(a)}|${a.start_time}|${a.end_time}`).join(";");
   // A block with no name, such as a practice not in a block yet, joins named ones with the same programs and times, or
@@ -293,7 +287,7 @@ export function patternsOf(blocks: ScheduleBlock[], offerings: Map<string, Numbe
       programs: programs.map((program) => {
         const activities = own.flatMap((b) => b.activities).filter((a) => programOf(a) === program);
         const spans = new Set(activities.map((a) => timeSpan(a.start_time, a.end_time)));
-        const sessions = [...new Set(activities.map((a) => offerings.get(a.offering_key)))]
+        const sessions = [...new Set(activities.map((a) => offerings.get(a.offering_id)))]
           .filter((o) => o !== undefined)
           .sort((a, b) => a.starts_on.localeCompare(b.starts_on))
           .map((o) => o.own);
