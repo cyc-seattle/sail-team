@@ -160,19 +160,31 @@ const catalog = {
   boats,
 };
 
-/** Keys stay the same in every copy, as platform keeps them, so rows that name others by key match across copies. */
-const key = (name: string) => `key:${name}`;
-/** A term's row name in the Operations Plan, such as "Term Summer 2027", which its key comes from. */
+/** A term's row name in the Operations Plan, such as "Term Summer 2027", which its id comes from. */
 const termRow = (name: string) => `Term ${name}`;
 
-/** Rows of a plan, each with an id of its own, its plan, and its key. */
+/**
+ * Rows of a plan, each with an id of its own, made from its plan and its name, and its plan. A row names another by
+ * its id, in the same Financial Plan: its own plan's, or its Operations Plan's.
+ */
 class Copy {
   rows: Record<string, Row[]> = {};
-  constructor(readonly plan: string) {}
+  constructor(
+    readonly plan: string,
+    readonly operations: string = plan,
+  ) {}
   add(table: string, name: string, fields: Row): string {
-    const row = { id: `${this.plan}:${name}`, plan_id: this.plan, key: key(name), ...fields };
+    const row = { id: this.id(name), plan_id: this.plan, ...fields };
     (this.rows[table] ??= []).push(row);
     return row.id;
+  }
+  /** The id of this plan's row named `name`. */
+  id(name: string): string {
+    return `${this.plan}:${name}`;
+  }
+  /** The id of the Operations Plan's row named `name`. */
+  op(name: string): string {
+    return `${this.operations}:${name}`;
   }
 }
 
@@ -196,7 +208,7 @@ const budgetLine = (
     account_id: a.id,
     function: null,
     cost_center_type: type,
-    cost_center_key: center,
+    cost_center_id: center,
     amount_cents: cents,
     fiscal_year: 2027,
     in_mtdc: true,
@@ -216,7 +228,7 @@ const laborLine = (
   c.add("plan_labor_lines", name, {
     name,
     cost_center_type: type,
-    cost_center_key: center,
+    cost_center_id: center,
     staff_level_id: levelId(level),
     hours,
     account_id: a.id,
@@ -288,16 +300,16 @@ function operations(plan: string): Copy {
     bonus_rate: 0.05,
     account_id: accounts.salaries.id,
     basis: "after_shared_costs",
-    position_key: key("Program Director"),
+    position_id: c.id("Program Director"),
   });
   for (const p of [products.guppies, products.opti, products.jpod]) {
     c.add("plan_bonus_owner_products", `bonus ${p.name}`, { bonus_owner_id: bonus, product_id: p.id });
   }
   const line = (name: string, a: { id: string }, cents: number, type: string, center: string | null, more: Row = {}) =>
     budgetLine(c, name, a, cents, type, center, more);
-  line("Insurance", accounts.insurance, 900_000, "pool", key("G&A"), { note: "Renews in March." });
-  line("Audit", accounts.insurance, 400_000, "pool", key("G&A"), { in_mtdc: false });
-  line("Clubhouse rent", accounts.rent, 600_000, "pool", key("G&A"));
+  line("Insurance", accounts.insurance, 900_000, "pool", c.id("G&A"), { note: "Renews in March." });
+  line("Audit", accounts.insurance, 400_000, "pool", c.id("G&A"), { in_mtdc: false });
+  line("Clubhouse rent", accounts.rent, 600_000, "pool", c.id("G&A"));
   // Each area's storage rent, charged to the area, and what's left for every program to share.
   const storage = "Storage (dinghy float and dry storage, by area)";
   line(`${storage}: Summer`, accounts.storageCosts, 980_000, "program_area", ids.summer, {
@@ -308,7 +320,7 @@ function operations(plan: string): Copy {
     in_mtdc: false,
     name: storage,
   });
-  line("Self storage facility", accounts.storageCosts, 172_800, "pool", key("G&A"));
+  line("Self storage facility", accounts.storageCosts, 172_800, "pool", c.id("G&A"));
   line("Spring gala gifts", accounts.gifts, 2_000_000, "org", null);
   line("Spring gala costs", accounts.events, 300_000, "org", null);
   const capital = (name: string, cents: number, sort: number, more: Row = {}) =>
@@ -330,8 +342,8 @@ function operations(plan: string): Copy {
   capital("Sail locker", 500_000, 4);
   // Capital entered the old way, as a budget line, which has no rank.
   line("Trailer", accounts.equipment, 500_000, "org", null);
-  line("Storage dock upkeep", accounts.boats, 300_000, "offering", key("Boat storage"));
-  laborLine(c, "Winter boat repairs", "Instructor", 120, "pool", key("Program admin"), accounts.boats);
+  line("Storage dock upkeep", accounts.boats, 300_000, "offering", c.id("Boat storage"));
+  laborLine(c, "Winter boat repairs", "Instructor", 120, "pool", c.id("Program admin"), accounts.boats);
   c.add("plan_closed_dates", "Fourth of July", { date: "2027-07-05", name: "Independence Day, observed" });
   for (const [name, starts_on, ends_on] of [
     ["Spring 2027", "2027-03-01", "2027-06-15"],
@@ -343,7 +355,7 @@ function operations(plan: string): Copy {
   c.add("plan_offerings", "Boat storage", {
     product_id: products.storage.id,
     name: "Boat storage 2027",
-    term_key: null,
+    term_id: null,
     starts_on: "2027-01-01",
     ends_on: "2027-12-31",
     capacity: 40,
@@ -367,7 +379,7 @@ const offering = (
   c.add("plan_offerings", name, {
     product_id: p.id,
     name,
-    term_key: term && key(termRow(term)),
+    term_id: term && c.op(termRow(term)),
     starts_on,
     ends_on,
     capacity: fields.capacity,
@@ -413,7 +425,7 @@ function block(
   c.add("plan_block_staff", `${name} staff`, {
     block_id: b,
     staff_level_id: levelId(staff[0]),
-    position_key: null,
+    position_id: null,
     count: staff[1],
     pay: null,
   });
@@ -433,8 +445,8 @@ function block(
  * instructor too few on the dock, and week 4 takes more Sailqubes than the club has. `instructors` is how many the
  * morning dock gets.
  */
-function summer(plan: string, instructors: number): Copy {
-  const c = new Copy(plan);
+function summer(plan: string, operations: string, instructors: number): Copy {
+  const c = new Copy(plan, operations);
   const settings = (p: { id: string; name: string }, level: string, perCoach: number, notes: string[] | null) =>
     c.add("plan_programs", `${p.name} settings`, {
       product_id: p.id,
@@ -537,8 +549,8 @@ function summer(plan: string, instructors: number): Copy {
 }
 
 /** Doublehanded: J-Pod's spring and fall terms, one practice a week. Its last fall practice has no block yet. */
-function doublehanded(plan: string): Copy {
-  const c = new Copy(plan);
+function doublehanded(plan: string, operations: string): Copy {
+  const c = new Copy(plan, operations);
   c.add("plan_programs", "J-Pod settings", {
     product_id: products.jpod.id,
     staff_level_id: levelId("Coach"),
@@ -575,12 +587,12 @@ function doublehanded(plan: string): Copy {
 }
 
 const copies = {
-  [ids.summerBudget]: summer(ids.summerBudget, 3),
-  [ids.doublehandedBudget]: doublehanded(ids.doublehandedBudget),
+  [ids.summerBudget]: summer(ids.summerBudget, ids.opsBudget, 3),
+  [ids.doublehandedBudget]: doublehanded(ids.doublehandedBudget, ids.opsBudget),
   [ids.opsBudget]: operations(ids.opsBudget),
-  [ids.summerTwo]: summer(ids.summerTwo, 4),
+  [ids.summerTwo]: summer(ids.summerTwo, ids.opsTwo, 4),
   [ids.opsTwo]: operations(ids.opsTwo),
-  [ids.summerThree]: summer(ids.summerThree, 5),
+  [ids.summerThree]: summer(ids.summerThree, ids.opsThree, 5),
   [ids.opsThree]: operations(ids.opsThree),
 };
 
@@ -683,12 +695,12 @@ function results(setRow: Row, calculatedAt: string, platformVersion: string | nu
   const operations = own.find((p) => p.kind === "operations")?.id;
   const areaPlan = (area: string | null | undefined) =>
     own.find((p) => p.kind === "program_area" && p.program_area_id === area)?.id ?? operations;
-  const offerings = new Map((data.plan_offerings as unknown as Row[]).map((o) => [o["key"], o]));
-  const terms = new Map(((data.plan_terms ?? []) as unknown as Row[]).map((t) => [t["key"], t]));
-  const resultTerm = (key: string | null | undefined) => ({
-    term_key: key ?? null,
-    term_name: terms.get(key)?.["name"] ?? null,
-    term_starts_on: terms.get(key)?.["starts_on"] ?? null,
+  const offerings = new Map((data.plan_offerings as unknown as Row[]).map((o) => [o["id"], o]));
+  const terms = new Map(((data.plan_terms ?? []) as unknown as Row[]).map((t) => [t["id"], t]));
+  const resultTerm = (id: string | null | undefined) => ({
+    term_id: id ?? null,
+    term_name: terms.get(id)?.["name"] ?? null,
+    term_starts_on: terms.get(id)?.["starts_on"] ?? null,
   });
   const ownerOf = (type: string, subject: string | null) => {
     if (type === "offering") {
@@ -725,10 +737,10 @@ function results(setRow: Row, calculatedAt: string, platformVersion: string | nu
     ],
     plan_result_lines: out.lines.map((l) => ({
       financial_plan_id: setId,
-      plan_id: ownerOf(l.cost_center_type, l.cost_center_key) ?? null,
+      plan_id: ownerOf(l.cost_center_type, l.cost_center_id) ?? null,
       line: l.line_key,
       line_name: l.line_name,
-      cost_center_key: l.cost_center_key,
+      cost_center_id: l.cost_center_id,
       cost_center_type: l.cost_center_type,
       amount_cents: l.amount_cents,
       function: l.function,
@@ -737,10 +749,10 @@ function results(setRow: Row, calculatedAt: string, platformVersion: string | nu
     })),
     plan_result_pnl: out.pnl.map((p) => ({
       financial_plan_id: setId,
-      plan_id: ownerOf(p.level, p.key) ?? null,
+      plan_id: ownerOf(p.level, p.subject_id) ?? null,
       level: p.level,
-      subject_key: p.key,
-      name: p.key,
+      subject_id: p.subject_id,
+      name: p.subject_id,
       revenue_cents: p.revenue_cents,
       expense_cents: p.expense_cents,
       enrollment: p.enrollment,
@@ -749,22 +761,22 @@ function results(setRow: Row, calculatedAt: string, platformVersion: string | nu
       // The engine gives these from cyc-seattle/platform#258 on; an older package leaves them out.
       allocation_holds: (p as { allocation_holds?: number | null }).allocation_holds ?? null,
       breakeven_enrollment: (p as { breakeven_enrollment?: number | null }).breakeven_enrollment ?? null,
-      ...resultTerm((p as { term_key?: string | null }).term_key),
+      ...resultTerm(p.term_id),
     })),
     plan_result_bonuses: out.bonuses.map((b) => ({
       financial_plan_id: setId,
       plan_id: areaPlan(b.program_area_id),
-      bonus_owner_key: b.bonus_owner_key,
+      bonus_owner_id: b.bonus_owner_id,
       name: b.role_name,
       bonus_rate: b.bonus_rate,
       net_cents: b.net_cents,
       bonus_cents: b.bonus_cents,
-      ...resultTerm(b.term_key),
+      ...resultTerm(b.term_id),
     })),
     plan_result_capital: out.capital.map((item) => ({
       financial_plan_id: setId,
       rank: item.rank,
-      item_key: item.key,
+      item_id: item.item_id,
       name: item.name,
       amount_cents: item.amount_cents,
       running_cents: item.running_cents,
@@ -777,7 +789,7 @@ function results(setRow: Row, calculatedAt: string, platformVersion: string | nu
       message: w.message,
       category: w.category,
       severity: ("severity" in w ? w.severity : null) as "warning" | "error" | null,
-      subject_key: w.key ?? null,
+      subject_id: w.subject_id ?? null,
       date: w.date ?? null,
     })),
   };

@@ -112,7 +112,7 @@ export interface ReportOffering {
   /** When it runs, as staff name it: Week 3 of summer, or Spring. */
   session: string;
   /** The key of the term it's in, or null for one in none. */
-  term_key?: string | null;
+  term_id?: string | null;
   /** The term's name, such as Summer 2027, or null. */
   term?: string | null;
   /** Its own name, such as "Adult Learn to Sail Weekday Jul 2026". */
@@ -245,10 +245,10 @@ export const moneyOf = (offerings: ReportOffering[]): InAndOut => ({
 
 /** A program area's total revenue and expenses, from its P&L row. Null when it has none. */
 export function areaTotal(
-  pnl: Pick<PnlRow, "level" | "subject_key" | "revenue_cents" | "expense_cents">[],
+  pnl: Pick<PnlRow, "level" | "subject_id" | "revenue_cents" | "expense_cents">[],
   areaId: string | null,
 ): InAndOut | null {
-  const row = pnl.find((p) => p.level === "program_area" && p.subject_key === areaId);
+  const row = pnl.find((p) => p.level === "program_area" && p.subject_id === areaId);
   return row ? { revenue_cents: row.revenue_cents, expense_cents: row.expense_cents } : null;
 }
 
@@ -392,7 +392,7 @@ type Line = Pick<
   PlanLine,
   "key" | "name" | "account_number" | "account_name" | "amount_cents" | "revenue" | "capital" | "function"
 > &
-  Partial<Pick<PlanLine, "explanation" | "cost_center_key" | "cost_center_type">>;
+  Partial<Pick<PlanLine, "explanation" | "cost_center_id" | "cost_center_type">>;
 
 /** The lines in the operating net: neither fundraising nor capital. */
 export const operating = <T extends Line>(lines: T[]) =>
@@ -431,7 +431,7 @@ export function lineAmounts(lines: Line[]): LineAmount[] {
     .map((own) => ({
       name: own[0]!.name,
       explanation: own[0]!.explanation ?? null,
-      offerings: new Set(own.filter((l) => l.cost_center_type === "offering").map((l) => l.cost_center_key)).size,
+      offerings: new Set(own.filter((l) => l.cost_center_type === "offering").map((l) => l.cost_center_id)).size,
       cents: sum(own),
     }))
     .sort((a, b) => b.cents - a.cents || a.name.localeCompare(b.name));
@@ -570,7 +570,7 @@ const UNALLOCATED = "Unallocated indirect costs";
  * the indirect cost rates leave unallocated is one more, last.
  */
 export function productsOf(
-  lines: (Line & Pick<PlanLine, "cost_center_key">)[],
+  lines: (Line & Pick<PlanLine, "cost_center_id">)[],
   offerings: { key: string; product: string; product_id?: string }[],
 ): Product[] {
   const productOf = new Map(offerings.map((o) => [o.key, o.product]));
@@ -579,7 +579,7 @@ export function productsOf(
   for (const line of operating(lines).filter((l) => !isShare(l))) {
     const name = line.key.startsWith("unrecovered:")
       ? UNALLOCATED
-      : ((line.cost_center_key && productOf.get(line.cost_center_key)) ?? "Organization");
+      : ((line.cost_center_id && productOf.get(line.cost_center_id)) ?? "Organization");
     const id = idOf.get(name);
     const product = products.get(name) ?? { name, ...(id && { id }), revenue_cents: 0, direct_cents: 0 };
     products.set(name, {
@@ -668,7 +668,7 @@ export function planWarnings(warnings: ResultWarning[], plans: Plan[]): PlanWarn
       code: w.code,
       category: w.category,
       severity: w.severity ?? "warning",
-      subject: w.subject_key ?? null,
+      subject: w.subject_id ?? null,
       area: plan ? reportKey(plan) : "non-program",
       date: w.date,
       message: w.message,
@@ -711,10 +711,8 @@ function sessionOf(offering: { name: string; program: string }): string {
 export function reportOffering(
   offering: Pick<
     PlanOffering,
-    "key" | "name" | "starts_on" | "ends_on" | "price_cents" | "capacity" | "cogs_rate" | "note"
+    "id" | "name" | "starts_on" | "ends_on" | "price_cents" | "capacity" | "cogs_rate" | "note" | "term_id"
   > & {
-    /** Platform's `plan_offerings.term_key`, which the published types don't have yet. */
-    term_key?: string | null;
     term?: string | null;
     program: string;
     program_id?: string | null;
@@ -725,10 +723,10 @@ export function reportOffering(
   activities: Pick<PlanActivity, "date" | "kind" | "uses_boats" | "start_time" | "end_time" | "on_water_minutes">[],
 ): ReportOffering {
   return {
-    key: offering.key,
+    key: offering.id,
     program: offering.program,
     session: sessionOf(offering),
-    term_key: offering.term_key ?? null,
+    term_id: offering.term_id ?? null,
     term: offering.term ?? null,
     name: offering.name,
     program_id: offering.program_id ?? null,
@@ -752,10 +750,10 @@ export function withResults(
   offerings: ReportOffering[],
   pnl: Pick<
     PnlRow,
-    "level" | "subject_key" | "revenue_cents" | "expense_cents" | "allocation_holds" | "breakeven_enrollment"
+    "level" | "subject_id" | "revenue_cents" | "expense_cents" | "allocation_holds" | "breakeven_enrollment"
   >[],
 ): ReportOffering[] {
-  const rows = new Map(pnl.filter((p) => p.level === "offering").map((p) => [p.subject_key, p]));
+  const rows = new Map(pnl.filter((p) => p.level === "offering").map((p) => [p.subject_id, p]));
   return offerings.map((o) => {
     const row = rows.get(o.key);
     return {
@@ -771,7 +769,7 @@ export function withResults(
 /** A regatta trip, with what each coach's travel costs. */
 export interface Trip {
   key: string;
-  offering_key: string;
+  offering_id: string;
   name: string;
   nights: number | null;
   airfare_cents: number | null;

@@ -53,19 +53,19 @@ type Account = { number: string | null; name: string };
 const accountFields = ["account_id.number", "account_id.name"];
 
 /** What a cost or labor line is charged to, by name: a pool, an offering, a product, a program area, or CSC. */
-type ChargedTo = (row: { cost_center_type: string; cost_center_key: string | null }) => string;
+type ChargedTo = (row: { cost_center_type: string; cost_center_id: string | null }) => string;
 
 type CostRow<T> = T & {
   plan_id: string;
   cost_center_type: string;
-  cost_center_key: string | null;
+  cost_center_id: string | null;
   account_id: Account;
 };
 
-type BudgetRow = CostRow<Pick<PlanBudgetLine, "key" | "name" | "amount_cents" | "note" | "in_mtdc">> & {
+type BudgetRow = CostRow<Pick<PlanBudgetLine, "id" | "name" | "amount_cents" | "note" | "in_mtdc">> & {
   account_id: { type: string };
 };
-type LaborRow = CostRow<Pick<PlanLaborLine, "key" | "name" | "hours" | "note">> & { staff_level_id: Named | null };
+type LaborRow = CostRow<Pick<PlanLaborLine, "id" | "name" | "hours" | "note">> & { staff_level_id: Named | null };
 
 /** A row's staff level, read through its link to the catalog. */
 type Named = { name: string };
@@ -77,7 +77,7 @@ type StaffLevelRow = Pick<PlanStaffLevel, "hourly_rate_cents"> & {
   };
 };
 
-type BonusRow = Pick<PlanBonusOwner, "id" | "key" | "role_name" | "bonus_rate" | "basis" | "position_key"> & {
+type BonusRow = Pick<PlanBonusOwner, "id" | "role_name" | "bonus_rate" | "basis" | "position_id"> & {
   account_id: Account;
 };
 
@@ -102,7 +102,7 @@ async function operationsAssumptions(
       // Every field, since platform drops rib_resource_kind_id (cyc-seattle/platform#126), and Directus refuses a
       // field it doesn't have.
       rowsOf<PlanRates>("plan_rates", [operations]),
-      rowsOf<PlanPayrollTax>("plan_payroll_taxes", [operations], ["key", "name", "wage_share", "hourly_cents", "sort"]),
+      rowsOf<PlanPayrollTax>("plan_payroll_taxes", [operations], ["id", "name", "wage_share", "hourly_cents", "sort"]),
       rowsOf<StaffLevelRow>(
         "plan_staff_levels",
         [operations],
@@ -128,7 +128,7 @@ async function operationsAssumptions(
       ),
       // Every field, since platform adds the fuel and charter rates (cyc-seattle/platform#126).
       rowsOf<{
-        key: string;
+        id: string;
         boat_class_id: { id: string; name: string };
         maintenance_per_boat_hour_cents: number;
         fuel_per_hour_cents?: number | null;
@@ -136,11 +136,10 @@ async function operationsAssumptions(
       }>("plan_boat_rates", [operations], ["*", "boat_class_id.id", "boat_class_id.name"]),
       rowsOf<BonusRow>("plan_bonus_owners", planIds, [
         "id",
-        "key",
         "role_name",
         "bonus_rate",
         "basis",
-        "position_key",
+        "position_id",
         ...accountFields,
       ]),
       rowsOf<{ bonus_owner_id: string; product_id: { name: string } }>("plan_bonus_owner_products", planIds, [
@@ -148,7 +147,7 @@ async function operationsAssumptions(
         "product_id.name",
       ]),
       rowsOf<{
-        key: string;
+        id: string;
         position_id: { name: string };
         product_id: { name: string } | null;
         program_area_id: { name: string } | null;
@@ -156,14 +155,14 @@ async function operationsAssumptions(
       }>(
         "plan_salaried_bookings",
         [operations],
-        ["key", "position_id.name", "product_id.name", "program_area_id.name", "hours"],
+        ["id", "position_id.name", "product_id.name", "program_area_id.name", "hours"],
       ),
-      rowsOf<PlanClosedDate>("plan_closed_dates", [operations], ["key", "date", "name"]),
+      rowsOf<PlanClosedDate>("plan_closed_dates", [operations], ["id", "date", "name"]),
     ]);
-  const positionName = new Map(positions.map((p) => [p.key, p.name]));
+  const positionName = new Map(positions.map((p) => [p.id, p.name]));
   const all: Bonus[] = bonuses
     .map((b) => ({
-      key: b.key,
+      key: b.id,
       role_name: b.role_name,
       bonus_rate: b.bonus_rate,
       basis: b.basis ?? null,
@@ -173,7 +172,7 @@ async function operationsAssumptions(
         .sort((x, y) => x.localeCompare(y)),
       account: { number: b.account_id.number, name: b.account_id.name },
       // A bonus naming a position that isn't there pays no one.
-      position: (b.position_key && positionName.get(b.position_key)) ?? null,
+      position: (b.position_id && positionName.get(b.position_id)) ?? null,
     }))
     .sort((a, b) => a.role_name.localeCompare(b.role_name));
   const paying = (name: string) => all.filter((b) => b.position === name);
@@ -187,21 +186,23 @@ async function operationsAssumptions(
       : null,
     payrollTaxes: [...payrollTaxes]
       .sort((a, b) => (a.sort ?? Infinity) - (b.sort ?? Infinity) || a.name.localeCompare(b.name))
-      .map(({ key, name, wage_share, hourly_cents }) => ({ key, name, wage_share, hourly_cents })),
+      .map(({ id, name, wage_share, hourly_cents }) => ({ key: id, name, wage_share, hourly_cents })),
     staffLevels: staffLevelsInOrder(staffLevels),
-    positions: byName(positions).map(({ remainder_pool_id, ...p }) => ({
+    positions: byName(positions).map(({ remainder_pool_id, id, ...p }) => ({
       ...p,
+      key: id,
       hourly_coaching_rate_cents: p.hourly_coaching_rate_cents ?? null,
       remainder_pool: remainder_pool_id?.name ?? null,
       bonuses: paying(p.name),
     })),
-    charges: byName(charges).map(({ account_id, ...c }) => ({
+    charges: byName(charges).map(({ account_id, id, ...c }) => ({
       ...c,
+      key: id,
       account: { number: account_id.number, name: account_id.name },
     })),
     boatRates: boatRates
       .map((b) => ({
-        key: b.key,
+        key: b.id,
         boat_class: b.boat_class_id.name,
         boat_class_id: b.boat_class_id.id,
         fuel_per_hour_cents: b.fuel_per_hour_cents ?? null,
@@ -212,22 +213,23 @@ async function operationsAssumptions(
     bonuses: all,
     salariedHours: bookings
       .map((b) => ({
-        key: b.key,
+        key: b.id,
         position: b.position_id.name,
         booked_to: b.product_id?.name ?? b.program_area_id?.name ?? "",
         hours: b.hours,
       }))
       .sort((a, b) => a.position.localeCompare(b.position) || a.booked_to.localeCompare(b.booked_to)),
-    closedDays: [...closed].sort((a, b) => a.date.localeCompare(b.date)),
+    closedDays: [...closed]
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map(({ id, date, name }) => ({ key: id, date, name })),
   };
 }
 
 /** The program areas' blocks, and what each shares. */
 async function blockRows(planIds: string[]) {
   const [blocks, staff, boats] = await Promise.all([
-    rowsOf<{ id: string; key: string; plan_id: string; date: string; name: string }>("plan_activity_blocks", planIds, [
+    rowsOf<{ id: string; plan_id: string; date: string; name: string }>("plan_activity_blocks", planIds, [
       "id",
-      "key",
       "plan_id",
       "date",
       "name",
@@ -235,7 +237,7 @@ async function blockRows(planIds: string[]) {
     rowsOf<Omit<PlanBlockStaff, "staff_level_id"> & { staff_level_id: Named | null }>("plan_block_staff", planIds, [
       "block_id",
       "staff_level_id.name",
-      "position_key",
+      "position_id",
       "count",
       "pay",
     ]),
@@ -306,8 +308,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         termRows,
       ] = await Promise.all([
         rowsOf<
-          PlanOffering & {
-            term_key?: string | null;
+          Omit<PlanOffering, "product_id"> & {
             product_id: {
               id: string;
               name: string;
@@ -324,7 +325,6 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         ]),
         rowsOf<PlanActivity>("plan_activities", planIds, [
           "id",
-          "key",
           "plan_id",
           "block_id",
           "setup_minutes",
@@ -354,10 +354,10 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         ops ? operationsAssumptions(ops.id, planIds) : null,
         rowsOf<BudgetRow>("plan_budget_lines", planIds, [
           "plan_id",
-          "key",
+          "id",
           "name",
           "cost_center_type",
-          "cost_center_key",
+          "cost_center_id",
           "amount_cents",
           "note",
           "in_mtdc",
@@ -366,19 +366,19 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         ]),
         rowsOf<LaborRow>("plan_labor_lines", planIds, [
           "plan_id",
-          "key",
+          "id",
           "name",
           "cost_center_type",
-          "cost_center_key",
+          "cost_center_id",
           "staff_level_id.name",
           "hours",
           "note",
           ...accountFields,
         ]),
-        rowsOf<{ key: string; name: string }>("plan_pools", planIds, ["key", "name"]),
+        rowsOf<{ id: string; name: string }>("plan_pools", planIds, ["id", "name"]),
         costCenterNames(),
         rowsOf<PlanTrip>("plan_trips", planIds, [
-          "key",
+          "id",
           "plan_id",
           "offering_id",
           "name",
@@ -387,14 +387,19 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
           "miles",
         ]),
         blockRows(planIds),
-        rowsOf<{ key: string; note: string | null; link: string | null }>("plan_capital_items", ops ? [ops.id] : [], [
-          "key",
+        rowsOf<{ id: string; note: string | null; link: string | null }>("plan_capital_items", ops ? [ops.id] : [], [
+          "id",
           "note",
           "link",
         ]),
-        rowsOf<Term>("plan_terms", ops ? [ops.id] : [], ["key", "name", "starts_on", "ends_on"]),
+        rowsOf<Omit<Term, "key"> & { id: string }>("plan_terms", ops ? [ops.id] : [], [
+          "id",
+          "name",
+          "starts_on",
+          "ends_on",
+        ]),
       ]);
-      const terms = byStart(termRows);
+      const terms = byStart(termRows.map(({ id, ...t }) => ({ key: id, ...t })));
       const termName = new Map(terms.map((t) => [t.key, t.name]));
       const keyOf = new Map(plans.map((p) => [p.id, p.kind === "operations" ? "rates" : reportKey(p)]));
       const byReport = <T>(rows: (T & { plan_id: string })[]) => {
@@ -404,18 +409,18 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         }
         return out;
       };
-      const named = (rows: { key: string; name: string }[]) => new Map(rows.map((r) => [r.key, r.name]));
+      const named = (rows: { id: string; name: string }[]) => new Map(rows.map((r) => [r.id, r.name]));
       const centers: Record<string, Map<string, string>> = {
         pool: named(pools),
         offering: named(offerings),
         product: catalog.products,
         program_area: catalog.areas,
       };
-      const chargedTo: ChargedTo = ({ cost_center_type: type, cost_center_key: key }) =>
+      const chargedTo: ChargedTo = ({ cost_center_type: type, cost_center_id: key }) =>
         type === "org" ? catalog.organization : ((key && centers[type]?.get(key)) ?? key ?? "");
       const fixedCosts = byName(budget).map((l): FixedCost & { plan_id: string } => ({
         plan_id: l.plan_id,
-        key: l.key,
+        key: l.id,
         name: l.name,
         amount_cents: l.amount_cents,
         in_mtdc: l.in_mtdc,
@@ -426,7 +431,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
       }));
       const staffTime = byName(labor).map((l): StaffTime & { plan_id: string } => ({
         plan_id: l.plan_id,
-        key: l.key,
+        key: l.id,
         name: l.name,
         hours: l.hours,
         note: l.note,
@@ -435,13 +440,12 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         charged_to: chargedTo(l),
       }));
       const ofOperations = (l: { plan_id: string }) => l.plan_id === ops?.id;
-      const offeringKey = new Map(offerings.map((o) => [o.id, o.key]));
       const positionName = new Map(operations?.positions.map((p) => [p.key, p.name]));
       const parts: BlockParts = {
         staff: blocks.staff.map((s) => ({
           block_id: s.block_id,
           staff_level: s.staff_level_id?.name ?? null,
-          position: (s.position_key && positionName.get(s.position_key)) ?? null,
+          position: (s.position_id && positionName.get(s.position_id)) ?? null,
           count: s.count,
           pay: s.pay,
         })),
@@ -471,8 +475,8 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
                 {
                   ...o,
                   // An offering whose term isn't in the Operations Plan is in none.
-                  term_key: (o.term_key && termName.has(o.term_key) && o.term_key) || null,
-                  term: (o.term_key && termName.get(o.term_key)) ?? null,
+                  term_id: (o.term_id && termName.has(o.term_id) && o.term_id) || null,
+                  term: (o.term_id && termName.get(o.term_id)) ?? null,
                   program: o.product_id.name,
                   program_id: o.product_id.programs[0]?.id ?? null,
                   program_color: o.product_id.programs[0]?.color ?? null,
@@ -485,7 +489,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         ),
         products: offerings
           .filter((o) => o.plan_id === ops?.id)
-          .map((o) => ({ key: o.key, product: o.product_id.name, product_id: o.product_id.id })),
+          .map((o) => ({ key: o.id, product: o.product_id.name, product_id: o.product_id.id })),
         programs: byReport(
           byName(
             programs.map((p) => ({
@@ -513,15 +517,14 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
                 ofPlan(blocks.blocks, m).map((b) => ({ ...b, name: blockName(b.name, b.date, knownNames(m)) })),
                 ofPlan(activities, m),
                 parts,
-                (id) => offeringKey.get(id) ?? "",
               ),
             ]),
         ),
         trips: byReport(
           trips.map((t) => ({
             plan_id: t.plan_id,
-            key: t.key,
-            offering_key: offeringKey.get(t.offering_id) ?? "",
+            key: t.id,
+            offering_id: t.offering_id,
             name: t.name,
             nights: t.nights,
             airfare_cents: t.airfare_cents,
@@ -530,7 +533,7 @@ export const planInputsQuery = (set: Pick<FinancialPlanSummary, "id" | "status">
         ),
         fixedCosts: byReport(fixedCosts.filter((l) => !ofOperations(l))),
         staffTime: byReport(staffTime.filter((l) => !ofOperations(l))),
-        capital: Object.fromEntries(capitalItems.map((c) => [c.key, { note: c.note, link: c.link }])),
+        capital: Object.fromEntries(capitalItems.map((c) => [c.id, { note: c.note, link: c.link }])),
       };
     },
     // A draft's inputs change wherever its plans are changed, as its numbers do.

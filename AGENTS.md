@@ -96,7 +96,7 @@ mise provides the tools. Run `mise trust`, then `mise run install`.
   program area id, the same in every Financial Plan, or `non-program`. The Overview's
   Notes, closed at first, show the Financial Plan's note, then the Operations Plan's notes. Storage, on Assumptions, lists the lines on the Storage account, 7351 under 7350 Occupancy/Rent:
   what each area pays, then what every program shares. A program area's report shows each offering's term: one of the
-  Operations Plan's `plan_terms`, which an offering names by `term_key`. The Calendar shows every program area, and it and each area's
+  Operations Plan's `plan_terms`, which an offering names by `term_id`. The Calendar shows every program area, and it and each area's
   report keep their day in the address (`?day=<date>`). The engine's warnings and errors show where they apply (`placeOf` in `src/model/warnings.ts`): on a calendar
   day and its block, a program, or an offering's Enrollment row. Each program area's report lists its own in a table,
   and the Overview those about no area, with each area's count beside it. The count beside a plan's status on every

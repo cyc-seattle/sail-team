@@ -1,6 +1,6 @@
 /**
  * A planning period in a Financial Plan's Operations Plan, such as Summer 2027 (cyc-seattle/platform#251). An offering
- * is in one of them, by its key, or in none.
+ * is in one of them, by its id, or in none.
  */
 export interface Term {
   key: string;

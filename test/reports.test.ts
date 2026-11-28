@@ -250,8 +250,9 @@ describe("onWaterMinutes", () => {
 
 describe("reportOffering", () => {
   const offering = {
-    key: "camp",
+    id: "camp",
     name: "Camp, week 1",
+    term_id: null,
     starts_on: "2027-07-05",
     ends_on: "2027-07-09",
     price_cents: 50_000,
@@ -272,9 +273,9 @@ describe("reportOffering", () => {
 
   it("names its session by its own name without its program's, and keeps its term", () => {
     expect(
-      reportOffering({ ...offering, name: "Camp Week 3", term_key: "summer", term: "Summer 2027" }, []),
-    ).toMatchObject({ session: "Week 3", term_key: "summer", term: "Summer 2027" });
-    expect(reportOffering(offering, [])).toMatchObject({ session: "Camp, week 1", term_key: null, term: null });
+      reportOffering({ ...offering, name: "Camp Week 3", term_id: "summer", term: "Summer 2027" }, []),
+    ).toMatchObject({ session: "Week 3", term_id: "summer", term: "Summer 2027" });
+    expect(reportOffering(offering, [])).toMatchObject({ session: "Camp, week 1", term_id: null, term: null });
   });
 
   it("counts the dates it has an activity other than travel, and one sailor's hours on the water", () => {
@@ -313,22 +314,22 @@ describe("withResults", () => {
     const pnl = [
       {
         level: "offering" as const,
-        subject_key: "w1",
+        subject_id: "w1",
         allocation_holds: 12,
         breakeven_enrollment: 6,
         revenue_cents: 500,
         expense_cents: 300,
-        term_key: "t",
+        term_id: "t",
         term_name: "Summer 2027",
       },
       {
         level: "product" as const,
-        subject_key: "w2",
+        subject_id: "w2",
         allocation_holds: 99,
         breakeven_enrollment: 99,
         revenue_cents: 99,
         expense_cents: 99,
-        term_key: null,
+        term_id: null,
         term_name: null,
       },
     ];
@@ -345,7 +346,7 @@ describe("productsOf", () => {
     name: key,
     account_number: null,
     account_name: key,
-    cost_center_key: center,
+    cost_center_id: center,
     amount_cents: cents,
     revenue,
     capital: false,
@@ -392,7 +393,7 @@ describe("lineAmounts", () => {
     name,
     account_number: null,
     account_name: "Coach wages",
-    cost_center_key: center,
+    cost_center_id: center,
     cost_center_type: "offering" as const,
     amount_cents: cents,
     revenue: false,
@@ -421,7 +422,7 @@ describe("capitalList", () => {
     name,
     account_number: "1510",
     account_name: "Equipment",
-    cost_center_key: null,
+    cost_center_id: null,
     cost_center_type: "org" as const,
     amount_cents: cents,
     revenue: false,

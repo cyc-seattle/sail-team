@@ -127,7 +127,7 @@ async function readResults(setId: string): Promise<Results | null> {
     ]),
     readAll<Omit<PnlRow, "plan"> & { plan_id: string | null }>("plan_result_pnl", bySet, [
       "level",
-      "subject_key",
+      "subject_id",
       "name",
       "revenue_cents",
       "expense_cents",
@@ -136,7 +136,7 @@ async function readResults(setId: string): Promise<Results | null> {
       "sailor_days",
       "allocation_holds",
       "breakeven_enrollment",
-      "term_key",
+      "term_id",
       "term_name",
       "term_starts_on",
       "plan_id",
@@ -144,7 +144,7 @@ async function readResults(setId: string): Promise<Results | null> {
     readAll<{
       line: string;
       line_name: string | null;
-      cost_center_key: string | null;
+      cost_center_id: string | null;
       cost_center_type: PlanLine["cost_center_type"];
       amount_cents: number;
       plan_id: string | null;
@@ -154,7 +154,7 @@ async function readResults(setId: string): Promise<Results | null> {
     }>("plan_result_lines", bySet, [
       "line",
       "line_name",
-      "cost_center_key",
+      "cost_center_id",
       "cost_center_type",
       "amount_cents",
       "plan_id",
@@ -169,20 +169,20 @@ async function readResults(setId: string): Promise<Results | null> {
       "message",
       "category",
       "severity",
-      "subject_key",
+      "subject_id",
       "date",
       "plan_id",
     ]),
-    readAll<CapitalResult & { item_key: string }>("plan_result_capital", bySet, [
+    readAll<CapitalResult & { item_id: string }>("plan_result_capital", bySet, [
       "rank",
-      "item_key",
+      "item_id",
       "name",
       "amount_cents",
       "running_cents",
       "funded",
     ]),
     readAll<Omit<BonusResult, "role_name"> & { name: string }>("plan_result_bonuses", bySet, [
-      "bonus_owner_key",
+      "bonus_owner_id",
       "name",
       "term_name",
       "term_starts_on",
@@ -205,7 +205,7 @@ async function readResults(setId: string): Promise<Results | null> {
       name: l.line_name ?? l.line,
       account_number: l.account_id.number,
       account_name: l.account_id.name,
-      cost_center_key: l.cost_center_key,
+      cost_center_id: l.cost_center_id,
       cost_center_type: l.cost_center_type,
       amount_cents: l.amount_cents,
       revenue: l.account_id.type === "revenue",
@@ -215,7 +215,7 @@ async function readResults(setId: string): Promise<Results | null> {
       plan: l.plan_id,
     })),
     warnings: warnings.map(({ plan_id, ...w }) => ({ ...w, plan: plan_id })),
-    capital: capital.map(({ item_key, ...c }) => ({ ...c, key: item_key })).sort((a, b) => a.rank - b.rank),
+    capital: capital.map(({ item_id, ...c }) => ({ ...c, key: item_id })).sort((a, b) => a.rank - b.rank),
     bonuses: bonuses.map(({ name, ...b }) => ({ ...b, role_name: name })),
   };
 }
