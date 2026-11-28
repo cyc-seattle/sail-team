@@ -43,12 +43,12 @@ async function readByIds<T>(table: string, field: string, ids: string[], fields:
   return rows;
 }
 
-/** A program as Directus returns it, with its area through its product, and its group. */
+/** A program as Directus returns it, with its product, the product's area if readable, and its group. */
 interface ProgramRead {
   id: string;
   name: string;
   team?: boolean | null;
-  product_id?: { program_area_id: { id: string; name: string } | null } | null;
+  product_id: string | { id: string; program_area_id: { id: string; name: string } | null };
   google_group_id?: { email: string; name: string | null } | null;
 }
 
@@ -62,7 +62,7 @@ function programFields(permissions: Permissions): string[] {
   const group = own.includes("google_group_id") && readableFields(permissions, "google_groups", ["email"]).length > 0;
   return [
     ...own.filter((f) => f !== "product_id" && f !== "google_group_id"),
-    ...(area ? ["product_id.program_area_id.id", "product_id.program_area_id.name"] : []),
+    ...(area ? ["product_id.id", "product_id.program_area_id.id", "product_id.program_area_id.name"] : ["product_id"]),
     ...(group ? ["google_group_id.email", "google_group_id.name"] : []),
   ];
 }
@@ -88,7 +88,7 @@ export const teamsQuery = (permissions: Permissions) =>
     queryFn: async () => {
       const today = seattleToday();
       const offerings = currentOfferings(
-        await readAll<OfferingRow>("offerings", ["id", "program_id", "starts_on", "ends_on"], {
+        await readAll<OfferingRow>("offerings", ["id", "product_id", "starts_on", "ends_on"], {
           _or: [{ ends_on: { _null: true } }, { ends_on: { _gte: monthsBefore(today, RECENT_MONTHS) } }],
         }),
         today,
@@ -96,19 +96,20 @@ export const teamsQuery = (permissions: Permissions) =>
       const programs: ProgramRow[] = (
         await readByIds<ProgramRead>(
           "programs",
-          "id",
-          [...new Set(offerings.map((o) => o.program_id))],
+          "product_id",
+          [...new Set(offerings.map((o) => o.product_id))],
           programFields(permissions),
         )
       ).map((p) => ({
         id: p.id,
+        productId: typeof p.product_id === "string" ? p.product_id : p.product_id.id,
         name: p.name,
         team: p.team ?? null,
-        area: p.product_id?.program_area_id ?? null,
+        area: typeof p.product_id === "string" ? null : p.product_id.program_area_id,
         group: p.google_group_id?.email ? p.google_group_id : null,
       }));
-      const teams = new Set(programs.filter((p) => p.team === true).map((p) => p.id));
-      const teamOfferings = offerings.filter((o) => teams.has(o.program_id));
+      const teams = new Set(programs.filter((p) => p.team === true).map((p) => p.productId));
+      const teamOfferings = offerings.filter((o) => teams.has(o.product_id));
       const registrations = await readByIds<RegistrationRow>(
         "registrations",
         "offering_id",

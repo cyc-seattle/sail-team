@@ -60,16 +60,17 @@ async function readSignUps(people: string[]): Promise<SignUpRow[]> {
   if (registrations.length === 0) {
     return [];
   }
-  const offerings = await readAll<{ id: string; program_id: string; starts_on: string | null; ends_on: string | null }>(
+  const offerings = await readAll<{ id: string; product_id: string; starts_on: string | null; ends_on: string | null }>(
     "offerings",
-    ["id", "program_id", "starts_on", "ends_on"],
+    ["id", "product_id", "starts_on", "ends_on"],
     { id: { _in: [...new Set(registrations.map((r) => r.offering_id))] } },
   );
-  const programs = await readAll<{ id: string; name: string | null }>("programs", ["id", "name"], {
-    id: { _in: [...new Set(offerings.map((o) => o.program_id))] },
+  const programs = await readAll<{ product_id: string; name: string | null }>("programs", ["product_id", "name"], {
+    product_id: { _in: [...new Set(offerings.map((o) => o.product_id))] },
   });
   const offering = new Map(offerings.map((o) => [o.id, o]));
-  const program = new Map(programs.map((p) => [p.id, p.name]));
+  // A product is one program at most, so its program names the offering.
+  const program = new Map(programs.map((p) => [p.product_id, p.name]));
   return registrations.map((r) => {
     const o = offering.get(r.offering_id);
     return {
@@ -78,7 +79,7 @@ async function readSignUps(people: string[]): Promise<SignUpRow[]> {
       status: r.status,
       starts_on: o?.starts_on ?? null,
       ends_on: o?.ends_on ?? null,
-      program: (o && program.get(o.program_id)) ?? null,
+      program: (o && program.get(o.product_id)) ?? null,
     };
   });
 }

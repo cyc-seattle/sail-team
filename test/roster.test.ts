@@ -24,9 +24,9 @@ import {
   type TeamRoster,
 } from "../src/model/roster.ts";
 
-const offering = (id: string, starts_on: string | null, ends_on: string | null, program_id = "p"): OfferingRow => ({
+const offering = (id: string, starts_on: string | null, ends_on: string | null, product_id = "p"): OfferingRow => ({
   id,
-  program_id,
+  product_id,
   starts_on,
   ends_on,
 });
@@ -73,9 +73,9 @@ describe("buildTeams", () => {
   const area = { id: "dh", name: "Doublehanded" };
   const group = { email: "j-pod@example.org", name: "J-Pod" };
   const programs = [
-    { id: "j", name: "J-Pod", team: true, area, group },
-    { id: "k", name: "K-Pod", team: true, area },
-    { id: "camp", name: "Summer Camp", team: false, area: { id: "summer", name: "Summer" } },
+    { id: "j", productId: "j", name: "J-Pod", team: true, area, group },
+    { id: "k", productId: "k", name: "K-Pod", team: true, area },
+    { id: "camp", productId: "camp", name: "Summer Camp", team: false, area: { id: "summer", name: "Summer" } },
   ];
   const teams = buildTeams({
     programs,
@@ -127,7 +127,7 @@ describe("buildTeams", () => {
 
   it("lets a team stand on its own when the person can't read its area", () => {
     const [team] = buildTeams({
-      programs: [{ id: "j", name: "J-Pod", team: true }],
+      programs: [{ id: "j", productId: "j", name: "J-Pod", team: true }],
       offerings: [offering("j-fall", "2026-09-08", null, "j")],
       registrations: [{ person_id: "child", offering_id: "j-fall", status: "confirmed" }],
       contacts: [],

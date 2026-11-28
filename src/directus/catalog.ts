@@ -51,7 +51,7 @@ export const catalogQuery = (permissions: Permissions | undefined) =>
         readIf<CatalogOffering>(permissions, "offerings", [
           "id",
           "name",
-          "program_id",
+          "product_id",
           "starts_on",
           "ends_on",
           "price_cents",
