@@ -367,7 +367,7 @@ function operations(plan: string): Copy {
 }
 
 /** The catalog's offerings the plans plan, each named once: every Financial Plan of the year plans the same. */
-const catalogOfferings = new Map<string, { id: string; product_id: string; name: string }>();
+export const catalogOfferings = new Map<string, { id: string; product_id: string; name: string }>();
 const catalogOffering = (productId: string, name: string): string => {
   const id = `catalog:${name}`;
   catalogOfferings.set(id, { id, product_id: productId, name });

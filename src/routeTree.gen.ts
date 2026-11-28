@@ -26,6 +26,7 @@ import { Route as PlansIndexRouteImport } from './routes/plans/index'
 import { Route as RosterIndexRouteImport } from './routes/roster/index'
 import { Route as RosterTeamIdRouteImport } from './routes/roster/$teamId'
 import { Route as RostersIndexRouteImport } from './routes/rosters/index'
+import { Route as CatalogOfferingsSyncRouteImport } from './routes/catalog/offerings_.sync'
 import { Route as PlansPlanIdIndexRouteImport } from './routes/plans/$planId/index'
 import { Route as PlansClubSetIdIndexRouteImport } from './routes/plans/club/$setId/index'
 import { Route as PlansFinancialSetIdIndexRouteImport } from './routes/plans/financial/$setId/index'
@@ -116,6 +117,11 @@ const RostersIndexRoute = RostersIndexRouteImport.update({
   path: '/rosters/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CatalogOfferingsSyncRoute = CatalogOfferingsSyncRouteImport.update({
+  id: '/catalog/offerings_/sync',
+  path: '/catalog/offerings/sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlansPlanIdIndexRoute = PlansPlanIdIndexRouteImport.update({
   id: '/plans/$planId/',
   path: '/plans/$planId/',
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/plans/': typeof PlansIndexRoute
   '/roster/': typeof RosterIndexRoute
   '/rosters/': typeof RostersIndexRoute
+  '/catalog/offerings/sync': typeof CatalogOfferingsSyncRoute
   '/plans/$planId/': typeof PlansPlanIdIndexRoute
   '/plans/financial/$setId/$planId': typeof PlansFinancialSetIdPlanIdRoute
   '/plans/club/$setId/': typeof PlansClubSetIdIndexRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByTo {
   '/plans': typeof PlansIndexRoute
   '/roster': typeof RosterIndexRoute
   '/rosters': typeof RostersIndexRoute
+  '/catalog/offerings/sync': typeof CatalogOfferingsSyncRoute
   '/plans/$planId': typeof PlansPlanIdIndexRoute
   '/plans/financial/$setId/$planId': typeof PlansFinancialSetIdPlanIdRoute
   '/plans/club/$setId': typeof PlansClubSetIdIndexRoute
@@ -204,6 +212,7 @@ export interface FileRoutesById {
   '/plans/': typeof PlansIndexRoute
   '/roster/': typeof RosterIndexRoute
   '/rosters/': typeof RostersIndexRoute
+  '/catalog/offerings_/sync': typeof CatalogOfferingsSyncRoute
   '/plans/$planId/': typeof PlansPlanIdIndexRoute
   '/plans/financial/$setId/$planId': typeof PlansFinancialSetIdPlanIdRoute
   '/plans/club/$setId/': typeof PlansClubSetIdIndexRoute
@@ -229,6 +238,7 @@ export interface FileRouteTypes {
     | '/plans/'
     | '/roster/'
     | '/rosters/'
+    | '/catalog/offerings/sync'
     | '/plans/$planId/'
     | '/plans/financial/$setId/$planId'
     | '/plans/club/$setId/'
@@ -252,6 +262,7 @@ export interface FileRouteTypes {
     | '/plans'
     | '/roster'
     | '/rosters'
+    | '/catalog/offerings/sync'
     | '/plans/$planId'
     | '/plans/financial/$setId/$planId'
     | '/plans/club/$setId'
@@ -275,6 +286,7 @@ export interface FileRouteTypes {
     | '/plans/'
     | '/roster/'
     | '/rosters/'
+    | '/catalog/offerings_/sync'
     | '/plans/$planId/'
     | '/plans/financial/$setId/$planId'
     | '/plans/club/$setId/'
@@ -299,6 +311,7 @@ export interface RootRouteChildren {
   PlansIndexRoute: typeof PlansIndexRoute
   RosterIndexRoute: typeof RosterIndexRoute
   RostersIndexRoute: typeof RostersIndexRoute
+  CatalogOfferingsSyncRoute: typeof CatalogOfferingsSyncRoute
   PlansPlanIdIndexRoute: typeof PlansPlanIdIndexRoute
   PlansFinancialSetIdPlanIdRoute: typeof PlansFinancialSetIdPlanIdRoute
   PlansClubSetIdIndexRoute: typeof PlansClubSetIdIndexRoute
@@ -426,6 +439,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RostersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/catalog/offerings_/sync': {
+      id: '/catalog/offerings_/sync'
+      path: '/catalog/offerings/sync'
+      fullPath: '/catalog/offerings/sync'
+      preLoaderRoute: typeof CatalogOfferingsSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/plans/$planId/': {
       id: '/plans/$planId/'
       path: '/plans/$planId'
@@ -475,6 +495,7 @@ const rootRouteChildren: RootRouteChildren = {
   PlansIndexRoute: PlansIndexRoute,
   RosterIndexRoute: RosterIndexRoute,
   RostersIndexRoute: RostersIndexRoute,
+  CatalogOfferingsSyncRoute: CatalogOfferingsSyncRoute,
   PlansPlanIdIndexRoute: PlansPlanIdIndexRoute,
   PlansFinancialSetIdPlanIdRoute: PlansFinancialSetIdPlanIdRoute,
   PlansClubSetIdIndexRoute: PlansClubSetIdIndexRoute,
