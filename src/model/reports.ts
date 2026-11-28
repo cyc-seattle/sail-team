@@ -1,5 +1,5 @@
 // The shapes the Planning reports show, and how they're made from a Financial Plan's results and inputs.
-import type { PlanActivity, PlanOffering } from "@cyc-seattle/platform/planning";
+import type { OfferingInPlan, PlanActivity } from "@cyc-seattle/platform/planning";
 import type { Plan, PlanLine, PnlRow, ResultWarning, Results } from "./financial-plans.ts";
 
 /** Lines that are worked out the same way, added up, such as every offering's coach wages. */
@@ -710,7 +710,7 @@ function sessionOf(offering: { name: string; program: string }): string {
 
 export function reportOffering(
   offering: Pick<
-    PlanOffering,
+    OfferingInPlan,
     "id" | "name" | "starts_on" | "ends_on" | "price_cents" | "capacity" | "cogs_rate" | "note" | "term_id"
   > & {
     term?: string | null;
